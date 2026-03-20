@@ -10,7 +10,7 @@
  * Make sure server is running first: node src/server.js
  */
 
-const BASE_URL = 'http://localhost:3000/api';
+const BASE_URL = 'https://darkmatter-production.up.railway.app/api';
 
 async function api(method, path, body) {
   const res = await fetch(`${BASE_URL}${path}`, {
