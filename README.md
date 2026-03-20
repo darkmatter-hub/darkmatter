@@ -5,6 +5,26 @@
 
 ---
 
+## Live API
+
+DarkMatter is live and ready to use right now — no setup required:
+
+```
+https://darkmatter-production.up.railway.app
+```
+
+Register your first agent in one command:
+
+```bash
+curl -X POST https://darkmatter-production.up.railway.app/api/register \
+  -H "Content-Type: application/json" \
+  -d '{ "agentName": "My Agent" }'
+```
+
+View the live dashboard: **[darkmatter-production.up.railway.app](https://darkmatter-production.up.railway.app)**
+
+---
+
 ## The Problem
 
 AI agents are amnesiac and blind by default.
@@ -38,47 +58,69 @@ Every handoff is **cryptographically signed** with the sending agent's private k
 
 ---
 
-## Quickstart
+## Quickstart — Use the Hosted API
 
-> **Full setup guide with every step explained: [SETUP.md](./SETUP.md)**
+The fastest way to try DarkMatter — no installation needed.
+
+**Step 1 — Register two agents**
+
+```bash
+# Register Agent X
+curl -X POST https://darkmatter-production.up.railway.app/api/register \
+  -H "Content-Type: application/json" \
+  -d '{ "agentName": "Claude Agent X" }'
+
+# Register Agent Y  
+curl -X POST https://darkmatter-production.up.railway.app/api/register \
+  -H "Content-Type: application/json" \
+  -d '{ "agentName": "GPT Agent Y" }'
+```
+
+Save the `agentId` and `privateKey` from each response.
+
+**Step 2 — Agent X commits signed context**
+
+```bash
+curl -X POST https://darkmatter-production.up.railway.app/api/commit \
+  -H "Content-Type: application/json" \
+  -d '{
+    "fromAgentId": "dm_YOUR_AGENT_X_ID",
+    "toAgentId":   "dm_YOUR_AGENT_Y_ID",
+    "context":     { "task": "Analysis complete", "findings": "APAC up 34%" },
+    "privateKey":  "YOUR_AGENT_X_PRIVATE_KEY"
+  }'
+```
+
+**Step 3 — Agent Y pulls and verifies**
+
+```bash
+curl https://darkmatter-production.up.railway.app/api/pull/dm_YOUR_AGENT_Y_ID
+```
+
+Agent Y receives only verified, cryptographically signed context. Tampered packages never appear.
+
+---
+
+## Quickstart — Self Host
+
+> **Full setup guide: [SETUP.md](./SETUP.md)** | **Production deployment: [PRODUCTION.md](./PRODUCTION.md)**
 
 ```bash
 # 1. Clone and install
-git clone https://github.com/yourusername/darkmatter
+git clone https://github.com/bengunvl/darkmatter
 cd darkmatter
 npm install
 
-# 2. Generate your agent's private key — stays on your machine, DarkMatter never sees it
-node -e "
-const crypto = require('crypto');
-const fs = require('fs');
-const { privateKey, publicKey } = crypto.generateKeyPairSync('ed25519', {
-  publicKeyEncoding: { type: 'spki', format: 'pem' },
-  privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
-});
-fs.writeFileSync('agent.private.pem', privateKey);
-fs.writeFileSync('agent.public.pem', publicKey);
-console.log('✅ Keypair generated — keep agent.private.pem secret');
-"
-
-# 3. Start the server
+# 2. Start the server
 npm start
 
-# 4. In a second terminal — run the full demo
+# 3. In a second terminal — run the full demo
 node demo.js
 ```
 
 Open [http://localhost:3000](http://localhost:3000) to see the agent network dashboard.
 
-### What the demo does
-
-1. Registers two agents (Claude Agent X, GPT Agent Y)
-2. Agent X completes work and **signs** a context package with its private key
-3. Agent X commits the signed package to DarkMatter
-4. Agent Y **pulls and verifies** the signature before consuming any context
-5. Demonstrates tamper detection — a forged package is **rejected**
-
-**DarkMatter never stores your private key.** Signing happens locally on your machine. DarkMatter only stores public keys and uses them to verify incoming commits.
+**DarkMatter never stores your private key.** Signing happens locally. DarkMatter only stores public keys and uses them to verify incoming commits.
 
 ---
 
@@ -91,10 +133,8 @@ Open [http://localhost:3000](http://localhost:3000) to see the agent network das
 
 📋 Step 1: Registering agents...
 
-✅ Registered: Claude Agent X
-   ID: dm_a3f8c2e1b9d04712
-✅ Registered: GPT Agent Y
-   ID: dm_7b2d9f4e8a1c3056
+✅ Registered: Claude Agent X  →  dm_a3f8c2e1b9d04712
+✅ Registered: GPT Agent Y     →  dm_7b2d9f4e8a1c3056
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -103,7 +143,6 @@ Open [http://localhost:3000](http://localhost:3000) to see the agent network das
 ✅ Commit created: commit_1710234567_x8k2p
    From: Claude Agent X → To: GPT Agent Y
    Signature verified: ✅ YES
-   Reason: Signature verified
    Timestamp: 2026-03-17T14:23:01.000Z
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -111,8 +150,6 @@ Open [http://localhost:3000](http://localhost:3000) to see the agent network das
 🤖 Step 3: Agent Y pulls and verifies context...
 
 ✅ GPT Agent Y pulled 1 verified commit(s)
-
-   From: Claude Agent X
    Verified: ✅ Signature valid — safe to consume
    Context: { task: "Analyze Q1 sales data", findings: { topRegion: "APAC"... } }
 
@@ -127,7 +164,9 @@ Open [http://localhost:3000](http://localhost:3000) to see the agent network das
 
 ---
 
-## API
+## API Reference
+
+**Base URL:** `https://darkmatter-production.up.railway.app`
 
 ### Register an agent
 ```http
@@ -135,8 +174,6 @@ POST /api/register
 { "agentName": "Claude Agent X" }
 ```
 Returns `agentId`, `publicKey`, `privateKey`.
-
-> In production: agents generate their own keypair locally and only send the public key. DarkMatter never sees private keys.
 
 ---
 
@@ -212,10 +249,7 @@ Git is designed for humans committing code asynchronously. Agent networks need:
 
 ## What's Next
 
-This is a prototype — the signed handoff primitive. The roadmap:
-
 - [ ] Agents generate keypairs locally (remove server-side key generation)
-- [ ] Persistent storage (Supabase / Postgres)
 - [ ] Failure recovery — resume pipeline from last verified commit
 - [ ] Parallel agent branches + merge
 - [ ] Agent reputation scoring from commit history
