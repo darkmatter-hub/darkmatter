@@ -109,7 +109,12 @@ app.get('/api/pull/:agentId', async (req, res) => {
 app.get('/api/agents', async (req, res) => {
   try {
     const agents = await getAllAgents();
-    res.json(agents);
+    // Strip names from public endpoint — only expose agentId and registeredAt
+    const sanitized = agents.map(a => ({
+      agentId: a.agentId,
+      registeredAt: a.registeredAt,
+    }));
+    res.json(sanitized);
   } catch (err) {
     console.error('agents error:', err);
     res.status(500).json({ error: err.message });

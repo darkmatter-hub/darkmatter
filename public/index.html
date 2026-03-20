@@ -496,8 +496,8 @@
 </footer>
 
 <script>
-  function initials(name) {
-    return name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+  function maskId(id) {
+    return id ? id.slice(0, 9) + '•••' : '•••';
   }
 
   function timeAgo(ts) {
@@ -514,7 +514,7 @@
         fetch('/api/commits').then(r => r.json()),
       ]);
 
-      // Stats
+      // Stats only — counts, no names
       const verified = commits.filter(c => c.verified).length;
       const failed = commits.filter(c => !c.verified).length;
       document.getElementById('stat-agents').textContent = agents.length;
@@ -523,26 +523,26 @@
       document.getElementById('stat-failed').textContent = failed;
       document.getElementById('agent-count').textContent = agents.length;
 
-      // Agents
+      // Agents — masked IDs only, no names
       const agentEl = document.getElementById('agent-list');
       if (agents.length === 0) {
-        agentEl.innerHTML = `<div class="empty-state">No agents registered yet.<div class="hint">Run: node demo.js</div></div>`;
+        agentEl.innerHTML = `<div class="empty-state">No agents registered yet.<div class="hint">Register via POST /api/register</div></div>`;
       } else {
         agentEl.innerHTML = agents.map(a => `
           <div class="agent-row">
-            <div class="agent-avatar">${initials(a.agentName)}</div>
+            <div class="agent-avatar">◈</div>
             <div class="agent-info">
-              <div class="agent-name">${a.agentName}</div>
-              <div class="agent-id">${a.agentId}</div>
+              <div class="agent-name">${maskId(a.agentId)}</div>
+              <div class="agent-id">registered ${timeAgo(a.registeredAt)}</div>
             </div>
           </div>
         `).join('');
       }
 
-      // Commits
+      // Commits — masked IDs, no context contents
       const commitEl = document.getElementById('commit-list');
       if (commits.length === 0) {
-        commitEl.innerHTML = `<div class="empty-state">No commits yet.<div class="hint">Run: node demo.js</div></div>`;
+        commitEl.innerHTML = `<div class="empty-state">No commits yet.<div class="hint">POST /api/commit to create a signed handoff</div></div>`;
       } else {
         commitEl.innerHTML = commits.map(c => `
           <div class="commit-row">
@@ -551,14 +551,14 @@
                 ${c.verified ? '✓ VERIFIED' : '✗ REJECTED'}
               </span>
               <div class="commit-flow">
-                <span class="agent-chip">${c.from}</span>
+                <span class="agent-chip">${maskId(c.from)}</span>
                 <span class="arrow">──▶</span>
-                <span class="agent-chip">${c.to}</span>
+                <span class="agent-chip">${maskId(c.to)}</span>
               </div>
               <span class="commit-time">${timeAgo(c.timestamp)}</span>
             </div>
-            <div class="commit-context" onclick="this.classList.toggle('expanded')">
-              ${JSON.stringify(c.context, null, 2)}
+            <div class="commit-context">
+              [context redacted — only the recipient agent can read this]
             </div>
           </div>
         `).join('');
