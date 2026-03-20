@@ -62,21 +62,25 @@ Every handoff is **cryptographically signed** with the sending agent's private k
 
 The fastest way to try DarkMatter — no installation needed.
 
-**Step 1 — Register two agents**
+**Step 1 — Generate your keypair locally**
+
+Your private key never leaves your machine. DarkMatter never sees it.
 
 ```bash
-# Register Agent X
-curl -X POST https://darkmatter-production.up.railway.app/api/register \
-  -H "Content-Type: application/json" \
-  -d '{ "agentName": "Claude Agent X" }'
-
-# Register Agent Y  
-curl -X POST https://darkmatter-production.up.railway.app/api/register \
-  -H "Content-Type: application/json" \
-  -d '{ "agentName": "GPT Agent Y" }'
+node keygen.js --name "my-agent"
+# Creates: my-agent.private.pem  ← keep secret, never share
+#          my-agent.public.pem   ← send to DarkMatter
+#          my-agent.id.txt       ← your agentId
 ```
 
-Save the `agentId` and `privateKey` from each response.
+**Step 2 — Register with DarkMatter (public key only)**
+
+```bash
+node register.js --name "my-agent" --public-key my-agent.public.pem
+# → agentId: dm_a3f8c2e1b9d04712
+# → registered: true
+# DarkMatter never received your private key.
+```
 
 **Step 2 — Agent X commits signed context**
 
