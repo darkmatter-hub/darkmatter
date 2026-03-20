@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DarkMatter — Agent Context Network</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #050508;
+      --surface: #0d0d14;
+      --border: #1a1a2e;
+      --accent: #6c63ff;
+      --accent2: #00d4aa;
+      --danger: #ff4757;
+      --text: #e8e8f0;
+      --muted: #4a4a6a;
+      --verified: #00d4aa;
+      --failed: #ff4757;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Space Mono', monospace;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Animated background grid */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(108,99,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(108,99,255,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    header {
+      position: relative;
+      z-index: 1;
+      padding: 2rem 3rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .logo-mark {
+      width: 36px;
+      height: 36px;
+      background: radial-gradient(circle at 30% 30%, #6c63ff, #050508);
+      border-radius: 50%;
+      border: 1px solid var(--accent);
+      box-shadow: 0 0 20px rgba(108,99,255,0.4);
+      animation: pulse 3s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 20px rgba(108,99,255,0.4); }
+      50% { box-shadow: 0 0 40px rgba(108,99,255,0.7), 0 0 80px rgba(108,99,255,0.2); }
+    }
+
+    .logo-text {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 1.4rem;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+
+    .logo-text span { color: var(--accent); }
+
+    .tagline {
+      font-size: 0.7rem;
+      color: var(--muted);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+
+    .status-pill {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.7rem;
+      color: var(--accent2);
+      letter-spacing: 0.1em;
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      background: var(--accent2);
+      border-radius: 50%;
+      animation: blink 2s ease-in-out infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.2; }
+    }
+
+    main {
+      position: relative;
+      z-index: 1;
+      padding: 2rem 3rem;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 1.25rem 1.5rem;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.2s;
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--accent), transparent);
+    }
+
+    .stat-card:hover { border-color: var(--accent); }
+
+    .stat-label {
+      font-size: 0.65rem;
+      color: var(--muted);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+
+    .stat-value {
+      font-family: 'Syne', sans-serif;
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--text);
+    }
+
+    .stat-value.accent { color: var(--accent); }
+    .stat-value.verified { color: var(--verified); }
+    .stat-value.danger { color: var(--danger); }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1.6fr;
+      gap: 1.5rem;
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+    }
+
+    .panel-header {
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .panel-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .panel-count {
+      font-size: 0.7rem;
+      color: var(--accent);
+      background: rgba(108,99,255,0.1);
+      padding: 0.2rem 0.6rem;
+      border: 1px solid rgba(108,99,255,0.2);
+    }
+
+    /* Agent list */
+    .agent-list { padding: 0.5rem 0; }
+
+    .agent-row {
+      padding: 0.9rem 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.15s;
+      cursor: default;
+    }
+
+    .agent-row:last-child { border-bottom: none; }
+    .agent-row:hover { background: rgba(108,99,255,0.04); }
+
+    .agent-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), #2d2b6b);
+      border: 1px solid rgba(108,99,255,0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.65rem;
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+
+    .agent-info { flex: 1; min-width: 0; }
+
+    .agent-name {
+      font-family: 'Syne', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .agent-id {
+      font-size: 0.6rem;
+      color: var(--muted);
+      margin-top: 0.15rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Commit timeline */
+    .commit-list { padding: 0.5rem 0; max-height: 520px; overflow-y: auto; }
+
+    .commit-list::-webkit-scrollbar { width: 4px; }
+    .commit-list::-webkit-scrollbar-track { background: transparent; }
+    .commit-list::-webkit-scrollbar-thumb { background: var(--border); }
+
+    .commit-row {
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.15s;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .commit-row:last-child { border-bottom: none; }
+    .commit-row:hover { background: rgba(108,99,255,0.04); }
+
+    .commit-meta {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.6rem;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      font-size: 0.6rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0.2rem 0.5rem;
+      border: 1px solid;
+    }
+
+    .badge.verified {
+      color: var(--verified);
+      border-color: rgba(0,212,170,0.3);
+      background: rgba(0,212,170,0.05);
+    }
+
+    .badge.failed {
+      color: var(--danger);
+      border-color: rgba(255,71,87,0.3);
+      background: rgba(255,71,87,0.05);
+    }
+
+    .commit-flow {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.75rem;
+    }
+
+    .agent-chip {
+      background: rgba(108,99,255,0.1);
+      border: 1px solid rgba(108,99,255,0.2);
+      padding: 0.15rem 0.5rem;
+      font-size: 0.7rem;
+      color: var(--accent);
+    }
+
+    .arrow {
+      color: var(--muted);
+      font-size: 0.65rem;
+    }
+
+    .commit-time {
+      font-size: 0.6rem;
+      color: var(--muted);
+      margin-left: auto;
+    }
+
+    .commit-context {
+      background: rgba(0,0,0,0.3);
+      border: 1px solid var(--border);
+      padding: 0.75rem;
+      font-size: 0.65rem;
+      color: var(--muted);
+      line-height: 1.5;
+      overflow: hidden;
+      max-height: 80px;
+      cursor: pointer;
+      transition: max-height 0.3s ease, color 0.2s;
+      position: relative;
+    }
+
+    .commit-context::after {
+      content: 'click to expand';
+      position: absolute;
+      bottom: 0.4rem;
+      right: 0.75rem;
+      font-size: 0.55rem;
+      color: var(--accent);
+      letter-spacing: 0.08em;
+    }
+
+    .commit-context.expanded {
+      max-height: 400px;
+      color: var(--text);
+    }
+
+    .commit-context.expanded::after { display: none; }
+
+    .empty-state {
+      padding: 3rem 1.5rem;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.75rem;
+      line-height: 2;
+    }
+
+    .empty-state .hint {
+      font-size: 0.65rem;
+      opacity: 0.6;
+      margin-top: 0.5rem;
+    }
+
+    /* Refresh button */
+    .refresh-btn {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 0.3rem 0.75rem;
+      font-family: 'Space Mono', monospace;
+      font-size: 0.65rem;
+      letter-spacing: 0.1em;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .refresh-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    footer {
+      position: relative;
+      z-index: 1;
+      padding: 1.5rem 3rem;
+      border-top: 1px solid var(--border);
+      margin-top: 2.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .footer-text {
+      font-size: 0.65rem;
+      color: var(--muted);
+      letter-spacing: 0.08em;
+    }
+
+    .footer-text a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    @media (max-width: 900px) {
+      header, main, footer { padding: 1.25rem; }
+      .stats-row { grid-template-columns: repeat(2, 1fr); }
+      .grid-2 { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-mark"></div>
+    <div>
+      <div class="logo-text">Dark<span>Matter</span></div>
+      <div class="tagline">Git for AI agent context</div>
+    </div>
+  </div>
+  <div class="status-pill">
+    <div class="status-dot"></div>
+    NETWORK ACTIVE
+  </div>
+</header>
+
+<main>
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-label">Registered Agents</div>
+      <div class="stat-value accent" id="stat-agents">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Total Commits</div>
+      <div class="stat-value" id="stat-commits">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Verified Handoffs</div>
+      <div class="stat-value verified" id="stat-verified">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Rejected (Tampered)</div>
+      <div class="stat-value danger" id="stat-failed">—</div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">Registered Agents</div>
+        <div class="panel-count" id="agent-count">0</div>
+      </div>
+      <div class="agent-list" id="agent-list">
+        <div class="empty-state">
+          No agents registered yet.
+          <div class="hint">Run demo.js to register agents</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">Commit Timeline</div>
+        <button class="refresh-btn" onclick="loadData()">↻ REFRESH</button>
+      </div>
+      <div class="commit-list" id="commit-list">
+        <div class="empty-state">
+          No commits yet.
+          <div class="hint">Run demo.js to see agent handoffs</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="footer-text">
+    DarkMatter — <a href="https://github.com" target="_blank">GitHub</a> — MIT License
+  </div>
+  <div class="footer-text">
+    Agent identity infrastructure · Signed context handoffs
+  </div>
+</footer>
+
+<script>
+  function initials(name) {
+    return name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+  }
+
+  function timeAgo(ts) {
+    const d = Math.floor((Date.now() - new Date(ts)) / 1000);
+    if (d < 60) return `${d}s ago`;
+    if (d < 3600) return `${Math.floor(d/60)}m ago`;
+    return `${Math.floor(d/3600)}h ago`;
+  }
+
+  async function loadData() {
+    try {
+      const [agents, commits] = await Promise.all([
+        fetch('/api/agents').then(r => r.json()),
+        fetch('/api/commits').then(r => r.json()),
+      ]);
+
+      // Stats
+      const verified = commits.filter(c => c.verified).length;
+      const failed = commits.filter(c => !c.verified).length;
+      document.getElementById('stat-agents').textContent = agents.length;
+      document.getElementById('stat-commits').textContent = commits.length;
+      document.getElementById('stat-verified').textContent = verified;
+      document.getElementById('stat-failed').textContent = failed;
+      document.getElementById('agent-count').textContent = agents.length;
+
+      // Agents
+      const agentEl = document.getElementById('agent-list');
+      if (agents.length === 0) {
+        agentEl.innerHTML = `<div class="empty-state">No agents registered yet.<div class="hint">Run: node demo.js</div></div>`;
+      } else {
+        agentEl.innerHTML = agents.map(a => `
+          <div class="agent-row">
+            <div class="agent-avatar">${initials(a.agentName)}</div>
+            <div class="agent-info">
+              <div class="agent-name">${a.agentName}</div>
+              <div class="agent-id">${a.agentId}</div>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      // Commits
+      const commitEl = document.getElementById('commit-list');
+      if (commits.length === 0) {
+        commitEl.innerHTML = `<div class="empty-state">No commits yet.<div class="hint">Run: node demo.js</div></div>`;
+      } else {
+        commitEl.innerHTML = commits.map(c => `
+          <div class="commit-row">
+            <div class="commit-meta">
+              <span class="badge ${c.verified ? 'verified' : 'failed'}">
+                ${c.verified ? '✓ VERIFIED' : '✗ REJECTED'}
+              </span>
+              <div class="commit-flow">
+                <span class="agent-chip">${c.from}</span>
+                <span class="arrow">──▶</span>
+                <span class="agent-chip">${c.to}</span>
+              </div>
+              <span class="commit-time">${timeAgo(c.timestamp)}</span>
+            </div>
+            <div class="commit-context" onclick="this.classList.toggle('expanded')">
+              ${JSON.stringify(c.context, null, 2)}
+            </div>
+          </div>
+        `).join('');
+      }
+    } catch (e) {
+      console.error('Failed to load:', e);
+    }
+  }
+
+  // Load on start, then every 5 seconds
+  loadData();
+  setInterval(loadData, 5000);
+</script>
+</body>
+</html>
