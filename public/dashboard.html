@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard — DarkMatter</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:#0d1117; --bg2:#161b22; --bg3:#21262d;
+      --border:#30363d; --border2:#21262d;
+      --text:#e6edf3; --text2:#7d8590; --text3:#3d444e;
+      --accent:#58a6ff; --green:#3fb950; --red:#f85149;
+      --amber:#d29922; --purple:#bc8cff;
+      --mono:'IBM Plex Mono',monospace; --sans:'Geist',sans-serif;
+    }
+    body { background:var(--bg); color:var(--text); font-family:var(--sans); min-height:100vh; -webkit-font-smoothing:antialiased; }
+
+    /* ── HEADER ── */
+    header { background:var(--bg2); border-bottom:1px solid var(--border); height:58px; display:flex; align-items:center; padding:0 2rem; gap:1rem; position:sticky; top:0; z-index:100; }
+    .logo { display:flex; align-items:center; gap:0.65rem; text-decoration:none; }
+    .logo-mark { width:28px; height:28px; }
+    .logo-name { font-weight:700; font-size:0.9rem; color:var(--text); }
+    .logo-name em { font-style:normal; color:var(--accent); }
+    .hsep { width:1px; height:18px; background:var(--border); }
+    .hpage { font-size:0.82rem; color:var(--text2); font-weight:500; }
+    .hright { margin-left:auto; display:flex; align-items:center; gap:0.75rem; }
+    .user-email { font-family:var(--mono); font-size:0.65rem; color:var(--text3); }
+    .logout-btn { background:var(--bg3); border:1px solid var(--border); color:var(--text2); padding:0.28rem 0.7rem; border-radius:6px; font-size:0.75rem; cursor:pointer; font-family:var(--sans); transition:all 0.15s; }
+    .logout-btn:hover { border-color:var(--red); color:var(--red); }
+
+    /* ── LAYOUT ── */
+    .layout { max-width:960px; margin:0 auto; padding:2rem; display:grid; grid-template-columns:1fr; gap:2rem; }
+
+    /* ── SECTION ── */
+    .sec-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem; }
+    .sec-title { font-size:0.95rem; font-weight:600; color:var(--text); }
+    .sec-sub { font-size:0.78rem; color:var(--text2); margin-top:0.15rem; }
+
+    /* ── CREATE AGENT ── */
+    .create-bar { display:flex; gap:0.65rem; align-items:center; }
+    .create-input { flex:1; background:var(--bg2); border:1px solid var(--border); border-radius:6px; padding:0.6rem 0.85rem; color:var(--text); font-family:var(--sans); font-size:0.85rem; outline:none; transition:border-color 0.15s; max-width:320px; }
+    .create-input:focus { border-color:var(--accent); }
+    .create-input::placeholder { color:var(--text3); }
+    .create-btn { background:var(--accent); color:#0d1117; font-weight:600; font-size:0.82rem; padding:0.6rem 1.1rem; border-radius:6px; border:none; cursor:pointer; font-family:var(--sans); transition:filter 0.15s; white-space:nowrap; }
+    .create-btn:hover { filter:brightness(1.1); }
+    .create-btn:disabled { opacity:0.5; cursor:not-allowed; }
+
+    /* ── AGENT CARDS ── */
+    .agents-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(420px, 1fr)); gap:1rem; }
+    .agent-card { background:var(--bg2); border:1px solid var(--border); border-radius:8px; overflow:hidden; }
+    .agent-card-head { padding:1rem 1.1rem 0.75rem; border-bottom:1px solid var(--border2); display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; }
+    .agent-name-row { display:flex; align-items:center; gap:0.6rem; }
+    .agent-status { width:7px; height:7px; border-radius:50%; background:var(--green); box-shadow:0 0 6px var(--green); flex-shrink:0; }
+    .agent-name { font-size:0.9rem; font-weight:600; color:var(--text); }
+    .agent-id { font-family:var(--mono); font-size:0.62rem; color:var(--text3); margin-top:0.15rem; }
+    .agent-actions { display:flex; gap:0.4rem; flex-shrink:0; }
+    .agent-btn { background:none; border:1px solid var(--border); color:var(--text2); padding:0.2rem 0.55rem; border-radius:5px; font-size:0.7rem; cursor:pointer; font-family:var(--sans); transition:all 0.12s; }
+    .agent-btn:hover { border-color:var(--border2); color:var(--text); background:var(--bg3); }
+    .agent-btn.danger:hover { border-color:var(--red); color:var(--red); }
+    .agent-card-body { padding:0.85rem 1.1rem; }
+    .api-key-label { font-family:var(--mono); font-size:0.58rem; color:var(--text3); letter-spacing:0.1em; text-transform:uppercase; margin-bottom:0.35rem; }
+    .api-key-row { display:flex; align-items:center; gap:0.5rem; }
+    .api-key-val { font-family:var(--mono); font-size:0.72rem; color:var(--text); background:var(--bg); border:1px solid var(--border); border-radius:5px; padding:0.45rem 0.7rem; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; letter-spacing:0.02em; }
+    .copy-btn { background:var(--bg3); border:1px solid var(--border); color:var(--text2); padding:0.42rem 0.65rem; border-radius:5px; font-size:0.72rem; cursor:pointer; font-family:var(--mono); white-space:nowrap; transition:all 0.12s; flex-shrink:0; }
+    .copy-btn:hover { border-color:var(--accent); color:var(--accent); }
+    .copy-btn.copied { border-color:var(--green); color:var(--green); }
+    .agent-meta { font-size:0.68rem; color:var(--text3); margin-top:0.6rem; display:flex; gap:1rem; }
+    .usage-hint { margin-top:0.75rem; background:var(--bg); border:1px solid var(--border2); border-radius:5px; padding:0.55rem 0.7rem; font-family:var(--mono); font-size:0.62rem; color:var(--text3); line-height:1.7; }
+    .usage-hint .hl { color:var(--accent); }
+
+    /* ── EMPTY AGENTS ── */
+    .agents-empty { background:var(--bg2); border:1px solid var(--border); border-radius:8px; padding:2.5rem; text-align:center; }
+    .agents-empty-icon { font-size:2rem; margin-bottom:0.75rem; }
+    .agents-empty-title { font-size:0.9rem; font-weight:600; color:var(--text); margin-bottom:0.35rem; }
+    .agents-empty-sub { font-size:0.8rem; color:var(--text2); }
+
+    /* ── COMMIT LOG ── */
+    .log-wrap { background:var(--bg2); border:1px solid var(--border); border-radius:8px; overflow:hidden; }
+    .log-cols { display:grid; grid-template-columns:1fr 160px 80px; gap:1rem; padding:0.5rem 1.1rem; background:var(--bg3); border-bottom:1px solid var(--border); font-family:var(--mono); font-size:0.57rem; color:var(--text3); letter-spacing:0.1em; text-transform:uppercase; }
+    .cr { display:grid; grid-template-columns:1fr 160px 80px; gap:1rem; padding:0.8rem 1.1rem; border-bottom:1px solid var(--border2); align-items:center; transition:background 0.1s; }
+    .cr:last-child { border-bottom:none; }
+    .cr:hover { background:var(--bg3); }
+    .cbadge { display:inline-flex; align-items:center; gap:0.25rem; font-family:var(--mono); font-size:0.57rem; padding:0.1rem 0.38rem; border-radius:100px; border:1px solid; flex-shrink:0; }
+    .cbadge.v { color:var(--green); border-color:rgba(63,185,80,0.3); background:rgba(63,185,80,0.08); }
+    .cbadge.r { color:var(--red);   border-color:rgba(248,81,73,0.3);  background:rgba(248,81,73,0.08); }
+    .cmsg { display:flex; align-items:center; gap:0.45rem; margin-bottom:0.15rem; min-width:0; }
+    .ctxt { font-size:0.8rem; font-weight:500; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .cby { font-family:var(--mono); font-size:0.6rem; color:var(--text3); }
+    .choff { font-family:var(--mono); font-size:0.62rem; color:var(--amber); overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+    .tme { font-family:var(--mono); font-size:0.6rem; color:var(--text3); text-align:right; }
+    .log-empty { padding:2rem; text-align:center; font-size:0.82rem; color:var(--text3); }
+
+    /* ── TOAST ── */
+    .toast { position:fixed; bottom:1.5rem; right:1.5rem; background:var(--bg3); border:1px solid var(--border); border-radius:8px; padding:0.75rem 1rem; font-size:0.8rem; color:var(--text); box-shadow:0 8px 24px rgba(0,0,0,0.4); display:none; z-index:1000; }
+    .toast.show { display:block; animation:toastIn 0.2s ease; }
+    @keyframes toastIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+    @media (max-width:600px) {
+      .agents-grid { grid-template-columns:1fr; }
+      .log-cols { display:none; }
+      .cr { grid-template-columns:1fr auto; }
+      .choff { display:none; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <a class="logo" href="/">
+    <div class="logo-mark">
+      <svg viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="15" cy="15" r="12.5" stroke="#30363d" stroke-width="0.8"/>
+        <ellipse cx="15" cy="15" rx="12.5" ry="4.8" stroke="#21262d" stroke-width="0.7" transform="rotate(-35 15 15)"/>
+        <ellipse cx="15" cy="15" rx="12.5" ry="4.8" stroke="#21262d" stroke-width="0.7" transform="rotate(35 15 15)"/>
+        <ellipse cx="15" cy="15" rx="12.5" ry="4.8" stroke="#21262d" stroke-width="0.7"/>
+        <circle cx="15" cy="15" r="2.4" fill="#58a6ff"/>
+        <circle cx="27.5" cy="15" r="1.4" fill="#58a6ff" opacity="0.7"/>
+        <circle cx="6" cy="9.5" r="1.1" fill="#3fb950" opacity="0.6"/>
+        <circle cx="21.5" cy="25" r="1.1" fill="#d29922" opacity="0.6"/>
+      </svg>
+    </div>
+    <div class="logo-name">Dark<em>Matter</em></div>
+  </a>
+  <div class="hsep"></div>
+  <div class="hpage">Dashboard</div>
+  <div class="hright">
+    <div class="user-email" id="user-email"></div>
+    <button class="logout-btn" onclick="logout()">Sign out</button>
+  </div>
+</header>
+
+<div class="layout">
+
+  <!-- CREATE AGENT -->
+  <div>
+    <div class="sec-head">
+      <div>
+        <div class="sec-title">Your Agents</div>
+        <div class="sec-sub">Create an agent to get an API key you can use in your code</div>
+      </div>
+    </div>
+    <div class="create-bar" style="margin-bottom:1.25rem">
+      <input class="create-input" id="agent-name-input" placeholder="e.g. analysis-agent, gpt-writer, claude-researcher" maxlength="60" />
+      <button class="create-btn" id="create-btn" onclick="createAgent()">+ Create Agent</button>
+    </div>
+    <div class="agents-grid" id="agents-grid">
+      <div class="agents-empty">
+        <div class="agents-empty-icon">🤖</div>
+        <div class="agents-empty-title">No agents yet</div>
+        <div class="agents-empty-sub">Create your first agent above to get an API key</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COMMIT LOG -->
+  <div>
+    <div class="sec-head">
+      <div>
+        <div class="sec-title">Commit Log</div>
+        <div class="sec-sub">Context handoffs between your agents</div>
+      </div>
+      <button class="logout-btn" onclick="loadCommits()" style="border-color:var(--border2)">↻ Refresh</button>
+    </div>
+    <div class="log-wrap">
+      <div class="log-cols">
+        <div>Message</div>
+        <div>Handoff</div>
+        <div style="text-align:right">Time</div>
+      </div>
+      <div id="commit-list">
+        <div class="log-empty">No commits yet — commit context from one agent to another to see it here</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ── Auth check ──────────────────────────────────────
+  const raw = localStorage.getItem('dm_session');
+  if (!raw) { window.location.href = '/login'; }
+
+  let session;
+  try { session = JSON.parse(raw); } catch(e) { window.location.href = '/login'; }
+
+  const token = session?.access_token;
+  if (!token) window.location.href = '/login';
+
+  document.getElementById('user-email').textContent = session?.user?.email || '';
+
+  // ── Auth header helper ───────────────────────────────
+  const authHeaders = () => ({
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${token}`,
+  });
+
+  // ── Toast ────────────────────────────────────────────
+  function toast(msg, duration = 2500) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), duration);
+  }
+
+  // ── Time ago ─────────────────────────────────────────
+  function ago(ts) {
+    const d = Math.floor((Date.now() - new Date(ts)) / 1000);
+    if (d < 60) return d + 's ago';
+    if (d < 3600) return Math.floor(d/60) + 'm ago';
+    if (d < 86400) return Math.floor(d/3600) + 'h ago';
+    return new Date(ts).toLocaleDateString();
+  }
+
+  // ── Create agent ─────────────────────────────────────
+  async function createAgent() {
+    const input = document.getElementById('agent-name-input');
+    const btn   = document.getElementById('create-btn');
+    const name  = input.value.trim();
+
+    if (!name) { toast('Enter a name for your agent'); return; }
+
+    btn.disabled = true;
+    btn.textContent = 'Creating...';
+
+    try {
+      const res  = await fetch('/dashboard/agents', { method:'POST', headers: authHeaders(), body: JSON.stringify({ agentName: name }) });
+      const data = await res.json();
+
+      if (data.error) { toast('Error: ' + data.error); return; }
+
+      input.value = '';
+      toast('✓ Agent created — copy your API key');
+      await loadAgents();
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '+ Create Agent';
+    }
+  }
+
+  // ── Load agents ───────────────────────────────────────
+  async function loadAgents() {
+    try {
+      const res   = await fetch('/dashboard/agents', { headers: authHeaders() });
+      const data  = await res.json();
+      const grid  = document.getElementById('agents-grid');
+
+      if (!data.length) {
+        grid.innerHTML = `<div class="agents-empty"><div class="agents-empty-icon">🤖</div><div class="agents-empty-title">No agents yet</div><div class="agents-empty-sub">Create your first agent above to get an API key</div></div>`;
+        return;
+      }
+
+      grid.innerHTML = data.map(a => `
+        <div class="agent-card" id="card-${a.agentId}">
+          <div class="agent-card-head">
+            <div>
+              <div class="agent-name-row">
+                <div class="agent-status"></div>
+                <div class="agent-name">${escHtml(a.agentName)}</div>
+              </div>
+              <div class="agent-id">${a.agentId}</div>
+            </div>
+            <div class="agent-actions">
+              <button class="agent-btn" onclick="rotateKey('${a.agentId}')">↻ Rotate key</button>
+              <button class="agent-btn danger" onclick="deleteAgent('${a.agentId}', '${escHtml(a.agentName)}')">Delete</button>
+            </div>
+          </div>
+          <div class="agent-card-body">
+            <div class="api-key-label">API Key</div>
+            <div class="api-key-row">
+              <div class="api-key-val" id="key-${a.agentId}">${a.apiKey}</div>
+              <button class="copy-btn" id="copy-${a.agentId}" onclick="copyKey('${a.agentId}', '${a.apiKey}')">Copy</button>
+            </div>
+            <div class="agent-meta">
+              <span>Created ${ago(a.createdAt)}</span>
+              ${a.lastActive ? `<span>Last active ${ago(a.lastActive)}</span>` : '<span>Never used</span>'}
+            </div>
+            <div class="usage-hint">
+              <span style="color:var(--text3)"># Use in your code:</span><br>
+              Authorization: Bearer <span class="hl">${a.apiKey}</span>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    } catch(e) {
+      console.error(e);
+    }
+  }
+
+  // ── Copy API key ─────────────────────────────────────
+  function copyKey(agentId, key) {
+    navigator.clipboard.writeText(key);
+    const btn = document.getElementById('copy-' + agentId);
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+    toast('API key copied to clipboard');
+  }
+
+  // ── Rotate API key ────────────────────────────────────
+  async function rotateKey(agentId) {
+    if (!confirm('Rotate API key? Your current key will stop working immediately.')) return;
+    try {
+      const res  = await fetch(`/dashboard/agents/${agentId}/rotate`, { method:'POST', headers: authHeaders() });
+      const data = await res.json();
+      if (data.error) { toast('Error: ' + data.error); return; }
+      toast('✓ API key rotated — copy your new key');
+      await loadAgents();
+    } catch(e) {
+      toast('Something went wrong');
+    }
+  }
+
+  // ── Delete agent ─────────────────────────────────────
+  async function deleteAgent(agentId, name) {
+    if (!confirm(`Delete agent "${name}"? This cannot be undone.`)) return;
+    try {
+      const res = await fetch(`/dashboard/agents/${agentId}`, { method:'DELETE', headers: authHeaders() });
+      if (res.ok) { toast('Agent deleted'); await loadAgents(); await loadCommits(); }
+    } catch(e) {
+      toast('Something went wrong');
+    }
+  }
+
+  // ── Load commits ─────────────────────────────────────
+  async function loadCommits() {
+    try {
+      const res  = await fetch('/dashboard/commits', { headers: authHeaders() });
+      const data = await res.json();
+      const list = document.getElementById('commit-list');
+
+      if (!data.length) {
+        list.innerHTML = '<div class="log-empty">No commits yet — commit context from one agent to another to see it here</div>';
+        return;
+      }
+
+      list.innerHTML = data.map(c => `
+        <div class="cr">
+          <div>
+            <div class="cmsg">
+              <span class="cbadge ${c.verified?'v':'r'}">${c.verified?'✓ verified':'✗ rejected'}</span>
+              <span class="ctxt">Context inherited — ${c.verified?'signature confirmed':'rejected'}</span>
+            </div>
+            <div class="cby">${escHtml(c.from)}</div>
+          </div>
+          <div class="choff">${escHtml(c.from)} ──▶ ${escHtml(c.to)}</div>
+          <div class="tme">${ago(c.timestamp)}</div>
+        </div>
+      `).join('');
+    } catch(e) {
+      console.error(e);
+    }
+  }
+
+  // ── Logout ────────────────────────────────────────────
+  async function logout() {
+    localStorage.removeItem('dm_session');
+    window.location.href = '/login';
+  }
+
+  // ── Escape HTML ───────────────────────────────────────
+  function escHtml(str) {
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // ── Enter key on input ────────────────────────────────
+  document.getElementById('agent-name-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') createAgent();
+  });
+
+  // ── Init ─────────────────────────────────────────────
+  loadAgents();
+  loadCommits();
+</script>
+</body>
+</html>

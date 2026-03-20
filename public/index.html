@@ -5,700 +5,463 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>DarkMatter — Git for AI Agents</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Geist:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg:       #0d1117;
-      --bg2:      #161b22;
-      --bg3:      #21262d;
-      --border:   #30363d;
-      --border2:  #21262d;
-      --text:     #e6edf3;
-      --text2:    #7d8590;
-      --text3:    #3d444e;
-      --accent:   #58a6ff;
-      --green:    #3fb950;
-      --green2:   #238636;
-      --red:      #f85149;
-      --amber:    #d29922;
-      --purple:   #bc8cff;
-      --mono:     'IBM Plex Mono', monospace;
-      --sans:     'Geist', sans-serif;
+      --bg:      #0d1117;
+      --bg2:     #161b22;
+      --bg3:     #21262d;
+      --border:  #30363d;
+      --text:    #e6edf3;
+      --text2:   #7d8590;
+      --text3:   #3d444e;
+      --accent:  #58a6ff;
+      --green:   #3fb950;
+      --red:     #f85149;
+      --amber:   #d29922;
+      --purple:  #bc8cff;
+      --mono:    'IBM Plex Mono', monospace;
+      --sans:    'Geist', sans-serif;
     }
 
     body {
       background: var(--bg);
       color: var(--text);
       font-family: var(--sans);
-      font-size: 14px;
+      font-size: 15px;
       line-height: 1.5;
       -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
     }
 
     /* ── HEADER ── */
     header {
-      background: var(--bg2);
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(13,17,23,0.92);
+      backdrop-filter: blur(16px);
       border-bottom: 1px solid var(--border);
       height: 62px;
-      display: flex;
-      align-items: center;
-      padding: 0 2rem;
-      gap: 1.25rem;
-      position: sticky;
-      top: 0;
-      z-index: 100;
+      display: flex; align-items: center;
+      padding: 0 2rem; gap: 1rem;
     }
 
     .logo {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
+      display: flex; align-items: center; gap: 0.75rem;
       text-decoration: none;
     }
 
-    .logo-mark { width: 38px; height: 38px; flex-shrink: 0; }
+    .logo-mark { width: 40px; height: 40px; flex-shrink: 0; }
 
-    .logo-words { display: flex; flex-direction: column; line-height: 1.2; }
+    .logo-words { display: flex; flex-direction: column; line-height: 1.15; }
 
     .logo-name {
-      font-family: var(--sans);
-      font-weight: 700;
-      font-size: 1.05rem;
-      color: var(--text);
-      letter-spacing: -0.01em;
+      font-weight: 800; font-size: 1.2rem;
+      color: var(--text); letter-spacing: -0.02em;
     }
 
     .logo-name em { font-style: normal; color: var(--accent); }
 
     .logo-sub {
       font-family: var(--mono);
-      font-size: 0.58rem;
-      color: var(--text3);
+      font-size: 0.56rem; color: var(--text3);
       letter-spacing: 0.08em;
     }
 
-    .hsep { width: 1px; height: 20px; background: var(--border); }
-
-    .hnav { display: flex; align-items: center; gap: 0.15rem; }
-
-    .hnav-link {
-      font-size: 0.82rem;
-      font-weight: 500;
-      color: var(--text2);
-      text-decoration: none;
-      padding: 0.3rem 0.65rem;
-      border-radius: 6px;
-      transition: background 0.15s, color 0.15s;
-    }
-
-    .hnav-link:hover { background: var(--bg3); color: var(--text); }
-
     .hright {
       margin-left: auto;
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
+      display: flex; align-items: center; gap: 0.6rem;
       position: relative;
     }
 
-    .live-chip {
-      display: flex;
-      align-items: center;
-      gap: 0.35rem;
-      font-family: var(--mono);
-      font-size: 0.6rem;
-      color: var(--green);
-      background: rgba(63,185,80,0.1);
-      border: 1px solid rgba(63,185,80,0.3);
-      border-radius: 100px;
-      padding: 0.22rem 0.65rem;
-      letter-spacing: 0.06em;
+    .btn-signin {
+      background: none; border: 1px solid var(--border);
+      color: var(--text2); padding: 0.32rem 0.85rem;
+      border-radius: 6px; font-size: 0.82rem; font-weight: 500;
+      text-decoration: none; font-family: var(--sans);
+      transition: all 0.15s;
     }
+    .btn-signin:hover { border-color: var(--text2); color: var(--text); }
 
-    .live-dot {
-      width: 5px; height: 5px;
-      border-radius: 50%;
-      background: var(--green);
-      box-shadow: 0 0 6px var(--green);
-      animation: blink 2s ease-in-out infinite;
+    .btn-signup {
+      background: var(--accent); border: none;
+      color: #0d1117; padding: 0.38rem 0.95rem;
+      border-radius: 6px; font-size: 0.82rem; font-weight: 700;
+      text-decoration: none; font-family: var(--sans);
+      transition: filter 0.15s;
     }
-
-    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    .btn-signup:hover { filter: brightness(1.1); }
 
     .hbtn {
-      background: var(--bg3);
-      border: 1px solid var(--border);
-      width: 32px; height: 32px;
-      border-radius: 6px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 4px;
-      cursor: pointer;
-      transition: background 0.15s;
+      background: var(--bg3); border: 1px solid var(--border);
+      width: 34px; height: 34px; border-radius: 6px;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 4px; cursor: pointer; transition: background 0.15s;
     }
-
     .hbtn:hover { background: var(--border); }
 
     .hbr {
-      display: block;
-      width: 13px; height: 1.5px;
-      background: var(--text2);
-      border-radius: 2px;
+      display: block; width: 13px; height: 1.5px;
+      background: var(--text2); border-radius: 2px;
     }
 
     .ddrop {
-      display: none;
-      position: absolute;
-      top: calc(100% + 8px);
-      right: 0;
-      min-width: 250px;
-      background: var(--bg2);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      box-shadow: 0 16px 48px rgba(0,0,0,0.5);
-      overflow: hidden;
-      z-index: 200;
+      display: none; position: absolute;
+      top: calc(100% + 8px); right: 0; min-width: 240px;
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 8px; box-shadow: 0 16px 48px rgba(0,0,0,0.5);
+      overflow: hidden; z-index: 200;
     }
-
     .ddrop.open { display: block; animation: ddin 0.12s ease; }
+    @keyframes ddin { from{opacity:0;transform:translateY(-5px)} to{opacity:1;transform:translateY(0)} }
 
-    @keyframes ddin {
-      from { opacity:0; transform:translateY(-5px); }
-      to   { opacity:1; transform:translateY(0); }
-    }
-
-    .ddhead {
-      padding: 0.6rem 1rem 0.3rem;
-      font-family: var(--mono);
-      font-size: 0.57rem;
-      color: var(--text3);
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-    }
+    .ddhead { padding:0.6rem 1rem 0.3rem; font-family:var(--mono); font-size:0.56rem; color:var(--text3); letter-spacing:0.14em; text-transform:uppercase; }
 
     .dditem {
-      display: flex;
-      align-items: center;
-      gap: 0.7rem;
-      padding: 0.6rem 1rem;
-      color: var(--text);
-      text-decoration: none;
-      font-size: 0.82rem;
-      font-weight: 500;
-      border-top: 1px solid var(--border2);
-      transition: background 0.1s;
+      display:flex; align-items:center; gap:0.7rem;
+      padding:0.6rem 1rem; color:var(--text); text-decoration:none;
+      font-size:0.82rem; font-weight:500;
+      border-top:1px solid var(--bg3); transition:background 0.1s;
     }
+    .dditem:hover { background:var(--bg3); }
+    .ddicon { color:var(--text2); font-size:0.9rem; }
+    .ddhint { font-size:0.65rem; color:var(--text3); font-weight:400; display:block; margin-top:1px; }
 
-    .dditem:hover { background: var(--bg3); }
-    .ddicon { color: var(--text2); font-size: 0.9rem; }
-    .ddhint { font-size: 0.66rem; color: var(--text3); font-weight: 400; display: block; margin-top: 1px; }
-
-    /* ── HERO ── */
+    /* ══════════════════════════════════════
+       HERO
+    ══════════════════════════════════════ */
     .hero {
-      border-bottom: 1px solid var(--border);
-      padding: 4rem 2rem 3.5rem;
+      display: flex; flex-direction: column;
+      align-items: center; text-align: center;
+      padding: 4rem 2rem 3rem;
+      position: relative;
     }
 
-    .hero-inner {
-      max-width: 960px;
-      margin: 0 auto;
-      display: grid;
-      grid-template-columns: 1fr 440px;
-      gap: 4rem;
-      align-items: start;
+    .hero::before {
+      content: '';
+      position: absolute; top: 0; left: 50%;
+      transform: translateX(-50%);
+      width: 700px; height: 380px;
+      background: radial-gradient(ellipse at top, rgba(88,166,255,0.06) 0%, transparent 70%);
+      pointer-events: none;
     }
 
-    .hero-chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
-      font-family: var(--mono);
-      font-size: 0.65rem;
-      color: var(--accent);
-      background: rgba(88,166,255,0.08);
-      border: 1px solid rgba(88,166,255,0.2);
-      border-radius: 100px;
-      padding: 0.22rem 0.7rem;
-      margin-bottom: 1.25rem;
-      letter-spacing: 0.04em;
+    /* ── MASCOT: Qubit the dark star ── */
+    .mascot-wrap {
+      margin-bottom: 2.25rem;
+      position: relative; z-index: 1;
     }
 
-    .chip-dot {
-      width: 4px; height: 4px;
-      border-radius: 50%;
-      background: var(--accent);
-    }
+    .mascot { width: 130px; height: 130px; }
 
     .hero-h1 {
-      font-family: var(--sans);
-      font-size: 2.4rem;
-      font-weight: 700;
-      line-height: 1.15;
-      color: var(--text);
-      margin-bottom: 0.75rem;
-      letter-spacing: -0.03em;
+      font-size: clamp(2.6rem, 6vw, 3.8rem);
+      font-weight: 800; line-height: 1.08;
+      color: var(--text); margin-bottom: 0.75rem;
+      letter-spacing: -0.04em;
+      position: relative; z-index: 1;
     }
 
     .hero-h1 span { color: var(--accent); }
 
     .hero-sub {
-      font-size: 1rem;
-      color: var(--text2);
-      line-height: 1.65;
-      margin-bottom: 0.4rem;
-      font-weight: 400;
+      font-size: 1.05rem; color: var(--text2);
+      max-width: 460px; line-height: 1.7;
+      margin-bottom: 0.4rem; font-weight: 400;
+      position: relative; z-index: 1;
     }
 
     .hero-tagline {
-      font-family: var(--mono);
-      font-size: 0.75rem;
-      color: var(--text3);
-      margin-bottom: 0;
+      font-family: var(--mono); font-size: 0.73rem;
+      color: var(--text3); margin-bottom: 2rem;
+      position: relative; z-index: 1;
     }
 
-    /* ── QUICKSTART (right column) ── */
-    .qs {
+    .hero-cta {
+      display: flex; align-items: center; gap: 0.75rem;
+      flex-wrap: wrap; justify-content: center;
+      position: relative; z-index: 1;
+      margin-bottom: 3.5rem;
+    }
+
+    .cta-primary {
+      display: inline-flex; align-items: center; gap: 0.45rem;
+      background: var(--accent); color: #0d1117;
+      font-weight: 700; font-size: 0.95rem;
+      padding: 0.72rem 1.5rem; border-radius: 8px;
+      text-decoration: none; transition: filter 0.15s;
+      letter-spacing: -0.01em;
+    }
+    .cta-primary:hover { filter: brightness(1.1); }
+
+    .cta-secondary {
+      display: inline-flex; align-items: center; gap: 0.45rem;
+      background: none; color: var(--text2);
+      font-weight: 500; font-size: 0.95rem;
+      padding: 0.72rem 1.25rem; border-radius: 8px;
+      text-decoration: none; border: 1px solid var(--border);
+      transition: all 0.15s;
+    }
+    .cta-secondary:hover { border-color: var(--text2); color: var(--text); }
+
+    /* ── STATS ── */
+    .stats-row {
+      display: flex; align-items: center; gap: 2.5rem;
+      justify-content: center; flex-wrap: wrap;
+      position: relative; z-index: 1;
+    }
+
+    .stat-item { text-align: center; }
+
+    .stat-num {
+      font-size: 1.9rem; font-weight: 800;
+      line-height: 1; margin-bottom: 0.2rem;
+      color: var(--text); font-variant-numeric: tabular-nums;
+    }
+    .stat-num.c { color: var(--accent); }
+    .stat-num.g { color: var(--green); }
+    .stat-num.r { color: var(--red); }
+
+    .stat-lbl { font-size: 0.7rem; color: var(--text3); }
+    .stat-sep { width: 1px; height: 28px; background: var(--border); }
+
+    /* ══════════════════════════════════════
+       USE CASE SECTION
+    ══════════════════════════════════════ */
+    .usecase-section {
       background: var(--bg2);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      overflow: hidden;
-    }
-
-    .qs-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0.75rem 1.1rem;
-      border-bottom: 1px solid var(--border);
-      background: var(--bg3);
-    }
-
-    .qs-title {
-      font-family: var(--mono);
-      font-size: 0.65rem;
-      color: var(--text2);
-      letter-spacing: 0.08em;
-    }
-
-    .qs-dots {
-      display: flex;
-      gap: 5px;
-    }
-
-    .qs-dot {
-      width: 10px; height: 10px;
-      border-radius: 50%;
-    }
-
-    .qs-dot.r { background: #ff5f57; }
-    .qs-dot.y { background: #ffbd2e; }
-    .qs-dot.g { background: #28c840; }
-
-    .qs-body {
-      padding: 1.1rem;
-      display: flex;
-      flex-direction: column;
-      gap: 1.1rem;
-    }
-
-    .qs-step-label {
-      font-family: var(--mono);
-      font-size: 0.6rem;
-      color: var(--text3);
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      margin-bottom: 0.4rem;
-    }
-
-    .code-block {
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 0.8rem 1rem;
-      font-family: var(--mono);
-      font-size: 0.68rem;
-      line-height: 1.8;
-      overflow-x: auto;
-    }
-
-    .c  { color: var(--text3); }
-    .cm { color: var(--text); }
-    .fl { color: var(--accent); }
-    .st { color: #a5d6ff; }
-    .ok { color: var(--green); }
-    .er { color: var(--red); }
-    .url{ color: var(--green); }
-    .sp { display: block; height: 0.3rem; }
-
-    .qs-divider {
-      border: none;
       border-top: 1px solid var(--border);
-    }
-
-    /* ── MAIN ── */
-    .main {
-      max-width: 960px;
-      margin: 0 auto;
+      border-bottom: 1px solid var(--border);
       padding: 2.5rem 2rem;
-      display: grid;
-      grid-template-columns: 1fr 280px;
-      gap: 2.5rem;
-      align-items: start;
     }
 
-    /* ── SECTION HEADING ── */
-    .sec-head {
-      font-size: 0.78rem;
-      font-weight: 600;
-      color: var(--text2);
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-      margin-bottom: 1rem;
-      padding-bottom: 0.6rem;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
+    .usecase-inner {
+      max-width: 860px; margin: 0 auto;
     }
 
-    /* ── HOW IT WORKS ── */
-    .flow {
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      overflow: hidden;
-      margin-bottom: 2.5rem;
+    .usecase-title {
+      text-align: center; font-size: 1.2rem; font-weight: 700;
+      color: var(--text); margin-bottom: 0.4rem; letter-spacing: -0.02em;
     }
 
-    .flow-item {
-      padding: 1.1rem 1.25rem;
-      border-bottom: 1px solid var(--border);
-      transition: background 0.1s;
+    .usecase-sub {
+      text-align: center; font-size: 0.85rem; color: var(--text2);
+      margin-bottom: 2rem;
     }
 
-    .flow-item:last-child { border-bottom: none; }
-    .flow-item:hover { background: var(--bg2); }
+    .usecase-grid {
+      display: grid; grid-template-columns: repeat(3,1fr); gap: 1rem;
+    }
 
-    .flow-title {
-      font-size: 0.9rem;
-      font-weight: 600;
-      color: var(--text);
+    .uc-card {
+      background: var(--bg);
+      border: 1px solid var(--border); border-radius: 8px;
+      padding: 1.25rem;
+    }
+
+    .uc-icon { font-size: 1.4rem; margin-bottom: 0.6rem; }
+
+    .uc-title {
+      font-size: 0.88rem; font-weight: 700; color: var(--text);
       margin-bottom: 0.35rem;
-      display: flex;
-      align-items: center;
-      gap: 0.6rem;
-      flex-wrap: wrap;
     }
 
-    .ftag {
-      font-family: var(--mono);
-      font-size: 0.57rem;
-      padding: 0.1rem 0.45rem;
-      border-radius: 100px;
-      border: 1px solid;
+    .uc-desc {
+      font-size: 0.78rem; color: var(--text2); line-height: 1.65;
     }
 
-    .tlocal  { color:var(--green);  border-color:rgba(63,185,80,0.3);  background:rgba(63,185,80,0.08); }
-    .tpub    { color:var(--accent); border-color:rgba(88,166,255,0.3); background:rgba(88,166,255,0.08); }
-    .tverify { color:var(--purple); border-color:rgba(188,140,255,0.3);background:rgba(188,140,255,0.08); }
+    /* ══════════════════════════════════════
+       HOW IT WORKS
+    ══════════════════════════════════════ */
+    .section { max-width: 860px; margin: 0 auto; padding: 3rem 2rem; }
 
-    .flow-desc {
-      font-size: 0.82rem;
-      color: var(--text2);
-      line-height: 1.65;
+    .section-title {
+      text-align: center; font-size: 1.3rem; font-weight: 700;
+      color: var(--text); margin-bottom: 0.4rem; letter-spacing: -0.02em;
     }
 
-    .flow-desc code {
-      font-family: var(--mono);
-      font-size: 0.75rem;
-      background: var(--bg3);
-      border: 1px solid var(--border);
-      padding: 0.1rem 0.35rem;
-      border-radius: 4px;
-      color: var(--text);
-    }
-
-    /* ── GIT TABLE ── */
-    .git-table {
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      overflow: hidden;
+    .section-sub {
+      text-align: center; font-size: 0.85rem; color: var(--text2);
       margin-bottom: 2.5rem;
     }
 
-    .git-row {
-      display: grid;
-      grid-template-columns: 120px 16px 1fr 1fr;
-      gap: 0.75rem;
-      padding: 0.7rem 1.1rem;
-      border-bottom: 1px solid var(--border);
-      align-items: center;
-      transition: background 0.1s;
+    .steps {
+      display: grid; grid-template-columns: 1fr auto 1fr auto 1fr;
+      gap: 0; align-items: start; margin-bottom: 2.5rem;
     }
 
-    .git-row.head { background: var(--bg3); border-bottom: 1px solid var(--border); }
-    .git-row:last-child { border-bottom: none; }
-    .git-row:not(.head):hover { background: var(--bg2); }
-
-    .gc { font-family: var(--mono); font-size: 0.7rem; }
-    .gc.lbl { font-size: 0.58rem; color: var(--text3); letter-spacing: 0.1em; text-transform: uppercase; }
-    .gc.from { color: var(--text3); }
-    .gc.arr  { color: var(--text3); }
-    .gc.to   { color: var(--accent); font-weight: 500; }
-    .gc.desc { font-family: var(--sans); font-size: 0.78rem; color: var(--text2); }
-
-    /* ── COMMIT LOG ── */
-    .log-top {
-      display: flex;
-      align-items: center;
-      gap: 0.65rem;
-      margin-bottom: 0.75rem;
+    .step {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 10px; padding: 1.4rem 1.1rem;
+      display: flex; flex-direction: column;
+      align-items: center; text-align: center; gap: 0.65rem;
     }
 
-    .log-title { font-size: 0.9rem; font-weight: 600; color: var(--text); }
+    .step-emoji { font-size: 1.8rem; line-height: 1; }
+    .step-title { font-size: 0.88rem; font-weight: 700; color: var(--text); }
+    .step-desc  { font-size: 0.76rem; color: var(--text2); line-height: 1.6; }
+
+    .step-tag {
+      font-family: var(--mono); font-size: 0.57rem;
+      padding: 0.1rem 0.45rem; border-radius: 100px; border: 1px solid;
+    }
+    .tg { color:var(--green); border-color:rgba(63,185,80,0.3); background:rgba(63,185,80,0.08); }
+    .ta { color:var(--accent);border-color:rgba(88,166,255,0.3);background:rgba(88,166,255,0.08); }
+    .tv { color:var(--purple);border-color:rgba(188,140,255,0.3);background:rgba(188,140,255,0.08); }
+
+    .step-arrow {
+      display:flex; flex-direction:column; align-items:center;
+      justify-content:center; padding:0 0.4rem; padding-top:2.25rem;
+      color:var(--text3); font-size:1.1rem;
+    }
+    .arrow-label { font-family:var(--mono); font-size:0.54rem; color:var(--text3); margin-top:0.25rem; white-space:nowrap; }
+
+    /* ── CODE BLOCK ── */
+    .code-wrap { background:var(--bg2); border:1px solid var(--border); border-radius:10px; overflow:hidden; }
+
+    .code-header {
+      background:var(--bg3); border-bottom:1px solid var(--border);
+      padding:0.6rem 1rem;
+      display:flex; align-items:center; gap:0.5rem;
+    }
+
+    .code-dots { display:flex; gap:5px; }
+    .cd { width:10px; height:10px; border-radius:50%; }
+    .cd.r { background:#ff5f57; } .cd.y { background:#ffbd2e; } .cd.g { background:#28c840; }
+
+    .code-filename { font-family:var(--mono); font-size:0.62rem; color:var(--text3); margin-left:0.5rem; flex:1; }
+
+    .copy-code-btn {
+      background:var(--bg2); border:1px solid var(--border);
+      color:var(--text2); padding:0.22rem 0.6rem;
+      border-radius:5px; font-family:var(--mono); font-size:0.6rem;
+      cursor:pointer; transition:all 0.15s; flex-shrink:0;
+    }
+    .copy-code-btn:hover { border-color:var(--accent); color:var(--accent); }
+    .copy-code-btn.copied { border-color:var(--green); color:var(--green); }
+
+    .code-body {
+      padding:1.25rem 1.5rem; font-family:var(--mono);
+      font-size:0.71rem; line-height:1.9; overflow-x:auto;
+    }
+
+    .cc { color:var(--text3); }
+    .cm { color:var(--text); }
+    .fl { color:var(--accent); }
+    .st { color:#a5d6ff; }
+    .ok { color:var(--green); }
+    .er { color:var(--red); }
+    .sp { display:block; height:0.4rem; }
+
+    /* ── GIT MAP ── */
+    .git-map {
+      display:grid; grid-template-columns:repeat(5,1fr);
+      border:1px solid var(--border); border-radius:10px; overflow:hidden;
+    }
+
+    .gmc {
+      padding:1rem 0.85rem; border-right:1px solid var(--border);
+      display:flex; flex-direction:column; gap:0.22rem; transition:background 0.1s;
+    }
+    .gmc:last-child { border-right:none; }
+    .gmc:hover { background:var(--bg2); }
+
+    .gmc-from { font-family:var(--mono); font-size:0.64rem; color:var(--text3); }
+    .gmc-arr  { font-size:0.58rem; color:var(--text3); }
+    .gmc-to   { font-family:var(--mono); font-size:0.67rem; color:var(--accent); font-weight:500; }
+    .gmc-note { font-size:0.67rem; color:var(--text3); font-weight:300; }
+
+    /* ══════════════════════════════════════
+       COMMIT LOG
+    ══════════════════════════════════════ */
+    .log-section { max-width:860px; margin:0 auto; padding:0 2rem 3rem; }
+
+    .log-bar { display:flex; align-items:center; gap:0.75rem; margin-bottom:0.85rem; }
+    .log-bar-title { font-size:0.95rem; font-weight:600; color:var(--text); }
 
     .btag {
-      font-family: var(--mono);
-      font-size: 0.6rem;
-      color: var(--purple);
-      background: rgba(188,140,255,0.1);
-      border: 1px solid rgba(188,140,255,0.25);
-      border-radius: 100px;
-      padding: 0.14rem 0.55rem;
+      font-family:var(--mono); font-size:0.6rem; color:var(--purple);
+      background:rgba(188,140,255,0.1); border:1px solid rgba(188,140,255,0.25);
+      border-radius:100px; padding:0.14rem 0.55rem;
     }
 
     .rfbtn {
-      margin-left: auto;
-      background: var(--bg3);
-      border: 1px solid var(--border);
-      color: var(--text2);
-      padding: 0.28rem 0.7rem;
-      border-radius: 6px;
-      font-family: var(--sans);
-      font-size: 0.72rem;
-      font-weight: 500;
-      cursor: pointer;
-      transition: background 0.12s;
+      margin-left:auto; background:var(--bg3); border:1px solid var(--border);
+      color:var(--text2); padding:0.28rem 0.7rem; border-radius:6px;
+      font-family:var(--sans); font-size:0.72rem; font-weight:500;
+      cursor:pointer; transition:background 0.12s;
     }
+    .rfbtn:hover { background:var(--border); color:var(--text); }
 
-    .rfbtn:hover { background: var(--border); color: var(--text); }
-
-    .log-wrap {
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      overflow: hidden;
-    }
+    .log-wrap { background:var(--bg2); border:1px solid var(--border); border-radius:10px; overflow:hidden; }
 
     .log-cols {
-      display: grid;
-      grid-template-columns: 1fr 180px 80px 90px;
-      gap: 1rem;
-      padding: 0.55rem 1.1rem;
-      background: var(--bg3);
-      border-bottom: 1px solid var(--border);
-      font-family: var(--mono);
-      font-size: 0.57rem;
-      color: var(--text3);
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
+      display:grid; grid-template-columns:1fr 180px 80px 90px;
+      gap:1rem; padding:0.55rem 1.25rem;
+      background:var(--bg3); border-bottom:1px solid var(--border);
+      font-family:var(--mono); font-size:0.57rem;
+      color:var(--text3); letter-spacing:0.1em; text-transform:uppercase;
     }
 
     .cr {
-      display: grid;
-      grid-template-columns: 1fr 180px 80px 90px;
-      gap: 1rem;
-      padding: 0.85rem 1.1rem;
-      border-bottom: 1px solid var(--border);
-      align-items: center;
-      transition: background 0.1s;
-      animation: rowIn 0.18s ease;
+      display:grid; grid-template-columns:1fr 180px 80px 90px;
+      gap:1rem; padding:0.85rem 1.25rem;
+      border-bottom:1px solid var(--bg3);
+      align-items:center; transition:background 0.1s;
+      animation:rowIn 0.18s ease;
     }
-
-    @keyframes rowIn {
-      from { opacity:0; transform:translateX(-3px); }
-      to   { opacity:1; transform:translateX(0); }
-    }
-
-    .cr:last-child { border-bottom: none; }
-    .cr:hover { background: var(--bg2); }
+    @keyframes rowIn { from{opacity:0;transform:translateX(-3px)} to{opacity:1;transform:translateX(0)} }
+    .cr:last-child { border-bottom:none; }
+    .cr:hover { background:var(--bg3); }
 
     .cbadge {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.25rem;
-      font-family: var(--mono);
-      font-size: 0.58rem;
-      padding: 0.1rem 0.4rem;
-      border-radius: 100px;
-      border: 1px solid;
-      flex-shrink: 0;
+      display:inline-flex; align-items:center; gap:0.25rem;
+      font-family:var(--mono); font-size:0.58rem;
+      padding:0.1rem 0.4rem; border-radius:100px; border:1px solid; flex-shrink:0;
     }
+    .cbadge.v { color:var(--green); border-color:rgba(63,185,80,0.3); background:rgba(63,185,80,0.08); }
+    .cbadge.r { color:var(--red);   border-color:rgba(248,81,73,0.3); background:rgba(248,81,73,0.08); }
 
-    .cbadge.v { color:var(--green);  border-color:rgba(63,185,80,0.3);  background:rgba(63,185,80,0.08); }
-    .cbadge.r { color:var(--red);    border-color:rgba(248,81,73,0.3);  background:rgba(248,81,73,0.08); }
+    .cmsg { display:flex; align-items:center; gap:0.5rem; margin-bottom:0.15rem; min-width:0; }
+    .ctxt { font-size:0.8rem; font-weight:500; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .cby  { font-family:var(--mono); font-size:0.6rem; color:var(--text3); }
+    .choff { font-family:var(--mono); font-size:0.62rem; color:var(--amber); overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+    .tme  { font-family:var(--mono); font-size:0.6rem; color:var(--text3); text-align:right; }
+    .log-empty { padding:3rem; text-align:center; font-size:0.82rem; color:var(--text3); }
 
-    .cmsg {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      margin-bottom: 0.18rem;
-      min-width: 0;
-    }
-
-    .ctxt {
-      font-size: 0.82rem;
-      font-weight: 500;
-      color: var(--text);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .cby { font-family: var(--mono); font-size: 0.6rem; color: var(--text3); }
-
-    .choff {
-      display: flex;
-      align-items: center;
-      gap: 0.3rem;
-      font-family: var(--mono);
-      font-size: 0.62rem;
-      overflow: hidden;
-    }
-
-    .aref { color: var(--amber); font-size: 0.6rem; }
-    .harr { color: var(--text3); font-size: 0.52rem; }
-    .hsh  { font-family: var(--mono); font-size: 0.62rem; color: var(--accent); }
-    .tme  { font-family: var(--mono); font-size: 0.6rem; color: var(--text3); text-align: right; }
-
-    /* ── SIDEBAR ── */
-    .sidebar-card {
-      background: var(--bg2);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      overflow: hidden;
-      margin-bottom: 1.25rem;
-    }
-
-    .scard-head {
-      padding: 0.65rem 1rem;
-      background: var(--bg3);
-      border-bottom: 1px solid var(--border);
-      font-size: 0.8rem;
-      font-weight: 600;
-      color: var(--text);
-    }
-
-    .scard-body { padding: 0.85rem 1rem; }
-
-    .stat-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0.45rem 0;
-      border-bottom: 1px solid var(--border);
-      font-size: 0.8rem;
-    }
-
-    .stat-row:last-child { border-bottom: none; }
-    .stat-lbl { color: var(--text2); }
-
-    .stat-val {
-      font-family: var(--mono);
-      font-weight: 600;
-      font-size: 0.85rem;
-      color: var(--text);
-    }
-
-    .stat-val.g { color: var(--green); }
-    .stat-val.r { color: var(--red); }
-    .stat-val.b { color: var(--accent); }
-
-    .api-row {
-      display: flex;
-      align-items: flex-start;
-      gap: 0.6rem;
-      padding: 0.55rem 0;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .api-row:last-child { border-bottom: none; }
-
-    .meth {
-      font-family: var(--mono);
-      font-size: 0.58rem;
-      font-weight: 600;
-      padding: 0.12rem 0.38rem;
-      border-radius: 4px;
-      flex-shrink: 0;
-      margin-top: 1px;
-    }
-
-    .mpost { background: rgba(63,185,80,0.15); color: var(--green); }
-    .mget  { background: rgba(88,166,255,0.15); color: var(--accent); }
-
-    .api-path { font-family: var(--mono); font-size: 0.7rem; color: var(--text); font-weight: 500; }
-    .api-note { font-size: 0.7rem; color: var(--text3); }
-
-    /* ── EMPTY ── */
-    .empty {
-      padding: 1.5rem 1.1rem;
-    }
-
-    .empty-msg {
-      font-size: 0.82rem;
-      color: var(--text2);
-      margin-bottom: 1.1rem;
-    }
-
-    .empty-cmd {
-      background: var(--bg3);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 0.65rem 0.9rem;
-      font-family: var(--mono);
-      font-size: 0.68rem;
-      color: var(--text2);
-      margin-bottom: 0.5rem;
-      line-height: 1.7;
-    }
-
-    /* ── FOOTER ── */
+    /* ══════════════════════════════════════
+       FOOTER
+    ══════════════════════════════════════ */
     footer {
-      border-top: 1px solid var(--border);
-      background: var(--bg2);
-      padding: 1.1rem 2rem;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
+      border-top:1px solid var(--border); background:var(--bg2);
+      padding:1.75rem 2rem; text-align:center;
     }
 
-    .flinks { display: flex; align-items: center; gap: 1.25rem; }
-
-    .flink {
-      font-size: 0.75rem;
-      color: var(--text3);
-      text-decoration: none;
-      transition: color 0.15s;
+    .footer-logo {
+      display:flex; align-items:center; justify-content:center;
+      gap:0.6rem; text-decoration:none; margin-bottom:0.85rem;
     }
+    .footer-logo-mark { width:22px; height:22px; }
+    .footer-logo-name { font-weight:700; font-size:0.88rem; color:var(--text2); }
+    .footer-logo-name em { font-style:normal; color:var(--accent); }
 
-    .flink:hover { color: var(--accent); }
+    .footer-tagline { font-family:var(--mono); font-size:0.6rem; color:var(--text3); margin-bottom:1rem; }
 
-    .fright {
-      font-family: var(--mono);
-      font-size: 0.6rem;
-      color: var(--text3);
-    }
+    .footer-links { display:flex; align-items:center; justify-content:center; gap:1.5rem; flex-wrap:wrap; }
 
-    @media (max-width: 860px) {
-      .hero-inner { grid-template-columns: 1fr; gap: 2rem; }
-      .main { grid-template-columns: 1fr; }
-      .sidebar-card { display: none; }
-      .log-cols { display: none; }
-      .cr { grid-template-columns: 1fr auto; }
-      .choff, .hsh { display: none; }
+    .footer-link { font-size:0.75rem; color:var(--text3); text-decoration:none; transition:color 0.15s; }
+    .footer-link:hover { color:var(--accent); }
+
+    @media (max-width:700px) {
+      .steps { grid-template-columns:1fr; gap:1rem; }
+      .step-arrow { padding:0; margin:0 auto; transform:rotate(90deg); }
+      .usecase-grid { grid-template-columns:1fr; }
+      .git-map { grid-template-columns:repeat(2,1fr); }
+      .log-cols { display:none; }
+      .cr { grid-template-columns:1fr auto; }
+      .choff, .cr>:nth-child(3) { display:none; }
     }
   </style>
 </head>
@@ -706,18 +469,19 @@
 
 <!-- HEADER -->
 <header>
-  <a class="logo" href="https://github.com/bengunvl/darkmatter" target="_blank">
+  <a class="logo" href="/">
     <div class="logo-mark">
-      <svg viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="19" cy="19" r="16" stroke="#30363d" stroke-width="1"/>
-        <ellipse cx="19" cy="19" rx="16" ry="6.2" stroke="#21262d" stroke-width="0.9" transform="rotate(-35 19 19)"/>
-        <ellipse cx="19" cy="19" rx="16" ry="6.2" stroke="#21262d" stroke-width="0.9" transform="rotate(35 19 19)"/>
-        <ellipse cx="19" cy="19" rx="16" ry="6.2" stroke="#21262d" stroke-width="0.9"/>
-        <circle cx="19" cy="19" r="3.2" fill="#58a6ff"/>
-        <circle cx="19" cy="19" r="5"   stroke="#58a6ff" stroke-width="0.6" opacity="0.2"/>
-        <circle cx="35" cy="19" r="1.8" fill="#58a6ff" opacity="0.7"/>
-        <circle cx="7.5" cy="12" r="1.5" fill="#3fb950" opacity="0.7"/>
-        <circle cx="27"  cy="32" r="1.5" fill="#d29922" opacity="0.7"/>
+      <!-- Qubit mascot mini in header -->
+      <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="20" cy="20" r="16" stroke="#30363d" stroke-width="1"/>
+        <ellipse cx="20" cy="20" rx="16" ry="6" stroke="#21262d" stroke-width="0.8" transform="rotate(-40 20 20)"/>
+        <ellipse cx="20" cy="20" rx="16" ry="6" stroke="#21262d" stroke-width="0.8" transform="rotate(40 20 20)"/>
+        <ellipse cx="20" cy="20" rx="16" ry="6" stroke="#21262d" stroke-width="0.8"/>
+        <circle cx="20" cy="20" r="3" fill="#58a6ff"/>
+        <circle cx="20" cy="20" r="5" stroke="#58a6ff" stroke-width="0.5" opacity="0.2"/>
+        <circle cx="36" cy="20" r="1.8" fill="#58a6ff" opacity="0.7"/>
+        <circle cx="7"  cy="13" r="1.4" fill="#3fb950" opacity="0.65"/>
+        <circle cx="28" cy="33" r="1.4" fill="#d29922" opacity="0.65"/>
       </svg>
     </div>
     <div class="logo-words">
@@ -726,31 +490,29 @@
     </div>
   </a>
 
-  <div class="hsep"></div>
-
-  <nav class="hnav">
-    <a class="hnav-link" href="https://github.com/bengunvl/darkmatter#api-reference" target="_blank">Docs</a>
-    <a class="hnav-link" href="https://github.com/bengunvl/darkmatter" target="_blank">GitHub</a>
-  </nav>
-
   <div class="hright">
-    <div class="live-chip"><div class="live-dot"></div>Live</div>
+    <a class="btn-signin" href="/login">Sign in</a>
+    <a class="btn-signup" href="/signup">Sign up free</a>
     <button class="hbtn" onclick="toggleMenu()" id="hb">
       <span class="hbr"></span><span class="hbr"></span><span class="hbr"></span>
     </button>
     <div class="ddrop" id="dd">
       <div class="ddhead">DarkMatter</div>
+      <a class="dditem" href="/signup">
+        <span class="ddicon">✦</span>
+        <div>Sign up free<span class="ddhint">Create account · get API key</span></div>
+      </a>
       <a class="dditem" href="https://github.com/bengunvl/darkmatter" target="_blank">
         <span class="ddicon">⌥</span>
-        <div>GitHub Repository<span class="ddhint">Source code · issues · contribute</span></div>
+        <div>GitHub<span class="ddhint">Source code · MIT License</span></div>
       </a>
       <a class="dditem" href="https://github.com/bengunvl/darkmatter#api-reference" target="_blank">
         <span class="ddicon">⌘</span>
-        <div>API Reference<span class="ddhint">Full endpoint documentation</span></div>
+        <div>API Docs<span class="ddhint">Full endpoint reference</span></div>
       </a>
       <a class="dditem" href="https://github.com/bengunvl/darkmatter/issues/new" target="_blank">
         <span class="ddicon">◎</span>
-        <div>Open an Issue<span class="ddhint">Bug reports · feature requests</span></div>
+        <div>Open an Issue<span class="ddhint">Bug reports · feedback</span></div>
       </a>
     </div>
   </div>
@@ -758,192 +520,267 @@
 
 <!-- HERO -->
 <div class="hero">
-  <div class="hero-inner">
 
-    <!-- LEFT: pitch -->
-    <div>
-      <div class="hero-chip"><div class="chip-dot"></div>infrastructure · multi-agent systems</div>
-      <h1 class="hero-h1">Git for<br><span>AI Agents.</span></h1>
-      <p class="hero-sub">The commit, push, and pull layer for multi-agent systems.</p>
-      <p class="hero-tagline">// It's how AI agents talk to one another.</p>
-    </div>
+  <!-- MASCOT: Byte the Ghost Crab -->
+  <div class="mascot-wrap">
+    <svg class="mascot" viewBox="0 0 140 130" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- ── BACK LEGS (left) ── -->
+      <path d="M38 72 Q20 68 12 58" stroke="#30363d" stroke-width="3" stroke-linecap="round"/>
+      <path d="M36 80 Q16 80 8 72" stroke="#30363d" stroke-width="3" stroke-linecap="round"/>
+      <path d="M37 88 Q20 94 14 88" stroke="#30363d" stroke-width="3" stroke-linecap="round"/>
+      <!-- ── BACK LEGS (right) ── -->
+      <path d="M102 72 Q120 68 128 58" stroke="#30363d" stroke-width="3" stroke-linecap="round"/>
+      <path d="M104 80 Q124 80 132 72" stroke="#30363d" stroke-width="3" stroke-linecap="round"/>
+      <path d="M103 88 Q120 94 126 88" stroke="#30363d" stroke-width="3" stroke-linecap="round"/>
+      <!-- ── CLAWS (left) ── -->
+      <path d="M36 65 Q22 55 16 44" stroke="#21262d" stroke-width="3.5" stroke-linecap="round"/>
+      <!-- claw upper -->
+      <path d="M16 44 Q10 36 14 30" stroke="#21262d" stroke-width="3" stroke-linecap="round"/>
+      <!-- claw lower -->
+      <path d="M16 44 Q8 42 8 36" stroke="#21262d" stroke-width="3" stroke-linecap="round"/>
+      <!-- claw tip filled -->
+      <ellipse cx="11" cy="33" rx="5" ry="4" fill="#21262d" stroke="#30363d" stroke-width="1" transform="rotate(-20 11 33)"/>
+      <!-- ── CLAWS (right) ── -->
+      <path d="M104 65 Q118 55 124 44" stroke="#21262d" stroke-width="3.5" stroke-linecap="round"/>
+      <path d="M124 44 Q130 36 126 30" stroke="#21262d" stroke-width="3" stroke-linecap="round"/>
+      <path d="M124 44 Q132 42 132 36" stroke="#21262d" stroke-width="3" stroke-linecap="round"/>
+      <ellipse cx="129" cy="33" rx="5" ry="4" fill="#21262d" stroke="#30363d" stroke-width="1" transform="rotate(20 129 33)"/>
+      <!-- ── BODY ── -->
+      <ellipse cx="70" cy="80" rx="36" ry="28" fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
+      <!-- body shell segments -->
+      <path d="M40 72 Q70 65 100 72" stroke="#21262d" stroke-width="1" fill="none"/>
+      <path d="M38 80 Q70 73 102 80" stroke="#21262d" stroke-width="1" fill="none"/>
+      <path d="M40 88 Q70 81 100 88" stroke="#21262d" stroke-width="1" fill="none"/>
+      <!-- ── HEAD ── -->
+      <ellipse cx="70" cy="58" rx="28" ry="22" fill="#1c2430" stroke="#30363d" stroke-width="1.5"/>
+      <!-- head highlight -->
+      <ellipse cx="70" cy="52" rx="18" ry="8" fill="#21262d" opacity="0.5"/>
+      <!-- ── EYE STALKS ── -->
+      <rect x="52" y="38" width="4" height="14" rx="2" fill="#21262d" stroke="#30363d" stroke-width="1"/>
+      <rect x="84" y="38" width="4" height="14" rx="2" fill="#21262d" stroke="#30363d" stroke-width="1"/>
+      <!-- ── EYES ── -->
+      <circle cx="54" cy="36" r="9" fill="#0d1117" stroke="#30363d" stroke-width="1.5"/>
+      <circle cx="86" cy="36" r="9" fill="#0d1117" stroke="#30363d" stroke-width="1.5"/>
+      <!-- eye iris left — blue (agent) -->
+      <circle cx="54" cy="36" r="6" fill="#1a3a5c"/>
+      <circle cx="54" cy="36" r="4" fill="#58a6ff" opacity="0.9"/>
+      <circle cx="54" cy="36" r="2" fill="#0d1117"/>
+      <circle cx="52" cy="34" r="1.5" fill="white" opacity="0.8"/>
+      <!-- eye iris right — green (verified) -->
+      <circle cx="86" cy="36" r="6" fill="#1a3a20"/>
+      <circle cx="86" cy="36" r="4" fill="#3fb950" opacity="0.9"/>
+      <circle cx="86" cy="36" r="2" fill="#0d1117"/>
+      <circle cx="84" cy="34" r="1.5" fill="white" opacity="0.8"/>
+      <!-- ── MOUTH / MANDIBLES ── -->
+      <path d="M60 68 Q65 72 70 70 Q75 72 80 68" stroke="#30363d" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+      <line x1="67" y1="69" x2="67" y2="72" stroke="#30363d" stroke-width="1" stroke-linecap="round"/>
+      <line x1="73" y1="69" x2="73" y2="72" stroke="#30363d" stroke-width="1" stroke-linecap="round"/>
+      <!-- ── ANTENNA ── -->
+      <path d="M56 38 Q46 24 40 16" stroke="#3d444e" stroke-width="1.2" stroke-linecap="round"/>
+      <path d="M56 38 Q50 20 52 10" stroke="#3d444e" stroke-width="1" stroke-linecap="round" stroke-dasharray="2 2"/>
+      <path d="M84 38 Q94 24 100 16" stroke="#3d444e" stroke-width="1.2" stroke-linecap="round"/>
+      <path d="M84 38 Q90 20 88 10" stroke="#3d444e" stroke-width="1" stroke-linecap="round" stroke-dasharray="2 2"/>
+      <!-- antenna tips -->
+      <circle cx="40" cy="15" r="2" fill="#58a6ff" opacity="0.6"/>
+      <circle cx="52" cy="10" r="1.5" fill="#3fb950" opacity="0.5"/>
+      <circle cx="100" cy="15" r="2" fill="#58a6ff" opacity="0.6"/>
+      <circle cx="88" cy="10" r="1.5" fill="#3fb950" opacity="0.5"/>
+      <!-- ── CHEST: mini commit graph ── -->
+      <rect x="52" y="75" width="36" height="20" rx="4" fill="#0d1117" stroke="#21262d" stroke-width="0.8"/>
+      <line x1="57" y1="91" x2="57" y2="86" stroke="#3fb950" stroke-width="1.8" stroke-linecap="round"/>
+      <line x1="62" y1="91" x2="62" y2="82" stroke="#58a6ff" stroke-width="1.8" stroke-linecap="round"/>
+      <line x1="67" y1="91" x2="67" y2="87" stroke="#3fb950" stroke-width="1.8" stroke-linecap="round"/>
+      <line x1="72" y1="91" x2="72" y2="80" stroke="#58a6ff" stroke-width="1.8" stroke-linecap="round"/>
+      <line x1="77" y1="91" x2="77" y2="84" stroke="#d29922" stroke-width="1.8" stroke-linecap="round"/>
+      <line x1="82" y1="91" x2="82" y2="78" stroke="#3fb950" stroke-width="1.8" stroke-linecap="round"/>
+    </svg>
+  </div>
 
-    <!-- RIGHT: full quickstart, no tabs -->
-    <div class="qs">
-      <div class="qs-header">
-        <div class="qs-dots">
-          <div class="qs-dot r"></div>
-          <div class="qs-dot y"></div>
-          <div class="qs-dot g"></div>
-        </div>
-        <div class="qs-title">quickstart</div>
-      </div>
-      <div class="qs-body">
+  <h1 class="hero-h1">Git for<br><span>AI Agents.</span></h1>
 
-        <div>
-          <div class="qs-step-label">// 1. generate your agent's keypair locally</div>
-          <div class="code-block">
-<span class="c"># Creates two files on your machine:</span>
-<span class="c"># agent.private.pem → your secret signing key</span>
-<span class="c"># agent.public.pem  → share this with DarkMatter</span>
-<span class="cm">node keygen.js <span class="fl">--name</span> <span class="st">"my-agent"</span></span>
-<span class="sp"></span>
-<span class="c"># Add to .gitignore — never commit your private key</span>
-<span class="cm">echo <span class="st">"*.private.pem"</span> >> .gitignore</span></div>
-        </div>
+  <p class="hero-sub">
+    The commit, push, and pull layer for multi-agent systems.<br>
+    It's how AI agents talk to one another.
+  </p>
 
-        <hr class="qs-divider" />
 
-        <div>
-          <div class="qs-step-label">// 2. register with your public key only</div>
-          <div class="code-block">
-<span class="c"># Your private key is never sent — DarkMatter</span>
-<span class="c"># stores only the public key for verification</span>
-<span class="cm">node register.js <span class="fl">--name</span> <span class="st">"my-agent"</span> \</span>
-<span class="cm">  <span class="fl">--public-key</span> my-agent.public.pem</span>
-<span class="sp"></span>
-<span class="ok">✓ agentId: dm_a3f8c2e1b9d04712</span>
-<span class="ok">✓ registered — DarkMatter never saw your private key</span></div>
-        </div>
+  <div class="hero-cta">
+    <a class="cta-primary" href="/signup">Get your API key →</a>
+    <a class="cta-secondary" href="https://github.com/bengunvl/darkmatter" target="_blank">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+      GitHub
+    </a>
+  </div>
 
-        <hr class="qs-divider" />
-
-        <div>
-          <div class="qs-step-label">// 3. commit signed context &amp; pull verified handoff</div>
-          <div class="code-block">
-<span class="c"># Agent X signs and commits context for Agent Y</span>
-<span class="cm">curl <span class="fl">-X POST</span> .../api/commit \</span>
-<span class="cm">  <span class="fl">-d</span> <span class="st">'{"fromAgentId":"dm_...","toAgentId":"dm_...",</span></span>
-<span class="cm">     <span class="st">"context":{...},"privateKey":"..."}'</span></span>
-<span class="ok">→ verified: true ✓</span>
-<span class="sp"></span>
-<span class="c"># Agent Y pulls and inherits verified context</span>
-<span class="cm">curl .../api/pull/dm_AGENT_Y_ID</span>
-<span class="ok">→ context inherited ✓ signature confirmed</span>
-<span class="sp"></span>
-<span class="c"># Wrong key? Tampered? Auto-rejected.</span>
-<span class="er">→ verified: false ✗ — Agent Y never sees this</span></div>
-        </div>
-
-      </div>
-    </div>
-
+  <div class="stats-row">
+    <div class="stat-item"><div class="stat-num c" id="stat-agents">—</div><div class="stat-lbl">agents</div></div>
+    <div class="stat-sep"></div>
+    <div class="stat-item"><div class="stat-num" id="stat-commits">—</div><div class="stat-lbl">commits</div></div>
+    <div class="stat-sep"></div>
+    <div class="stat-item"><div class="stat-num g" id="stat-verified">—</div><div class="stat-lbl">verified</div></div>
+    <div class="stat-sep"></div>
+    <div class="stat-item"><div class="stat-num r" id="stat-rejected">—</div><div class="stat-lbl">rejected</div></div>
   </div>
 </div>
 
-<!-- MAIN -->
-<div class="main">
-  <div>
-
-    <!-- HOW IT WORKS -->
-    <div class="sec-head">How it works</div>
-    <div class="flow">
-      <div class="flow-item">
-        <div class="flow-title">
-          Your agent creates its own identity
-          <span class="ftag tlocal">stays on your computer</span>
-        </div>
-        <div class="flow-desc">
-          Think of it like a passport. Run <code>node keygen.js</code> and your agent gets a unique identity — a private key that stays on your machine and a public key that proves who your agent is. DarkMatter never sees the private key.
-        </div>
+<!-- USE CASES -->
+<div class="usecase-section">
+  <div class="usecase-inner">
+    <div class="usecase-title">What developers use DarkMatter for</div>
+    <div class="usecase-sub">Any time one AI agent hands work to another — DarkMatter is the layer in between.</div>
+    <div class="usecase-grid">
+      <div class="uc-card">
+        <div class="uc-icon">🔗</div>
+        <div class="uc-title">Multi-agent pipelines</div>
+        <div class="uc-desc">Agent A researches, Agent B writes, Agent C reviews. Each inherits the previous agent's full context — verified and intact — instead of re-explaining everything.</div>
       </div>
-      <div class="flow-item">
-        <div class="flow-title">
-          Agent X finishes work and signs a handoff
-          <span class="ftag tpub">public key only stored</span>
-        </div>
-        <div class="flow-desc">
-          When Agent X completes a task, it packages its context and signs it cryptographically — like a wax seal on a letter. DarkMatter registers the public key so any other agent can verify the seal is genuine and unbroken.
-        </div>
+      <div class="uc-card">
+        <div class="uc-icon">🛡️</div>
+        <div class="uc-title">Tamper-proof handoffs</div>
+        <div class="uc-desc">In adversarial or untrusted environments, agents can't trust context that hasn't been verified. DarkMatter rejects any context where the signature doesn't match.</div>
       </div>
-      <div class="flow-item">
-        <div class="flow-title">
-          Agent Y inherits the full context
-          <span class="ftag tverify">verified before delivery</span>
-        </div>
-        <div class="flow-desc">
-          Agent Y picks up exactly where Agent X left off. Before receiving anything, DarkMatter verifies the signature. If something doesn't match — wrong key, tampered content, expired package — it's rejected automatically. Agent Y never sees unverified context.
-        </div>
+      <div class="uc-card">
+        <div class="uc-icon">📋</div>
+        <div class="uc-title">Agent audit trails</div>
+        <div class="uc-desc">Every commit is logged with which agent sent it, when, and to whom. Full visibility into what your agent network did and in what order — without building logging yourself.</div>
       </div>
-    </div>
-
-    <!-- GIT TABLE -->
-    <div class="sec-head">Git primitives, mapped to agents</div>
-    <div class="git-table">
-      <div class="git-row head">
-        <div class="gc lbl">Git</div>
-        <div class="gc lbl"></div>
-        <div class="gc lbl">DarkMatter</div>
-        <div class="gc lbl">What it does</div>
+      <div class="uc-card">
+        <div class="uc-icon">🔄</div>
+        <div class="uc-title">Failure recovery</div>
+        <div class="uc-desc">If an agent crashes mid-task, the next agent can pull its last committed context and resume from the checkpoint — instead of restarting from scratch.</div>
       </div>
-      <div class="git-row"><div class="gc from">git commit</div><div class="gc arr">→</div><div class="gc to">POST /api/commit</div><div class="gc desc">Sign and checkpoint context</div></div>
-      <div class="git-row"><div class="gc from">git push</div><div class="gc arr">→</div><div class="gc to">POST /api/commit</div><div class="gc desc">Publish to receiving agent</div></div>
-      <div class="git-row"><div class="gc from">git pull</div><div class="gc arr">→</div><div class="gc to">GET /api/pull/:id</div><div class="gc desc">Verify and inherit context</div></div>
-      <div class="git-row"><div class="gc from">git log</div><div class="gc arr">→</div><div class="gc to">this page</div><div class="gc desc">Full audit trail</div></div>
-      <div class="git-row"><div class="gc from">git blame</div><div class="gc arr">→</div><div class="gc to">Ed25519 signature</div><div class="gc desc">Who signed what</div></div>
-    </div>
-
-    <!-- COMMIT LOG -->
-    <div class="log-top">
-      <div class="log-title">Commit Log</div>
-      <div class="btag">⎇ main</div>
-      <button class="rfbtn" onclick="loadData()">↻ Refresh</button>
-    </div>
-    <div class="log-wrap">
-      <div class="log-cols">
-        <div>Message</div><div>Handoff</div><div>Hash</div>
-        <div style="text-align:right">Time</div>
+      <div class="uc-card">
+        <div class="uc-icon">🌐</div>
+        <div class="uc-title">Cross-model workflows</div>
+        <div class="uc-desc">Claude hands off to GPT. GPT hands off to Llama. DarkMatter is model-agnostic — any agent with an API key can commit and pull, regardless of which LLM powers it.</div>
       </div>
-      <div id="commit-list"></div>
-    </div>
-
-  </div>
-
-  <!-- SIDEBAR -->
-  <div>
-    <div class="sidebar-card">
-      <div class="scard-head">Network Activity</div>
-      <div class="scard-body">
-        <div class="stat-row"><span class="stat-lbl">Agents</span><span class="stat-val b" id="stat-agents">—</span></div>
-        <div class="stat-row"><span class="stat-lbl">Commits</span><span class="stat-val" id="stat-commits">—</span></div>
-        <div class="stat-row"><span class="stat-lbl">Verified</span><span class="stat-val g" id="stat-verified">—</span></div>
-        <div class="stat-row"><span class="stat-lbl">Rejected</span><span class="stat-val r" id="stat-rejected">—</span></div>
-      </div>
-    </div>
-
-    <div class="sidebar-card">
-      <div class="scard-head">API Endpoints</div>
-      <div class="scard-body">
-        <div class="api-row">
-          <span class="meth mpost">POST</span>
-          <div><div class="api-path">/api/register</div><div class="api-note">Register an agent</div></div>
-        </div>
-        <div class="api-row">
-          <span class="meth mpost">POST</span>
-          <div><div class="api-path">/api/commit</div><div class="api-note">Commit signed context</div></div>
-        </div>
-        <div class="api-row">
-          <span class="meth mget">GET</span>
-          <div><div class="api-path">/api/pull/:id</div><div class="api-note">Pull verified context</div></div>
-        </div>
+      <div class="uc-card">
+        <div class="uc-icon">⚡</div>
+        <div class="uc-title">No infra to manage</div>
+        <div class="uc-desc">No queue to set up, no pub/sub to configure, no database to maintain. Sign up, get an API key, and your agents are talking to each other in minutes.</div>
       </div>
     </div>
   </div>
 </div>
 
+<!-- HOW IT WORKS -->
+<div class="section">
+  <div class="section-title">How it works</div>
+  <div class="section-sub">Sign up, create an agent, get an API key. Three API calls and your agents are connected.</div>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-emoji">🔑</div>
+      <div class="step-title">Sign up &amp; connect or create your agent</div>
+      <div class="step-desc">Sign up free, then connect your existing agent or create a new one. You'll get a unique API key from your dashboard in seconds. No local setup required.</div>
+      <div class="step-tag tg">free · 30 seconds</div>
+    </div>
+    <div class="step-arrow"><div>▶</div><div class="arrow-label">API key</div></div>
+    <div class="step">
+      <div class="step-emoji">📤</div>
+      <div class="step-title">Agent X commits context</div>
+      <div class="step-desc">When Agent X finishes its task, it commits its context to DarkMatter with one POST call. Signed, timestamped, and attributed to your agent.</div>
+      <div class="step-tag ta">POST /api/commit</div>
+    </div>
+    <div class="step-arrow"><div>▶</div><div class="arrow-label">verified</div></div>
+    <div class="step">
+      <div class="step-emoji">📥</div>
+      <div class="step-title">Agent Y inherits context</div>
+      <div class="step-desc">Agent Y pulls the verified context and continues from exactly where Agent X left off. Tampered or unverified content is rejected automatically.</div>
+      <div class="step-tag tv">GET /api/pull</div>
+    </div>
+  </div>
+
+  <!-- CODE EXAMPLE WITH COPY BUTTON -->
+  <div class="code-wrap">
+    <div class="code-header">
+      <div class="code-dots">
+        <div class="cd r"></div><div class="cd y"></div><div class="cd g"></div>
+      </div>
+      <div class="code-filename">connect-your-agent.py</div>
+      <button class="copy-code-btn" id="copy-code-btn" onclick="copyCode()">Copy</button>
+    </div>
+    <div class="code-body" id="code-body">
+<span class="cc"># pip install requests  ·  works with any Python agent or LLM framework</span>
+<span class="cm">import requests</span>
+<span class="sp"></span>
+<span class="cm">API_KEY  = <span class="st">"dm_sk_your_key_here"</span>  <span class="cc"># from your DarkMatter dashboard</span></span>
+<span class="cm">BASE_URL = <span class="st">"https://darkmatter-production.up.railway.app"</span></span>
+<span class="cm">HEADERS  = {<span class="st">"Authorization"</span>: <span class="fl">f</span><span class="st">"Bearer {API_KEY}"</span>}</span>
+<span class="sp"></span>
+<span class="cc"># ── Agent X: commit context for Agent Y ──────────────────────</span>
+<span class="cm">requests.post(<span class="fl">f</span><span class="st">"{BASE_URL}/api/commit"</span>, headers=HEADERS, json={</span>
+<span class="cm">    <span class="st">"toAgentId"</span>: <span class="st">"dm_agent_y_id"</span>,  <span class="cc"># Agent Y's ID from their dashboard</span></span>
+<span class="cm">    <span class="st">"context"</span>:   {</span>
+<span class="cm">        <span class="st">"task"</span>:     <span class="st">"Q1 analysis complete"</span>,</span>
+<span class="cm">        <span class="st">"findings"</span>: {<span class="st">"topRegion"</span>: <span class="st">"APAC"</span>, <span class="st">"growth"</span>: <span class="st">"34%"</span>},</span>
+<span class="cm">        <span class="st">"nextTask"</span>: <span class="st">"generate executive summary"</span>,</span>
+<span class="cm">    }</span>
+<span class="cm">})</span>
+<span class="ok"># → {"verified": true, "commitId": "commit_..."}</span>
+<span class="sp"></span>
+<span class="cc"># ── Agent Y: pull and inherit verified context ────────────────</span>
+<span class="cm">res     = requests.get(<span class="fl">f</span><span class="st">"{BASE_URL}/api/pull"</span>, headers=HEADERS)</span>
+<span class="cm">context = res.json()[<span class="st">"commits"</span>][0][<span class="st">"context"</span>]</span>
+<span class="cm">print(context[<span class="st">"nextTask"</span>])  <span class="cc"># "generate executive summary"</span></span>
+<span class="ok"># → Agent Y picks up exactly where Agent X left off</span>
+    </div>
+  </div>
+</div>
+
+<!-- GIT MAP -->
+<div class="section" style="padding-top:0">
+  <div class="section-title" style="margin-bottom:1.5rem; font-size:1.1rem">Git primitives, for agents</div>
+  <div class="git-map">
+    <div class="gmc"><div class="gmc-from">git commit</div><div class="gmc-arr">↓</div><div class="gmc-to">POST /api/commit</div><div class="gmc-note">sign & checkpoint</div></div>
+    <div class="gmc"><div class="gmc-from">git push</div><div class="gmc-arr">↓</div><div class="gmc-to">POST /api/commit</div><div class="gmc-note">publish to recipient</div></div>
+    <div class="gmc"><div class="gmc-from">git pull</div><div class="gmc-arr">↓</div><div class="gmc-to">GET /api/pull</div><div class="gmc-note">verify & inherit</div></div>
+    <div class="gmc"><div class="gmc-from">git log</div><div class="gmc-arr">↓</div><div class="gmc-to">dashboard</div><div class="gmc-note">full audit trail</div></div>
+    <div class="gmc"><div class="gmc-from">git blame</div><div class="gmc-arr">↓</div><div class="gmc-to">API key auth</div><div class="gmc-note">who committed what</div></div>
+  </div>
+</div>
+
+<!-- LIVE LOG -->
+<div class="log-section">
+  <div class="log-bar">
+    <div class="log-bar-title">Live Commit Log</div>
+    <div class="btag">⎇ main</div>
+    <button class="rfbtn" onclick="loadStats()">↻ Refresh</button>
+  </div>
+  <div class="log-wrap">
+    <div class="log-cols">
+      <div>Message</div><div>Handoff</div><div>Hash</div>
+      <div style="text-align:right">Time</div>
+    </div>
+    <div id="commit-list">
+      <div class="log-empty">No commits yet — <a href="/signup" style="color:var(--accent)">sign up</a> to connect your first agent</div>
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
 <footer>
-  <div class="flinks">
-    <a class="flink" href="https://github.com/bengunvl/darkmatter" target="_blank">GitHub</a>
-    <a class="flink" href="https://github.com/bengunvl/darkmatter#api-reference" target="_blank">API Docs</a>
+  <a class="footer-logo" href="/">
+    <svg class="footer-logo-mark" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="12" cy="12" r="10" stroke="#30363d" stroke-width="0.8"/>
+      <ellipse cx="12" cy="12" rx="10" ry="3.8" stroke="#21262d" stroke-width="0.6" transform="rotate(-35 12 12)"/>
+      <ellipse cx="12" cy="12" rx="10" ry="3.8" stroke="#21262d" stroke-width="0.6" transform="rotate(35 12 12)"/>
+      <circle cx="12" cy="12" r="2" fill="#58a6ff"/>
+      <circle cx="22" cy="12" r="1.2" fill="#58a6ff" opacity="0.6"/>
+    </svg>
+    <div class="footer-logo-name">Dark<em>Matter</em></div>
+  </a>
+  <div class="footer-tagline">// Git for AI Agents · It's how AI agents talk to one another</div>
+  <div class="footer-links">
+    <a class="footer-link" href="/signup">Sign up free</a>
+    <a class="footer-link" href="https://github.com/bengunvl/darkmatter" target="_blank">GitHub</a>
+    <a class="footer-link" href="https://github.com/bengunvl/darkmatter#api-reference" target="_blank">API Docs</a>
     <span style="color:var(--text3);font-size:0.72rem">MIT License</span>
   </div>
-  <div class="fright">context is inherited. trust is cryptographic.</div>
 </footer>
 
 <script>
-  const mask = id => id ? id.slice(0,11)+'···' : '···';
-  const hash = (f,t) => ((f||'').replace('dm_','').slice(0,4)+(t||'').replace('dm_','').slice(0,4));
-  const ago  = ts => {
+  const ago = ts => {
     const d = Math.floor((Date.now()-new Date(ts))/1000);
     if(d<60) return d+'s ago';
     if(d<3600) return Math.floor(d/60)+'m ago';
@@ -951,57 +788,71 @@
     return Math.floor(d/86400)+'d ago';
   };
 
-  function emptyState() {
-    return `<div class="empty">
-      <div class="empty-msg">No commits yet. Follow the quickstart above to register your agents and commit your first context handoff.</div>
-      <div class="empty-cmd"><span style="color:#3fb950">$</span> node keygen.js --name "agent-x"</div>
-      <div class="empty-cmd"><span style="color:#3fb950">$</span> node register.js --name "agent-x" --public-key agent-x.public.pem</div>
-      <div class="empty-cmd"><span style="color:#3fb950">$</span> curl -X POST .../api/commit -d '{"fromAgentId":"...","toAgentId":"...","context":{...},"privateKey":"..."}'</div>
-    </div>`;
+  const mask = id => id ? id.slice(0,11)+'···' : '···';
+  const hash = (f,t) => ((f||'').replace('dm_','').slice(0,4)+(t||'').replace('dm_','').slice(0,4));
+
+  // ── Copy code button ──────────────────────────────────
+  function copyCode() {
+    const code = `import requests
+
+API_KEY  = "dm_sk_your_key_here"
+BASE_URL = "https://darkmatter-production.up.railway.app"
+HEADERS  = {"Authorization": f"Bearer {API_KEY}"}
+
+# Agent X: commit context for Agent Y
+requests.post(f"{BASE_URL}/api/commit", headers=HEADERS, json={
+    "toAgentId": "dm_agent_y_id",
+    "context": {
+        "task":     "Q1 analysis complete",
+        "findings": {"topRegion": "APAC", "growth": "34%"},
+        "nextTask": "generate executive summary",
+    }
+})
+
+# Agent Y: pull and inherit verified context
+res     = requests.get(f"{BASE_URL}/api/pull", headers=HEADERS)
+context = res.json()["commits"][0]["context"]
+print(context["nextTask"])  # "generate executive summary"`;
+
+    navigator.clipboard.writeText(code).then(() => {
+      const btn = document.getElementById('copy-code-btn');
+      btn.textContent = 'Copied!';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+    });
   }
 
-  async function loadData() {
+  // ── Load stats ────────────────────────────────────────
+  async function loadStats() {
     try {
-      const [agents, commits] = await Promise.all([
-        fetch('/api/agents').then(r=>r.json()),
-        fetch('/api/commits').then(r=>r.json()),
-      ]);
-      const aa = Array.isArray(agents)  ? agents  : [];
-      const cc = Array.isArray(commits) ? commits : [];
-      document.getElementById('stat-agents').textContent   = aa.length;
-      document.getElementById('stat-commits').textContent  = cc.length;
-      document.getElementById('stat-verified').textContent = cc.filter(c=>c.verified).length;
-      document.getElementById('stat-rejected').textContent = cc.filter(c=>!c.verified).length;
-      const list = document.getElementById('commit-list');
-      if(!cc.length){ list.innerHTML = emptyState(); return; }
-      list.innerHTML = cc.map(c=>`
-        <div class="cr">
-          <div>
-            <div class="cmsg">
-              <span class="cbadge ${c.verified?'v':'r'}">${c.verified?'✓ verified':'✗ rejected'}</span>
-              <span class="ctxt">${c.verified?'Context inherited — signature confirmed':'Rejected — context not inherited'}</span>
-            </div>
-            <div class="cby">${mask(c.from)}</div>
-          </div>
-          <div class="choff">
-            <span class="aref">${mask(c.from)}</span>
-            <span class="harr">──▶</span>
-            <span class="aref">${mask(c.to)}</span>
-          </div>
-          <div class="hsh">${hash(c.from,c.to)}</div>
-          <div class="tme">${ago(c.timestamp)}</div>
-        </div>`).join('');
-    } catch(e){ console.error(e); }
+      const res  = await fetch('/api/stats');
+      const data = await res.json();
+      document.getElementById('stat-agents').textContent   = data.agents   ?? '—';
+      document.getElementById('stat-commits').textContent  = data.commits  ?? '—';
+      document.getElementById('stat-verified').textContent = data.verified ?? '—';
+      document.getElementById('stat-rejected').textContent = data.rejected ?? '—';
+    } catch(e) {}
   }
 
+  // ── Menu ─────────────────────────────────────────────
   function toggleMenu() { document.getElementById('dd').classList.toggle('open'); }
   document.addEventListener('click', e => {
     const b=document.getElementById('hb'), d=document.getElementById('dd');
     if(b&&d&&!b.contains(e.target)&&!d.contains(e.target)) d.classList.remove('open');
   });
 
-  loadData();
-  setInterval(loadData, 5000);
+  // ── Session check ─────────────────────────────────────
+  try {
+    const s = JSON.parse(localStorage.getItem('dm_session') || '{}');
+    if (s?.access_token) {
+      document.querySelector('.btn-signup').textContent = 'Dashboard →';
+      document.querySelector('.btn-signup').href = '/dashboard';
+      document.querySelector('.cta-primary').textContent = 'Go to Dashboard →';
+      document.querySelector('.cta-primary').href = '/dashboard';
+    }
+  } catch(e) {}
+
+  loadStats();
 </script>
 </body>
 </html>

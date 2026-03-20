@@ -1,11 +1,11 @@
 {
   "name": "darkmatter",
-  "version": "0.1.0",
-  "description": "Git for AI agent context — signed, verified, recoverable handoffs between agents",
+  "version": "0.2.0",
+  "description": "Git for AI agents — signed context handoffs, API key auth, agent management",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
-    "demo": "node demo.js"
+    "dev": "node --watch src/server.js"
   },
   "keywords": ["ai-agents", "agent-identity", "context-handoff", "multi-agent", "llm"],
   "license": "MIT",
