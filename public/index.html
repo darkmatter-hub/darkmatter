@@ -841,7 +841,28 @@ print(context["nextTask"])  # "generate executive summary"`;
     if(b&&d&&!b.contains(e.target)&&!d.contains(e.target)) d.classList.remove('open');
   });
 
-  // ── Session check ─────────────────────────────────────
+  // ── Catch Supabase auth redirect on homepage ─────────
+  // Supabase sends token to Site URL root — intercept and forward to dashboard
+  if (window.location.hash && window.location.hash.includes('access_token')) {
+    try {
+      const params       = new URLSearchParams(window.location.hash.substring(1));
+      const accessToken  = params.get('access_token');
+      const refreshToken = params.get('refresh_token');
+      const expiresAt    = params.get('expires_at');
+      if (accessToken) {
+        const payload = JSON.parse(atob(accessToken.split('.')[1]));
+        localStorage.setItem('dm_session', JSON.stringify({
+          access_token:  accessToken,
+          refresh_token: refreshToken,
+          expires_at:    expiresAt,
+          user: { email: payload.email || '', id: payload.sub }
+        }));
+        window.location.href = '/dashboard';
+      }
+    } catch(e) { console.error('Auth redirect error', e); }
+  }
+
+  // ── Session check — swap buttons if already logged in ─
   try {
     const s = JSON.parse(localStorage.getItem('dm_session') || '{}');
     if (s?.access_token) {
