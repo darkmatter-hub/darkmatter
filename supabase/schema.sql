@@ -1,14 +1,18 @@
 -- ═══════════════════════════════════════════════════
 -- DarkMatter — Supabase Schema v2
--- Run this in Supabase → SQL Editor → New Query
+-- STEP 1: Drop existing tables (clears old structure)
+-- STEP 2: Recreate with correct schema
 -- ═══════════════════════════════════════════════════
 
--- Drop existing tables if rebuilding
--- drop table if exists commits cascade;
--- drop table if exists agents cascade;
+-- Drop in correct order (commits references agents)
+drop table if exists commits cascade;
+drop table if exists agents  cascade;
+
+-- Drop old function if exists
+drop function if exists get_agent_by_api_key(text);
 
 -- ── Agents ──────────────────────────────────────────
-create table if not exists agents (
+create table agents (
   agent_id    text primary key,
   agent_name  text not null,
   user_id     uuid references auth.users(id) on delete cascade,
@@ -19,7 +23,7 @@ create table if not exists agents (
 );
 
 -- ── Commits ─────────────────────────────────────────
-create table if not exists commits (
+create table commits (
   id                   text primary key,
   from_agent           text references agents(agent_id),
   to_agent             text references agents(agent_id),
@@ -32,25 +36,21 @@ create table if not exists commits (
 );
 
 -- ── Indexes ─────────────────────────────────────────
-create index if not exists commits_to_agent_idx
+create index commits_to_agent_idx
   on commits(to_agent, verified, timestamp desc);
 
-create index if not exists agents_user_idx
-  on agents(user_id);
-
-create index if not exists agents_api_key_idx
-  on agents(api_key);
+create index agents_user_idx    on agents(user_id);
+create index agents_api_key_idx on agents(api_key);
 
 -- ── Row Level Security ───────────────────────────────
 alter table agents  enable row level security;
 alter table commits enable row level security;
 
--- Users can only see their own agents
-create policy "users see own agents"
+create policy "users manage own agents"
   on agents for all
-  using (auth.uid() = user_id);
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
 
--- Users can see commits involving their agents
 create policy "users see own commits"
   on commits for select
   using (
@@ -59,13 +59,12 @@ create policy "users see own commits"
     to_agent   in (select agent_id from agents where user_id = auth.uid())
   );
 
--- Service role can insert commits (from server)
 create policy "service can insert commits"
   on commits for insert
   with check (true);
 
--- ── Helper function: validate API key ───────────────
-create or replace function get_agent_by_api_key(p_api_key text)
+-- ── Helper: look up agent by API key ────────────────
+create function get_agent_by_api_key(p_api_key text)
 returns table (
   agent_id   text,
   agent_name text,
