@@ -139,6 +139,47 @@ app.get('/auth/github', async (req, res) => {
   }
 });
 
+// ── POST /auth/forgot-password ──────────────────────────
+app.post('/auth/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: 'Email required' });
+
+    await supabaseAnon.auth.resetPasswordForEmail(email, {
+      redirectTo: `${process.env.APP_URL}/reset-password`,
+    });
+
+    // Always return success to avoid email enumeration
+    res.json({ success: true });
+  } catch (err) {
+    res.json({ success: true }); // still return success
+  }
+});
+
+// ── GET /reset-password ── serve reset page ─────────
+app.get('/reset-password', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/reset-password.html'));
+});
+
+// ── POST /auth/reset-password ────────────────────────
+app.post('/auth/reset-password', async (req, res) => {
+  try {
+    const { token, password } = req.body;
+    if (!token || !password) return res.status(400).json({ error: 'Token and password required' });
+
+    // Exchange token for session, then update password
+    const { data: { user }, error: sessionError } = await supabaseAnon.auth.getUser(token);
+    if (sessionError || !user) return res.status(400).json({ error: 'Invalid or expired reset link' });
+
+    const { error } = await supabaseAnon.auth.updateUser({ password });
+    if (error) return res.status(400).json({ error: error.message });
+
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ── POST /auth/logout ────────────────────────────────
 app.post('/auth/logout', async (req, res) => {
   try {

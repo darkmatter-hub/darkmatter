@@ -101,6 +101,12 @@
 
       <button class="submit-btn" id="submit-btn" onclick="handleLogin()">Sign in</button>
 
+      <div style="text-align:center; margin-top:-0.25rem;">
+        <button onclick="handleForgotPassword()" style="background:none;border:none;color:var(--text2);font-size:0.75rem;cursor:pointer;font-family:var(--sans);transition:color 0.15s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text2)'">
+          Forgot your password?
+        </button>
+      </div>
+
       <div class="footer-link">
         Don't have an account? <a href="/signup">Sign up</a>
       </div>
@@ -152,10 +158,51 @@
     }
   }
 
+  async function handleForgotPassword() {
+    const email = document.getElementById('email').value.trim();
+    const errEl = document.getElementById('error-msg');
+
+    if (!email) {
+      showError('Enter your email address above, then click Forgot your password.');
+      return;
+    }
+
+    errEl.style.display = 'none';
+
+    try {
+      const res  = await fetch('/auth/forgot-password', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ email }),
+      });
+      const data = await res.json();
+
+      // Always show success to avoid email enumeration
+      showSuccess('If that email exists, a reset link has been sent. Check your inbox.');
+    } catch (e) {
+      showError('Something went wrong. Please try again.');
+    }
+  }
+
   function showError(msg) {
     const el = document.getElementById('error-msg');
     el.textContent = msg;
     el.style.display = 'block';
+    const suc = document.getElementById('success-msg');
+    if (suc) suc.style.display = 'none';
+  }
+
+  function showSuccess(msg) {
+    let el = document.getElementById('success-msg');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'success-msg';
+      el.style.cssText = 'background:rgba(63,185,80,0.1);border:1px solid rgba(63,185,80,0.3);border-radius:6px;padding:0.6rem 0.8rem;font-size:0.78rem;color:#3fb950;margin-top:0.5rem;';
+      document.getElementById('error-msg').after(el);
+    }
+    el.textContent = msg;
+    el.style.display = 'block';
+    document.getElementById('error-msg').style.display = 'none';
   }
 
   document.getElementById('password').addEventListener('keydown', e => {
