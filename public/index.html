@@ -148,15 +148,7 @@
       pointer-events: none;
     }
 
-    /* ── MASCOT: Qubit the dark star ── */
-    .mascot-wrap {
-      margin-bottom: 2.25rem;
-      position: relative; z-index: 1;
-    }
-
-    .mascot { width: 130px; height: 130px; }
-
-    .hero-h1 {
+.hero-h1 {
       font-size: clamp(2.6rem, 6vw, 3.8rem);
       font-weight: 800; line-height: 1.08;
       color: var(--text); margin-bottom: 0.75rem;
@@ -523,79 +515,6 @@
 <!-- HERO -->
 <div class="hero">
 
-  <!-- MASCOT: Byte the Ghost Crab -->
-  <div class="mascot-wrap">
-    <svg class="mascot" viewBox="0 0 140 130" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <!-- ── BACK LEGS (left) ── -->
-      <path d="M38 72 Q20 68 12 58" stroke="#30363d" stroke-width="3" stroke-linecap="round"/>
-      <path d="M36 80 Q16 80 8 72" stroke="#30363d" stroke-width="3" stroke-linecap="round"/>
-      <path d="M37 88 Q20 94 14 88" stroke="#30363d" stroke-width="3" stroke-linecap="round"/>
-      <!-- ── BACK LEGS (right) ── -->
-      <path d="M102 72 Q120 68 128 58" stroke="#30363d" stroke-width="3" stroke-linecap="round"/>
-      <path d="M104 80 Q124 80 132 72" stroke="#30363d" stroke-width="3" stroke-linecap="round"/>
-      <path d="M103 88 Q120 94 126 88" stroke="#30363d" stroke-width="3" stroke-linecap="round"/>
-      <!-- ── CLAWS (left) ── -->
-      <path d="M36 65 Q22 55 16 44" stroke="#21262d" stroke-width="3.5" stroke-linecap="round"/>
-      <!-- claw upper -->
-      <path d="M16 44 Q10 36 14 30" stroke="#21262d" stroke-width="3" stroke-linecap="round"/>
-      <!-- claw lower -->
-      <path d="M16 44 Q8 42 8 36" stroke="#21262d" stroke-width="3" stroke-linecap="round"/>
-      <!-- claw tip filled -->
-      <ellipse cx="11" cy="33" rx="5" ry="4" fill="#21262d" stroke="#30363d" stroke-width="1" transform="rotate(-20 11 33)"/>
-      <!-- ── CLAWS (right) ── -->
-      <path d="M104 65 Q118 55 124 44" stroke="#21262d" stroke-width="3.5" stroke-linecap="round"/>
-      <path d="M124 44 Q130 36 126 30" stroke="#21262d" stroke-width="3" stroke-linecap="round"/>
-      <path d="M124 44 Q132 42 132 36" stroke="#21262d" stroke-width="3" stroke-linecap="round"/>
-      <ellipse cx="129" cy="33" rx="5" ry="4" fill="#21262d" stroke="#30363d" stroke-width="1" transform="rotate(20 129 33)"/>
-      <!-- ── BODY ── -->
-      <ellipse cx="70" cy="80" rx="36" ry="28" fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
-      <!-- body shell segments -->
-      <path d="M40 72 Q70 65 100 72" stroke="#21262d" stroke-width="1" fill="none"/>
-      <path d="M38 80 Q70 73 102 80" stroke="#21262d" stroke-width="1" fill="none"/>
-      <path d="M40 88 Q70 81 100 88" stroke="#21262d" stroke-width="1" fill="none"/>
-      <!-- ── HEAD ── -->
-      <ellipse cx="70" cy="58" rx="28" ry="22" fill="#1c2430" stroke="#30363d" stroke-width="1.5"/>
-      <!-- head highlight -->
-      <ellipse cx="70" cy="52" rx="18" ry="8" fill="#21262d" opacity="0.5"/>
-      <!-- ── EYE STALKS ── -->
-      <rect x="52" y="38" width="4" height="14" rx="2" fill="#21262d" stroke="#30363d" stroke-width="1"/>
-      <rect x="84" y="38" width="4" height="14" rx="2" fill="#21262d" stroke="#30363d" stroke-width="1"/>
-      <!-- ── EYES ── -->
-      <circle cx="54" cy="36" r="9" fill="#0d1117" stroke="#30363d" stroke-width="1.5"/>
-      <circle cx="86" cy="36" r="9" fill="#0d1117" stroke="#30363d" stroke-width="1.5"/>
-      <!-- eye iris left — blue (agent) -->
-      <circle cx="54" cy="36" r="6" fill="#1a3a5c"/>
-      <circle cx="54" cy="36" r="4" fill="#58a6ff" opacity="0.9"/>
-      <circle cx="54" cy="36" r="2" fill="#0d1117"/>
-      <circle cx="52" cy="34" r="1.5" fill="white" opacity="0.8"/>
-      <!-- eye iris right — green (verified) -->
-      <circle cx="86" cy="36" r="6" fill="#1a3a20"/>
-      <circle cx="86" cy="36" r="4" fill="#3fb950" opacity="0.9"/>
-      <circle cx="86" cy="36" r="2" fill="#0d1117"/>
-      <circle cx="84" cy="34" r="1.5" fill="white" opacity="0.8"/>
-      <!-- ── MOUTH / MANDIBLES ── -->
-      <path d="M60 68 Q65 72 70 70 Q75 72 80 68" stroke="#30363d" stroke-width="1.5" stroke-linecap="round" fill="none"/>
-      <line x1="67" y1="69" x2="67" y2="72" stroke="#30363d" stroke-width="1" stroke-linecap="round"/>
-      <line x1="73" y1="69" x2="73" y2="72" stroke="#30363d" stroke-width="1" stroke-linecap="round"/>
-      <!-- ── ANTENNA ── -->
-      <path d="M56 38 Q46 24 40 16" stroke="#3d444e" stroke-width="1.2" stroke-linecap="round"/>
-      <path d="M56 38 Q50 20 52 10" stroke="#3d444e" stroke-width="1" stroke-linecap="round" stroke-dasharray="2 2"/>
-      <path d="M84 38 Q94 24 100 16" stroke="#3d444e" stroke-width="1.2" stroke-linecap="round"/>
-      <path d="M84 38 Q90 20 88 10" stroke="#3d444e" stroke-width="1" stroke-linecap="round" stroke-dasharray="2 2"/>
-      <!-- antenna tips -->
-      <circle cx="40" cy="15" r="2" fill="#58a6ff" opacity="0.6"/>
-      <circle cx="52" cy="10" r="1.5" fill="#3fb950" opacity="0.5"/>
-      <circle cx="100" cy="15" r="2" fill="#58a6ff" opacity="0.6"/>
-      <circle cx="88" cy="10" r="1.5" fill="#3fb950" opacity="0.5"/>
-      <!-- ── CHEST: mini commit graph ── -->
-      <rect x="52" y="75" width="36" height="20" rx="4" fill="#0d1117" stroke="#21262d" stroke-width="0.8"/>
-      <line x1="57" y1="91" x2="57" y2="86" stroke="#3fb950" stroke-width="1.8" stroke-linecap="round"/>
-      <line x1="62" y1="91" x2="62" y2="82" stroke="#58a6ff" stroke-width="1.8" stroke-linecap="round"/>
-      <line x1="67" y1="91" x2="67" y2="87" stroke="#3fb950" stroke-width="1.8" stroke-linecap="round"/>
-      <line x1="72" y1="91" x2="72" y2="80" stroke="#58a6ff" stroke-width="1.8" stroke-linecap="round"/>
-      <line x1="77" y1="91" x2="77" y2="84" stroke="#d29922" stroke-width="1.8" stroke-linecap="round"/>
-      <line x1="82" y1="91" x2="82" y2="78" stroke="#3fb950" stroke-width="1.8" stroke-linecap="round"/>
-    </svg>
   </div>
 
   <h1 class="hero-h1">Git for<br><span>AI Agents.</span></h1>
@@ -864,14 +783,22 @@ print(context["nextTask"])  # "generate executive summary"`;
     } catch(e) { console.error('Auth redirect error', e); }
   }
 
-  // ── Session check — swap buttons if already logged in ─
+  // ── Session check — update UI if already logged in ─────
   try {
     const s = JSON.parse(localStorage.getItem('dm_session') || '{}');
     if (s?.access_token) {
-      document.querySelector('.btn-signup').textContent = 'Dashboard →';
-      document.querySelector('.btn-signup').href = '/dashboard';
-      document.querySelector('.cta-primary').textContent = 'Go to Dashboard →';
-      document.querySelector('.cta-primary').href = '/dashboard';
+      // Replace Sign in / Sign up with Dashboard button
+      const signin = document.querySelector('.btn-signin');
+      const signup = document.querySelector('.btn-signup');
+      if (signin) signin.style.display = 'none';
+      if (signup) { signup.textContent = 'Dashboard →'; signup.href = '/dashboard'; }
+      // Update hero CTA
+      const cta = document.querySelector('.cta-primary');
+      if (cta) { cta.textContent = 'Go to Dashboard →'; cta.href = '/dashboard'; }
+      // Remove "Sign up free" from hamburger menu
+      document.querySelectorAll('.dditem').forEach(el => {
+        if (el.href && el.href.includes('/signup')) el.style.display = 'none';
+      });
     }
   } catch(e) {}
 

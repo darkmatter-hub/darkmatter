@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
     :root {
       --bg:#0d1117; --bg2:#161b22; --bg3:#21262d;
       --border:#30363d; --border2:#21262d;
@@ -19,12 +19,16 @@
     body { background:var(--bg); color:var(--text); font-family:var(--sans); min-height:100vh; -webkit-font-smoothing:antialiased; }
 
     /* ── HEADER ── */
-    header { background:var(--bg2); border-bottom:1px solid var(--border); height:58px; display:flex; align-items:center; padding:0 2rem; gap:1rem; position:sticky; top:0; z-index:100; }
-    .logo { display:flex; align-items:center; gap:0.65rem; text-decoration:none; }
-    .logo-mark { width:28px; height:28px; }
-    .logo-name { font-weight:700; font-size:0.9rem; color:var(--text); }
+    header { background:var(--bg2); border-bottom:1px solid var(--border); height:66px; display:flex; align-items:center; padding:0 2rem; gap:1rem; position:sticky; top:0; z-index:100; }
+
+    .logo { display:flex; align-items:center; gap:0.8rem; text-decoration:none; }
+    .logo-mark { width:38px; height:38px; flex-shrink:0; }
+    .logo-words { display:flex; flex-direction:column; line-height:1.2; }
+    .logo-name { font-weight:800; font-size:1.15rem; color:var(--text); letter-spacing:-0.02em; }
     .logo-name em { font-style:normal; color:var(--accent); }
-    .hsep { width:1px; height:18px; background:var(--border); }
+    .logo-sub { font-family:var(--mono); font-size:0.56rem; color:var(--text3); letter-spacing:0.08em; }
+
+    .hsep { width:1px; height:20px; background:var(--border); }
     .hpage { font-size:0.82rem; color:var(--text2); font-weight:500; }
     .hright { margin-left:auto; display:flex; align-items:center; gap:0.75rem; }
     .user-email { font-family:var(--mono); font-size:0.65rem; color:var(--text3); }
@@ -32,15 +36,99 @@
     .logout-btn:hover { border-color:var(--red); color:var(--red); }
 
     /* ── LAYOUT ── */
-    .layout { max-width:960px; margin:0 auto; padding:2rem; display:grid; grid-template-columns:1fr; gap:2rem; }
+    .layout { max-width:960px; margin:0 auto; padding:2rem; display:flex; flex-direction:column; gap:2rem; }
 
-    /* ── SECTION ── */
+    /* ── QUICKSTART BANNER ── */
+    .qs-banner {
+      background:var(--bg2); border:1px solid var(--border);
+      border-radius:10px; overflow:hidden;
+    }
+
+    .qs-banner-head {
+      padding:1rem 1.25rem 0.75rem;
+      border-bottom:1px solid var(--border);
+      display:flex; align-items:center; justify-content:space-between;
+    }
+
+    .qs-banner-title {
+      font-size:0.9rem; font-weight:600; color:var(--text);
+      display:flex; align-items:center; gap:0.5rem;
+    }
+
+    .qs-steps {
+      display:grid; grid-template-columns:repeat(3,1fr);
+      gap:0;
+    }
+
+    .qs-step {
+      padding:1.1rem 1.25rem;
+      border-right:1px solid var(--border);
+    }
+    .qs-step:last-child { border-right:none; }
+
+    .qs-step-num {
+      font-family:var(--mono); font-size:0.58rem;
+      color:var(--text3); letter-spacing:0.1em;
+      text-transform:uppercase; margin-bottom:0.5rem;
+      display:flex; align-items:center; gap:0.4rem;
+    }
+
+    .qs-num-badge {
+      width:16px; height:16px; border-radius:50%;
+      display:flex; align-items:center; justify-content:center;
+      font-size:0.6rem; font-weight:700;
+    }
+    .n1 { background:rgba(88,166,255,0.15); color:var(--accent); }
+    .n2 { background:rgba(210,153,34,0.15);  color:var(--amber); }
+    .n3 { background:rgba(63,185,80,0.15);   color:var(--green); }
+
+    .qs-step-title { font-size:0.82rem; font-weight:600; color:var(--text); margin-bottom:0.3rem; }
+    .qs-step-desc  { font-size:0.73rem; color:var(--text2); line-height:1.6; }
+
+    .qs-code {
+      background:var(--bg);
+      border-top:1px solid var(--border);
+      padding:1rem 1.25rem;
+    }
+
+    .qs-code-head {
+      display:flex; align-items:center; justify-content:space-between;
+      margin-bottom:0.5rem;
+    }
+
+    .qs-code-label {
+      font-family:var(--mono); font-size:0.58rem;
+      color:var(--text3); letter-spacing:0.1em; text-transform:uppercase;
+    }
+
+    .qs-copy-btn {
+      background:var(--bg3); border:1px solid var(--border);
+      color:var(--text2); padding:0.2rem 0.55rem;
+      border-radius:5px; font-family:var(--mono); font-size:0.6rem;
+      cursor:pointer; transition:all 0.15s;
+    }
+    .qs-copy-btn:hover { border-color:var(--accent); color:var(--accent); }
+    .qs-copy-btn.copied { border-color:var(--green); color:var(--green); }
+
+    .qs-pre {
+      font-family:var(--mono); font-size:0.68rem;
+      line-height:1.85; color:var(--text2); overflow-x:auto;
+    }
+    .qs-pre .c  { color:var(--text3); }
+    .qs-pre .cm { color:var(--text); }
+    .qs-pre .fl { color:var(--accent); }
+    .qs-pre .st { color:#a5d6ff; }
+    .qs-pre .ok { color:var(--green); }
+    .qs-pre .sp { display:block; height:0.35rem; }
+    .qs-pre .key-placeholder { color:var(--amber); }
+
+    /* ── SEC HEADING ── */
     .sec-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem; }
     .sec-title { font-size:0.95rem; font-weight:600; color:var(--text); }
-    .sec-sub { font-size:0.78rem; color:var(--text2); margin-top:0.15rem; }
+    .sec-sub   { font-size:0.78rem; color:var(--text2); margin-top:0.15rem; }
 
-    /* ── CREATE AGENT ── */
-    .create-bar { display:flex; gap:0.65rem; align-items:center; }
+    /* ── CREATE BAR ── */
+    .create-bar { display:flex; gap:0.65rem; align-items:center; margin-bottom:1.25rem; }
     .create-input { flex:1; background:var(--bg2); border:1px solid var(--border); border-radius:6px; padding:0.6rem 0.85rem; color:var(--text); font-family:var(--sans); font-size:0.85rem; outline:none; transition:border-color 0.15s; max-width:320px; }
     .create-input:focus { border-color:var(--accent); }
     .create-input::placeholder { color:var(--text3); }
@@ -49,48 +137,78 @@
     .create-btn:disabled { opacity:0.5; cursor:not-allowed; }
 
     /* ── AGENT CARDS ── */
-    .agents-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(420px, 1fr)); gap:1rem; }
+    .agents-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(420px,1fr)); gap:1rem; }
+
     .agent-card { background:var(--bg2); border:1px solid var(--border); border-radius:8px; overflow:hidden; }
+
     .agent-card-head { padding:1rem 1.1rem 0.75rem; border-bottom:1px solid var(--border2); display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; }
+
     .agent-name-row { display:flex; align-items:center; gap:0.6rem; }
     .agent-status { width:7px; height:7px; border-radius:50%; background:var(--green); box-shadow:0 0 6px var(--green); flex-shrink:0; }
     .agent-name { font-size:0.9rem; font-weight:600; color:var(--text); }
-    .agent-id { font-family:var(--mono); font-size:0.62rem; color:var(--text3); margin-top:0.15rem; }
+    .agent-id   { font-family:var(--mono); font-size:0.62rem; color:var(--text3); margin-top:0.15rem; }
+
     .agent-actions { display:flex; gap:0.4rem; flex-shrink:0; }
     .agent-btn { background:none; border:1px solid var(--border); color:var(--text2); padding:0.2rem 0.55rem; border-radius:5px; font-size:0.7rem; cursor:pointer; font-family:var(--sans); transition:all 0.12s; }
-    .agent-btn:hover { border-color:var(--border2); color:var(--text); background:var(--bg3); }
+    .agent-btn:hover { background:var(--bg3); color:var(--text); }
     .agent-btn.danger:hover { border-color:var(--red); color:var(--red); }
+
     .agent-card-body { padding:0.85rem 1.1rem; }
+
     .api-key-label { font-family:var(--mono); font-size:0.58rem; color:var(--text3); letter-spacing:0.1em; text-transform:uppercase; margin-bottom:0.35rem; }
+
     .api-key-row { display:flex; align-items:center; gap:0.5rem; }
-    .api-key-val { font-family:var(--mono); font-size:0.72rem; color:var(--text); background:var(--bg); border:1px solid var(--border); border-radius:5px; padding:0.45rem 0.7rem; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; letter-spacing:0.02em; }
-    .copy-btn { background:var(--bg3); border:1px solid var(--border); color:var(--text2); padding:0.42rem 0.65rem; border-radius:5px; font-size:0.72rem; cursor:pointer; font-family:var(--mono); white-space:nowrap; transition:all 0.12s; flex-shrink:0; }
+
+    .api-key-val {
+      font-family:var(--mono); font-size:0.72rem; color:var(--text);
+      background:var(--bg); border:1px solid var(--border);
+      border-radius:5px; padding:0.45rem 0.7rem;
+      flex:1; min-width:0; overflow:hidden;
+      text-overflow:ellipsis; white-space:nowrap;
+      letter-spacing:0.02em;
+    }
+
+    .reveal-btn {
+      background:var(--bg3); border:1px solid var(--border);
+      color:var(--text2); padding:0.42rem 0.65rem;
+      border-radius:5px; font-size:0.7rem; cursor:pointer;
+      font-family:var(--sans); white-space:nowrap;
+      transition:all 0.12s; flex-shrink:0;
+    }
+    .reveal-btn:hover { border-color:var(--text2); color:var(--text); }
+
+    .copy-btn {
+      background:var(--bg3); border:1px solid var(--border);
+      color:var(--text2); padding:0.42rem 0.65rem;
+      border-radius:5px; font-size:0.72rem; cursor:pointer;
+      font-family:var(--mono); white-space:nowrap;
+      transition:all 0.12s; flex-shrink:0;
+    }
     .copy-btn:hover { border-color:var(--accent); color:var(--accent); }
     .copy-btn.copied { border-color:var(--green); color:var(--green); }
+
     .agent-meta { font-size:0.68rem; color:var(--text3); margin-top:0.6rem; display:flex; gap:1rem; }
-    .usage-hint { margin-top:0.75rem; background:var(--bg); border:1px solid var(--border2); border-radius:5px; padding:0.55rem 0.7rem; font-family:var(--mono); font-size:0.62rem; color:var(--text3); line-height:1.7; }
-    .usage-hint .hl { color:var(--accent); }
 
-    /* ── EMPTY AGENTS ── */
+    /* ── EMPTY ── */
     .agents-empty { background:var(--bg2); border:1px solid var(--border); border-radius:8px; padding:2.5rem; text-align:center; }
-    .agents-empty-icon { font-size:2rem; margin-bottom:0.75rem; }
+    .agents-empty-icon  { font-size:2rem; margin-bottom:0.75rem; }
     .agents-empty-title { font-size:0.9rem; font-weight:600; color:var(--text); margin-bottom:0.35rem; }
-    .agents-empty-sub { font-size:0.8rem; color:var(--text2); }
+    .agents-empty-sub   { font-size:0.8rem; color:var(--text2); }
 
-    /* ── COMMIT LOG ── */
-    .log-wrap { background:var(--bg2); border:1px solid var(--border); border-radius:8px; overflow:hidden; }
-    .log-cols { display:grid; grid-template-columns:1fr 160px 80px; gap:1rem; padding:0.5rem 1.1rem; background:var(--bg3); border-bottom:1px solid var(--border); font-family:var(--mono); font-size:0.57rem; color:var(--text3); letter-spacing:0.1em; text-transform:uppercase; }
-    .cr { display:grid; grid-template-columns:1fr 160px 80px; gap:1rem; padding:0.8rem 1.1rem; border-bottom:1px solid var(--border2); align-items:center; transition:background 0.1s; }
+    /* ── LOG ── */
+    .log-wrap  { background:var(--bg2); border:1px solid var(--border); border-radius:8px; overflow:hidden; }
+    .log-cols  { display:grid; grid-template-columns:1fr 160px 80px; gap:1rem; padding:0.5rem 1.1rem; background:var(--bg3); border-bottom:1px solid var(--border); font-family:var(--mono); font-size:0.57rem; color:var(--text3); letter-spacing:0.1em; text-transform:uppercase; }
+    .cr        { display:grid; grid-template-columns:1fr 160px 80px; gap:1rem; padding:0.8rem 1.1rem; border-bottom:1px solid var(--border2); align-items:center; transition:background 0.1s; }
     .cr:last-child { border-bottom:none; }
-    .cr:hover { background:var(--bg3); }
-    .cbadge { display:inline-flex; align-items:center; gap:0.25rem; font-family:var(--mono); font-size:0.57rem; padding:0.1rem 0.38rem; border-radius:100px; border:1px solid; flex-shrink:0; }
-    .cbadge.v { color:var(--green); border-color:rgba(63,185,80,0.3); background:rgba(63,185,80,0.08); }
-    .cbadge.r { color:var(--red);   border-color:rgba(248,81,73,0.3);  background:rgba(248,81,73,0.08); }
-    .cmsg { display:flex; align-items:center; gap:0.45rem; margin-bottom:0.15rem; min-width:0; }
-    .ctxt { font-size:0.8rem; font-weight:500; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .cby { font-family:var(--mono); font-size:0.6rem; color:var(--text3); }
+    .cr:hover  { background:var(--bg3); }
+    .cbadge    { display:inline-flex; align-items:center; gap:0.25rem; font-family:var(--mono); font-size:0.57rem; padding:0.1rem 0.38rem; border-radius:100px; border:1px solid; flex-shrink:0; }
+    .cbadge.v  { color:var(--green); border-color:rgba(63,185,80,0.3);  background:rgba(63,185,80,0.08); }
+    .cbadge.r  { color:var(--red);   border-color:rgba(248,81,73,0.3);  background:rgba(248,81,73,0.08); }
+    .cmsg  { display:flex; align-items:center; gap:0.45rem; margin-bottom:0.15rem; min-width:0; }
+    .ctxt  { font-size:0.8rem; font-weight:500; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .cby   { font-family:var(--mono); font-size:0.6rem; color:var(--text3); }
     .choff { font-family:var(--mono); font-size:0.62rem; color:var(--amber); overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
-    .tme { font-family:var(--mono); font-size:0.6rem; color:var(--text3); text-align:right; }
+    .tme   { font-family:var(--mono); font-size:0.6rem; color:var(--text3); text-align:right; }
     .log-empty { padding:2rem; text-align:center; font-size:0.82rem; color:var(--text3); }
 
     /* ── TOAST ── */
@@ -98,8 +216,11 @@
     .toast.show { display:block; animation:toastIn 0.2s ease; }
     @keyframes toastIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
 
-    @media (max-width:600px) {
+    @media (max-width:640px) {
       .agents-grid { grid-template-columns:1fr; }
+      .qs-steps { grid-template-columns:1fr; }
+      .qs-step { border-right:none; border-bottom:1px solid var(--border); }
+      .qs-step:last-child { border-bottom:none; }
       .log-cols { display:none; }
       .cr { grid-template-columns:1fr auto; }
       .choff { display:none; }
@@ -111,18 +232,30 @@
 <header>
   <a class="logo" href="/">
     <div class="logo-mark">
-      <svg viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="15" cy="15" r="12.5" stroke="#30363d" stroke-width="0.8"/>
-        <ellipse cx="15" cy="15" rx="12.5" ry="4.8" stroke="#21262d" stroke-width="0.7" transform="rotate(-35 15 15)"/>
-        <ellipse cx="15" cy="15" rx="12.5" ry="4.8" stroke="#21262d" stroke-width="0.7" transform="rotate(35 15 15)"/>
-        <ellipse cx="15" cy="15" rx="12.5" ry="4.8" stroke="#21262d" stroke-width="0.7"/>
-        <circle cx="15" cy="15" r="2.4" fill="#58a6ff"/>
-        <circle cx="27.5" cy="15" r="1.4" fill="#58a6ff" opacity="0.7"/>
-        <circle cx="6" cy="9.5" r="1.1" fill="#3fb950" opacity="0.6"/>
-        <circle cx="21.5" cy="25" r="1.1" fill="#d29922" opacity="0.6"/>
+      <!-- 3-body problem logo -->
+      <svg viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="19" cy="19" r="17" stroke="#21262d" stroke-width="0.6" stroke-dasharray="2 2"/>
+        <!-- orbit path hint -->
+        <path d="M19 5 Q32 10 33 19 Q32 28 19 33 Q6 28 5 19 Q6 10 19 5" stroke="#30363d" stroke-width="0.5" fill="none" opacity="0.4"/>
+        <!-- body 1 — amber, top -->
+        <circle cx="19" cy="6" r="3.2" fill="#d29922" opacity="0.9"/>
+        <circle cx="19" cy="6" r="5"   stroke="#d29922" stroke-width="0.5" opacity="0.2"/>
+        <!-- body 2 — blue, bottom right -->
+        <circle cx="31" cy="27" r="2.6" fill="#58a6ff" opacity="0.9"/>
+        <circle cx="31" cy="27" r="4.2" stroke="#58a6ff" stroke-width="0.5" opacity="0.2"/>
+        <!-- body 3 — green, bottom left -->
+        <circle cx="7" cy="27" r="2.2" fill="#3fb950" opacity="0.9"/>
+        <circle cx="7" cy="27" r="3.6" stroke="#3fb950" stroke-width="0.5" opacity="0.2"/>
+        <!-- gravity lines between bodies -->
+        <line x1="19" y1="8" x2="29.5" y2="25" stroke="#30363d" stroke-width="0.6" opacity="0.5"/>
+        <line x1="19" y1="8" x2="8.5"  y2="25" stroke="#30363d" stroke-width="0.6" opacity="0.5"/>
+        <line x1="29" y1="26" x2="9"   y2="26" stroke="#30363d" stroke-width="0.6" opacity="0.5"/>
       </svg>
     </div>
-    <div class="logo-name">Dark<em>Matter</em></div>
+    <div class="logo-words">
+      <div class="logo-name">Dark<em>Matter</em></div>
+      <div class="logo-sub">agent context network</div>
+    </div>
   </a>
   <div class="hsep"></div>
   <div class="hpage">Dashboard</div>
@@ -134,16 +267,69 @@
 
 <div class="layout">
 
-  <!-- CREATE AGENT -->
+  <!-- QUICKSTART FOR DEVELOPERS -->
+  <div class="qs-banner" id="qs-banner">
+    <div class="qs-banner-head">
+      <div class="qs-banner-title">
+        ⚡ Quickstart — connect your agent in 3 steps
+      </div>
+
+    </div>
+    <div class="qs-steps">
+      <div class="qs-step">
+        <div class="qs-step-num"><span class="qs-num-badge n1">1</span>Create your agent below</div>
+        <div class="qs-step-title">Get your API key</div>
+        <div class="qs-step-desc">Type a name for your agent and click Create. You'll get a unique API key — copy it and keep it safe.</div>
+      </div>
+      <div class="qs-step">
+        <div class="qs-step-num"><span class="qs-num-badge n2">2</span>Add key to your code</div>
+        <div class="qs-step-title">One line to connect</div>
+        <div class="qs-step-desc">Pass the key as a Bearer token in the Authorization header. Works with Python, Node, curl — any language that can make an HTTP request.</div>
+      </div>
+      <div class="qs-step">
+        <div class="qs-step-num"><span class="qs-num-badge n3">3</span>Commit and pull</div>
+        <div class="qs-step-title">Agents start talking</div>
+        <div class="qs-step-desc">Agent X commits context, Agent Y pulls it. Context is verified and inherited. Your pipeline is connected.</div>
+      </div>
+    </div>
+    <div class="qs-code">
+      <div class="qs-code-head">
+        <div class="qs-code-label">// Python example — replace YOUR_API_KEY with your key</div>
+        <button class="qs-copy-btn" id="qs-copy-btn" onclick="copyQS()">Copy</button>
+      </div>
+      <div class="qs-pre">
+<span class="cm">import requests</span>
+<span class="sp"></span>
+<span class="c"># Paste your API key from the agent card below</span>
+<span class="cm">HEADERS = {<span class="st">"Authorization"</span>: <span class="st">"Bearer <span class="key-placeholder">YOUR_API_KEY</span>"</span>}</span>
+<span class="cm">URL     = <span class="st">"https://darkmatter-production.up.railway.app"</span></span>
+<span class="sp"></span>
+<span class="c"># Agent X → commit context for Agent Y</span>
+<span class="cm">requests.post(<span class="fl">f</span><span class="st">"{URL}/api/commit"</span>, headers=HEADERS, json={</span>
+<span class="cm">    <span class="st">"toAgentId"</span>: <span class="st">"dm_AGENT_Y_ID"</span>,</span>
+<span class="cm">    <span class="st">"context"</span>:   {<span class="st">"task"</span>: <span class="st">"done"</span>, <span class="st">"result"</span>: {<span class="st">"..."</span>: <span class="st">"..."</span>}},</span>
+<span class="cm">})</span>
+<span class="sp"></span>
+<span class="c"># Agent Y → pull and inherit verified context</span>
+<span class="cm">data    = requests.get(<span class="fl">f</span><span class="st">"{URL}/api/pull"</span>, headers=HEADERS).json()</span>
+<span class="cm">context = data[<span class="st">"commits"</span>][0][<span class="st">"context"</span>]</span>
+<span class="ok"># → context inherited ✓</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- AGENTS -->
   <div>
     <div class="sec-head">
       <div>
         <div class="sec-title">Your Agents</div>
-        <div class="sec-sub">Create an agent to get an API key you can use in your code</div>
+        <div class="sec-sub">Each agent gets a unique API key — use it in your code to commit and pull context</div>
       </div>
     </div>
-    <div class="create-bar" style="margin-bottom:1.25rem">
-      <input class="create-input" id="agent-name-input" placeholder="e.g. analysis-agent, gpt-writer, claude-researcher" maxlength="60" />
+    <div class="create-bar">
+      <input class="create-input" id="agent-name-input"
+        placeholder="e.g. analysis-agent, gpt-writer, claude-researcher"
+        maxlength="60" />
       <button class="create-btn" id="create-btn" onclick="createAgent()">+ Create Agent</button>
     </div>
     <div class="agents-grid" id="agents-grid">
@@ -171,7 +357,7 @@
         <div style="text-align:right">Time</div>
       </div>
       <div id="commit-list">
-        <div class="log-empty">No commits yet — commit context from one agent to another to see it here</div>
+        <div class="log-empty">No commits yet — connect an agent and start committing context</div>
       </div>
     </div>
   </div>
@@ -181,34 +367,26 @@
 <div class="toast" id="toast"></div>
 
 <script>
-  // ── Handle email confirmation redirect ───────────────
-  // Supabase sends access_token in the URL hash after email confirm
+  // ── Handle email confirmation token in hash ───────────
   if (window.location.hash && window.location.hash.includes('access_token')) {
     try {
       const params = new URLSearchParams(window.location.hash.substring(1));
       const accessToken  = params.get('access_token');
       const refreshToken = params.get('refresh_token');
       const expiresAt    = params.get('expires_at');
-
       if (accessToken) {
-        // Decode email from JWT payload
         const payload = JSON.parse(atob(accessToken.split('.')[1]));
-        const session = {
-          access_token:  accessToken,
-          refresh_token: refreshToken,
-          expires_at:    expiresAt,
+        localStorage.setItem('dm_session', JSON.stringify({
+          access_token: accessToken, refresh_token: refreshToken,
+          expires_at: expiresAt,
           user: { email: payload.email || '', id: payload.sub }
-        };
-        localStorage.setItem('dm_session', JSON.stringify(session));
-        // Clean the URL so token isn't visible
+        }));
         window.history.replaceState({}, document.title, '/dashboard');
       }
-    } catch(e) {
-      console.error('Failed to parse auth token from URL', e);
-    }
+    } catch(e) { console.error('Auth parse error', e); }
   }
 
-  // ── Auth check ──────────────────────────────────────
+  // ── Auth check ───────────────────────────────────────
   const raw = localStorage.getItem('dm_session');
   if (!raw) { window.location.href = '/login'; }
 
@@ -216,11 +394,36 @@
   try { session = JSON.parse(raw); } catch(e) { window.location.href = '/login'; }
 
   const token = session?.access_token;
-  if (!token) window.location.href = '/login';
+  if (!token) { window.location.href = '/login'; }
 
   document.getElementById('user-email').textContent = session?.user?.email || '';
 
-  // ── Auth header helper ───────────────────────────────
+  // ── Copy quickstart code ─────────────────────────────
+  function copyQS() {
+    const code = `import requests
+
+HEADERS = {"Authorization": "Bearer YOUR_API_KEY"}
+URL     = "https://darkmatter-production.up.railway.app"
+
+# Agent X → commit context for Agent Y
+requests.post(f"{URL}/api/commit", headers=HEADERS, json={
+    "toAgentId": "dm_AGENT_Y_ID",
+    "context":   {"task": "done", "result": {"...": "..."}},
+})
+
+# Agent Y → pull and inherit verified context
+data    = requests.get(f"{URL}/api/pull", headers=HEADERS).json()
+context = data["commits"][0]["context"]`;
+
+    navigator.clipboard.writeText(code).then(() => {
+      const btn = document.getElementById('qs-copy-btn');
+      btn.textContent = 'Copied!';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+    });
+  }
+
+  // ── Auth helpers ─────────────────────────────────────
   const authHeaders = () => ({
     'Content-Type': 'application/json',
     'Authorization': `Bearer ${token}`,
@@ -243,23 +446,32 @@
     return new Date(ts).toLocaleDateString();
   }
 
+  // ── Mask API key ─────────────────────────────────────
+  function maskKey(key) {
+    // Show prefix + last 4: dm_sk_••••••••••••••••a1b2
+    if (!key) return '';
+    const prefix = key.slice(0, 9); // "dm_sk_fd9"
+    const last4  = key.slice(-4);
+    return prefix + '••••••••••••••••' + last4;
+  }
+
   // ── Create agent ─────────────────────────────────────
   async function createAgent() {
     const input = document.getElementById('agent-name-input');
     const btn   = document.getElementById('create-btn');
     const name  = input.value.trim();
-
     if (!name) { toast('Enter a name for your agent'); return; }
 
     btn.disabled = true;
     btn.textContent = 'Creating...';
 
     try {
-      const res  = await fetch('/dashboard/agents', { method:'POST', headers: authHeaders(), body: JSON.stringify({ agentName: name }) });
+      const res  = await fetch('/dashboard/agents', {
+        method: 'POST', headers: authHeaders(),
+        body: JSON.stringify({ agentName: name })
+      });
       const data = await res.json();
-
       if (data.error) { toast('Error: ' + data.error); return; }
-
       input.value = '';
       toast('✓ Agent created — copy your API key');
       await loadAgents();
@@ -272,12 +484,16 @@
   // ── Load agents ───────────────────────────────────────
   async function loadAgents() {
     try {
-      const res   = await fetch('/dashboard/agents', { headers: authHeaders() });
-      const data  = await res.json();
-      const grid  = document.getElementById('agents-grid');
+      const res  = await fetch('/dashboard/agents', { headers: authHeaders() });
+      const data = await res.json();
+      const grid = document.getElementById('agents-grid');
 
       if (!data.length) {
-        grid.innerHTML = `<div class="agents-empty"><div class="agents-empty-icon">🤖</div><div class="agents-empty-title">No agents yet</div><div class="agents-empty-sub">Create your first agent above to get an API key</div></div>`;
+        grid.innerHTML = `<div class="agents-empty">
+          <div class="agents-empty-icon">🤖</div>
+          <div class="agents-empty-title">No agents yet</div>
+          <div class="agents-empty-sub">Create your first agent above to get an API key</div>
+        </div>`;
         return;
       }
 
@@ -293,28 +509,42 @@
             </div>
             <div class="agent-actions">
               <button class="agent-btn" onclick="rotateKey('${a.agentId}')">↻ Rotate key</button>
-              <button class="agent-btn danger" onclick="deleteAgent('${a.agentId}', '${escHtml(a.agentName)}')">Delete</button>
+              <button class="agent-btn danger" onclick="deleteAgent('${a.agentId}','${escHtml(a.agentName)}')">Delete</button>
             </div>
           </div>
           <div class="agent-card-body">
             <div class="api-key-label">API Key</div>
             <div class="api-key-row">
-              <div class="api-key-val" id="key-${a.agentId}">${a.apiKey}</div>
-              <button class="copy-btn" id="copy-${a.agentId}" onclick="copyKey('${a.agentId}', '${a.apiKey}')">Copy</button>
+              <div class="api-key-val" id="key-display-${a.agentId}">${maskKey(a.apiKey)}</div>
+              <button class="reveal-btn" id="reveal-${a.agentId}"
+                onclick="toggleReveal('${a.agentId}','${a.apiKey}')">Reveal</button>
+              <button class="copy-btn" id="copy-${a.agentId}"
+                onclick="copyKey('${a.agentId}','${a.apiKey}')">Copy</button>
             </div>
             <div class="agent-meta">
               <span>Created ${ago(a.createdAt)}</span>
               ${a.lastActive ? `<span>Last active ${ago(a.lastActive)}</span>` : '<span>Never used</span>'}
             </div>
-            <div class="usage-hint">
-              <span style="color:var(--text3)"># Use in your code:</span><br>
-              Authorization: Bearer <span class="hl">${a.apiKey}</span>
-            </div>
           </div>
         </div>
       `).join('');
-    } catch(e) {
-      console.error(e);
+    } catch(e) { console.error(e); }
+  }
+
+  // ── Reveal / hide API key ────────────────────────────
+  const revealed = {};
+
+  function toggleReveal(agentId, fullKey) {
+    const display = document.getElementById('key-display-' + agentId);
+    const btn     = document.getElementById('reveal-' + agentId);
+    if (revealed[agentId]) {
+      display.textContent = maskKey(fullKey);
+      btn.textContent = 'Reveal';
+      revealed[agentId] = false;
+    } else {
+      display.textContent = fullKey;
+      btn.textContent = 'Hide';
+      revealed[agentId] = true;
     }
   }
 
@@ -328,29 +558,28 @@
     toast('API key copied to clipboard');
   }
 
-  // ── Rotate API key ────────────────────────────────────
+  // ── Rotate key ───────────────────────────────────────
   async function rotateKey(agentId) {
-    if (!confirm('Rotate API key? Your current key will stop working immediately.')) return;
+    if (!confirm('Rotate API key? Your current key stops working immediately.')) return;
     try {
       const res  = await fetch(`/dashboard/agents/${agentId}/rotate`, { method:'POST', headers: authHeaders() });
       const data = await res.json();
       if (data.error) { toast('Error: ' + data.error); return; }
       toast('✓ API key rotated — copy your new key');
+      delete revealed[agentId];
       await loadAgents();
-    } catch(e) {
-      toast('Something went wrong');
-    }
+    } catch(e) { toast('Something went wrong'); }
   }
 
   // ── Delete agent ─────────────────────────────────────
   async function deleteAgent(agentId, name) {
     if (!confirm(`Delete agent "${name}"? This cannot be undone.`)) return;
     try {
-      const res = await fetch(`/dashboard/agents/${agentId}`, { method:'DELETE', headers: authHeaders() });
-      if (res.ok) { toast('Agent deleted'); await loadAgents(); await loadCommits(); }
-    } catch(e) {
-      toast('Something went wrong');
-    }
+      await fetch(`/dashboard/agents/${agentId}`, { method:'DELETE', headers: authHeaders() });
+      toast('Agent deleted');
+      await loadAgents();
+      await loadCommits();
+    } catch(e) { toast('Something went wrong'); }
   }
 
   // ── Load commits ─────────────────────────────────────
@@ -361,7 +590,7 @@
       const list = document.getElementById('commit-list');
 
       if (!data.length) {
-        list.innerHTML = '<div class="log-empty">No commits yet — commit context from one agent to another to see it here</div>';
+        list.innerHTML = '<div class="log-empty">No commits yet — connect an agent and start committing context</div>';
         return;
       }
 
@@ -370,7 +599,7 @@
           <div>
             <div class="cmsg">
               <span class="cbadge ${c.verified?'v':'r'}">${c.verified?'✓ verified':'✗ rejected'}</span>
-              <span class="ctxt">Context inherited — ${c.verified?'signature confirmed':'rejected'}</span>
+              <span class="ctxt">Context inherited — ${c.verified?'confirmed':'rejected'}</span>
             </div>
             <div class="cby">${escHtml(c.from)}</div>
           </div>
@@ -378,26 +607,25 @@
           <div class="tme">${ago(c.timestamp)}</div>
         </div>
       `).join('');
-    } catch(e) {
-      console.error(e);
-    }
+    } catch(e) { console.error(e); }
   }
 
   // ── Logout ────────────────────────────────────────────
-  async function logout() {
+  function logout() {
     localStorage.removeItem('dm_session');
     window.location.href = '/login';
   }
 
   // ── Escape HTML ───────────────────────────────────────
-  function escHtml(str) {
-    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  function escHtml(s) {
+    return String(s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
   // ── Enter key on input ────────────────────────────────
-  document.getElementById('agent-name-input').addEventListener('keydown', e => {
-    if (e.key === 'Enter') createAgent();
-  });
+  document.getElementById('agent-name-input')
+    .addEventListener('keydown', e => { if (e.key==='Enter') createAgent(); });
 
   // ── Init ─────────────────────────────────────────────
   loadAgents();
