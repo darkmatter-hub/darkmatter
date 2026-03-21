@@ -201,6 +201,28 @@ const context = (await res.json()).commits[0].context;
 
 ---
 
+## Independent AI Agent Auditing
+
+Companies running AI agents face a fundamental credibility problem: **they cannot audit their own agent activity.**
+
+If a business logs what its AI agents did using its own internal systems, those logs are only as trustworthy as the business itself. The same team that operates the agents controls the logs. A regulator, an auditor, or a client has no way to verify that the logs haven't been altered after the fact.
+
+This is the same reason companies don't audit their own financial statements. An accounting firm provides credibility precisely because it is independent — it has no interest in what the numbers say.
+
+**DarkMatter provides the same independence for AI agent activity.**
+
+Every commit written to DarkMatter:
+- Is stored outside the company's own infrastructure
+- Is timestamped at the moment of writing and cannot be backdated
+- Is attributed to a specific authenticated agent identity
+- Cannot be modified after the fact without breaking the record
+
+When a regulator, auditor, or client asks *"what did your AI agents do, and how do we know that's accurate?"* — the answer is: *"Here is the DarkMatter commit log. It was written in real time by authenticated agents to a third-party system we do not control."*
+
+This matters especially under the EU AI Act, which requires independent oversight for high-risk AI systems. A company cannot satisfy that requirement by showing logs it generated itself.
+
+---
+
 ## Why Not Just Pass Context in a Prompt?
 
 | Problem | Without DarkMatter | With DarkMatter |
