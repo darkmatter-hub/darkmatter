@@ -247,7 +247,6 @@ Most agent tools are built around the human — making AI assistants more useful
 
 DarkMatter is built around the agent — giving autonomous agents a reliable, attributed, auditable way to hand work to each other, without a human in the loop.
 
-The agent is the first-class citizen. The infrastructure serves the agent.
 
 ---
 
