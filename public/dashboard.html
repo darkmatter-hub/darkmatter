@@ -227,6 +227,27 @@
     .qs-panel.active { display:block; }
 
     /* ── TOAST ── */
+    /* ── CONTEXT MODAL ── */
+    .ctx-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:500; align-items:center; justify-content:center; padding:1.5rem; }
+    .ctx-modal.open { display:flex; }
+    .ctx-panel { background:var(--bg2); border:1px solid var(--border); border-radius:10px; width:100%; max-width:680px; max-height:80vh; display:flex; flex-direction:column; overflow:hidden; }
+    .ctx-panel-head { padding:1rem 1.25rem; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
+    .ctx-panel-title { font-size:0.88rem; font-weight:600; color:var(--text); }
+    .ctx-panel-meta { font-family:var(--mono); font-size:0.6rem; color:var(--text3); margin-top:0.15rem; }
+    .ctx-close { background:none; border:none; color:var(--text2); font-size:1.2rem; cursor:pointer; padding:0 0.25rem; line-height:1; }
+    .ctx-close:hover { color:var(--text); }
+    .ctx-tabs { display:flex; border-bottom:1px solid var(--border); background:var(--bg3); flex-shrink:0; }
+    .ctx-tab { background:none; border:none; border-bottom:2px solid transparent; color:var(--text2); padding:0.5rem 0.9rem; font-family:var(--mono); font-size:0.65rem; cursor:pointer; transition:all 0.15s; margin-bottom:-1px; letter-spacing:0.06em; }
+    .ctx-tab:hover { color:var(--text); }
+    .ctx-tab.active { color:var(--accent); border-bottom-color:var(--accent); background:var(--bg2); }
+    .ctx-body { flex:1; overflow-y:auto; padding:1.1rem 1.25rem; }
+    .ctx-pre { font-family:var(--mono); font-size:0.7rem; color:var(--text2); line-height:1.8; white-space:pre-wrap; word-break:break-word; }
+    .ctx-field { margin-bottom:0.85rem; }
+    .ctx-field-label { font-family:var(--mono); font-size:0.58rem; color:var(--text3); letter-spacing:0.1em; text-transform:uppercase; margin-bottom:0.3rem; }
+    .ctx-field-val { font-size:0.8rem; color:var(--text); }
+    .ctx-badge-v { color:var(--green); font-family:var(--mono); font-size:0.7rem; }
+    .ctx-badge-r { color:var(--red);   font-family:var(--mono); font-size:0.7rem; }
+
     .toast { position:fixed; bottom:1.5rem; right:1.5rem; background:var(--bg3); border:1px solid var(--border); border-radius:8px; padding:0.75rem 1rem; font-size:0.8rem; color:var(--text); box-shadow:0 8px 24px rgba(0,0,0,0.4); display:none; z-index:1000; }
     .toast.show { display:block; animation:toastIn 0.2s ease; }
     @keyframes toastIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
@@ -434,9 +455,12 @@
     <div class="sec-head">
       <div>
         <div class="sec-title">Commit Log</div>
-        <div class="sec-sub">Context handoffs between your agents</div>
+        <div class="sec-sub">Context handoffs — click any row to inspect full context. Export for audits.</div>
       </div>
-      <button class="logout-btn" onclick="loadCommits()" style="border-color:var(--border2)">↻ Refresh</button>
+      <div style="display:flex;gap:0.5rem;">
+        <button class="logout-btn" onclick="exportLog()" style="border-color:var(--border2)">↓ Export</button>
+        <button class="logout-btn" onclick="loadCommits()" style="border-color:var(--border2)">↻ Refresh</button>
+      </div>
     </div>
     <div class="log-wrap">
       <div class="log-cols">
@@ -451,7 +475,35 @@
 
 </div>
 
+<!-- CONTEXT MODAL -->
+<div class="ctx-modal" id="ctx-modal" onclick="closeCtxModal(event)">
+  <div class="ctx-panel">
+    <div class="ctx-panel-head">
+      <div>
+        <div class="ctx-panel-title" id="ctx-title">Commit Context</div>
+        <div class="ctx-panel-meta" id="ctx-meta"></div>
+      </div>
+      <button class="ctx-close" onclick="closeCtxModalDirect()">×</button>
+    </div>
+    <div class="ctx-tabs">
+      <button class="ctx-tab active" onclick="switchCtxTab('summary')">Summary</button>
+      <button class="ctx-tab" onclick="switchCtxTab('raw')">Raw JSON</button>
+    </div>
+    <div class="ctx-body">
+      <div id="ctx-summary"></div>
+      <div id="ctx-raw" style="display:none;"></div>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
+<footer style="border-top:1px solid var(--border);background:var(--bg2);padding:0.85rem 2rem;display:flex;align-items:center;justify-content:space-between;">
+  <div style="font-size:0.7rem;color:var(--text3);">© 2026 DarkMatter. All rights reserved.</div>
+  <div style="display:flex;gap:1.25rem;">
+    <a href="https://github.com/bengunvl/darkmatter" target="_blank" style="font-size:0.7rem;color:var(--text3);text-decoration:none;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text3)'">GitHub</a>
+    <a href="https://github.com/bengunvl/darkmatter/blob/main/PRODUCTION.md" target="_blank" style="font-size:0.7rem;color:var(--text3);text-decoration:none;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text3)'">Self-host</a>
+  </div>
+</footer>
 
 <script>
   // ── Handle email confirmation token in hash ───────────
@@ -742,19 +794,18 @@ const context = (await res.json()).commits[0].context;`,
       }
 
       list.innerHTML = data.map(c => {
-        // Extract a meaningful summary from context
         const ctx     = c.context || {};
-        const preview = ctx.task || ctx.next_task || ctx.output?.slice(0,60) || 'context handoff';
-        const trimmed = preview.length > 55 ? preview.slice(0,55)+'...' : preview;
+        const preview = ctx.task || ctx.next_task || (typeof ctx.output === 'string' ? ctx.output.slice(0,60) : '') || 'context handoff';
+        const trimmed = preview.length > 58 ? preview.slice(0,58)+'...' : preview;
+        const cdata   = JSON.stringify(c).replace(/'/g, "\\'");
         return `
-        <div class="cr" style="cursor:pointer" onclick="toggleCtx(this)" title="Click to expand context">
+        <div class="cr" style="cursor:pointer" onclick="openCtxModal(${cdata})" title="Click to inspect full context">
           <div style="min-width:0">
             <div class="cmsg">
-              <span class="cbadge ${c.verified?'v':'r'}">${c.verified?'✓':'✗'}</span>
+              <span class="cbadge ${c.verified?'v':'r'}">${c.verified?'✓ verified':'✗ rejected'}</span>
               <span class="ctxt">${escHtml(trimmed)}</span>
             </div>
             <div class="cby">${escHtml(c.from)} ──▶ ${escHtml(c.to)}</div>
-            <div class="ctx-detail" style="display:none;margin-top:0.6rem;background:var(--bg);border:1px solid var(--border2);border-radius:5px;padding:0.6rem 0.75rem;font-family:var(--mono);font-size:0.62rem;color:var(--text2);line-height:1.7;white-space:pre-wrap;max-height:180px;overflow-y:auto;">${escHtml(JSON.stringify(c.context, null, 2))}</div>
           </div>
           <div class="tme">${ago(c.timestamp)}</div>
         </div>`;
@@ -766,6 +817,96 @@ const context = (await res.json()).commits[0].context;`,
   function toggleCtx(row) {
     const detail = row.querySelector('.ctx-detail');
     if (detail) detail.style.display = detail.style.display === 'none' ? 'block' : 'none';
+  }
+
+  // ── Context modal ────────────────────────────────────
+  let currentCommit = null;
+
+  function openCtxModal(c) {
+    currentCommit = c;
+    const ctx = c.context || {};
+
+    document.getElementById('ctx-title').textContent =
+      ctx.task || ctx.next_task || 'Context Handoff';
+    document.getElementById('ctx-meta').textContent =
+      `${c.from} ──▶ ${c.to}  ·  ${ago(c.timestamp)}  ·  ${c.verified ? '✓ verified' : '✗ rejected'}`;
+
+    // Summary tab
+    let summaryHtml = '';
+    summaryHtml += `<div class="ctx-field"><div class="ctx-field-label">Status</div><div class="${c.verified ? 'ctx-badge-v' : 'ctx-badge-r'}">${c.verified ? '✓ Verified — content authenticated' : '✗ Rejected — not delivered to recipient'}</div></div>`;
+    summaryHtml += `<div class="ctx-field"><div class="ctx-field-label">From Agent</div><div class="ctx-field-val">${escHtml(c.from)}</div></div>`;
+    summaryHtml += `<div class="ctx-field"><div class="ctx-field-label">To Agent</div><div class="ctx-field-val">${escHtml(c.to)}</div></div>`;
+    summaryHtml += `<div class="ctx-field"><div class="ctx-field-label">Timestamp</div><div class="ctx-field-val">${new Date(c.timestamp).toLocaleString()}</div></div>`;
+
+    // Render each context key as its own field
+    Object.entries(ctx).forEach(([k, v]) => {
+      const val = typeof v === 'object' ? JSON.stringify(v, null, 2) : String(v);
+      summaryHtml += `<div class="ctx-field">
+        <div class="ctx-field-label">${escHtml(k)}</div>
+        <div class="ctx-pre">${escHtml(val)}</div>
+      </div>`;
+    });
+
+    document.getElementById('ctx-summary').innerHTML = summaryHtml;
+    document.getElementById('ctx-raw').innerHTML =
+      `<pre class="ctx-pre">${escHtml(JSON.stringify(c, null, 2))}</pre>`;
+
+    switchCtxTab('summary');
+    document.getElementById('ctx-modal').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeCtxModal(e) {
+    if (e.target === document.getElementById('ctx-modal')) closeCtxModalDirect();
+  }
+
+  function closeCtxModalDirect() {
+    document.getElementById('ctx-modal').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  function switchCtxTab(name) {
+    document.querySelectorAll('.ctx-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('ctx-summary').style.display = name === 'summary' ? 'block' : 'none';
+    document.getElementById('ctx-raw').style.display     = name === 'raw'     ? 'block' : 'none';
+    document.querySelectorAll('.ctx-tab')[name === 'summary' ? 0 : 1].classList.add('active');
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeCtxModalDirect();
+  });
+
+  // ── Export commit log ─────────────────────────────────
+  async function exportLog() {
+    try {
+      const res  = await fetch('/dashboard/commits', { headers: authHeaders() });
+      const data = await res.json();
+      if (!data.length) { toast('No commits to export'); return; }
+
+      const rows = [
+        ['Commit ID', 'From Agent', 'To Agent', 'Verified', 'Timestamp', 'Context'],
+        ...data.map(c => [
+          c.id || '',
+          c.fromId || c.from,
+          c.toId   || c.to,
+          c.verified ? 'true' : 'false',
+          c.timestamp,
+          JSON.stringify(c.context || {}),
+        ])
+      ];
+
+      const csv  = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href     = url;
+      a.download = `darkmatter-audit-${new Date().toISOString().slice(0,10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast('✓ Audit log exported as CSV');
+    } catch(e) {
+      toast('Export failed — try again');
+    }
   }
 
   // ── Logout ────────────────────────────────────────────
