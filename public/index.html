@@ -500,7 +500,7 @@
         <span class="ddicon">⌥</span>
         <div>GitHub<span class="ddhint">Source code · MIT License</span></div>
       </a>
-      <a class="dditem" href="https://github.com/bengunvl/darkmatter/tree/main/examples/claude-to-gpt" target="_blank">
+      <a class="dditem" href="https://github.com/bengunvl/darkmatter#real-world-example-claude--gpt-pipeline" target="_blank">
         <span class="ddicon">⚡</span>
         <div>Real-world Example<span class="ddhint">Claude → GPT pipeline walkthrough</span></div>
       </a>
@@ -596,8 +596,8 @@
   <div class="steps">
     <div class="step">
       <div class="step-emoji">🔑</div>
-      <div class="step-title">Sign up &amp; connect or create your agent</div>
-      <div class="step-desc">Sign up free, then connect your existing agent or create a new one. You'll get a unique API key from your dashboard in seconds. No local setup required.</div>
+      <div class="step-title">Sign up and create your agent</div>
+      <div class="step-desc">Create a free account, name your agent, and get a unique API key from your dashboard in seconds. Paste it into your code — that's all it takes to connect.</div>
       <div class="step-tag tg">free · 30 seconds</div>
     </div>
     <div class="step-arrow"><div>▶</div><div class="arrow-label">API key</div></div>
@@ -615,43 +615,6 @@
       <div class="step-tag tv">GET /api/pull</div>
     </div>
   </div>
-
-  <!-- CODE EXAMPLE WITH COPY BUTTON -->
-  <div class="code-wrap">
-    <div class="code-header">
-      <div class="code-dots">
-        <div class="cd r"></div><div class="cd y"></div><div class="cd g"></div>
-      </div>
-      <div class="code-filename">connect-your-agent.py</div>
-      <button class="copy-code-btn" id="copy-code-btn" onclick="copyCode()">Copy</button>
-    </div>
-    <div class="code-body" id="code-body">
-<span class="cc"># pip install requests  ·  works with any Python agent or LLM framework</span>
-<span class="cm">import requests</span>
-<span class="sp"></span>
-<span class="cm">API_KEY  = <span class="st">"dm_sk_your_key_here"</span>  <span class="cc"># from your DarkMatter dashboard</span></span>
-<span class="cm">BASE_URL = <span class="st">"https://darkmatter-production.up.railway.app"</span></span>
-<span class="cm">HEADERS  = {<span class="st">"Authorization"</span>: <span class="fl">f</span><span class="st">"Bearer {API_KEY}"</span>}</span>
-<span class="sp"></span>
-<span class="cc"># ── Agent X: commit context for Agent Y ──────────────────────</span>
-<span class="cm">requests.post(<span class="fl">f</span><span class="st">"{BASE_URL}/api/commit"</span>, headers=HEADERS, json={</span>
-<span class="cm">    <span class="st">"toAgentId"</span>: <span class="st">"dm_agent_y_id"</span>,  <span class="cc"># Agent Y's ID from their dashboard</span></span>
-<span class="cm">    <span class="st">"context"</span>:   {</span>
-<span class="cm">        <span class="st">"task"</span>:     <span class="st">"Q1 analysis complete"</span>,</span>
-<span class="cm">        <span class="st">"findings"</span>: {<span class="st">"topRegion"</span>: <span class="st">"APAC"</span>, <span class="st">"growth"</span>: <span class="st">"34%"</span>},</span>
-<span class="cm">        <span class="st">"nextTask"</span>: <span class="st">"generate executive summary"</span>,</span>
-<span class="cm">    }</span>
-<span class="cm">})</span>
-<span class="ok"># → {"verified": true, "commitId": "commit_..."}</span>
-<span class="sp"></span>
-<span class="cc"># ── Agent Y: pull and inherit verified context ────────────────</span>
-<span class="cm">res     = requests.get(<span class="fl">f</span><span class="st">"{BASE_URL}/api/pull"</span>, headers=HEADERS)</span>
-<span class="cm">context = res.json()[<span class="st">"commits"</span>][0][<span class="st">"context"</span>]</span>
-<span class="cm">print(context[<span class="st">"nextTask"</span>])  <span class="cc"># "generate executive summary"</span></span>
-<span class="ok"># → Agent Y picks up exactly where Agent X left off</span>
-    </div>
-  </div>
-</div>
 
 <!-- GIT MAP -->
 <div class="section" style="padding-top:0">
