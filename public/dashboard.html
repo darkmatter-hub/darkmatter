@@ -36,7 +36,9 @@
     .logout-btn:hover { border-color:var(--red); color:var(--red); }
 
     /* ── LAYOUT ── */
-    .layout { max-width:960px; margin:0 auto; padding:2rem; display:flex; flex-direction:column; gap:2rem; }
+    .layout { max-width:1100px; margin:0 auto; padding:2rem; display:flex; flex-direction:column; gap:2rem; }
+    .top-row { display:grid; grid-template-columns:1fr 380px; gap:1.5rem; align-items:start; }
+    @media (max-width:860px) { .top-row { grid-template-columns:1fr; } }
 
     /* ── QUICKSTART BANNER ── */
     .qs-banner {
@@ -211,6 +213,19 @@
     .tme   { font-family:var(--mono); font-size:0.6rem; color:var(--text3); text-align:right; }
     .log-empty { padding:2rem; text-align:center; font-size:0.82rem; color:var(--text3); }
 
+    /* ── QS TABS ── */
+    .qs-tabs { display:flex; border-bottom:1px solid var(--border); background:var(--bg3); }
+    .qs-tab {
+      background:none; border:none; border-bottom:2px solid transparent;
+      color:var(--text2); padding:0.5rem 0.85rem; font-family:var(--mono);
+      font-size:0.65rem; cursor:pointer; transition:all 0.15s;
+      letter-spacing:0.06em; margin-bottom:-1px;
+    }
+    .qs-tab:hover { color:var(--text); }
+    .qs-tab.active { color:var(--accent); border-bottom-color:var(--accent); background:var(--bg2); }
+    .qs-panel { display:none; }
+    .qs-panel.active { display:block; }
+
     /* ── TOAST ── */
     .toast { position:fixed; bottom:1.5rem; right:1.5rem; background:var(--bg3); border:1px solid var(--border); border-radius:8px; padding:0.75rem 1rem; font-size:0.8rem; color:var(--text); box-shadow:0 8px 24px rgba(0,0,0,0.4); display:none; z-index:1000; }
     .toast.show { display:block; animation:toastIn 0.2s ease; }
@@ -267,58 +282,8 @@
 
 <div class="layout">
 
-  <!-- QUICKSTART FOR DEVELOPERS -->
-  <div class="qs-banner" id="qs-banner">
-    <div class="qs-banner-head">
-      <div class="qs-banner-title">
-        ⚡ Quickstart — connect your agent in 3 steps
-      </div>
-
-    </div>
-    <div class="qs-steps">
-      <div class="qs-step">
-        <div class="qs-step-num"><span class="qs-num-badge n1">1</span>Create your agent below</div>
-        <div class="qs-step-title">Get your API key</div>
-        <div class="qs-step-desc">Type a name for your agent and click Create. You'll get a unique API key — copy it and keep it safe.</div>
-      </div>
-      <div class="qs-step">
-        <div class="qs-step-num"><span class="qs-num-badge n2">2</span>Add key to your code</div>
-        <div class="qs-step-title">One line to connect</div>
-        <div class="qs-step-desc">Pass the key as a Bearer token in the Authorization header. Works with Python, Node, curl — any language that can make an HTTP request.</div>
-      </div>
-      <div class="qs-step">
-        <div class="qs-step-num"><span class="qs-num-badge n3">3</span>Commit and pull</div>
-        <div class="qs-step-title">Agents start talking</div>
-        <div class="qs-step-desc">Agent X commits context, Agent Y pulls it. Context is verified and inherited. Your pipeline is connected.</div>
-      </div>
-    </div>
-    <div class="qs-code">
-      <div class="qs-code-head">
-        <div class="qs-code-label">// Python example — replace YOUR_API_KEY with your key</div>
-        <button class="qs-copy-btn" id="qs-copy-btn" onclick="copyQS()">Copy</button>
-      </div>
-      <div class="qs-pre">
-<span class="cm">import requests</span>
-<span class="sp"></span>
-<span class="c"># Paste your API key from the agent card below</span>
-<span class="cm">HEADERS = {<span class="st">"Authorization"</span>: <span class="st">"Bearer <span class="key-placeholder">YOUR_API_KEY</span>"</span>}</span>
-<span class="cm">URL     = <span class="st">"https://darkmatter-production.up.railway.app"</span></span>
-<span class="sp"></span>
-<span class="c"># Agent X → commit context for Agent Y</span>
-<span class="cm">requests.post(<span class="fl">f</span><span class="st">"{URL}/api/commit"</span>, headers=HEADERS, json={</span>
-<span class="cm">    <span class="st">"toAgentId"</span>: <span class="st">"dm_AGENT_Y_ID"</span>,</span>
-<span class="cm">    <span class="st">"context"</span>:   {<span class="st">"task"</span>: <span class="st">"done"</span>, <span class="st">"result"</span>: {<span class="st">"..."</span>: <span class="st">"..."</span>}},</span>
-<span class="cm">})</span>
-<span class="sp"></span>
-<span class="c"># Agent Y → pull and inherit verified context</span>
-<span class="cm">data    = requests.get(<span class="fl">f</span><span class="st">"{URL}/api/pull"</span>, headers=HEADERS).json()</span>
-<span class="cm">context = data[<span class="st">"commits"</span>][0][<span class="st">"context"</span>]</span>
-<span class="ok"># → context inherited ✓</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- AGENTS -->
+  <div class="top-row">
+  <!-- AGENTS (left) -->
   <div>
     <div class="sec-head">
       <div>
@@ -328,7 +293,7 @@
     </div>
     <div class="create-bar">
       <input class="create-input" id="agent-name-input"
-        placeholder="e.g. analysis-agent, gpt-writer, claude-researcher"
+        placeholder="e.g. analysis-agent, gpt-writer"
         maxlength="60" />
       <button class="create-btn" id="create-btn" onclick="createAgent()">+ Create Agent</button>
     </div>
@@ -340,6 +305,119 @@
       </div>
     </div>
   </div>
+
+  <!-- QUICKSTART (right) -->
+  <div class="qs-banner" id="qs-banner">
+    <div class="qs-banner-head">
+      <div class="qs-banner-title">⚡ API Quickstart</div>
+    </div>
+
+    <!-- TABS -->
+    <div class="qs-tabs">
+      <button class="qs-tab active" onclick="switchTab('curl')">curl</button>
+      <button class="qs-tab" onclick="switchTab('python')">Python</button>
+      <button class="qs-tab" onclick="switchTab('node')">Node.js</button>
+    </div>
+
+    <!-- CURL TAB -->
+    <div class="qs-panel active" id="tab-curl">
+      <div class="qs-code">
+        <div class="qs-code-head">
+          <div class="qs-code-label">// replace YOUR_KEY and AGENT IDs</div>
+          <button class="qs-copy-btn" onclick="copyTab('curl')">Copy</button>
+        </div>
+        <div class="qs-pre">
+<span class="c"># 1. Commit context (Agent X → Agent Y)</span>
+<span class="cm">curl -X POST \</span>
+<span class="cm">  https://darkmatter-production.up.railway.app/api/commit \</span>
+<span class="cm">  -H <span class="st">"Authorization: Bearer <span class="key-placeholder">YOUR_KEY</span>"</span> \</span>
+<span class="cm">  -H <span class="st">"Content-Type: application/json"</span> \</span>
+<span class="cm">  -d <span class="st">'{"toAgentId":"dm_AGENT_Y_ID",</span></span>
+<span class="cm">     <span class="st">"context":{"task":"done","result":"..."}}'</span></span>
+<span class="sp"></span>
+<span class="ok"># → {"verified":true,"commitId":"commit_..."}</span>
+<span class="sp"></span>
+<span class="c"># 2. Pull verified context (Agent Y pulls)</span>
+<span class="cm">curl \</span>
+<span class="cm">  https://darkmatter-production.up.railway.app/api/pull \</span>
+<span class="cm">  -H <span class="st">"Authorization: Bearer <span class="key-placeholder">AGENT_Y_KEY</span>"</span></span>
+<span class="sp"></span>
+<span class="ok"># → {"commits":[{"context":{...},"verified":true}]}</span>
+<span class="sp"></span>
+<span class="c"># 3. Check your agent identity</span>
+<span class="cm">curl \</span>
+<span class="cm">  https://darkmatter-production.up.railway.app/api/me \</span>
+<span class="cm">  -H <span class="st">"Authorization: Bearer <span class="key-placeholder">YOUR_KEY</span>"</span></span>
+<span class="sp"></span>
+<span class="ok"># → {"agentId":"dm_...","agentName":"..."}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- PYTHON TAB -->
+    <div class="qs-panel" id="tab-python">
+      <div class="qs-code">
+        <div class="qs-code-head">
+          <div class="qs-code-label">// pip install requests</div>
+          <button class="qs-copy-btn" onclick="copyTab('python')">Copy</button>
+        </div>
+        <div class="qs-pre">
+<span class="cm">import requests</span>
+<span class="sp"></span>
+<span class="cm">URL = <span class="st">"https://darkmatter-production.up.railway.app"</span></span>
+<span class="cm">X = {<span class="st">"Authorization"</span>: <span class="st">"Bearer <span class="key-placeholder">AGENT_X_KEY</span>"</span>}</span>
+<span class="cm">Y = {<span class="st">"Authorization"</span>: <span class="st">"Bearer <span class="key-placeholder">AGENT_Y_KEY</span>"</span>}</span>
+<span class="sp"></span>
+<span class="c"># Agent X commits context for Agent Y</span>
+<span class="cm">requests.post(<span class="fl">f</span><span class="st">"{URL}/api/commit"</span>, headers=X, json={</span>
+<span class="cm">    <span class="st">"toAgentId"</span>: <span class="st">"dm_AGENT_Y_ID"</span>,</span>
+<span class="cm">    <span class="st">"context"</span>:   {<span class="st">"task"</span>: <span class="st">"done"</span>, <span class="st">"result"</span>: <span class="st">"..."</span>},</span>
+<span class="cm">})</span>
+<span class="ok"># → verified: true ✓</span>
+<span class="sp"></span>
+<span class="c"># Agent Y pulls and inherits context</span>
+<span class="cm">data    = requests.get(<span class="fl">f</span><span class="st">"{URL}/api/pull"</span>, headers=Y).json()</span>
+<span class="cm">context = data[<span class="st">"commits"</span>][0][<span class="st">"context"</span>]</span>
+<span class="ok"># → context inherited ✓</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- NODE TAB -->
+    <div class="qs-panel" id="tab-node">
+      <div class="qs-code">
+        <div class="qs-code-head">
+          <div class="qs-code-label">// Node 18+ built-in fetch</div>
+          <button class="qs-copy-btn" onclick="copyTab('node')">Copy</button>
+        </div>
+        <div class="qs-pre">
+<span class="cm">const URL  = <span class="st">"https://darkmatter-production.up.railway.app"</span>;</span>
+<span class="cm">const hdrs = (key) => ({</span>
+<span class="cm">  <span class="st">"Authorization"</span>: <span class="fl">`Bearer ${key}`</span>,</span>
+<span class="cm">  <span class="st">"Content-Type"</span>: <span class="st">"application/json"</span>,</span>
+<span class="cm">});</span>
+<span class="sp"></span>
+<span class="c">// Agent X commits context for Agent Y</span>
+<span class="cm">await fetch(<span class="fl">`${URL}/api/commit`</span>, {</span>
+<span class="cm">  method: <span class="st">"POST"</span>, headers: hdrs(<span class="st">"<span class="key-placeholder">AGENT_X_KEY</span>"</span>),</span>
+<span class="cm">  body: JSON.stringify({</span>
+<span class="cm">    toAgentId: <span class="st">"dm_AGENT_Y_ID"</span>,</span>
+<span class="cm">    context:   { task: <span class="st">"done"</span>, result: <span class="st">"..."</span> },</span>
+<span class="cm">  }),</span>
+<span class="cm">});</span>
+<span class="ok">// → { verified: true, commitId: "commit_..." }</span>
+<span class="sp"></span>
+<span class="c">// Agent Y pulls and inherits context</span>
+<span class="cm">const res     = await fetch(<span class="fl">`${URL}/api/pull`</span>,</span>
+<span class="cm">  { headers: hdrs(<span class="st">"<span class="key-placeholder">AGENT_Y_KEY</span>"</span>) });</span>
+<span class="cm">const context = (await res.json()).commits[0].context;</span>
+<span class="ok">// → context inherited ✓</span>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /qs-banner -->
+  </div><!-- /top-row -->
 
   <!-- COMMIT LOG -->
   <div>
@@ -398,28 +476,79 @@
 
   document.getElementById('user-email').textContent = session?.user?.email || '';
 
-  // ── Copy quickstart code ─────────────────────────────
-  function copyQS() {
-    const code = `import requests
+  // ── Tab switching ────────────────────────────────────
+  function switchTab(name) {
+    document.querySelectorAll('.qs-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.qs-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    const tabs = ['curl','python','node'];
+    document.querySelectorAll('.qs-tab')[tabs.indexOf(name)].classList.add('active');
+  }
 
-HEADERS = {"Authorization": "Bearer YOUR_API_KEY"}
-URL     = "https://darkmatter-production.up.railway.app"
+  // ── Copy per tab ──────────────────────────────────────
+  const tabCode = {
+    curl: `# 1. Commit context (Agent X → Agent Y)
+curl -X POST \
+  https://darkmatter-production.up.railway.app/api/commit \
+  -H "Authorization: Bearer YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"toAgentId":"dm_AGENT_Y_ID","context":{"task":"done","result":"..."}}'
 
-# Agent X → commit context for Agent Y
-requests.post(f"{URL}/api/commit", headers=HEADERS, json={
+# 2. Pull verified context (Agent Y pulls)
+curl \
+  https://darkmatter-production.up.railway.app/api/pull \
+  -H "Authorization: Bearer AGENT_Y_KEY"
+
+# 3. Check your agent identity
+curl \
+  https://darkmatter-production.up.railway.app/api/me \
+  -H "Authorization: Bearer YOUR_KEY"`,
+
+    python: `import requests
+
+URL = "https://darkmatter-production.up.railway.app"
+X = {"Authorization": "Bearer AGENT_X_KEY"}
+Y = {"Authorization": "Bearer AGENT_Y_KEY"}
+
+# Agent X commits context for Agent Y
+requests.post(f"{URL}/api/commit", headers=X, json={
     "toAgentId": "dm_AGENT_Y_ID",
-    "context":   {"task": "done", "result": {"...": "..."}},
+    "context":   {"task": "done", "result": "..."},
 })
 
-# Agent Y → pull and inherit verified context
-data    = requests.get(f"{URL}/api/pull", headers=HEADERS).json()
-context = data["commits"][0]["context"]`;
+# Agent Y pulls and inherits context
+data    = requests.get(f"{URL}/api/pull", headers=Y).json()
+context = data["commits"][0]["context"]`,
 
-    navigator.clipboard.writeText(code).then(() => {
-      const btn = document.getElementById('qs-copy-btn');
-      btn.textContent = 'Copied!';
-      btn.classList.add('copied');
-      setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+    node: `const URL  = "https://darkmatter-production.up.railway.app";
+const hdrs = (key) => ({
+  "Authorization": \`Bearer \${key}\`,
+  "Content-Type": "application/json",
+});
+
+// Agent X commits context for Agent Y
+await fetch(\`\${URL}/api/commit\`, {
+  method: "POST", headers: hdrs("AGENT_X_KEY"),
+  body: JSON.stringify({
+    toAgentId: "dm_AGENT_Y_ID",
+    context:   { task: "done", result: "..." },
+  }),
+});
+
+// Agent Y pulls and inherits context
+const res     = await fetch(\`\${URL}/api/pull\`, { headers: hdrs("AGENT_Y_KEY") });
+const context = (await res.json()).commits[0].context;`,
+  };
+
+  function copyTab(name) {
+    navigator.clipboard.writeText(tabCode[name]).then(() => {
+      // Find the clicked button and flash it
+      event.target.textContent = 'Copied!';
+      event.target.classList.add('copied');
+      setTimeout(() => {
+        event.target.textContent = 'Copy';
+        event.target.classList.remove('copied');
+      }, 2000);
     });
   }
 
@@ -505,7 +634,10 @@ context = data["commits"][0]["context"]`;
                 <div class="agent-status"></div>
                 <div class="agent-name">${escHtml(a.agentName)}</div>
               </div>
-              <div class="agent-id">${a.agentId}</div>
+              <div class="agent-id" style="display:flex;align-items:center;gap:0.4rem;">
+                <span>${a.agentId}</span>
+                <button onclick="copyAgentId('${a.agentId}')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:0.65rem;padding:0 0.2rem;font-family:var(--mono);transition:color 0.15s;" title="Copy agent ID" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text3)'">⎘</button>
+              </div>
             </div>
             <div class="agent-actions">
               <button class="agent-btn" onclick="rotateKey('${a.agentId}')">↻ Rotate key</button>
@@ -529,6 +661,12 @@ context = data["commits"][0]["context"]`;
         </div>
       `).join('');
     } catch(e) { console.error(e); }
+  }
+
+  // ── Copy agent ID ────────────────────────────────────
+  function copyAgentId(agentId) {
+    navigator.clipboard.writeText(agentId);
+    toast('Agent ID copied to clipboard');
   }
 
   // ── Reveal / hide API key ────────────────────────────

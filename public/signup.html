@@ -16,10 +16,10 @@
       --mono:'IBM Plex Mono',monospace; --sans:'Geist',sans-serif;
     }
     body { background:var(--bg); color:var(--text); font-family:var(--sans); min-height:100vh; display:flex; flex-direction:column; -webkit-font-smoothing:antialiased; }
-    header { background:var(--bg2); border-bottom:1px solid var(--border); height:58px; display:flex; align-items:center; padding:0 2rem; }
+    header { background:var(--bg2); border-bottom:1px solid var(--border); height:66px; display:flex; align-items:center; padding:0 2rem; }
     .logo { display:flex; align-items:center; gap:0.65rem; text-decoration:none; }
-    .logo-mark { width:30px; height:30px; }
-    .logo-name { font-weight:700; font-size:0.95rem; color:var(--text); }
+    .logo-mark { width:38px; height:38px; }
+    .logo-name { font-weight:800; font-size:1.15rem; color:var(--text); }
     .logo-name em { font-style:normal; color:var(--accent); }
     .wrap { flex:1; display:flex; align-items:center; justify-content:center; padding:2rem; }
     .card { background:var(--bg2); border:1px solid var(--border); border-radius:10px; width:100%; max-width:380px; overflow:hidden; }
@@ -53,15 +53,17 @@
 <header>
   <a class="logo" href="/">
     <div class="logo-mark">
-      <svg viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="15" cy="15" r="12.5" stroke="#30363d" stroke-width="0.8"/>
-        <ellipse cx="15" cy="15" rx="12.5" ry="4.8" stroke="#21262d" stroke-width="0.7" transform="rotate(-35 15 15)"/>
-        <ellipse cx="15" cy="15" rx="12.5" ry="4.8" stroke="#21262d" stroke-width="0.7" transform="rotate(35 15 15)"/>
-        <ellipse cx="15" cy="15" rx="12.5" ry="4.8" stroke="#21262d" stroke-width="0.7"/>
-        <circle cx="15" cy="15" r="2.4" fill="#58a6ff"/>
-        <circle cx="27.5" cy="15" r="1.4" fill="#58a6ff" opacity="0.7"/>
-        <circle cx="6" cy="9.5" r="1.1" fill="#3fb950" opacity="0.6"/>
-        <circle cx="21.5" cy="25" r="1.1" fill="#d29922" opacity="0.6"/>
+<svg viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="15" cy="15" r="13" stroke="#21262d" stroke-width="0.6" stroke-dasharray="2 2"/>
+        <circle cx="15" cy="4"  r="2.6" fill="#d29922" opacity="0.9"/>
+        <circle cx="15" cy="4"  r="4"   stroke="#d29922" stroke-width="0.5" opacity="0.2"/>
+        <circle cx="25" cy="22" r="2.1" fill="#58a6ff" opacity="0.9"/>
+        <circle cx="25" cy="22" r="3.4" stroke="#58a6ff" stroke-width="0.5" opacity="0.2"/>
+        <circle cx="5"  cy="22" r="1.8" fill="#3fb950" opacity="0.9"/>
+        <circle cx="5"  cy="22" r="3"   stroke="#3fb950" stroke-width="0.5" opacity="0.2"/>
+        <line x1="15" y1="6"  x2="24" y2="20" stroke="#30363d" stroke-width="0.5" opacity="0.5"/>
+        <line x1="15" y1="6"  x2="6"  y2="20" stroke="#30363d" stroke-width="0.5" opacity="0.5"/>
+        <line x1="23" y1="21" x2="7"  y2="21" stroke="#30363d" stroke-width="0.5" opacity="0.5"/>
       </svg>
     </div>
     <div class="logo-name">Dark<em>Matter</em></div>
