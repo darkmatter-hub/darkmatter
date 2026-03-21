@@ -16,7 +16,7 @@ That's it. No accounts. No cloud setup. No API keys required to run locally.
 ## Step 1 — Clone and install
 
 ```bash
-git clone https://github.com/yourusername/darkmatter
+git clone https://github.com/bengunvl/darkmatter
 cd darkmatter
 npm install
 ```
