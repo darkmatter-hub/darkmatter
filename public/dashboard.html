@@ -199,8 +199,8 @@
 
     /* ── LOG ── */
     .log-wrap  { background:var(--bg2); border:1px solid var(--border); border-radius:8px; overflow:hidden; }
-    .log-cols  { display:grid; grid-template-columns:1fr 160px 80px; gap:1rem; padding:0.5rem 1.1rem; background:var(--bg3); border-bottom:1px solid var(--border); font-family:var(--mono); font-size:0.57rem; color:var(--text3); letter-spacing:0.1em; text-transform:uppercase; }
-    .cr        { display:grid; grid-template-columns:1fr 160px 80px; gap:1rem; padding:0.8rem 1.1rem; border-bottom:1px solid var(--border2); align-items:center; transition:background 0.1s; }
+    .log-cols  { display:grid; grid-template-columns:1fr 80px; gap:1rem; padding:0.5rem 1.1rem; background:var(--bg3); border-bottom:1px solid var(--border); font-family:var(--mono); font-size:0.57rem; color:var(--text3); letter-spacing:0.1em; text-transform:uppercase; }
+    .cr        { display:grid; grid-template-columns:1fr 80px; gap:1rem; padding:0.8rem 1.1rem; border-bottom:1px solid var(--border2); align-items:center; transition:background 0.1s; }
     .cr:last-child { border-bottom:none; }
     .cr:hover  { background:var(--bg3); }
     .cbadge    { display:inline-flex; align-items:center; gap:0.25rem; font-family:var(--mono); font-size:0.57rem; padding:0.1rem 0.38rem; border-radius:100px; border:1px solid; flex-shrink:0; }
@@ -275,6 +275,16 @@
   <div class="hsep"></div>
   <div class="hpage">Dashboard</div>
   <div class="hright">
+    <a href="https://github.com/bengunvl/darkmatter/tree/main/examples/claude-to-gpt" target="_blank"
+       style="font-size:0.78rem;color:var(--text2);text-decoration:none;font-weight:500;transition:color 0.15s;"
+       onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text2)'">
+       ⚡ Real-world Example
+    </a>
+    <a href="https://github.com/bengunvl/darkmatter#api-reference" target="_blank"
+       style="font-size:0.78rem;color:var(--text2);text-decoration:none;font-weight:500;transition:color 0.15s;"
+       onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text2)'">
+       API Docs
+    </a>
     <div class="user-email" id="user-email"></div>
     <button class="logout-btn" onclick="logout()">Sign out</button>
   </div>
@@ -430,8 +440,7 @@
     </div>
     <div class="log-wrap">
       <div class="log-cols">
-        <div>Message</div>
-        <div>Handoff</div>
+        <div>Message · click to expand context</div>
         <div style="text-align:right">Time</div>
       </div>
       <div id="commit-list">
@@ -732,20 +741,31 @@ const context = (await res.json()).commits[0].context;`,
         return;
       }
 
-      list.innerHTML = data.map(c => `
-        <div class="cr">
-          <div>
+      list.innerHTML = data.map(c => {
+        // Extract a meaningful summary from context
+        const ctx     = c.context || {};
+        const preview = ctx.task || ctx.next_task || ctx.output?.slice(0,60) || 'context handoff';
+        const trimmed = preview.length > 55 ? preview.slice(0,55)+'...' : preview;
+        return `
+        <div class="cr" style="cursor:pointer" onclick="toggleCtx(this)" title="Click to expand context">
+          <div style="min-width:0">
             <div class="cmsg">
-              <span class="cbadge ${c.verified?'v':'r'}">${c.verified?'✓ verified':'✗ rejected'}</span>
-              <span class="ctxt">Context inherited — ${c.verified?'confirmed':'rejected'}</span>
+              <span class="cbadge ${c.verified?'v':'r'}">${c.verified?'✓':'✗'}</span>
+              <span class="ctxt">${escHtml(trimmed)}</span>
             </div>
-            <div class="cby">${escHtml(c.from)}</div>
+            <div class="cby">${escHtml(c.from)} ──▶ ${escHtml(c.to)}</div>
+            <div class="ctx-detail" style="display:none;margin-top:0.6rem;background:var(--bg);border:1px solid var(--border2);border-radius:5px;padding:0.6rem 0.75rem;font-family:var(--mono);font-size:0.62rem;color:var(--text2);line-height:1.7;white-space:pre-wrap;max-height:180px;overflow-y:auto;">${escHtml(JSON.stringify(c.context, null, 2))}</div>
           </div>
-          <div class="choff">${escHtml(c.from)} ──▶ ${escHtml(c.to)}</div>
           <div class="tme">${ago(c.timestamp)}</div>
-        </div>
-      `).join('');
+        </div>`;
+      }).join('');
     } catch(e) { console.error(e); }
+  }
+
+  // ── Toggle context detail ────────────────────────────
+  function toggleCtx(row) {
+    const detail = row.querySelector('.ctx-detail');
+    if (detail) detail.style.display = detail.style.display === 'none' ? 'block' : 'none';
   }
 
   // ── Logout ────────────────────────────────────────────
