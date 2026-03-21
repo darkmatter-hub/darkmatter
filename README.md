@@ -1,41 +1,22 @@
 # 🌑 DarkMatter
 
-> **Git for AI agent context.**
-> Agents commit work. Agents verify handoffs. Nothing gets lost. Nothing gets forged.
-
----
-
-## Live API
-
-DarkMatter is live and ready to use right now — no setup required:
-
-```
-https://darkmatter-production.up.railway.app
-```
-
-Register your first agent in one command:
-
-```bash
-curl -X POST https://darkmatter-production.up.railway.app/api/register \
-  -H "Content-Type: application/json" \
-  -d '{ "agentName": "My Agent" }'
-```
-
-View the live dashboard: **[darkmatter-production.up.railway.app](https://darkmatter-production.up.railway.app)**
+> **Git for AI Agents.**
+> The commit, push, and pull layer for multi-agent systems.
+> It's how AI agents talk to one another.
 
 ---
 
 ## The Problem
 
-AI agents are amnesiac and blind by default.
+Every time one AI agent finishes work and needs to pass it to another, developers are left duct-taping solutions together — stuffing context into prompts, writing to files, or hoping nothing gets lost. There is no standard layer for agents to hand off work reliably.
 
-When **Agent X** finishes a task and passes work to **Agent Y**, one of three things happens today:
+When **Agent X** finishes a task and passes work to **Agent Y**, one of three things happen today:
 
-1. X stuffs context into the next prompt — unverified, unsigned, forgeable
-2. X writes to a shared file or database — no proof of who wrote what
+1. X stuffs context into the next prompt — no record, no attribution, easily lost
+2. X writes to a shared file or database — no proof of who wrote what, no history
 3. Context is lost entirely and Y starts from zero
 
-There is no equivalent of `git commit` for agent work. No signed handoff. No tamper detection. No recovery if something breaks mid-pipeline.
+There is no equivalent of `git commit` for agent work. No attributed handoff. No audit trail. No recovery if something breaks mid-pipeline.
 
 **DarkMatter fixes this.**
 
@@ -43,128 +24,84 @@ There is no equivalent of `git commit` for agent work. No signed handoff. No tam
 
 ## How It Works
 
-DarkMatter gives AI agents the same primitives developers have had for decades — applied to context instead of code.
+DarkMatter gives AI agents the same primitives developers have used for decades — applied to context instead of code.
 
-| Git | DarkMatter |
-|-----|------------|
-| `git commit` | Agent checkpoints signed context |
-| `git push` | Agent publishes handoff to DarkMatter |
-| `git pull` | Receiving agent retrieves verified context |
-| `git log` | Full audit trail of every agent action |
-| `git blame` | Which agent produced which context |
-| `git revert` | Resume from last clean checkpoint after failure |
-
-Every handoff is **cryptographically signed** with the sending agent's private key. The receiving agent **verifies the signature** before consuming any context. Tampered or forged context is rejected automatically.
+| Git | DarkMatter | What it does |
+|-----|------------|--------------|
+| `git commit` | `POST /api/commit` | Agent checkpoints and attributes context |
+| `git push` | `POST /api/commit` | Publishes context to the receiving agent |
+| `git pull` | `GET /api/pull` | Receiving agent inherits verified context |
+| `git log` | Dashboard | Full audit trail of every handoff |
+| `git blame` | API key auth | Which agent committed what |
 
 ---
 
-## Quickstart — Use the Hosted API
+## Live API
 
-The fastest way to try DarkMatter — no installation needed.
+DarkMatter is live — no setup required:
 
-**Step 1 — Generate your keypair locally**
-
-Your private key never leaves your machine. DarkMatter never sees it.
-
-```bash
-node keygen.js --name "my-agent"
-# Creates: my-agent.private.pem  ← keep secret, never share
-#          my-agent.public.pem   ← send to DarkMatter
-#          my-agent.id.txt       ← your agentId
+```
+https://darkmatter-production.up.railway.app
 ```
 
-**Step 2 — Register with DarkMatter (public key only)**
+**[Open Dashboard →](https://darkmatter-production.up.railway.app)**
 
-```bash
-node register.js --name "my-agent" --public-key my-agent.public.pem
-# → agentId: dm_a3f8c2e1b9d04712
-# → registered: true
-# DarkMatter never received your private key.
-```
+---
 
-**Step 2 — Agent X commits signed context**
+## Quickstart
+
+### 1. Sign up and create your agent
+
+Go to the [dashboard](https://darkmatter-production.up.railway.app/signup), create a free account, and create an agent. You'll get an API key immediately — no local setup required.
+
+### 2. Commit context (Agent X)
 
 ```bash
 curl -X POST https://darkmatter-production.up.railway.app/api/commit \
+  -H "Authorization: Bearer YOUR_AGENT_X_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "fromAgentId": "dm_YOUR_AGENT_X_ID",
-    "toAgentId":   "dm_YOUR_AGENT_Y_ID",
-    "context":     { "task": "Analysis complete", "findings": "APAC up 34%" },
-    "privateKey":  "YOUR_AGENT_X_PRIVATE_KEY"
+    "toAgentId": "dm_AGENT_Y_ID",
+    "context":   { "task": "analysis complete", "result": "..." }
   }'
 ```
 
-**Step 3 — Agent Y pulls and verifies**
+### 3. Pull and inherit context (Agent Y)
 
 ```bash
-curl https://darkmatter-production.up.railway.app/api/pull/dm_YOUR_AGENT_Y_ID
+curl https://darkmatter-production.up.railway.app/api/pull \
+  -H "Authorization: Bearer YOUR_AGENT_Y_KEY"
 ```
 
-Agent Y receives only verified, cryptographically signed context. Tampered packages never appear.
+### 4. Check your agent identity
+
+```bash
+curl https://darkmatter-production.up.railway.app/api/me \
+  -H "Authorization: Bearer YOUR_KEY"
+```
 
 ---
 
-## Quickstart — Self Host
+## Real-World Example: Claude → GPT Pipeline
 
-> **Full setup guide: [SETUP.md](./SETUP.md)** | **Production deployment: [PRODUCTION.md](./PRODUCTION.md)**
+See [`examples/claude-to-gpt/`](./examples/claude-to-gpt/) for a complete working example:
+
+- **Agent XX (Claude)** analyzes a topic on your local machine
+- Commits its findings to DarkMatter
+- **Agent YY (GPT)** pulls the verified context from anywhere
+- Continues the work without re-running Claude
 
 ```bash
-# 1. Clone and install
-git clone https://github.com/bengunvl/darkmatter
-cd darkmatter
-npm install
+pip install anthropic openai requests
 
-# 2. Start the server
-npm start
+# Step 1: Claude does analysis and commits
+python examples/claude-to-gpt/agent_xx.py
 
-# 3. In a second terminal — run the full demo
-node demo.js
+# Step 2: GPT pulls and writes summary
+python examples/claude-to-gpt/agent_yy.py
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to see the agent network dashboard.
-
-**DarkMatter never stores your private key.** Signing happens locally. DarkMatter only stores public keys and uses them to verify incoming commits.
-
----
-
-## Demo Output
-
-```
-🌑 DarkMatter — Agent Handoff Demo
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-📋 Step 1: Registering agents...
-
-✅ Registered: Claude Agent X  →  dm_a3f8c2e1b9d04712
-✅ Registered: GPT Agent Y     →  dm_7b2d9f4e8a1c3056
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-🤖 Step 2: Agent X completes work and commits context...
-
-✅ Commit created: commit_1710234567_x8k2p
-   From: Claude Agent X → To: GPT Agent Y
-   Signature verified: ✅ YES
-   Timestamp: 2026-03-17T14:23:01.000Z
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-🤖 Step 3: Agent Y pulls and verifies context...
-
-✅ GPT Agent Y pulled 1 verified commit(s)
-   Verified: ✅ Signature valid — safe to consume
-   Context: { task: "Analyze Q1 sales data", findings: { topRegion: "APAC"... } }
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-🔴 Step 4: Tamper detection...
-
-   Commit verified: ❌ REJECTED (correct)
-   Reason: Signature verification failed — context may have been tampered with
-   → Agent Y will never see this context.
-```
+The full handoff appears in your [dashboard commit log](https://darkmatter-production.up.railway.app/dashboard) — you can see exactly what Claude passed to GPT, when, and that it was received.
 
 ---
 
@@ -172,100 +109,143 @@ Open [http://localhost:3000](http://localhost:3000) to see the agent network das
 
 **Base URL:** `https://darkmatter-production.up.railway.app`
 
-### Register an agent
-```http
-POST /api/register
-{ "agentName": "Claude Agent X" }
-```
-Returns `agentId`, `publicKey`, `privateKey`.
+All endpoints require: `Authorization: Bearer YOUR_API_KEY`
 
----
+### POST /api/commit
 
-### Commit context
-```http
-POST /api/commit
+Commit context from your agent to another agent.
+
+```json
 {
-  "fromAgentId": "dm_abc123",
-  "toAgentId":   "dm_xyz456",
-  "context":     { ...any JSON... },
-  "privateKey":  "-----BEGIN PRIVATE KEY-----..."
+  "toAgentId": "dm_abc123",
+  "context":   { "any": "json" }
 }
 ```
-Signs the context package with the sender's private key and stores a verified commit.
+
+Returns:
+```json
+{ "commitId": "commit_...", "verified": true, "timestamp": "..." }
+```
 
 ---
 
-### Pull context
-```http
-GET /api/pull/:agentId
+### GET /api/pull
+
+Pull all verified context addressed to your agent.
+
+Returns:
+```json
+{
+  "commits": [
+    {
+      "commitId":  "commit_...",
+      "from":      "dm_abc123",
+      "context":   { "any": "json" },
+      "timestamp": "...",
+      "verified":  true
+    }
+  ]
+}
 ```
-Returns all verified commits addressed to this agent. Every commit is re-verified against the sender's public key before being returned. Tampered commits are never returned.
 
 ---
 
-### Dashboard data
-```http
-GET /api/agents    → all registered agents
-GET /api/commits   → full commit timeline
+### GET /api/me
+
+Returns the identity of the agent associated with your API key.
+
+```json
+{ "agentId": "dm_...", "agentName": "my-agent" }
 ```
+
+---
+
+## Python Example
+
+```python
+import requests
+
+DM  = "https://darkmatter-production.up.railway.app"
+X   = {"Authorization": "Bearer AGENT_X_KEY"}
+Y   = {"Authorization": "Bearer AGENT_Y_KEY"}
+
+# Agent X commits context for Agent Y
+requests.post(f"{DM}/api/commit", headers=X, json={
+    "toAgentId": "dm_AGENT_Y_ID",
+    "context":   {"task": "done", "result": "..."},
+})
+
+# Agent Y pulls and inherits
+data    = requests.get(f"{DM}/api/pull", headers=Y).json()
+context = data["commits"][0]["context"]
+```
+
+---
+
+## Node.js Example
+
+```javascript
+const DM  = "https://darkmatter-production.up.railway.app";
+const hdrs = key => ({ "Authorization": `Bearer ${key}`, "Content-Type": "application/json" });
+
+// Agent X commits
+await fetch(`${DM}/api/commit`, {
+  method: "POST", headers: hdrs("AGENT_X_KEY"),
+  body: JSON.stringify({ toAgentId: "dm_AGENT_Y_ID", context: { task: "done" } }),
+});
+
+// Agent Y pulls
+const res     = await fetch(`${DM}/api/pull`, { headers: hdrs("AGENT_Y_KEY") });
+const context = (await res.json()).commits[0].context;
+```
+
+---
+
+## Why Not Just Pass Context in a Prompt?
+
+| Problem | Without DarkMatter | With DarkMatter |
+|---------|-------------------|-----------------|
+| Context gets lost | Prompt truncation, no history | Every commit is stored and retrievable |
+| No audit trail | No record of what passed between agents | Full log: who sent what, when, to whom |
+| No attribution | Any code can write anything | Each commit is tied to an authenticated agent |
+| Pipeline breaks | Start from scratch | Pull from last commit and resume |
+| Cross-model handoff | Manual, fragile | Any model, any provider, same API |
 
 ---
 
 ## Architecture
 
 ```
-Agent X (any model)          DarkMatter              Agent Y (any model)
+Agent X (Claude, local)      DarkMatter              Agent Y (GPT, anywhere)
         │                        │                           │
-        │── POST /register ──▶   │                           │
-        │◀── agentId + keys ──   │                           │
-        │                        │                           │
-        │   [does work]          │                           │
-        │                        │                           │
-        │── POST /commit ──────▶ │  verify signature         │
-        │   signed context       │  store commit             │
+        │── POST /api/commit ──▶ │  store commit             │
         │◀── commitId ─────────  │                           │
         │                        │                           │
-        │                        │ ◀── GET /pull/:id ────────│
-        │                        │     re-verify signature   │
+        │                        │ ◀── GET /api/pull ────────│
         │                        │──── verified context ────▶│
         │                        │                           │
-        │                        │              [resumes work]
+        │                        │              [continues work]
 ```
 
-**Key principle:** DarkMatter never stores private keys. Agents sign locally. DarkMatter verifies against registered public keys. The trust is cryptographic, not operational.
-
----
-
-## Why Not Just Use Git?
-
-Git is designed for humans committing code asynchronously. Agent networks need:
-
-| Need | Git | DarkMatter |
-|------|-----|------------|
-| Cryptographic agent identity | ❌ Author is just a string | ✅ Ed25519 keypair per agent |
-| Real-time context pull | ❌ Manual pull required | ✅ API call at runtime |
-| Tamper/injection detection | ❌ No content verification | ✅ Signature verified before consumption |
-| Cross-model handoffs | ❌ Not a concept | ✅ Model-agnostic by design |
-| Adversarial context protection | ❌ Trusts all commits | ✅ Rejects unsigned/mismatched context |
-| No human in the loop | ❌ Human initiates sessions | ✅ Fully autonomous |
+Agent X and Agent Y never talk directly. They don't need to know each other's location, infrastructure, or model provider. DarkMatter is the postbox in the middle.
 
 ---
 
 ## What's Next
 
-- [ ] Agents generate keypairs locally (remove server-side key generation)
-- [ ] Failure recovery — resume pipeline from last verified commit
+- [ ] Failure recovery — resume pipeline from last commit checkpoint
 - [ ] Parallel agent branches + merge
 - [ ] Agent reputation scoring from commit history
-- [ ] Decentralized identity (W3C DIDs) replacing JWT tokens
+- [ ] Webhook notifications when context is waiting
+- [ ] SDK packages for Python and Node
 
 ---
 
 ## Philosophy
 
-Most agent memory tools solve the problem from the human's perspective — making AI assistants more useful to the people using them.
+Most agent tools are built around the human — making AI assistants more useful to the people using them.
 
-DarkMatter solves it from the **agent's perspective** — giving autonomous agents the identity, trust, and context infrastructure they need to work with each other reliably, without a human in the loop.
+DarkMatter is built around the agent — giving autonomous agents a reliable, attributed, auditable way to hand work to each other, without a human in the loop.
 
 The agent is the first-class citizen. The infrastructure serves the agent.
 
@@ -277,4 +257,4 @@ MIT — build whatever you want with this.
 
 ---
 
-*DarkMatter is at the beginning. If you're building multi-agent systems and this resonates, open an issue.*
+*DarkMatter is at the beginning. If you're building multi-agent systems and this resonates, open an issue on GitHub.*
