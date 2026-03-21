@@ -42,7 +42,7 @@
       background: rgba(13,17,23,0.92);
       backdrop-filter: blur(16px);
       border-bottom: 1px solid var(--border);
-      height: 62px;
+      height: 66px;
       display: flex; align-items: center;
       padding: 0 2rem; gap: 1rem;
     }
@@ -52,12 +52,12 @@
       text-decoration: none;
     }
 
-    .logo-mark { width: 40px; height: 40px; flex-shrink: 0; }
+    .logo-mark { width: 46px; height: 46px; flex-shrink: 0; }
 
     .logo-words { display: flex; flex-direction: column; line-height: 1.15; }
 
     .logo-name {
-      font-weight: 800; font-size: 1.2rem;
+      font-weight: 800; font-size: 1.3rem;
       color: var(--text); letter-spacing: -0.02em;
     }
 
@@ -471,17 +471,19 @@
 <header>
   <a class="logo" href="/">
     <div class="logo-mark">
-      <!-- Qubit mascot mini in header -->
+      <!-- 3-body problem logo -->
       <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="20" cy="20" r="16" stroke="#30363d" stroke-width="1"/>
-        <ellipse cx="20" cy="20" rx="16" ry="6" stroke="#21262d" stroke-width="0.8" transform="rotate(-40 20 20)"/>
-        <ellipse cx="20" cy="20" rx="16" ry="6" stroke="#21262d" stroke-width="0.8" transform="rotate(40 20 20)"/>
-        <ellipse cx="20" cy="20" rx="16" ry="6" stroke="#21262d" stroke-width="0.8"/>
-        <circle cx="20" cy="20" r="3" fill="#58a6ff"/>
-        <circle cx="20" cy="20" r="5" stroke="#58a6ff" stroke-width="0.5" opacity="0.2"/>
-        <circle cx="36" cy="20" r="1.8" fill="#58a6ff" opacity="0.7"/>
-        <circle cx="7"  cy="13" r="1.4" fill="#3fb950" opacity="0.65"/>
-        <circle cx="28" cy="33" r="1.4" fill="#d29922" opacity="0.65"/>
+        <circle cx="20" cy="20" r="18" stroke="#21262d" stroke-width="0.6" stroke-dasharray="2 2"/>
+        <path d="M20 4 Q35 11 36 20 Q35 29 20 36 Q5 29 4 20 Q5 11 20 4" stroke="#30363d" stroke-width="0.5" fill="none" opacity="0.4"/>
+        <circle cx="20" cy="5"  r="3.5" fill="#d29922" opacity="0.95"/>
+        <circle cx="20" cy="5"  r="5.5" stroke="#d29922" stroke-width="0.5" opacity="0.25"/>
+        <circle cx="33" cy="29" r="2.8" fill="#58a6ff" opacity="0.95"/>
+        <circle cx="33" cy="29" r="4.5" stroke="#58a6ff" stroke-width="0.5" opacity="0.25"/>
+        <circle cx="7"  cy="29" r="2.4" fill="#3fb950" opacity="0.95"/>
+        <circle cx="7"  cy="29" r="3.8" stroke="#3fb950" stroke-width="0.5" opacity="0.25"/>
+        <line x1="20" y1="9"  x2="31" y2="27" stroke="#30363d" stroke-width="0.7" opacity="0.6"/>
+        <line x1="20" y1="9"  x2="9"  y2="27" stroke="#30363d" stroke-width="0.7" opacity="0.6"/>
+        <line x1="30" y1="28" x2="10" y2="28" stroke="#30363d" stroke-width="0.7" opacity="0.6"/>
       </svg>
     </div>
     <div class="logo-words">
