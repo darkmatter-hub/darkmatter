@@ -627,42 +627,28 @@
       <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:1.75rem;">
         <div style="font-family:var(--mono);font-size:0.6rem;color:var(--amber);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:0.75rem;">For compliance &amp; enterprise</div>
         <div style="font-size:1rem;font-weight:700;color:var(--text);margin-bottom:0.75rem;line-height:1.3;">
-          Independent audit trail for AI agent activity
+          Tamper-evident audit trail for AI agent activity
         </div>
         <div style="font-size:0.8rem;color:var(--text2);line-height:1.75;margin-bottom:1.1rem;">
-          A company cannot credibly audit its own AI agents — the same reason you hire
-          an accounting firm instead of auditing yourself. DarkMatter stores agent
-          activity outside your infrastructure, tamper-evident and independently verifiable.
+          EU AI Act Articles 12 &amp; 19 require high-risk AI systems to produce automatically
+          generated, tamper-evident logs kept for at least six months. A company storing
+          its own AI logs faces the same credibility problem as auditing its own books —
+          DarkMatter provides the independent layer that makes those logs credible to
+          regulators and auditors.
         </div>
         <div style="display:flex;flex-direction:column;gap:0.5rem;margin-bottom:1.1rem;">
           <div style="font-size:0.78rem;color:var(--text2);display:flex;gap:0.5rem;">
-            <span style="color:var(--green)">✓</span> Stored outside your own systems
+            <span style="color:var(--green)">✓</span> Logs every agent action — commit, revert, override, consent, escalate, redact and more
           </div>
           <div style="font-size:0.78rem;color:var(--text2);display:flex;gap:0.5rem;">
-            <span style="color:var(--green)">✓</span> Tamper-evident, timestamped records
+            <span style="color:var(--green)">✓</span> Stored outside your infrastructure — tamper-evident
           </div>
           <div style="font-size:0.78rem;color:var(--text2);display:flex;gap:0.5rem;">
-            <span style="color:var(--green)">✓</span> Supports EU AI Act independent oversight
+            <span style="color:var(--green)">✓</span> Meets EU AI Act Art. 12 &amp; 19 logging requirements
           </div>
           <div style="font-size:0.78rem;color:var(--text2);display:flex;gap:0.5rem;">
-            <span style="color:var(--green)">✓</span> Export full audit log as CSV
+            <span style="color:var(--green)">✓</span> Export full audit log as CSV for regulators
           </div>
-        </div>
-        <div style="border-top:1px solid var(--border);padding-top:1rem;display:flex;flex-direction:column;gap:0.5rem;">
-          <div style="font-size:0.72rem;font-weight:600;color:var(--text);margin-bottom:0.1rem;">Need data to stay in your network?</div>
-          <div style="font-size:0.78rem;color:var(--text2);display:flex;gap:0.5rem;">
-            <span style="color:var(--accent)">→</span>
-            <span><strong style="color:var(--text)">Self-host</strong> — deploy DarkMatter inside your own infrastructure. Nothing leaves your network.</span>
-          </div>
-          <div style="font-size:0.78rem;color:var(--text2);display:flex;gap:0.5rem;">
-            <span style="color:var(--accent)">→</span>
-            <span><strong style="color:var(--text)">BYOK</strong> — Bring Your Own Key encryption so DarkMatter stores encrypted context it cannot read. <span style="font-family:'IBM Plex Mono',monospace;font-size:0.65rem;color:var(--text3);">// on roadmap</span></span>
-          </div>
-          <a href="https://github.com/darkmatter-hub/darkmatter/blob/main/PRODUCTION.md" target="_blank"
-             style="margin-top:0.4rem;font-size:0.75rem;color:var(--accent);text-decoration:none;font-weight:500;"
-             onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">
-            Self-hosting guide →
-          </a>
         </div>
       </div>
 
@@ -710,33 +696,28 @@
   </div>
 </div>
 
-<!-- ACTIVITY TICKER -->
-<div class="log-section">
-  <div class="log-bar">
-    <div class="log-bar-title">Network Activity</div>
-    <div class="btag">⎇ live</div>
-    <button class="rfbtn" onclick="loadPublicCommits()">↻ Refresh</button>
-  </div>
-  <div class="log-wrap">
-    <div id="commit-list">
-      <div class="log-empty">No activity yet</div>
-    </div>
-  </div>
-</div>
-
 <!-- SELF-HOST CALLOUT -->
-<div style="background:var(--bg2);border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:1.5rem 2rem;text-align:center;">
-  <div style="max-width:600px;margin:0 auto;display:flex;align-items:center;justify-content:center;gap:1.5rem;flex-wrap:wrap;">
-    <div style="font-size:0.88rem;color:var(--text2);">
-      🏢 <strong style="color:var(--text)">Need data to stay in your network?</strong>
-      DarkMatter is open source and self-hostable — deploy inside your own infrastructure in minutes.
+<div style="background:var(--bg2);border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:2rem 2rem;">
+  <div style="max-width:860px;margin:0 auto;">
+    <div style="font-size:0.72rem;font-family:var(--mono);color:var(--text3);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:1rem;">🏢 Need data to stay in your network?</div>
+    <div style="display:flex;gap:3rem;flex-wrap:wrap;align-items:flex-start;">
+      <div style="flex:1;min-width:220px;display:flex;flex-direction:column;gap:0.6rem;">
+        <div style="font-size:0.82rem;color:var(--text2);display:flex;gap:0.6rem;">
+          <span style="color:var(--accent)">→</span>
+          <span><strong style="color:var(--text)">Self-host</strong> — deploy DarkMatter inside your own infrastructure. Nothing leaves your network.</span>
+        </div>
+        <div style="font-size:0.82rem;color:var(--text2);display:flex;gap:0.6rem;">
+          <span style="color:var(--accent)">→</span>
+          <span><strong style="color:var(--text)">BYOK</strong> — Bring Your Own Key encryption so DarkMatter stores encrypted context it cannot read. <span style="font-family:var(--mono);font-size:0.65rem;color:var(--text3);">// on roadmap</span></span>
+        </div>
+      </div>
+      <a href="https://github.com/darkmatter-hub/darkmatter/blob/main/PRODUCTION.md" target="_blank"
+         style="background:none;border:1px solid var(--border);color:var(--text2);padding:0.4rem 1rem;border-radius:6px;font-size:0.78rem;font-weight:500;text-decoration:none;white-space:nowrap;transition:all 0.15s;align-self:center;"
+         onmouseover="this.style.borderColor='var(--text2)';this.style.color='var(--text)'"
+         onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text2)'">
+        Self-hosting guide →
+      </a>
     </div>
-    <a href="https://github.com/darkmatter-hub/darkmatter/blob/main/PRODUCTION.md" target="_blank"
-       style="background:none;border:1px solid var(--border);color:var(--text2);padding:0.35rem 0.85rem;border-radius:6px;font-size:0.78rem;font-weight:500;text-decoration:none;white-space:nowrap;transition:all 0.15s;"
-       onmouseover="this.style.borderColor='var(--text2)';this.style.color='var(--text)'"
-       onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text2)'">
-      Self-host guide →
-    </a>
   </div>
 </div>
 
@@ -816,32 +797,6 @@ print(context["nextTask"])  # "generate executive summary"`;
     } catch(e) {}
   }
 
-  async function loadPublicCommits() {
-    try {
-      const res  = await fetch('/api/public/commits');
-      const data = await res.json();
-      const list = document.getElementById('commit-list');
-      if (!data || !data.length) return;
-
-      const ago = ts => {
-        const d = Math.floor((Date.now()-new Date(ts))/1000);
-        if(d<60) return d+'s ago';
-        if(d<3600) return Math.floor(d/60)+'m ago';
-        if(d<86400) return Math.floor(d/3600)+'h ago';
-        return Math.floor(d/86400)+'d ago';
-      };
-
-      list.innerHTML = data.map(c => `
-        <div class="cr" style="grid-template-columns:1fr auto;gap:1rem;padding:0.7rem 1.25rem;">
-          <div style="display:flex;align-items:center;gap:0.6rem;">
-            <span class="cbadge ${c.verified?'v':'r'}">${c.verified?'✓ verified':'✗ rejected'}</span>
-            <span style="font-family:var(--mono);font-size:0.7rem;color:var(--text2);">
-              agent context handoff
-            </span>
-          </div>
-          <div class="tme">${ago(c.timestamp)}</div>
-        </div>`).join('');
-    } catch(e) {}
   }
 
   // ── Menu ─────────────────────────────────────────────
@@ -885,16 +840,10 @@ print(context["nextTask"])  # "generate executive summary"`;
       document.querySelectorAll('.dditem').forEach(el => {
         if (el.href && el.href.includes('/signup')) el.style.display = 'none';
       });
-      // Update commit log empty state for logged-in users
-      const list = document.getElementById('commit-list');
-      if (list && list.querySelector('.log-empty')) {
-        list.innerHTML = '<div class="log-empty">No network commits yet — <a href="/dashboard" style="color:var(--accent)">go to your dashboard</a> to commit context</div>';
-      }
     }
   } catch(e) {}
 
   loadStats();
-  loadPublicCommits();
 </script>
 </body>
 </html>
