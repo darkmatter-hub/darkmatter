@@ -323,6 +323,7 @@ app.get('/dashboard/commits', requireAuth, async (req, res) => {
       toId:      c.to_agent,
       verified:  c.verified,
       timestamp: c.timestamp,
+      context:   c.context || {},
     })));
   } catch (err) {
     res.status(500).json({ error: err.message });
