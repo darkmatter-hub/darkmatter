@@ -473,6 +473,41 @@ app.get('/api/me', requireApiKey, async (req, res) => {
 // PUBLIC NETWORK STATS (no auth — for homepage)
 // ═══════════════════════════════════════════════════
 
+// ── POST /feedback ── feature requests & support ─────
+app.post('/feedback', async (req, res) => {
+  try {
+    const { type, email, message } = req.body;
+    if (!email || !message) return res.status(400).json({ error: 'Missing fields' });
+
+    const subject = type === 'feature'
+      ? `[DarkMatter] Feature Request from ${email}`
+      : `[DarkMatter] Support Request from ${email}`;
+
+    // Send via Resend API
+    await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Content-Type':  'application/json',
+        'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
+      },
+      body: JSON.stringify({
+        from:    'noreply@darkmatterhub.ai',
+        to:      [process.env.FEEDBACK_EMAIL || 'cullaj07@gmail.com'],
+        subject,
+        html: `<p><strong>From:</strong> ${email}</p>
+               <p><strong>Type:</strong> ${type}</p>
+               <hr/>
+               <p>${message.replace(/\n/g, '<br/>')}</p>`,
+      }),
+    });
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('feedback error:', err);
+    res.json({ success: true }); // always return success to user
+  }
+});
+
 // ── GET /api/public/commits ── anonymized activity ticker ─
 app.get('/api/public/commits', async (req, res) => {
   try {

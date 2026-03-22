@@ -147,6 +147,8 @@
 
     .agent-name-row { display:flex; align-items:center; gap:0.6rem; }
     .agent-status { width:7px; height:7px; border-radius:50%; background:var(--green); box-shadow:0 0 6px var(--green); flex-shrink:0; }
+    .agent-status.expired { background:var(--red); box-shadow:0 0 6px var(--red); }
+    .agent-expired-badge { font-family:var(--mono); font-size:0.58rem; color:var(--red); border:1px solid rgba(248,81,73,0.3); background:rgba(248,81,73,0.08); border-radius:4px; padding:0.1rem 0.4rem; margin-left:0.3rem; }
     .agent-name { font-size:0.9rem; font-weight:600; color:var(--text); }
     .agent-id   { font-family:var(--mono); font-size:0.62rem; color:var(--text3); margin-top:0.15rem; }
 
@@ -513,9 +515,56 @@
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- FEATURE REQUEST MODAL -->
+<div id="feature-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1000;display:none;align-items:center;justify-content:center;" onclick="closeModal('feature-modal',event)">
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:1.75rem;width:100%;max-width:460px;margin:1rem;" onclick="event.stopPropagation()">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;">
+      <div style="font-size:0.95rem;font-weight:700;color:var(--text);">Request a Feature</div>
+      <button onclick="closeModal('feature-modal')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:1.2rem;line-height:1;">×</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:0.75rem;">
+      <div>
+        <div style="font-size:0.7rem;font-family:var(--mono);color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.35rem;">Your email</div>
+        <input id="feature-email" type="email" placeholder="you@company.com" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:0.5rem 0.75rem;font-size:0.82rem;color:var(--text);outline:none;box-sizing:border-box;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"/>
+      </div>
+      <div>
+        <div style="font-size:0.7rem;font-family:var(--mono);color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.35rem;">Feature request</div>
+        <textarea id="feature-body" rows="4" placeholder="Describe the feature you'd like to see..." style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:0.5rem 0.75rem;font-size:0.82rem;color:var(--text);outline:none;resize:vertical;font-family:var(--sans);box-sizing:border-box;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></textarea>
+      </div>
+      <button onclick="submitFeatureRequest()" style="background:var(--accent);border:none;color:#fff;padding:0.55rem 1rem;border-radius:6px;font-size:0.82rem;font-weight:600;cursor:pointer;transition:opacity 0.15s;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">Send Request</button>
+      <div id="feature-status" style="font-size:0.75rem;color:var(--green);display:none;text-align:center;">✓ Sent — thank you!</div>
+    </div>
+  </div>
+</div>
+
+<!-- CONTACT SUPPORT MODAL -->
+<div id="support-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1000;align-items:center;justify-content:center;" onclick="closeModal('support-modal',event)">
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:1.75rem;width:100%;max-width:460px;margin:1rem;" onclick="event.stopPropagation()">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;">
+      <div style="font-size:0.95rem;font-weight:700;color:var(--text);">Contact Support</div>
+      <button onclick="closeModal('support-modal')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:1.2rem;line-height:1;">×</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:0.75rem;">
+      <div>
+        <div style="font-size:0.7rem;font-family:var(--mono);color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.35rem;">Your email</div>
+        <input id="support-email" type="email" placeholder="you@company.com" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:0.5rem 0.75rem;font-size:0.82rem;color:var(--text);outline:none;box-sizing:border-box;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"/>
+      </div>
+      <div>
+        <div style="font-size:0.7rem;font-family:var(--mono);color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.35rem;">How can we help?</div>
+        <textarea id="support-body" rows="4" placeholder="Describe your issue..." style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:0.5rem 0.75rem;font-size:0.82rem;color:var(--text);outline:none;resize:vertical;font-family:var(--sans);box-sizing:border-box;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></textarea>
+      </div>
+      <button onclick="submitSupport()" style="background:var(--accent);border:none;color:#fff;padding:0.55rem 1rem;border-radius:6px;font-size:0.82rem;font-weight:600;cursor:pointer;transition:opacity 0.15s;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">Send Message</button>
+      <div id="support-status" style="font-size:0.75rem;color:var(--green);display:none;text-align:center;">✓ Sent — we'll get back to you shortly.</div>
+    </div>
+  </div>
+</div>
+
 <footer style="border-top:1px solid var(--border);background:var(--bg2);padding:0.85rem 2rem;display:flex;align-items:center;justify-content:space-between;">
-  <div style="font-size:0.7rem;color:var(--text3);">© 2026 DarkMatter. All rights reserved.</div>
-  <div style="display:flex;gap:1.25rem;">
+  <div style="font-size:0.7rem;color:var(--text3);">© 2026 DarkMatter. Built in New York, NY.</div>
+  <div style="display:flex;gap:1.25rem;align-items:center;">
+    <button onclick="openModal('feature-modal')" style="background:none;border:none;font-size:0.7rem;color:var(--text3);cursor:pointer;padding:0;font-family:var(--sans);transition:color 0.15s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text3)'">Request a feature</button>
+    <button onclick="openModal('support-modal')" style="background:none;border:none;font-size:0.7rem;color:var(--text3);cursor:pointer;padding:0;font-family:var(--sans);transition:color 0.15s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text3)'">Contact support</button>
     <a href="https://github.com/darkmatter-hub/darkmatter" target="_blank" style="font-size:0.7rem;color:var(--text3);text-decoration:none;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text3)'">GitHub</a>
     <a href="https://github.com/darkmatter-hub/darkmatter/blob/main/PRODUCTION.md" target="_blank" style="font-size:0.7rem;color:var(--text3);text-decoration:none;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text3)'">Self-host</a>
   </div>
@@ -688,6 +737,14 @@ const context = (await res.json()).commits[0].context;`,
   }
 
   // ── Load agents ───────────────────────────────────────
+  // ── Check if agent has expired retention ─────────────
+  function isExpired(a) {
+    if (!a.retentionDays) return false;
+    const created = new Date(a.createdAt);
+    const expiry  = new Date(created.getTime() + a.retentionDays * 24 * 60 * 60 * 1000);
+    return new Date() > expiry;
+  }
+
   async function loadAgents() {
     try {
       const res  = await fetch('/dashboard/agents', { headers: authHeaders() });
@@ -714,8 +771,9 @@ const context = (await res.json()).commits[0].context;`,
           <div class="agent-card-head">
             <div>
               <div class="agent-name-row">
-                <div class="agent-status"></div>
+                <div class="agent-status ${isExpired(a) ? 'expired' : ''}"></div>
                 <div class="agent-name">${escHtml(a.agentName)}</div>
+                ${isExpired(a) ? '<span class="agent-expired-badge">expired</span>' : ''}
               </div>
               <div class="agent-id" style="display:flex;align-items:center;gap:0.4rem;">
                 <span>${a.agentId}</span>
@@ -771,9 +829,7 @@ const context = (await res.json()).commits[0].context;`,
                 </select>
                 <button class="agent-btn" onclick="saveRetention('${a.agentId}')">Save</button>
               </div>
-              <div style="font-size:0.67rem;color:var(--text3);margin-top:0.3rem;">
-                Minimum 6 months required for EU AI Act Art. 19 compliance.
-              </div>
+
             </div>
           </div>
         </div>
@@ -1021,6 +1077,55 @@ const context = (await res.json()).commits[0].context;`,
     .addEventListener('keydown', e => { if (e.key==='Enter') createAgent(); });
 
   // ── Init ─────────────────────────────────────────────
+  // ── Feature request / Support modals ─────────────────
+  function openModal(id) {
+    const el = document.getElementById(id);
+    el.style.display = 'flex';
+    setTimeout(() => el.style.opacity = '1', 10);
+  }
+
+  function closeModal(id, e) {
+    if (e && e.target !== document.getElementById(id)) return;
+    document.getElementById(id).style.display = 'none';
+    // Clear fields
+    ['email','body'].forEach(f => {
+      const el = document.getElementById(id.replace('-modal','-'+f));
+      if (el) el.value = '';
+    });
+    const status = document.getElementById(id.replace('-modal','-status'));
+    if (status) status.style.display = 'none';
+  }
+
+  async function submitFeatureRequest() {
+    const email = document.getElementById('feature-email').value.trim();
+    const body  = document.getElementById('feature-body').value.trim();
+    if (!email || !body) { toast('Please fill in both fields'); return; }
+    try {
+      await fetch('/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'feature', email, message: body }),
+      });
+      document.getElementById('feature-status').style.display = 'block';
+      setTimeout(() => closeModal('feature-modal'), 2000);
+    } catch(e) { toast('Something went wrong — try again'); }
+  }
+
+  async function submitSupport() {
+    const email = document.getElementById('support-email').value.trim();
+    const body  = document.getElementById('support-body').value.trim();
+    if (!email || !body) { toast('Please fill in both fields'); return; }
+    try {
+      await fetch('/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'support', email, message: body }),
+      });
+      document.getElementById('support-status').style.display = 'block';
+      setTimeout(() => closeModal('support-modal'), 2000);
+    } catch(e) { toast('Something went wrong — try again'); }
+  }
+
   loadAgents();
   loadCommits();
 </script>
