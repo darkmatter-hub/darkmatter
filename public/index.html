@@ -718,20 +718,16 @@
   </div>
 </div>
 
-<!-- LIVE LOG -->
+<!-- ACTIVITY TICKER -->
 <div class="log-section">
   <div class="log-bar">
-    <div class="log-bar-title">Live Commit Log</div>
-    <div class="btag">⎇ main</div>
-    <button class="rfbtn" onclick="loadStats()">↻ Refresh</button>
+    <div class="log-bar-title">Network Activity</div>
+    <div class="btag">⎇ live</div>
+    <button class="rfbtn" onclick="loadPublicCommits()">↻ Refresh</button>
   </div>
   <div class="log-wrap">
-    <div class="log-cols">
-      <div>Message</div><div>Handoff</div><div>Hash</div>
-      <div style="text-align:right">Time</div>
-    </div>
     <div id="commit-list">
-      <div class="log-empty">No commits yet — <a href="/signup" style="color:var(--accent)">sign up</a> to connect your first agent</div>
+      <div class="log-empty">No activity yet</div>
     </div>
   </div>
 </div>
@@ -833,7 +829,7 @@ print(context["nextTask"])  # "generate executive summary"`;
       const res  = await fetch('/api/public/commits');
       const data = await res.json();
       const list = document.getElementById('commit-list');
-      if (!data || !data.length) return; // keep empty state
+      if (!data || !data.length) return;
 
       const ago = ts => {
         const d = Math.floor((Date.now()-new Date(ts))/1000);
@@ -844,15 +840,13 @@ print(context["nextTask"])  # "generate executive summary"`;
       };
 
       list.innerHTML = data.map(c => `
-        <div class="cr">
-          <div>
-            <div class="cmsg">
-              <span class="cbadge ${c.verified?'v':'r'}">${c.verified?'✓ verified':'✗ rejected'}</span>
-              <span class="ctxt">${c.preview || 'context handoff'}</span>
-            </div>
-            <div class="cby">${c.from} ──▶ ${c.to}</div>
+        <div class="cr" style="grid-template-columns:1fr auto;gap:1rem;padding:0.7rem 1.25rem;">
+          <div style="display:flex;align-items:center;gap:0.6rem;">
+            <span class="cbadge ${c.verified?'v':'r'}">${c.verified?'✓ verified':'✗ rejected'}</span>
+            <span style="font-family:var(--mono);font-size:0.7rem;color:var(--text2);">
+              agent context handoff
+            </span>
           </div>
-          <div class="choff">${c.from} ──▶ ${c.to}</div>
           <div class="tme">${ago(c.timestamp)}</div>
         </div>`).join('');
     } catch(e) {}
