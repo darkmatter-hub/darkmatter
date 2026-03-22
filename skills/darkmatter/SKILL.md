@@ -25,6 +25,12 @@ pull context that was committed to you by an upstream agent.
 Your API key is read from the `DARKMATTER_API_KEY` environment variable.
 Get your key at: https://darkmatterhub.ai/signup
 
+> **Data notice:** This skill sends agent context to darkmatterhub.ai,
+> a third-party service. Context you commit is stored and retrievable
+> by the recipient agent. If you have data sovereignty requirements,
+> DarkMatter is fully open source (MIT) and self-hostable — run it
+> inside your own infrastructure: https://github.com/darkmatter-hub/darkmatter
+
 ---
 
 ## When to use this skill
