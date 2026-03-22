@@ -697,7 +697,7 @@ const context = (await res.json()).commits[0].context;`,
               </div>
               <div class="agent-id" style="display:flex;align-items:center;gap:0.4rem;">
                 <span>${a.agentId}</span>
-                <button onclick="copyAgentId('${a.agentId}')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:0.65rem;padding:0 0.2rem;font-family:var(--mono);transition:color 0.15s;" title="Copy agent ID" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text3)'">⎘</button>
+                <button onclick="copyAgentId('${a.agentId}')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:0.65rem;padding:0 0.2rem;font-family:var(--mono);transition:color 0.15s;user-select:none;-webkit-user-select:none;" title="Copy agent ID" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text3)'">⎘</button>
               </div>
             </div>
             <div class="agent-actions">
