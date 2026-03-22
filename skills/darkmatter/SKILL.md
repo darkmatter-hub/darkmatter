@@ -5,7 +5,7 @@ version: 1.0.0
 metadata:
   openclaw:
     emoji: "🌑"
-    homepage: https://darkmatter-production.up.railway.app
+    homepage: https://darkmatterhub.ai
     requires:
       env:
         - DARKMATTER_API_KEY
@@ -20,10 +20,10 @@ DarkMatter is the commit, push, and pull layer for multi-agent systems.
 Use it to pass verified context from this agent to another agent, or to
 pull context that was committed to you by an upstream agent.
 
-**Base URL:** `https://darkmatter-production.up.railway.app`
+**Base URL:** `https://darkmatterhub.ai`
 
 Your API key is read from the `DARKMATTER_API_KEY` environment variable.
-Get your key at: https://darkmatter-production.up.railway.app/signup
+Get your key at: https://darkmatterhub.ai/signup
 
 ---
 
@@ -46,7 +46,7 @@ Use this skill when the user asks to:
 When the user asks to commit, push, or hand off context to another agent:
 
 ```bash
-curl -s -X POST https://darkmatter-production.up.railway.app/api/commit \
+curl -s -X POST https://darkmatterhub.ai/api/commit \
   -H "Authorization: Bearer $DARKMATTER_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -72,7 +72,7 @@ curl -s -X POST https://darkmatter-production.up.railway.app/api/commit \
 When the user asks to pull, check, or inherit context from DarkMatter:
 
 ```bash
-curl -s https://darkmatter-production.up.railway.app/api/pull \
+curl -s https://darkmatterhub.ai/api/pull \
   -H "Authorization: Bearer $DARKMATTER_API_KEY"
 ```
 
@@ -82,7 +82,7 @@ curl -s https://darkmatter-production.up.railway.app/api/pull \
 
 To get only the most recent commit:
 ```bash
-curl -s https://darkmatter-production.up.railway.app/api/pull \
+curl -s https://darkmatterhub.ai/api/pull \
   -H "Authorization: Bearer $DARKMATTER_API_KEY" \
   | python3 -c "import sys,json; commits=json.load(sys.stdin)['commits']; print(json.dumps(commits[0] if commits else {}, indent=2))"
 ```
@@ -94,7 +94,7 @@ curl -s https://darkmatter-production.up.railway.app/api/pull \
 When the user asks who this agent is or what its DarkMatter ID is:
 
 ```bash
-curl -s https://darkmatter-production.up.railway.app/api/me \
+curl -s https://darkmatterhub.ai/api/me \
   -H "Authorization: Bearer $DARKMATTER_API_KEY"
 ```
 
@@ -136,7 +136,7 @@ Returns: `{"agentId": "dm_...", "agentName": "..."}`
 
 If `DARKMATTER_API_KEY` is missing:
 
-1. Go to https://darkmatter-production.up.railway.app/signup
+1. Go to https://darkmatterhub.ai/signup
 2. Create a free account
 3. From the dashboard, create an agent and copy the API key
 4. Add to your OpenClaw config:

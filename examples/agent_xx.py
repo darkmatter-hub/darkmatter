@@ -17,7 +17,7 @@ from datetime import datetime
 
 # ── CONFIG ───────────────────────────────────────────────────────
 ANTHROPIC_API_KEY = "your-anthropic-api-key"   # ← paste your key
-DARKMATTER_URL    = "https://darkmatter-production.up.railway.app"
+DARKMATTER_URL    = "https://darkmatterhub.ai"
 AGENT_XX_KEY      = "dm_sk_a01f86d7b193f2fef0d37d1da7fdb1bf39467f0e11d92141"
 AGENT_YY_ID       = "dm_084578e0a339ddd5"  # ← Agent YY's ID from dashboard
 
@@ -107,7 +107,7 @@ def main():
 
     print("─" * 44)
     print("✓ Agent XX done. Check your DarkMatter dashboard:")
-    print(f"  https://darkmatter-production.up.railway.app/dashboard\n")
+    print(f"  https://darkmatterhub.ai/dashboard\n")
 
 
 if __name__ == "__main__":

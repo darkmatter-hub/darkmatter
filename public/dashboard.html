@@ -360,7 +360,7 @@
         <div class="qs-pre">
 <span class="c"># 1. Commit context (Agent X → Agent Y)</span>
 <span class="cm">curl -X POST \</span>
-<span class="cm">  https://darkmatter-production.up.railway.app/api/commit \</span>
+<span class="cm">  https://darkmatterhub.ai/api/commit \</span>
 <span class="cm">  -H <span class="st">"Authorization: Bearer <span class="key-placeholder">YOUR_KEY</span>"</span> \</span>
 <span class="cm">  -H <span class="st">"Content-Type: application/json"</span> \</span>
 <span class="cm">  -d <span class="st">'{"toAgentId":"dm_AGENT_Y_ID",</span></span>
@@ -370,14 +370,14 @@
 <span class="sp"></span>
 <span class="c"># 2. Pull verified context (Agent Y pulls)</span>
 <span class="cm">curl \</span>
-<span class="cm">  https://darkmatter-production.up.railway.app/api/pull \</span>
+<span class="cm">  https://darkmatterhub.ai/api/pull \</span>
 <span class="cm">  -H <span class="st">"Authorization: Bearer <span class="key-placeholder">AGENT_Y_KEY</span>"</span></span>
 <span class="sp"></span>
 <span class="ok"># → {"commits":[{"context":{...},"verified":true}]}</span>
 <span class="sp"></span>
 <span class="c"># 3. Check your agent identity</span>
 <span class="cm">curl \</span>
-<span class="cm">  https://darkmatter-production.up.railway.app/api/me \</span>
+<span class="cm">  https://darkmatterhub.ai/api/me \</span>
 <span class="cm">  -H <span class="st">"Authorization: Bearer <span class="key-placeholder">YOUR_KEY</span>"</span></span>
 <span class="sp"></span>
 <span class="ok"># → {"agentId":"dm_...","agentName":"..."}</span>
@@ -395,7 +395,7 @@
         <div class="qs-pre">
 <span class="cm">import requests</span>
 <span class="sp"></span>
-<span class="cm">URL = <span class="st">"https://darkmatter-production.up.railway.app"</span></span>
+<span class="cm">URL = <span class="st">"https://darkmatterhub.ai"</span></span>
 <span class="cm">X = {<span class="st">"Authorization"</span>: <span class="st">"Bearer <span class="key-placeholder">AGENT_X_KEY</span>"</span>}</span>
 <span class="cm">Y = {<span class="st">"Authorization"</span>: <span class="st">"Bearer <span class="key-placeholder">AGENT_Y_KEY</span>"</span>}</span>
 <span class="sp"></span>
@@ -422,7 +422,7 @@
           <button class="qs-copy-btn" onclick="copyTab('node')">Copy</button>
         </div>
         <div class="qs-pre">
-<span class="cm">const URL  = <span class="st">"https://darkmatter-production.up.railway.app"</span>;</span>
+<span class="cm">const URL  = <span class="st">"https://darkmatterhub.ai"</span>;</span>
 <span class="cm">const hdrs = (key) => ({</span>
 <span class="cm">  <span class="st">"Authorization"</span>: <span class="fl">`Bearer ${key}`</span>,</span>
 <span class="cm">  <span class="st">"Content-Type"</span>: <span class="st">"application/json"</span>,</span>
@@ -550,24 +550,24 @@
   const tabCode = {
     curl: `# 1. Commit context (Agent X → Agent Y)
 curl -X POST \
-  https://darkmatter-production.up.railway.app/api/commit \
+  https://darkmatterhub.ai/api/commit \
   -H "Authorization: Bearer YOUR_KEY" \
   -H "Content-Type: application/json" \
   -d '{"toAgentId":"dm_AGENT_Y_ID","context":{"task":"done","result":"..."}}'
 
 # 2. Pull verified context (Agent Y pulls)
 curl \
-  https://darkmatter-production.up.railway.app/api/pull \
+  https://darkmatterhub.ai/api/pull \
   -H "Authorization: Bearer AGENT_Y_KEY"
 
 # 3. Check your agent identity
 curl \
-  https://darkmatter-production.up.railway.app/api/me \
+  https://darkmatterhub.ai/api/me \
   -H "Authorization: Bearer YOUR_KEY"`,
 
     python: `import requests
 
-URL = "https://darkmatter-production.up.railway.app"
+URL = "https://darkmatterhub.ai"
 X = {"Authorization": "Bearer AGENT_X_KEY"}
 Y = {"Authorization": "Bearer AGENT_Y_KEY"}
 
@@ -581,7 +581,7 @@ requests.post(f"{URL}/api/commit", headers=X, json={
 data    = requests.get(f"{URL}/api/pull", headers=Y).json()
 context = data["commits"][0]["context"]`,
 
-    node: `const URL  = "https://darkmatter-production.up.railway.app";
+    node: `const URL  = "https://darkmatterhub.ai";
 const hdrs = (key) => ({
   "Authorization": \`Bearer \${key}\`,
   "Content-Type": "application/json",

@@ -7,7 +7,7 @@
 
 ## Why self-host?
 
-DarkMatter's hosted API at `darkmatter-production.up.railway.app` works for most developers and teams. But if your organization has strict data policies — financial services, healthcare, defense, enterprise — you can run DarkMatter entirely within your own infrastructure.
+DarkMatter's hosted API at `darkmatterhub.ai` works for most developers and teams. But if your organization has strict data policies — financial services, healthcare, defense, enterprise — you can run DarkMatter entirely within your own infrastructure.
 
 When self-hosted:
 - Agent context never leaves your network

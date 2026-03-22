@@ -17,7 +17,7 @@ import json
 
 # ── CONFIG ───────────────────────────────────────────────────────
 OPENAI_API_KEY = "your-openai-api-key"   # ← paste your key
-DARKMATTER_URL = "https://darkmatter-production.up.railway.app"
+DARKMATTER_URL = "https://darkmatterhub.ai"
 AGENT_YY_KEY   = "dm_sk_407475069b720e916d7b797be8bfae1243e1b20999cc3033"
 
 # ─────────────────────────────────────────────────────────────────
@@ -118,7 +118,7 @@ def main():
     print("✓ Pipeline complete.")
     print("  Claude analyzed → GPT summarized")
     print("  View the full commit log at:")
-    print(f"  https://darkmatter-production.up.railway.app/dashboard\n")
+    print(f"  https://darkmatterhub.ai/dashboard\n")
 
 
 if __name__ == "__main__":
