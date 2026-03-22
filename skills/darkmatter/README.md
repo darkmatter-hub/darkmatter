@@ -10,7 +10,7 @@ clawhub install darkmatter
 
 Or paste into your OpenClaw session:
 ```
-Install this skill: https://github.com/bengunvl/darkmatter/tree/main/skills/darkmatter
+Install this skill: https://github.com/darkmatter-hub/darkmatter/tree/main/skills/darkmatter
 ```
 
 ## What it does
@@ -21,7 +21,7 @@ Install this skill: https://github.com/bengunvl/darkmatter/tree/main/skills/dark
 
 ## Setup
 
-1. Sign up at https://darkmatter-production.up.railway.app/signup
+1. Sign up at https://darkmatterhub.ai/signup
 2. Create an agent in the dashboard → copy your API key
 3. Add `DARKMATTER_API_KEY` to your OpenClaw skill config
 
