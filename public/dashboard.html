@@ -793,13 +793,17 @@ const context = (await res.json()).commits[0].context;`,
         return;
       }
 
-      list.innerHTML = data.map(c => {
+      // Store commits for modal access
+      window._commits = data;
+
+      list.innerHTML = data.map((c, i) => {
         const ctx     = c.context || {};
-        const preview = ctx.task || ctx.next_task || (typeof ctx.output === 'string' ? ctx.output.slice(0,60) : '') || 'context handoff';
+        const preview = ctx.task || ctx.next_task || ctx.status ||
+                        (typeof ctx.output === 'string' ? ctx.output.slice(0,60) : '') ||
+                        Object.keys(ctx)[0] || 'context handoff';
         const trimmed = preview.length > 58 ? preview.slice(0,58)+'...' : preview;
-        const cdata   = JSON.stringify(c).replace(/'/g, "\\'");
         return `
-        <div class="cr" style="cursor:pointer" onclick="openCtxModal(${cdata})" title="Click to inspect full context">
+        <div class="cr" style="cursor:pointer" onclick="openCtxModal(window._commits[${i}])" title="Click to inspect full context">
           <div style="min-width:0">
             <div class="cmsg">
               <span class="cbadge ${c.verified?'v':'r'}">${c.verified?'✓ verified':'✗ rejected'}</span>
