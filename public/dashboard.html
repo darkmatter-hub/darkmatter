@@ -206,6 +206,20 @@
     .cbadge    { display:inline-flex; align-items:center; gap:0.25rem; font-family:var(--mono); font-size:0.57rem; padding:0.1rem 0.38rem; border-radius:100px; border:1px solid; flex-shrink:0; }
     .cbadge.v  { color:var(--green); border-color:rgba(63,185,80,0.3);  background:rgba(63,185,80,0.08); }
     .cbadge.r  { color:var(--red);   border-color:rgba(248,81,73,0.3);  background:rgba(248,81,73,0.08); }
+    .cbadge.commit     { color:var(--accent); border-color:rgba(88,166,255,0.3);  background:rgba(88,166,255,0.08); }
+    .cbadge.revert     { color:var(--amber);  border-color:rgba(210,153,34,0.3);  background:rgba(210,153,34,0.08); }
+    .cbadge.override   { color:#d2a8ff;       border-color:rgba(210,168,255,0.3); background:rgba(210,168,255,0.08); }
+    .cbadge.branch     { color:#79c0ff;       border-color:rgba(121,192,255,0.3); background:rgba(121,192,255,0.08); }
+    .cbadge.merge      { color:#56d364;       border-color:rgba(86,211,100,0.3);  background:rgba(86,211,100,0.08); }
+    .cbadge.error      { color:var(--red);    border-color:rgba(248,81,73,0.3);   background:rgba(248,81,73,0.08); }
+    .cbadge.spawn      { color:#79c0ff;       border-color:rgba(121,192,255,0.3); background:rgba(121,192,255,0.08); }
+    .cbadge.timeout    { color:var(--amber);  border-color:rgba(210,153,34,0.3);  background:rgba(210,153,34,0.08); }
+    .cbadge.retry      { color:#e3b341;       border-color:rgba(227,179,65,0.3);  background:rgba(227,179,65,0.08); }
+    .cbadge.checkpoint { color:#58a6ff;       border-color:rgba(88,166,255,0.3);  background:rgba(88,166,255,0.08); }
+    .cbadge.consent    { color:#56d364;       border-color:rgba(86,211,100,0.3);  background:rgba(86,211,100,0.08); }
+    .cbadge.redact     { color:#f0883e;       border-color:rgba(240,136,62,0.3);  background:rgba(240,136,62,0.08); }
+    .cbadge.escalate   { color:var(--red);    border-color:rgba(248,81,73,0.3);   background:rgba(248,81,73,0.08); }
+    .cbadge.audit      { color:var(--text3);  border-color:rgba(139,148,158,0.3); background:rgba(139,148,158,0.08); }
     .cmsg  { display:flex; align-items:center; gap:0.45rem; margin-bottom:0.15rem; min-width:0; }
     .ctxt  { font-size:0.8rem; font-weight:500; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .cby   { font-family:var(--mono); font-size:0.6rem; color:var(--text3); }
@@ -364,6 +378,7 @@
 <span class="cm">  -H <span class="st">"Authorization: Bearer <span class="key-placeholder">YOUR_KEY</span>"</span> \</span>
 <span class="cm">  -H <span class="st">"Content-Type: application/json"</span> \</span>
 <span class="cm">  -d <span class="st">'{"toAgentId":"dm_AGENT_Y_ID",</span></span>
+<span class="cm">     <span class="st">"eventType":"commit",</span></span>
 <span class="cm">     <span class="st">"context":{"task":"done","result":"..."}}'</span></span>
 <span class="sp"></span>
 <span class="ok"># → {"verified":true,"commitId":"commit_..."}</span>
@@ -402,6 +417,7 @@
 <span class="c"># Agent X commits context for Agent Y</span>
 <span class="cm">requests.post(<span class="fl">f</span><span class="st">"{URL}/api/commit"</span>, headers=X, json={</span>
 <span class="cm">    <span class="st">"toAgentId"</span>: <span class="st">"dm_AGENT_Y_ID"</span>,</span>
+<span class="cm">    <span class="st">"eventType"</span>: <span class="st">"commit"</span>,  <span class="c"># commit | revert | override | branch | merge | error</span></span>
 <span class="cm">    <span class="st">"context"</span>:   {<span class="st">"task"</span>: <span class="st">"done"</span>, <span class="st">"result"</span>: <span class="st">"..."</span>},</span>
 <span class="cm">})</span>
 <span class="ok"># → verified: true ✓</span>
@@ -802,11 +818,14 @@ const context = (await res.json()).commits[0].context;`,
                         (typeof ctx.output === 'string' ? ctx.output.slice(0,60) : '') ||
                         Object.keys(ctx)[0] || 'context handoff';
         const trimmed = preview.length > 58 ? preview.slice(0,58)+'...' : preview;
+        const evType = (ctx._eventType || 'commit');
+        const evLabel = { commit:'commit', revert:'revert', override:'override', branch:'branch', merge:'merge', error:'error', spawn:'spawn', timeout:'timeout', retry:'retry', checkpoint:'checkpoint', consent:'consent', redact:'redact', escalate:'escalate', audit:'audit' }[evType] || 'commit';
         return `
         <div class="cr" style="cursor:pointer" onclick="openCtxModal(window._commits[${i}])" title="Click to inspect full context">
           <div style="min-width:0">
             <div class="cmsg">
-              <span class="cbadge ${c.verified?'v':'r'}">${c.verified?'✓ verified':'✗ rejected'}</span>
+              <span class="cbadge ${c.verified?'v':'r'}">${c.verified?'✓':'✗'}</span>
+              <span class="cbadge ${evType}">${evLabel}</span>
               <span class="ctxt">${escHtml(trimmed)}</span>
             </div>
             <div class="cby">${escHtml(c.from)} ──▶ ${escHtml(c.to)}</div>
@@ -837,13 +856,16 @@ const context = (await res.json()).commits[0].context;`,
 
     // Summary tab
     let summaryHtml = '';
+    const evType = (ctx._eventType || 'commit');
     summaryHtml += `<div class="ctx-field"><div class="ctx-field-label">Status</div><div class="${c.verified ? 'ctx-badge-v' : 'ctx-badge-r'}">${c.verified ? '✓ Verified — content authenticated' : '✗ Rejected — not delivered to recipient'}</div></div>`;
+    summaryHtml += `<div class="ctx-field"><div class="ctx-field-label">Event Type</div><div class="ctx-field-val"><span class="cbadge ${evType}" style="font-size:0.65rem;">${evType}</span></div></div>`;
     summaryHtml += `<div class="ctx-field"><div class="ctx-field-label">From Agent</div><div class="ctx-field-val">${escHtml(c.from)}</div></div>`;
     summaryHtml += `<div class="ctx-field"><div class="ctx-field-label">To Agent</div><div class="ctx-field-val">${escHtml(c.to)}</div></div>`;
     summaryHtml += `<div class="ctx-field"><div class="ctx-field-label">Timestamp</div><div class="ctx-field-val">${new Date(c.timestamp).toLocaleString()}</div></div>`;
 
-    // Render each context key as its own field
+    // Render each context key as its own field (skip internal _eventType key)
     Object.entries(ctx).forEach(([k, v]) => {
+      if (k === '_eventType') return;
       const val = typeof v === 'object' ? JSON.stringify(v, null, 2) : String(v);
       summaryHtml += `<div class="ctx-field">
         <div class="ctx-field-label">${escHtml(k)}</div>

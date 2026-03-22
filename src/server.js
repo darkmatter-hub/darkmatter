@@ -337,10 +337,14 @@ app.get('/dashboard/commits', requireAuth, async (req, res) => {
 // ── POST /api/commit ─────────────────────────────────
 app.post('/api/commit', requireApiKey, async (req, res) => {
   try {
-    const { toAgentId, context } = req.body;
+    const { toAgentId, context, eventType } = req.body;
     if (!toAgentId || !context) {
       return res.status(400).json({ error: 'toAgentId and context required' });
     }
+
+    // Validate eventType
+    const VALID_TYPES = ['commit', 'revert', 'override', 'branch', 'merge', 'error', 'spawn', 'timeout', 'retry', 'checkpoint', 'consent', 'redact', 'escalate', 'audit'];
+    const resolvedType = (eventType && VALID_TYPES.includes(eventType)) ? eventType : 'commit';
 
     const commitId  = 'commit_' + Date.now() + '_' + crypto.randomBytes(4).toString('hex');
     const timestamp = new Date().toISOString();
@@ -360,7 +364,7 @@ app.post('/api/commit', requireApiKey, async (req, res) => {
           id:                  commitId,
           from_agent:          req.agent.agent_id,
           to_agent:            null,
-          context,
+          context:             { ...context, _eventType: resolvedType },
           verified:            false,
           verification_reason: `Recipient agent ${toAgentId} not found`,
           timestamp,
@@ -399,6 +403,7 @@ app.post('/api/commit', requireApiKey, async (req, res) => {
       from:      req.agent.agent_name,
       to:        toAgentId,
       verified:  true,
+      eventType: resolvedType,
       timestamp,
     });
   } catch (err) {
