@@ -342,6 +342,9 @@ app.post('/api/commit', requireApiKey, async (req, res) => {
       return res.status(400).json({ error: 'toAgentId and context required' });
     }
 
+    const commitId  = 'commit_' + Date.now() + '_' + crypto.randomBytes(4).toString('hex');
+    const timestamp = new Date().toISOString();
+
     // Verify recipient exists
     const { data: toAgent } = await supabaseService
       .from('agents')
@@ -349,10 +352,27 @@ app.post('/api/commit', requireApiKey, async (req, res) => {
       .eq('agent_id', toAgentId)
       .single();
 
-    if (!toAgent) return res.status(404).json({ error: `Agent ${toAgentId} not found` });
+    if (!toAgent) {
+      // Store as rejected commit — agent not found
+      await supabaseService
+        .from('commits')
+        .insert({
+          id:                  commitId,
+          from_agent:          req.agent.agent_id,
+          to_agent:            null,
+          context,
+          verified:            false,
+          verification_reason: `Recipient agent ${toAgentId} not found`,
+          timestamp,
+        });
 
-    const commitId  = 'commit_' + Date.now() + '_' + crypto.randomBytes(4).toString('hex');
-    const timestamp = new Date().toISOString();
+      return res.status(404).json({
+        commitId,
+        verified:  false,
+        reason:    `Agent ${toAgentId} not found`,
+        timestamp,
+      });
+    }
 
     const { error } = await supabaseService
       .from('commits')
