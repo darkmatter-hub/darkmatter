@@ -448,6 +448,35 @@ app.get('/api/me', requireApiKey, async (req, res) => {
 // PUBLIC NETWORK STATS (no auth — for homepage)
 // ═══════════════════════════════════════════════════
 
+// ── GET /api/public/commits ── recent network commits ─
+app.get('/api/public/commits', async (req, res) => {
+  try {
+    const { data, error } = await supabaseService
+      .from('commits')
+      .select('id, from_agent, to_agent, verified, timestamp, context')
+      .order('timestamp', { ascending: false })
+      .limit(20);
+
+    if (error) throw error;
+
+    res.json((data || []).map(c => {
+      const ctx     = c.context || {};
+      const preview = ctx.task || ctx.next_task || ctx.status ||
+                      (typeof ctx.output === 'string' ? ctx.output.slice(0,50) : '') ||
+                      Object.keys(ctx)[0] || 'context handoff';
+      return {
+        from:      c.from_agent ? c.from_agent.slice(0,14)+'···' : 'unknown',
+        to:        c.to_agent   ? c.to_agent.slice(0,14)+'···'   : 'unknown',
+        verified:  c.verified,
+        timestamp: c.timestamp,
+        preview:   preview.length > 55 ? preview.slice(0,55)+'...' : preview,
+      };
+    }));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.get('/api/stats', async (req, res) => {
   try {
     const [agentsRes, commitsRes] = await Promise.all([

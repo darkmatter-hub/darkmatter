@@ -828,6 +828,36 @@ print(context["nextTask"])  # "generate executive summary"`;
     } catch(e) {}
   }
 
+  async function loadPublicCommits() {
+    try {
+      const res  = await fetch('/api/public/commits');
+      const data = await res.json();
+      const list = document.getElementById('commit-list');
+      if (!data || !data.length) return; // keep empty state
+
+      const ago = ts => {
+        const d = Math.floor((Date.now()-new Date(ts))/1000);
+        if(d<60) return d+'s ago';
+        if(d<3600) return Math.floor(d/60)+'m ago';
+        if(d<86400) return Math.floor(d/3600)+'h ago';
+        return Math.floor(d/86400)+'d ago';
+      };
+
+      list.innerHTML = data.map(c => `
+        <div class="cr">
+          <div>
+            <div class="cmsg">
+              <span class="cbadge ${c.verified?'v':'r'}">${c.verified?'✓ verified':'✗ rejected'}</span>
+              <span class="ctxt">${c.preview || 'context handoff'}</span>
+            </div>
+            <div class="cby">${c.from} ──▶ ${c.to}</div>
+          </div>
+          <div class="choff">${c.from} ──▶ ${c.to}</div>
+          <div class="tme">${ago(c.timestamp)}</div>
+        </div>`).join('');
+    } catch(e) {}
+  }
+
   // ── Menu ─────────────────────────────────────────────
   function toggleMenu() { document.getElementById('dd').classList.toggle('open'); }
   document.addEventListener('click', e => {
@@ -860,22 +890,25 @@ print(context["nextTask"])  # "generate executive summary"`;
   try {
     const s = JSON.parse(localStorage.getItem('dm_session') || '{}');
     if (s?.access_token) {
-      // Replace Sign in / Sign up with Dashboard button
       const signin = document.querySelector('.btn-signin');
       const signup = document.querySelector('.btn-signup');
       if (signin) signin.style.display = 'none';
       if (signup) { signup.textContent = 'Dashboard →'; signup.href = '/dashboard'; }
-      // Update hero CTA
       const cta = document.querySelector('.cta-primary');
       if (cta) { cta.textContent = 'Go to Dashboard →'; cta.href = '/dashboard'; }
-      // Remove "Sign up free" from hamburger menu
       document.querySelectorAll('.dditem').forEach(el => {
         if (el.href && el.href.includes('/signup')) el.style.display = 'none';
       });
+      // Update commit log empty state for logged-in users
+      const list = document.getElementById('commit-list');
+      if (list && list.querySelector('.log-empty')) {
+        list.innerHTML = '<div class="log-empty">No network commits yet — <a href="/dashboard" style="color:var(--accent)">go to your dashboard</a> to commit context</div>';
+      }
     }
   } catch(e) {}
 
   loadStats();
+  loadPublicCommits();
 </script>
 </body>
 </html>
