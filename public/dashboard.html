@@ -694,6 +694,12 @@ const context = (await res.json()).commits[0].context;`,
       const data = await res.json();
       const grid = document.getElementById('agents-grid');
 
+      // Normalize fields
+      data.forEach(a => {
+        a.webhookUrl    = a.webhookUrl    || a.webhook_url    || null;
+        a.retentionDays = a.retentionDays ?? a.retention_days ?? null;
+      });
+
       if (!data.length) {
         grid.innerHTML = `<div class="agents-empty">
           <div class="agents-empty-icon">🤖</div>
@@ -734,6 +740,41 @@ const context = (await res.json()).commits[0].context;`,
               <span>Created ${ago(a.createdAt)}</span>
               ${a.lastActive ? `<span>Last active ${ago(a.lastActive)}</span>` : '<span>Never used</span>'}
             </div>
+
+            <!-- Webhook settings -->
+            <div style="margin-top:0.85rem;padding-top:0.85rem;border-top:1px solid var(--border2);">
+              <div style="font-size:0.65rem;font-family:var(--mono);color:var(--text3);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:0.5rem;">Webhook</div>
+              <div style="display:flex;gap:0.4rem;align-items:center;">
+                <input id="webhook-${a.agentId}" type="url" placeholder="https://your-server.com/webhook"
+                  value="${escHtml(a.webhookUrl || '')}"
+                  style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:0.3rem 0.6rem;font-size:0.72rem;color:var(--text);font-family:var(--mono);outline:none;"
+                  onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"/>
+                <button class="agent-btn" onclick="saveWebhook('${a.agentId}')">Save</button>
+              </div>
+              <div style="font-size:0.67rem;color:var(--text3);margin-top:0.3rem;">
+                DarkMatter will POST to this URL when a commit arrives for this agent.
+              </div>
+            </div>
+
+            <!-- Retention settings -->
+            <div style="margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid var(--border2);">
+              <div style="font-size:0.65rem;font-family:var(--mono);color:var(--text3);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:0.5rem;">Retention Policy</div>
+              <div style="display:flex;gap:0.4rem;align-items:center;">
+                <select id="retention-${a.agentId}"
+                  style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:0.3rem 0.6rem;font-size:0.72rem;color:var(--text);outline:none;cursor:pointer;"
+                  onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+                  <option value="null"  ${!a.retentionDays              ? 'selected':''}>Forever (recommended)</option>
+                  <option value="182"   ${a.retentionDays===182         ? 'selected':''}>6 months — EU AI Act minimum</option>
+                  <option value="365"   ${a.retentionDays===365         ? 'selected':''}>1 year</option>
+                  <option value="730"   ${a.retentionDays===730         ? 'selected':''}>2 years</option>
+                  <option value="1825"  ${a.retentionDays===1825        ? 'selected':''}>5 years</option>
+                </select>
+                <button class="agent-btn" onclick="saveRetention('${a.agentId}')">Save</button>
+              </div>
+              <div style="font-size:0.67rem;color:var(--text3);margin-top:0.3rem;">
+                Minimum 6 months required for EU AI Act Art. 19 compliance.
+              </div>
+            </div>
           </div>
         </div>
       `).join('');
@@ -744,6 +785,33 @@ const context = (await res.json()).commits[0].context;`,
   function copyAgentId(agentId) {
     navigator.clipboard.writeText(agentId);
     toast('Agent ID copied to clipboard');
+  }
+
+  // ── Save webhook URL ─────────────────────────────────
+  async function saveWebhook(agentId) {
+    const url = document.getElementById('webhook-' + agentId)?.value?.trim() || null;
+    try {
+      const res = await fetch(`/dashboard/agents/${agentId}/webhook`, {
+        method: 'POST', headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ webhookUrl: url || null }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error);
+      toast(url ? '📡 Webhook saved' : 'Webhook removed');
+    } catch(e) { toast('Error: ' + e.message); }
+  }
+
+  // ── Save retention policy ────────────────────────────
+  async function saveRetention(agentId) {
+    const val = document.getElementById('retention-' + agentId)?.value;
+    const days = val === 'null' ? null : parseInt(val);
+    try {
+      const res = await fetch(`/dashboard/agents/${agentId}/retention`, {
+        method: 'POST', headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ retentionDays: days }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error);
+      toast(days ? `🗑 Retention set to ${days} days` : 'Retention set to forever');
+    } catch(e) { toast('Error: ' + e.message); }
   }
 
   // ── Reveal / hide API key ────────────────────────────

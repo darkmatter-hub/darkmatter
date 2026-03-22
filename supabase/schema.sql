@@ -78,3 +78,42 @@ as $$
   where api_key = p_api_key
   limit 1;
 $$;
+
+-- ═══════════════════════════════════════════════════
+-- DarkMatter — Schema v3 additions
+-- Run these in Supabase SQL Editor (do NOT drop existing tables)
+-- ═══════════════════════════════════════════════════
+
+-- ── Add webhook + retention columns to agents ───────
+alter table agents
+  add column if not exists webhook_url       text,
+  add column if not exists webhook_secret    text,
+  add column if not exists retention_days    integer default null;
+-- retention_days null = keep forever
+
+-- ── Webhooks delivery log ────────────────────────────
+create table if not exists webhook_deliveries (
+  id           text primary key,
+  agent_id     text references agents(agent_id) on delete cascade,
+  commit_id    text references commits(id)      on delete cascade,
+  webhook_url  text not null,
+  status       text not null,  -- 'delivered' | 'failed'
+  http_status  integer,
+  response     text,
+  attempted_at timestamptz default now()
+);
+
+create index if not exists webhook_deliveries_agent_idx
+  on webhook_deliveries(agent_id, attempted_at desc);
+
+alter table webhook_deliveries enable row level security;
+
+create policy "users see own webhook deliveries"
+  on webhook_deliveries for select
+  using (
+    agent_id in (select agent_id from agents where user_id = auth.uid())
+  );
+
+create policy "service can insert webhook deliveries"
+  on webhook_deliveries for insert
+  with check (true);

@@ -237,17 +237,19 @@ app.get('/dashboard/agents', requireAuth, async (req, res) => {
   try {
     const { data, error } = await supabaseService
       .from('agents')
-      .select('agent_id, agent_name, api_key, created_at, last_active')
+      .select('agent_id, agent_name, api_key, created_at, last_active, webhook_url, retention_days')
       .eq('user_id', req.user.id)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
     res.json(data.map(a => ({
-      agentId:    a.agent_id,
-      agentName:  a.agent_name,
-      apiKey:     a.api_key,
-      createdAt:  a.created_at,
-      lastActive: a.last_active,
+      agentId:       a.agent_id,
+      agentName:     a.agent_name,
+      apiKey:        a.api_key,
+      createdAt:     a.created_at,
+      lastActive:    a.last_active,
+      webhookUrl:    a.webhook_url    || null,
+      retentionDays: a.retention_days ?? null,
     })));
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -398,6 +400,24 @@ app.post('/api/commit', requireApiKey, async (req, res) => {
       .update({ last_active: timestamp })
       .eq('agent_id', req.agent.agent_id);
 
+    // Deliver webhook to recipient agent if configured (fire and forget)
+    const { data: recipientAgent } = await supabaseService
+      .from('agents')
+      .select('agent_id, agent_name, webhook_url, webhook_secret')
+      .eq('agent_id', toAgentId)
+      .single();
+
+    if (recipientAgent?.webhook_url) {
+      deliverWebhook(recipientAgent, {
+        id:         commitId,
+        from_agent: req.agent.agent_id,
+        to_agent:   toAgentId,
+        context:    { ...context, _eventType: resolvedType },
+        verified:   true,
+        timestamp,
+      }).catch(err => console.error('webhook delivery error:', err));
+    }
+
     res.json({
       commitId,
       from:      req.agent.agent_name,
@@ -495,6 +515,184 @@ app.get('/api/stats', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+// ═══════════════════════════════════════════════════
+// WEBHOOK DELIVERY
+// ═══════════════════════════════════════════════════
+
+async function deliverWebhook(agent, commit) {
+  if (!agent.webhook_url) return;
+
+  const payload = {
+    event:     'commit.received',
+    commitId:  commit.id,
+    from:      commit.from_agent,
+    to:        commit.to_agent,
+    eventType: (commit.context?._eventType || 'commit'),
+    verified:  commit.verified,
+    timestamp: commit.timestamp,
+  };
+
+  const body      = JSON.stringify(payload);
+  const deliveryId = 'wh_' + Date.now() + '_' + crypto.randomBytes(4).toString('hex');
+  let status = 'failed', httpStatus = null, response = null;
+
+  try {
+    const controller = new AbortController();
+    const timeout    = setTimeout(() => controller.abort(), 5000);
+
+    const headers = { 'Content-Type': 'application/json' };
+    if (agent.webhook_secret) {
+      const sig = crypto
+        .createHmac('sha256', agent.webhook_secret)
+        .update(body)
+        .digest('hex');
+      headers['X-DarkMatter-Signature'] = `sha256=${sig}`;
+    }
+
+    const res = await fetch(agent.webhook_url, {
+      method: 'POST', headers, body,
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+
+    httpStatus = res.status;
+    response   = await res.text().catch(() => '');
+    status     = res.ok ? 'delivered' : 'failed';
+  } catch (err) {
+    response = err.message;
+  }
+
+  // Log delivery attempt
+  await supabaseService.from('webhook_deliveries').insert({
+    id:          deliveryId,
+    agent_id:    agent.agent_id,
+    commit_id:   commit.id,
+    webhook_url: agent.webhook_url,
+    status,
+    http_status: httpStatus,
+    response:    response?.slice(0, 500),
+    attempted_at: new Date().toISOString(),
+  }).catch(err => console.error('webhook log error:', err));
+
+  console.log(`  📡 Webhook ${status} → ${agent.webhook_url} [${httpStatus}]`);
+}
+
+// ═══════════════════════════════════════════════════
+// WEBHOOK + RETENTION DASHBOARD ROUTES
+// ═══════════════════════════════════════════════════
+
+// ── POST /dashboard/agents/:id/webhook ── set webhook ─
+app.post('/dashboard/agents/:agentId/webhook', requireAuth, async (req, res) => {
+  try {
+    const { agentId }      = req.params;
+    const { webhookUrl, webhookSecret } = req.body;
+
+    // Validate ownership
+    const { data: agent } = await supabaseService
+      .from('agents').select('agent_id').eq('agent_id', agentId).eq('user_id', req.user.id).single();
+    if (!agent) return res.status(403).json({ error: 'Agent not found' });
+
+    const update = { webhook_url: webhookUrl || null };
+    if (webhookSecret !== undefined) update.webhook_secret = webhookSecret || null;
+
+    const { error } = await supabaseService
+      .from('agents').update(update).eq('agent_id', agentId);
+    if (error) throw error;
+
+    res.json({ success: true, webhookUrl: webhookUrl || null });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── POST /dashboard/agents/:id/retention ── set retention ─
+app.post('/dashboard/agents/:agentId/retention', requireAuth, async (req, res) => {
+  try {
+    const { agentId }     = req.params;
+    const { retentionDays } = req.body;
+
+    const { data: agent } = await supabaseService
+      .from('agents').select('agent_id').eq('agent_id', agentId).eq('user_id', req.user.id).single();
+    if (!agent) return res.status(403).json({ error: 'Agent not found' });
+
+    // Enforce 6-month minimum (182 days) for compliance, null = forever
+    const days = retentionDays === null ? null : Math.max(182, parseInt(retentionDays) || 182);
+
+    const { error } = await supabaseService
+      .from('agents').update({ retention_days: days }).eq('agent_id', agentId);
+    if (error) throw error;
+
+    res.json({ success: true, retentionDays: days });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── GET /dashboard/agents/:id/webhooks ── delivery log ─
+app.get('/dashboard/agents/:agentId/webhooks', requireAuth, async (req, res) => {
+  try {
+    const { agentId } = req.params;
+
+    const { data: agent } = await supabaseService
+      .from('agents').select('agent_id').eq('agent_id', agentId).eq('user_id', req.user.id).single();
+    if (!agent) return res.status(403).json({ error: 'Agent not found' });
+
+    const { data, error } = await supabaseService
+      .from('webhook_deliveries')
+      .select('*')
+      .eq('agent_id', agentId)
+      .order('attempted_at', { ascending: false })
+      .limit(50);
+
+    if (error) throw error;
+    res.json(data || []);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ═══════════════════════════════════════════════════
+// RETENTION CLEANUP JOB — runs once daily
+// ═══════════════════════════════════════════════════
+
+async function runRetentionCleanup() {
+  try {
+    // Get all agents with a retention policy set
+    const { data: agents } = await supabaseService
+      .from('agents')
+      .select('agent_id, retention_days')
+      .not('retention_days', 'is', null);
+
+    if (!agents?.length) return;
+
+    let totalDeleted = 0;
+    for (const agent of agents) {
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - agent.retention_days);
+
+      const { data: deleted } = await supabaseService
+        .from('commits')
+        .delete()
+        .or(`from_agent.eq.${agent.agent_id},to_agent.eq.${agent.agent_id}`)
+        .lt('timestamp', cutoff.toISOString())
+        .select('id');
+
+      if (deleted?.length) {
+        totalDeleted += deleted.length;
+        console.log(`  🗑  Retention: deleted ${deleted.length} commits for agent ${agent.agent_id} (>${agent.retention_days}d)`);
+      }
+    }
+
+    if (totalDeleted > 0) console.log(`  🗑  Retention cleanup: ${totalDeleted} commits deleted`);
+  } catch (err) {
+    console.error('Retention cleanup error:', err.message);
+  }
+}
+
+// Run cleanup on startup, then every 24 hours
+runRetentionCleanup();
+setInterval(runRetentionCleanup, 24 * 60 * 60 * 1000);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
