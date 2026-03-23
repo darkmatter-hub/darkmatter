@@ -744,11 +744,6 @@ const context = (await res.json()).commits[0].context;`,
     return false; // reserved for future use
   }
 
-  function retentionLabel(a) {
-    if (!a.retentionDays) return '';
-    return `<span class="agent-expired-badge" style="color:var(--amber);border-color:rgba(210,153,34,0.3);background:rgba(210,153,34,0.08);">🗑 ${a.retentionDays}d retention</span>`;
-  }
-
   async function loadAgents() {
     try {
       const res  = await fetch('/dashboard/agents', { headers: authHeaders() });
@@ -777,7 +772,7 @@ const context = (await res.json()).commits[0].context;`,
               <div class="agent-name-row">
                 <div class="agent-status ${isExpired(a) ? 'expired' : ''}"></div>
                 <div class="agent-name">${escHtml(a.agentName)}</div>
-                ${retentionLabel(a)}
+                ${isExpired(a) ? '<span class="agent-expired-badge">expired</span>' : ''}
               </div>
               <div class="agent-id" style="display:flex;align-items:center;gap:0.4rem;">
                 <span>${a.agentId}</span>
@@ -820,20 +815,36 @@ const context = (await res.json()).commits[0].context;`,
 
             <!-- Retention settings -->
             <div style="margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid var(--border2);">
-              <div style="font-size:0.65rem;font-family:var(--mono);color:var(--text3);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:0.5rem;">Retention Policy</div>
-              <div style="display:flex;gap:0.4rem;align-items:center;">
-                <select id="retention-${a.agentId}"
-                  style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:0.3rem 0.6rem;font-size:0.72rem;color:var(--text);outline:none;cursor:pointer;"
-                  onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
-                  <option value="null"  ${!a.retentionDays              ? 'selected':''}>Forever (recommended)</option>
-                  <option value="182"   ${a.retentionDays===182         ? 'selected':''}>6 months — EU AI Act minimum</option>
-                  <option value="365"   ${a.retentionDays===365         ? 'selected':''}>1 year</option>
-                  <option value="730"   ${a.retentionDays===730         ? 'selected':''}>2 years</option>
-                  <option value="1825"  ${a.retentionDays===1825        ? 'selected':''}>5 years</option>
-                </select>
-                <button class="agent-btn" onclick="saveRetention('${a.agentId}')">Save</button>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem;">
+                <div style="font-size:0.65rem;font-family:var(--mono);color:var(--text3);letter-spacing:0.1em;text-transform:uppercase;">Retention</div>
+                ${a.retentionDays
+                  ? `<span style="font-family:var(--mono);font-size:0.65rem;color:var(--text3);">${retentionLabelStr(a.retentionDays)}</span>`
+                  : `<button class="agent-btn" id="add-ret-btn-${a.agentId}" onclick="showRetentionPicker('${a.agentId}')">+ Add retention</button>`
+                }
               </div>
-
+              <div id="retention-picker-${a.agentId}" style="display:${a.retentionDays ? 'flex' : 'none'};flex-direction:column;gap:0.4rem;">
+                <div style="display:flex;gap:0.4rem;align-items:center;">
+                  <select id="retention-${a.agentId}"
+                    style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:0.3rem 0.6rem;font-size:0.72rem;color:var(--text);outline:none;cursor:pointer;"
+                    onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"
+                    onchange="handleRetentionChange('${a.agentId}')">
+                    <option value="null"   ${!a.retentionDays ? 'selected':''}>No retention</option>
+                    <option value="30"     ${a.retentionDays===30  ? 'selected':''}>1 month</option>
+                    <option value="90"     ${a.retentionDays===90  ? 'selected':''}>3 months</option>
+                    <option value="182"    ${a.retentionDays===182 ? 'selected':''}>6 months</option>
+                    <option value="365"    ${a.retentionDays===365 ? 'selected':''}>1 year</option>
+                    <option value="730"    ${a.retentionDays===730 ? 'selected':''}>2 years</option>
+                    <option value="custom" ${a.retentionDays && ![30,90,182,365,730].includes(a.retentionDays) ? 'selected':''}>Custom</option>
+                  </select>
+                  <button class="agent-btn" onclick="saveRetention('${a.agentId}')">Save</button>
+                </div>
+                <div id="retention-custom-${a.agentId}" style="display:none;align-items:center;gap:0.4rem;">
+                  <input id="retention-custom-val-${a.agentId}" type="number" min="1" placeholder="Days"
+                    style="width:80px;background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:0.3rem 0.6rem;font-size:0.72rem;color:var(--text);outline:none;"
+                    onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"/>
+                  <span style="font-size:0.7rem;color:var(--text3);">days</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -861,7 +872,7 @@ const context = (await res.json()).commits[0].context;`,
   }
 
   // ── Retention helpers ────────────────────────────────
-  function retentionLabel(days) {
+  function retentionLabelStr(days) {
     if (!days) return 'No retention';
     if (days === 30)  return '1 month';
     if (days === 90)  return '3 months';
@@ -903,7 +914,7 @@ const context = (await res.json()).commits[0].context;`,
         body: JSON.stringify({ retentionDays: days }),
       });
       if (!res.ok) throw new Error((await res.json()).error);
-      toast(days ? `Retention set to ${retentionLabel(days)}` : 'Retention removed');
+      toast(days ? `Retention set to ${retentionLabelStr(days)}` : 'Retention removed');
       await loadAgents();
     } catch(e) { toast('Error: ' + e.message); }
   }
