@@ -532,17 +532,17 @@ app.get('/api/public/commits', async (req, res) => {
 app.get('/api/stats', async (req, res) => {
   try {
     const [agentsRes, commitsRes] = await Promise.all([
-      supabaseService.from('agents').select('agent_id', { count: 'exact', head: true }),
-      supabaseService.from('commits').select('id, verified', { count: 'exact' }),
+      supabaseService.from('agents').select('*', { count: 'exact', head: true }),
+      supabaseService.from('commits').select('id, verified'),
     ]);
 
-    const commits   = commitsRes.data || [];
-    const verified  = commits.filter(c => c.verified).length;
-    const rejected  = commits.filter(c => !c.verified).length;
+    const commits  = commitsRes.data || [];
+    const verified = commits.filter(c => c.verified === true).length;
+    const rejected = commits.filter(c => c.verified === false).length;
 
     res.json({
       agents:   agentsRes.count  || 0,
-      commits:  commitsRes.count || 0,
+      commits:  commits.length,
       verified,
       rejected,
     });
