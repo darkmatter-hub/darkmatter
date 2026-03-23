@@ -737,12 +737,16 @@ const context = (await res.json()).commits[0].context;`,
   }
 
   // ── Load agents ───────────────────────────────────────
-  // ── Check if agent has expired retention ─────────────
+  // ── Check if agent has active retention policy ───────
   function isExpired(a) {
-    if (!a.retentionDays) return false;
-    const created = new Date(a.createdAt);
-    const expiry  = new Date(created.getTime() + a.retentionDays * 24 * 60 * 60 * 1000);
-    return new Date() > expiry;
+    // Agents never expire — only their commits get cleaned up.
+    // Show "retention active" indicator if a retention policy is set.
+    return false; // reserved for future use
+  }
+
+  function retentionLabel(a) {
+    if (!a.retentionDays) return '';
+    return `<span class="agent-expired-badge" style="color:var(--amber);border-color:rgba(210,153,34,0.3);background:rgba(210,153,34,0.08);">🗑 ${a.retentionDays}d retention</span>`;
   }
 
   async function loadAgents() {
@@ -773,7 +777,7 @@ const context = (await res.json()).commits[0].context;`,
               <div class="agent-name-row">
                 <div class="agent-status ${isExpired(a) ? 'expired' : ''}"></div>
                 <div class="agent-name">${escHtml(a.agentName)}</div>
-                ${isExpired(a) ? '<span class="agent-expired-badge">expired</span>' : ''}
+                ${retentionLabel(a)}
               </div>
               <div class="agent-id" style="display:flex;align-items:center;gap:0.4rem;">
                 <span>${a.agentId}</span>
