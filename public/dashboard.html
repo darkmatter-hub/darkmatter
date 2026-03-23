@@ -12,8 +12,8 @@
       --bg:#0d1117; --bg2:#161b22; --bg3:#21262d;
       --border:#30363d; --border2:#21262d;
       --text:#e6edf3; --text2:#7d8590; --text3:#3d444e;
-      --accent:#58a6ff; --green:#3fb950; --red:#f85149;
-      --amber:#d29922; --purple:#bc8cff;
+      --accent:#2563EB; --green:#10B981; --red:#EF4444;
+      --amber:#F59E0B; --purple:#A78BFA;
       --mono:'IBM Plex Mono',monospace; --sans:'Geist',sans-serif;
     }
     body { background:var(--bg); color:var(--text); font-family:var(--sans); min-height:100vh; -webkit-font-smoothing:antialiased; }
@@ -217,7 +217,7 @@
     .cbadge.spawn      { color:#79c0ff;       border-color:rgba(121,192,255,0.3); background:rgba(121,192,255,0.08); }
     .cbadge.timeout    { color:var(--amber);  border-color:rgba(210,153,34,0.3);  background:rgba(210,153,34,0.08); }
     .cbadge.retry      { color:#e3b341;       border-color:rgba(227,179,65,0.3);  background:rgba(227,179,65,0.08); }
-    .cbadge.checkpoint { color:#58a6ff;       border-color:rgba(88,166,255,0.3);  background:rgba(88,166,255,0.08); }
+    .cbadge.checkpoint { color:#2563EB;       border-color:rgba(88,166,255,0.3);  background:rgba(88,166,255,0.08); }
     .cbadge.consent    { color:#56d364;       border-color:rgba(86,211,100,0.3);  background:rgba(86,211,100,0.08); }
     .cbadge.redact     { color:#f0883e;       border-color:rgba(240,136,62,0.3);  background:rgba(240,136,62,0.08); }
     .cbadge.escalate   { color:var(--red);    border-color:rgba(248,81,73,0.3);   background:rgba(248,81,73,0.08); }
@@ -290,14 +290,14 @@
         <!-- orbit path hint -->
         <path d="M19 5 Q32 10 33 19 Q32 28 19 33 Q6 28 5 19 Q6 10 19 5" stroke="#30363d" stroke-width="0.5" fill="none" opacity="0.4"/>
         <!-- body 1 — amber, top -->
-        <circle cx="19" cy="6" r="3.2" fill="#d29922" opacity="0.9"/>
-        <circle cx="19" cy="6" r="5"   stroke="#d29922" stroke-width="0.5" opacity="0.2"/>
+        <circle cx="19" cy="6" r="3.2" fill="#F59E0B" opacity="0.9"/>
+        <circle cx="19" cy="6" r="5"   stroke="#F59E0B" stroke-width="0.5" opacity="0.2"/>
         <!-- body 2 — blue, bottom right -->
-        <circle cx="31" cy="27" r="2.6" fill="#58a6ff" opacity="0.9"/>
-        <circle cx="31" cy="27" r="4.2" stroke="#58a6ff" stroke-width="0.5" opacity="0.2"/>
+        <circle cx="31" cy="27" r="2.6" fill="#2563EB" opacity="0.9"/>
+        <circle cx="31" cy="27" r="4.2" stroke="#2563EB" stroke-width="0.5" opacity="0.2"/>
         <!-- body 3 — green, bottom left -->
-        <circle cx="7" cy="27" r="2.2" fill="#3fb950" opacity="0.9"/>
-        <circle cx="7" cy="27" r="3.6" stroke="#3fb950" stroke-width="0.5" opacity="0.2"/>
+        <circle cx="7" cy="27" r="2.2" fill="#10B981" opacity="0.9"/>
+        <circle cx="7" cy="27" r="3.6" stroke="#10B981" stroke-width="0.5" opacity="0.2"/>
         <!-- gravity lines between bodies -->
         <line x1="19" y1="8" x2="29.5" y2="25" stroke="#30363d" stroke-width="0.6" opacity="0.5"/>
         <line x1="19" y1="8" x2="8.5"  y2="25" stroke="#30363d" stroke-width="0.6" opacity="0.5"/>
@@ -305,7 +305,7 @@
       </svg>
     </div>
     <div class="logo-words">
-      <div class="logo-name">Dark<em>Matter</em></div>
+      <div class="logo-name" style="font-family:var(--display);">Dark<span style="background:var(--gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Matter</span></div>
       <div class="logo-sub">agent context network</div>
     </div>
   </a>
