@@ -487,11 +487,8 @@
   </a>
 
   <div class="hright">
-    <a class="btn-signin" href="/login" title="Sign in">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-    </a>
-    <a class="btn-signup" href="/signup" title="Sign up free">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+    <a class="btn-signin" href="/login" title="Sign in / Sign up" style="display:flex;align-items:center;gap:0.35rem;font-size:0.78rem;color:var(--text2);text-decoration:none;padding:0.25rem 0.6rem;border:1px solid var(--border);border-radius:6px;transition:all 0.15s;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--text)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text2)'">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
     </a>
     <button class="hbtn" onclick="toggleMenu()" id="hb">
       <span class="hbr"></span><span class="hbr"></span><span class="hbr"></span>
@@ -710,7 +707,7 @@
         </div>
         <div style="font-size:0.82rem;color:var(--text2);display:flex;gap:0.6rem;">
           <span style="color:var(--accent)">→</span>
-          <span><strong style="color:var(--text)">BYOK</strong> — Bring Your Own Key encryption so DarkMatter stores encrypted context it cannot read. <span style="font-family:var(--mono);font-size:0.65rem;color:var(--text3);">// on roadmap</span></span>
+          <span><strong style="color:var(--text)">BYOK (on Roadmap)</strong> — Bring Your Own Key encryption so DarkMatter stores encrypted context it cannot read.</span>
         </div>
       </div>
       <a href="https://github.com/darkmatter-hub/darkmatter/blob/main/PRODUCTION.md" target="_blank"
@@ -741,7 +738,7 @@
     </svg>
     <div class="footer-logo-name">Dark<em>Matter</em></div>
   </a>
-  <div class="footer-tagline">// Git for AI Agents · Built in New York, NY</div>
+  <div class="footer-tagline">// Git for AI Agents · It's how AI agents talk to one another</div>
   <div class="footer-links">
     <a class="footer-link" href="/signup">Sign up free</a>
     <a class="footer-link" href="https://github.com/darkmatter-hub/darkmatter" target="_blank">GitHub</a>
@@ -840,9 +837,11 @@ print(context["nextTask"])  # "generate executive summary"`;
     const s = JSON.parse(localStorage.getItem('dm_session') || '{}');
     if (s?.access_token) {
       const signin = document.querySelector('.btn-signin');
-      const signup = document.querySelector('.btn-signup');
-      if (signin) signin.style.display = 'none';
-      if (signup) { signup.textContent = 'Dashboard →'; signup.href = '/dashboard'; }
+      if (signin) {
+        signin.href = '/dashboard';
+        signin.title = 'Dashboard';
+        signin.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
+      }
       const cta = document.querySelector('.cta-primary');
       if (cta) { cta.textContent = 'Go to Dashboard →'; cta.href = '/dashboard'; }
       document.querySelectorAll('.dditem').forEach(el => {

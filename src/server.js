@@ -651,8 +651,8 @@ app.post('/dashboard/agents/:agentId/retention', requireAuth, async (req, res) =
       .from('agents').select('agent_id').eq('agent_id', agentId).eq('user_id', req.user.id).single();
     if (!agent) return res.status(403).json({ error: 'Agent not found' });
 
-    // Enforce 6-month minimum (182 days) for compliance, null = forever
-    const days = retentionDays === null ? null : Math.max(182, parseInt(retentionDays) || 182);
+    // null = no retention (keep forever), otherwise user-defined minimum 1 day
+    const days = retentionDays === null ? null : Math.max(1, parseInt(retentionDays) || 1);
 
     const { error } = await supabaseService
       .from('agents').update({ retention_days: days }).eq('agent_id', agentId);
