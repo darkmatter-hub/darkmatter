@@ -1,12 +1,90 @@
 require('dotenv').config();
-const express  = require('express');
-const path     = require('path');
-const crypto   = require('crypto');
+const express   = require('express');
+const path      = require('path');
+const crypto    = require('crypto');
+const helmet    = require('helmet');
+const rateLimit = require('express-rate-limit');
 const { createClient } = require('@supabase/supabase-js');
 
 const app = express();
-app.use(express.json());
+
+// ── Security headers ─────────────────────────────────
+app.use(helmet({
+  contentSecurityPolicy: false, // disabled — inline scripts in HTML pages
+  crossOriginEmbedderPolicy: false,
+}));
+
+// ── Rate limiters ────────────────────────────────────
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20,
+  message: { error: 'Too many attempts — please try again in 15 minutes' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 120,
+  message: { error: 'Rate limit exceeded — max 120 requests per minute' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const feedbackLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 5,
+  message: { error: 'Too many submissions — please try again later' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+app.use(express.json({ limit: '100kb' })); // prevent oversized payloads
 app.use(express.static(path.join(__dirname, '../public')));
+
+// ── Input sanitization helpers ───────────────────────
+function sanitizeText(str, maxLen = 200) {
+  if (typeof str !== 'string') return '';
+  return str.trim().slice(0, maxLen);
+}
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;');
+}
+
+// ── SSRF protection for webhook URLs ─────────────────
+function isValidWebhookUrl(url) {
+  if (!url) return true; // null = remove webhook, that's fine
+  try {
+    const parsed = new URL(url);
+    if (!['http:', 'https:'].includes(parsed.protocol)) return false;
+    const host = parsed.hostname.toLowerCase();
+    // Block internal/private addresses
+    const blocked = [
+      'localhost', '127.0.0.1', '0.0.0.0', '::1',
+      '169.254.169.254', // AWS metadata
+      '100.100.100.200', // Alibaba metadata
+    ];
+    if (blocked.includes(host)) return false;
+    // Block private IP ranges
+    const privateRanges = [
+      /^10\./,
+      /^172\.(1[6-9]|2\d|3[01])\./,
+      /^192\.168\./,
+      /^fc00:/,
+      /^fe80:/,
+    ];
+    if (privateRanges.some(r => r.test(host))) return false;
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 // ── Supabase clients ─────────────────────────────────
 // Service role for server-side operations (bypasses RLS)
@@ -96,10 +174,11 @@ app.get('/dashboard', (req, res) => {
 // ═══════════════════════════════════════════════════
 
 // ── POST /auth/signup ────────────────────────────────
-app.post('/auth/signup', async (req, res) => {
+app.post('/auth/signup', authLimiter, async (req, res) => {
   try {
     const { email, password } = req.body;
     if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
+    if (password.length < 8) return res.status(400).json({ error: 'Password must be at least 8 characters' });
 
     const { data, error } = await supabaseAnon.auth.signUp({ email, password });
     if (error) return res.status(400).json({ error: error.message });
@@ -111,7 +190,7 @@ app.post('/auth/signup', async (req, res) => {
 });
 
 // ── POST /auth/login ─────────────────────────────────
-app.post('/auth/login', async (req, res) => {
+app.post('/auth/login', authLimiter, async (req, res) => {
   try {
     const { email, password } = req.body;
     if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
@@ -140,7 +219,7 @@ app.get('/auth/github', async (req, res) => {
 });
 
 // ── POST /auth/forgot-password ──────────────────────────
-app.post('/auth/forgot-password', async (req, res) => {
+app.post('/auth/forgot-password', authLimiter, async (req, res) => {
   try {
     const { email } = req.body;
     if (!email) return res.status(400).json({ error: 'Email required' });
@@ -201,8 +280,11 @@ app.post('/auth/logout', async (req, res) => {
 // ── POST /dashboard/agents ── create a new agent ────
 app.post('/dashboard/agents', requireAuth, async (req, res) => {
   try {
-    const { agentName } = req.body;
+    const agentName = sanitizeText(req.body.agentName, 100);
     if (!agentName) return res.status(400).json({ error: 'agentName required' });
+    if (!/^[a-zA-Z0-9 _\-\.]+$/.test(agentName)) {
+      return res.status(400).json({ error: 'Agent name can only contain letters, numbers, spaces, hyphens, underscores, and periods' });
+    }
 
     const agentId = generateAgentId();
     const apiKey  = generateApiKey();
@@ -337,7 +419,7 @@ app.get('/dashboard/commits', requireAuth, async (req, res) => {
 // ═══════════════════════════════════════════════════
 
 // ── POST /api/commit ─────────────────────────────────
-app.post('/api/commit', requireApiKey, async (req, res) => {
+app.post('/api/commit', apiLimiter, requireApiKey, async (req, res) => {
   try {
     const { toAgentId, context, eventType } = req.body;
     if (!toAgentId || !context) {
@@ -474,14 +556,16 @@ app.get('/api/me', requireApiKey, async (req, res) => {
 // ═══════════════════════════════════════════════════
 
 // ── POST /feedback ── feature requests & support ─────
-app.post('/feedback', async (req, res) => {
+app.post('/feedback', feedbackLimiter, async (req, res) => {
   try {
-    const { type, email, message } = req.body;
+    const type    = sanitizeText(req.body.type, 20);
+    const email   = sanitizeText(req.body.email, 200);
+    const message = sanitizeText(req.body.message, 2000);
     if (!email || !message) return res.status(400).json({ error: 'Missing fields' });
 
     const subject = type === 'feature'
-      ? `[DarkMatter] Feature Request from ${email}`
-      : `[DarkMatter] Support Request from ${email}`;
+      ? `[DarkMatter] Feature Request from ${escapeHtml(email)}`
+      : `[DarkMatter] Bug Report from ${escapeHtml(email)}`;
 
     // Send via Resend API
     await fetch('https://api.resend.com/emails', {
@@ -494,10 +578,10 @@ app.post('/feedback', async (req, res) => {
         from:    'noreply@darkmatterhub.ai',
         to:      [process.env.FEEDBACK_EMAIL || 'cullaj07@gmail.com'],
         subject,
-        html: `<p><strong>From:</strong> ${email}</p>
-               <p><strong>Type:</strong> ${type}</p>
+        html: `<p><strong>From:</strong> ${escapeHtml(email)}</p>
+               <p><strong>Type:</strong> ${escapeHtml(type)}</p>
                <hr/>
-               <p>${message.replace(/\n/g, '<br/>')}</p>`,
+               <p>${escapeHtml(message).replace(/\n/g, '<br/>')}</p>`,
       }),
     });
 
@@ -508,28 +592,7 @@ app.post('/feedback', async (req, res) => {
   }
 });
 
-// ── GET /api/public/commits ── anonymized activity ticker ─
-app.get('/api/public/commits', async (req, res) => {
-  try {
-    const { data, error } = await supabaseService
-      .from('commits')
-      .select('id, verified, timestamp')
-      .order('timestamp', { ascending: false })
-      .limit(20);
-
-    if (error) throw error;
-
-    // Return ONLY verified status and timestamp — no context, no agent IDs
-    res.json((data || []).map(c => ({
-      verified:  c.verified,
-      timestamp: c.timestamp,
-    })));
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.get('/api/stats', async (req, res) => {
+// ── GET /api/stats ── public network stats ───────────
   try {
     const [agentsRes, commitsRes] = await Promise.all([
       supabaseService.from('agents').select('*', { count: 'exact', head: true }),
@@ -622,6 +685,11 @@ app.post('/dashboard/agents/:agentId/webhook', requireAuth, async (req, res) => 
   try {
     const { agentId }      = req.params;
     const { webhookUrl, webhookSecret } = req.body;
+
+    // SSRF protection — block internal network addresses
+    if (webhookUrl && !isValidWebhookUrl(webhookUrl)) {
+      return res.status(400).json({ error: 'Invalid webhook URL — internal addresses are not allowed' });
+    }
 
     // Validate ownership
     const { data: agent } = await supabaseService

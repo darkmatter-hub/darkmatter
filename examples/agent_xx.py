@@ -18,7 +18,7 @@ from datetime import datetime
 # ── CONFIG ───────────────────────────────────────────────────────
 ANTHROPIC_API_KEY = "your-anthropic-api-key"   # ← paste your key
 DARKMATTER_URL    = "https://darkmatterhub.ai"
-AGENT_XX_KEY      = "dm_sk_a01f86d7b193f2fef0d37d1da7fdb1bf39467f0e11d92141"
+AGENT_XX_KEY      = "dm_sk_your_agent_xx_key_here"
 AGENT_YY_ID       = "dm_084578e0a339ddd5"  # ← Agent YY's ID from dashboard
 
 # ── TASK ─────────────────────────────────────────────────────────
