@@ -593,6 +593,7 @@ app.post('/feedback', feedbackLimiter, async (req, res) => {
 });
 
 // ── GET /api/stats ── public network stats ───────────
+app.get('/api/stats', async (req, res) => {
   try {
     const [agentsRes, commitsRes] = await Promise.all([
       supabaseService.from('agents').select('*', { count: 'exact', head: true }),
