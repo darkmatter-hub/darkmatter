@@ -596,8 +596,8 @@
 <!-- USE CASES -->
 <div class="usecase-section">
   <div class="usecase-inner">
-    <div class="usecase-title">What developers use DarkMatter for</div>
-    <div class="usecase-sub">Any time one AI agent hands work to another — DarkMatter is the layer in between.</div>
+    <div class="usecase-title">What teams build with DarkMatter</div>
+    <div class="usecase-sub">Any time one AI agent hands work to another — across models, teams, or compliance boundaries.</div>
     <div class="usecase-grid">
       <div class="uc-card">
         <div class="uc-icon">🔗</div>
@@ -650,7 +650,7 @@
       <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:1.25rem;">
         <div style="font-size:1.5rem;margin-bottom:0.6rem;">⚖️</div>
         <div style="font-size:0.88rem;font-weight:700;color:var(--text);margin-bottom:0.35rem;">Regulation is arriving</div>
-        <div style="font-size:0.78rem;color:var(--text2);line-height:1.65;">EU AI Act (Aug 2026) requires tamper-evident logs for high-risk AI systems. Companies need an audit layer they don't control themselves.</div>
+        <div style="font-size:0.78rem;color:var(--text2);line-height:1.65;">Regulations including the EU AI Act (Aug 2026) require tamper-evident logs for high-risk AI systems. US state laws and sector regulations are following. Companies need an audit layer they don't control themselves.</div>
       </div>
       <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:1.25rem;">
         <div style="font-size:1.5rem;margin-bottom:0.6rem;">💥</div>
@@ -751,7 +751,7 @@
           Independent audit trails for AI systems
         </div>
         <div style="font-size:0.8rem;color:var(--text2);line-height:1.75;margin-bottom:1.1rem;">
-          EU AI Act Articles 12 &amp; 19 require high-risk AI systems to produce automatically generated, immutable, tamper-evident logs. A company storing its own AI logs faces the same credibility problem as auditing its own books — DarkMatter is the independent, append-only layer that makes those logs credible to regulators.
+          Regulations including the EU AI Act (Art. 12 &amp; 19), US state AI laws, and sector-specific frameworks require high-risk AI systems to produce immutable, tamper-evident logs. A company storing its own AI logs faces the same credibility problem as auditing its own books — DarkMatter is the independent, append-only layer that makes those logs credible to any regulator.
         </div>
         <div style="display:flex;flex-direction:column;gap:0.5rem;margin-bottom:1.1rem;">
           <div style="font-size:0.78rem;color:var(--text2);display:flex;gap:0.5rem;">
@@ -1100,6 +1100,9 @@ print(context["nextTask"])  # "generate executive summary"`;
       }
       const cta = document.querySelector('.cta-primary');
       if (cta) { cta.textContent = 'Go to Dashboard →'; cta.href = '/dashboard'; }
+      // Hide GitHub button when logged in — Dashboard is the primary action
+      const ctaSecondary = document.querySelector('.cta-secondary');
+      if (ctaSecondary) ctaSecondary.style.display = 'none';
       document.querySelectorAll('.dditem').forEach(el => {
         if (el.href && el.href.includes('/signup')) el.style.display = 'none';
       });

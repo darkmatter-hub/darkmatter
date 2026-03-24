@@ -115,24 +115,71 @@ All endpoints require: `Authorization: Bearer YOUR_API_KEY`
 
 ### POST /api/commit
 
-Commit context from your agent to another agent.
+Commit agent state to DarkMatter. Returns a canonical v2 context object.
 
 ```json
 {
   "toAgentId": "dm_abc123",
+  "payload": {
+    "input":  "what the agent received",
+    "output": "what the agent produced",
+    "memory": { "key": "value" },
+    "variables": {}
+  },
   "eventType": "commit",
-  "context":   { "any": "json" }
+  "parentId":  "ctx_previous",
+  "traceId":   "trc_run_123",
+  "branchKey": "main",
+  "agent": {
+    "role":     "researcher",
+    "provider": "anthropic",
+    "model":    "claude-opus-4-6"
+  }
 }
 ```
 
-`eventType` is optional and defaults to `commit`. See [Event Types](#event-types) for the full list.
+- `payload` is the structured state. Fields: `input`, `output`, `memory`, `artifacts`, `variables`
+- `context` (legacy flat JSON) still accepted — stored as `{ output: context }`
+- `parentId` links this commit to a previous context, building the lineage graph
+- `eventType` defaults to `commit`. See [Event Types](#event-types)
+- `traceId` groups commits into a run/trace
 
-Returns:
+Returns a canonical v2 context object:
 ```json
-{ "commitId": "commit_...", "verified": true, "eventType": "commit", "timestamp": "..." }
+{
+  "id": "ctx_1774358291224_bad9b97648d2",
+  "schema_version": "1.0",
+  "parent_id": "ctx_previous",
+  "trace_id": "trc_run_123",
+  "branch_key": "main",
+  "created_by": {
+    "agent_id": "dm_abc123",
+    "agent_name": "my-agent",
+    "role": "researcher",
+    "provider": "anthropic",
+    "model": "claude-opus-4-6"
+  },
+  "event": {
+    "type": "commit",
+    "to_agent_id": "dm_xyz789",
+    "to_agent_name": "next-agent"
+  },
+  "payload": {
+    "input": "...",
+    "output": "...",
+    "memory": {}
+  },
+  "integrity": {
+    "payload_hash": "sha256:...",
+    "parent_hash": "sha256:...",
+    "verification_status": "valid",
+    "verified_at": "2026-03-24T..."
+  },
+  "created_at": "2026-03-24T13:18:11Z"
+}
 ```
 
-If the recipient agent does not exist, returns `verified: false` and stores the attempt as a rejected commit.
+If the recipient agent does not exist, returns `integrity.verification_status: "rejected"` and stores the attempt.
 
 ---
 
@@ -166,6 +213,36 @@ Returns the identity of the agent associated with your API key.
 
 ```json
 { "agentId": "dm_...", "agentName": "my-agent" }
+```
+
+---
+
+### GET /api/replay/:contextId
+
+Walk the parent chain from a context ID back to root, returning the full payload at each step in chronological order. Verifies cryptographic integrity at every link.
+
+```json
+{
+  "contextId": "ctx_...",
+  "totalSteps": 3,
+  "chainIntact": true,
+  "replay": [
+    {
+      "step": 1,
+      "id": "ctx_...",
+      "eventType": "commit",
+      "createdBy": { "agent_name": "agent-a", "model": "claude-opus-4-6" },
+      "payload": { "input": "...", "output": "..." },
+      "integrity": { "payload_hash": "sha256:...", "chainValid": true },
+      "timestamp": "..."
+    }
+  ],
+  "summary": {
+    "agents": ["agent-a", "agent-b", "agent-c"],
+    "models": ["claude-opus-4-6", "gpt-4o"],
+    "duration": "12s"
+  }
+}
 ```
 
 ---
@@ -375,8 +452,11 @@ See [PRODUCTION.md](./PRODUCTION.md) for full setup instructions.
 
 - [x] Webhook notifications — POST to your URL when a commit arrives
 - [x] Retention policies — auto-expire commits with EU AI Act 6-month minimum
-- [ ] SDK packages for Python and Node
-- [ ] Agent reputation scoring from commit history
+- [x] Replay endpoint — full decision path with integrity verification
+- [x] Three-agent demo — Claude → GPT → Claude with lineage
+- [ ] SDK packages for Python and Node (`dm.commit()`, `dm.pull()`, `dm.replay()`)
+- [ ] Fork endpoint — branch from any context
+- [ ] Compliance PDF export — EU AI Act audit artifact
 - [ ] BYOK — Bring Your Own Key encryption
 
 ---
