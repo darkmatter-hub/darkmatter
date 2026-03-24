@@ -194,7 +194,7 @@ Returns:
   "agentName": "my-agent",
   "commits": [
     {
-      "commitId":  "commit_...",
+      "id": "ctx_...",
       "from":      "dm_abc123",
       "context":   { "any": "json" },
       "timestamp": "...",
@@ -247,6 +247,86 @@ Walk the parent chain from a context ID back to root, returning the full payload
 
 ---
 
+---
+
+### POST /api/fork/:contextId
+
+Branch from any checkpoint. Creates a new context node with explicit lineage fields. The original chain is never modified.
+
+**Request body (all optional):**
+```json
+{
+  "fromCheckpoint": "ctx_...",
+  "toAgentId":      "dm_...",
+  "branchKey":      "experiment-1",
+  "agent":          { "role": "researcher", "model": "claude-opus-4-6" }
+}
+```
+
+**Response:**
+```json
+{
+  "id":           "ctx_...",
+  "fork_of":      "ctx_original",
+  "fork_point":   "ctx_checkpoint",
+  "lineage_root": "ctx_root",
+  "branch_key":   "experiment-1",
+  "message":      "Forked from ctx_... Continue by committing with parentId: ctx_..."
+}
+```
+
+Continue the forked branch by including `parentId: fork_response.id` in your next commit.
+
+---
+
+### GET /api/verify/:contextId
+
+Returns a standalone trust object for the chain ending at this context ID.
+
+```json
+{
+  "ctx_id":       "ctx_...",
+  "chain_intact": true,
+  "length":       5,
+  "lineage_root": "ctx_root",
+  "root_hash":    "sha256:...",
+  "tip_hash":     "sha256:...",
+  "forked":       true,
+  "fork_points":  ["ctx_..."],
+  "verified_at":  "2026-03-24T..."
+}
+```
+
+---
+
+### GET /api/export/:contextId
+
+Downloads a portable JSON proof artifact. Safe to share with auditors.
+
+```json
+{
+  "metadata": {
+    "export_version": "1.0",
+    "ctx_id":         "ctx_...",
+    "lineage_root":   "ctx_root",
+    "chain_length":   5,
+    "exported_at":    "2026-03-24T..."
+  },
+  "integrity": {
+    "chain_intact":  true,
+    "algorithm":     "sha256",
+    "root_hash":     "sha256:...",
+    "tip_hash":      "sha256:...",
+    "chain_hash":    "sha256:..."
+  },
+  "chain":       [...],
+  "export_hash": "sha256:..."
+}
+```
+
+`chain_hash` is stable across exports of the same unchanged chain. `export_hash` is unique per export instance (includes timestamp).
+
+
 ### POST /dashboard/agents/:id/webhook
 
 Register a webhook URL for an agent. DarkMatter will POST to this URL whenever a verified commit arrives addressed to this agent.
@@ -259,7 +339,7 @@ Webhook payload:
 ```json
 {
   "event":     "commit.received",
-  "commitId":  "commit_...",
+  "id": "ctx_...",
   "from":      "dm_abc123",
   "to":        "dm_xyz789",
   "eventType": "commit",
@@ -456,6 +536,14 @@ See [PRODUCTION.md](./PRODUCTION.md) for full setup instructions.
 - [x] Three-agent demo — Claude → GPT → Claude with lineage
 - [ ] SDK packages for Python and Node (`dm.commit()`, `dm.pull()`, `dm.replay()`)
 - [ ] Fork endpoint — branch from any context
+- [x] Fork endpoint — branch from any checkpoint with full lineage fields
+- [x] Verify endpoint — standalone cryptographic trust object
+- [x] Export endpoint — portable proof artifact with chain_hash
+- [x] Chain viewer in dashboard — visual timeline with fork/replay CTAs
+- [x] /demo page — live seeded demo chain, no login required
+- [x] /blog page — announcement and technical posts
+- [x] Branded confirmation email template
+- [ ] SDK packages (Python + JS) — dm.commit(), dm.pull(), dm.replay()
 - [ ] Compliance PDF export — EU AI Act audit artifact
 - [ ] BYOK — Bring Your Own Key encryption
 

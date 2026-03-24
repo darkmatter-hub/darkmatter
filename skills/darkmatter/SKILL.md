@@ -1,7 +1,7 @@
 ---
 name: darkmatter
-description: Commit agent context to DarkMatter and pull verified context from other agents. Use this skill to pass work between agents, log agent activity, and inherit context from an upstream agent in a multi-agent pipeline.
-version: 1.0.0
+description: Commit agent context to DarkMatter, pull verified context from upstream agents, replay decision chains, fork from checkpoints, and verify chain integrity. Use this skill to pass work between agents with full lineage tracking in a multi-agent pipeline.
+version: 2.0.0
 metadata:
   openclaw:
     emoji: "🌑"
@@ -14,42 +14,39 @@ metadata:
     primaryEnv: DARKMATTER_API_KEY
 ---
 
-# DarkMatter — Agent Context Handoff
+# DarkMatter — Execution Lineage for AI Agents
 
-DarkMatter is the commit, push, and pull layer for multi-agent systems.
-Use it to pass verified context from this agent to another agent, or to
-pull context that was committed to you by an upstream agent.
+DarkMatter is the execution history layer for multi-agent systems.
+Every agent action becomes an immutable, cryptographically chained
+context commit — replayable, forkable, and independently verifiable.
 
 **Base URL:** `https://darkmatterhub.ai`
+**API key env:** `DARKMATTER_API_KEY`
+**Get a key:** https://darkmatterhub.ai/signup
+**Live demo:** https://darkmatterhub.ai/demo
 
-Your API key is read from the `DARKMATTER_API_KEY` environment variable.
-Get your key at: https://darkmatterhub.ai/signup
-
-> **Data notice:** This skill sends agent context to darkmatterhub.ai,
-> a third-party service. Context you commit is stored and retrievable
-> by the recipient agent. If you have data sovereignty requirements,
-> DarkMatter is fully open source (MIT) and self-hostable — run it
-> inside your own infrastructure: https://github.com/darkmatter-hub/darkmatter
+> **Data notice:** This skill sends agent context to darkmatterhub.ai.
+> DarkMatter is open source (MIT) and fully self-hostable:
+> https://github.com/darkmatter-hub/darkmatter
 
 ---
 
 ## When to use this skill
 
-Use this skill when the user asks to:
+Use when the user asks to:
 - Commit context or results to DarkMatter for another agent
-- Push your output to a downstream agent
 - Pull or inherit context from an upstream agent
-- Check what context is waiting for this agent
-- Log what this agent did for auditing purposes
-- Check this agent's identity on DarkMatter
+- Replay a full decision chain (root to tip)
+- Fork execution from a checkpoint
+- Verify chain integrity
+- Export an audit artifact
+- Check agent identity
 
 ---
 
 ## Commands
 
-### Commit context to another agent
-
-When the user asks to commit, push, or hand off context to another agent:
+### 1. Commit context to another agent
 
 ```bash
 curl -s -X POST https://darkmatterhub.ai/api/commit \
@@ -57,106 +54,124 @@ curl -s -X POST https://darkmatterhub.ai/api/commit \
   -H "Content-Type: application/json" \
   -d '{
     "toAgentId": "<RECIPIENT_AGENT_ID>",
-    "context": <CONTEXT_JSON>
+    "payload": {
+      "input":  "<what this agent received>",
+      "output": "<what this agent produced>",
+      "memory": {}
+    },
+    "agent": {
+      "role":     "<researcher|writer|reviewer>",
+      "provider": "<anthropic|openai|local>",
+      "model":    "<model name>"
+    },
+    "parentId":  "<parent ctx_id if chaining>",
+    "traceId":   "<optional trace group>",
+    "eventType": "commit"
   }'
 ```
 
-- Replace `<RECIPIENT_AGENT_ID>` with the target agent's DarkMatter ID (format: `dm_...`)
-- Replace `<CONTEXT_JSON>` with the JSON object containing the context to pass
-- On success returns: `{"verified": true, "commitId": "commit_...", "timestamp": "..."}`
-
-**Example context shapes:**
-```json
-{"task": "analysis complete", "result": "APAC led Q1 growth at 34%", "nextTask": "write executive summary"}
-{"status": "done", "output": "...", "model": "claude-opus-4-6"}
-```
+Response is a canonical v2 context object. Use `id` as `parentId` in the
+next commit to build the lineage chain.
 
 ---
 
-### Pull context addressed to this agent
-
-When the user asks to pull, check, or inherit context from DarkMatter:
+### 2. Pull verified context (inherit from upstream)
 
 ```bash
 curl -s https://darkmatterhub.ai/api/pull \
   -H "Authorization: Bearer $DARKMATTER_API_KEY"
 ```
 
-- Returns all verified commits addressed to this agent
-- Each commit includes: `commitId`, `from`, `context`, `timestamp`, `verified`
-- Only verified commits are returned — tampered context is never delivered
-
-To get only the most recent commit:
-```bash
-curl -s https://darkmatterhub.ai/api/pull \
-  -H "Authorization: Bearer $DARKMATTER_API_KEY" \
-  | python3 -c "import sys,json; commits=json.load(sys.stdin)['commits']; print(json.dumps(commits[0] if commits else {}, indent=2))"
-```
+Returns all verified contexts addressed to this agent, newest first.
 
 ---
 
-### Check this agent's identity
+### 3. Replay full decision chain
 
-When the user asks who this agent is or what its DarkMatter ID is:
+```bash
+curl -s "https://darkmatterhub.ai/api/replay/<CTX_ID>" \
+  -H "Authorization: Bearer $DARKMATTER_API_KEY"
+
+# Summary mode (no payloads, faster):
+curl -s "https://darkmatterhub.ai/api/replay/<CTX_ID>?mode=summary" \
+  -H "Authorization: Bearer $DARKMATTER_API_KEY"
+```
+
+Returns ordered chain root to tip with every payload, agent attribution,
+per-step integrity verification, and chainIntact boolean.
+
+---
+
+### 4. Fork from a checkpoint
+
+```bash
+curl -s -X POST https://darkmatterhub.ai/api/fork/<CTX_ID> \
+  -H "Authorization: Bearer $DARKMATTER_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"fromCheckpoint": "<ctx_id>", "branchKey": "experiment-1"}'
+```
+
+Returns new context ID with fork_of, fork_point, lineage_root.
+Continue by committing with parentId set to the new ID.
+Original chain is never modified.
+
+---
+
+### 5. Verify chain integrity
+
+```bash
+curl -s "https://darkmatterhub.ai/api/verify/<CTX_ID>" \
+  -H "Authorization: Bearer $DARKMATTER_API_KEY"
+```
+
+Returns: chain_intact, length, root_hash, tip_hash, broken_at, fork_points.
+
+---
+
+### 6. Export portable audit artifact
+
+```bash
+curl -s "https://darkmatterhub.ai/api/export/<CTX_ID>" \
+  -H "Authorization: Bearer $DARKMATTER_API_KEY" \
+  -o "darkmatter_ctx.json"
+```
+
+Downloads JSON with full chain, integrity proof, chain_hash (stable),
+and export_hash (unique per export instance).
+
+---
+
+### 7. Check agent identity
 
 ```bash
 curl -s https://darkmatterhub.ai/api/me \
   -H "Authorization: Bearer $DARKMATTER_API_KEY"
 ```
 
-Returns: `{"agentId": "dm_...", "agentName": "..."}`
+---
+
+## Event types
+
+Developer: commit, fork, revert, branch, merge, spawn, timeout, retry, checkpoint, error
+Compliance: override, consent, escalate, redact, audit
+
+Set via eventType field in commit. Defaults to commit.
 
 ---
 
-## Rules
+## Integrity model
 
-- Always read the full `context` field from a pulled commit before proceeding with any task
-- Never modify or fabricate context — commit exactly what was produced
-- If `verified` is false on a pulled commit, do not use that context and warn the user
-- Never print or log the `DARKMATTER_API_KEY` value
-- If a commit fails, report the error message to the user exactly as returned
-- If no commits are waiting on pull, say "No context waiting in DarkMatter" and stop
-- When committing, always confirm the `commitId` and `verified: true` to the user
+Each commit: payload_hash = sha256(payload), integrity_hash = sha256(payload_hash + parent_integrity_hash).
+Tampering at any node breaks every downstream hash.
+Broken chain policy: permissive — commits still allowed but flagged.
+Fork from last valid node to start a clean branch.
 
 ---
 
-## Example workflows
+## Key rules
 
-### Pipeline: this agent finishes work and hands off to the next agent
-
-1. Complete your assigned task and produce output
-2. Ask user for the recipient agent's DarkMatter ID if not provided
-3. Commit context including: task description, output, and nextTask instructions
-4. Confirm commit ID and verified status to user
-
-### Pipeline: this agent picks up where another left off
-
-1. Pull context from DarkMatter
-2. Read the `task`, `output`, and `nextTask` fields from the inherited context
-3. Confirm to user what was inherited and from which agent
-4. Proceed with the `nextTask` using the inherited context
-
----
-
-## Setup instructions (tell the user if DARKMATTER_API_KEY is not set)
-
-If `DARKMATTER_API_KEY` is missing:
-
-1. Go to https://darkmatterhub.ai/signup
-2. Create a free account
-3. From the dashboard, create an agent and copy the API key
-4. Add to your OpenClaw config:
-   ```json
-   {
-     "skills": {
-       "entries": {
-         "darkmatter": {
-           "env": {
-             "DARKMATTER_API_KEY": "dm_sk_your_key_here"
-           }
-         }
-       }
-     }
-   }
-   ```
-5. Or export it in your shell: `export DARKMATTER_API_KEY=dm_sk_your_key_here`
+- Always pass parentId when chaining commits — this builds the lineage graph
+- Context IDs are globally unique: ctx_{timestamp}_{hex}
+- Forked branches carry fork_of, fork_point, lineage_root
+- chain_hash in exports is deterministic — same chain = same hash
+- Legacy context field still accepted (stored as { output: context })
