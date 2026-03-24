@@ -517,6 +517,7 @@
   </a>
 
   <div class="hright">
+    <span style="display:flex;align-items:center;gap:0.35rem;font-family:var(--mono);font-size:0.6rem;color:var(--green);margin-right:0.25rem;" title="All systems operational"><span style="width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block;box-shadow:0 0 4px var(--green);"></span>operational</span>
     <a class="btn-signin" href="/login" title="Sign in / Sign up" style="display:flex;align-items:center;gap:0.35rem;font-size:0.78rem;color:var(--text2);text-decoration:none;padding:0.25rem 0.6rem;border:1px solid var(--border);border-radius:6px;transition:all 0.15s;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--text)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text2)'">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
     </a>
@@ -562,14 +563,14 @@
 <!-- HERO -->
 <div class="hero">
 
-  <h1 class="hero-h1">The context layer<br>for <span class="matter-grad">AI agents.</span></h1>
+  <h1 class="hero-h1">Replay, fork, and verify<br><span class="matter-grad">any AI workflow.</span></h1>
 
   <p class="hero-sub">
-    Move work across models without losing context.<br>
-    Track every decision. Resume from any point.
+    DarkMatter records agent execution as a verifiable chain,<br>
+    so you can resume, branch, and prove what happened across any model.
   </p>
-  <p style="font-size:0.88rem;color:var(--text3);margin-bottom:2rem;text-align:center;position:relative;z-index:1;line-height:1.6;max-width:520px;">
-    DarkMatter is to AI agents what Git is to code —<br>an immutable record of decisions, portable across any model or system.
+  <p style="font-size:0.82rem;color:var(--text3);margin-bottom:2rem;text-align:center;position:relative;z-index:1;line-height:1.6;max-width:480px;font-family:var(--mono);">
+    Git-like history for AI workflows.
   </p>
 
 
@@ -780,6 +781,34 @@
         </div>
       </div>
 
+    </div>
+  </div>
+</div>
+
+
+<!-- WHO THIS IS FOR -->
+<div style="border-top:1px solid var(--border);padding:3rem 2rem;">
+  <div style="max-width:860px;margin:0 auto;">
+    <div style="font-family:var(--mono);font-size:0.6rem;color:var(--text3);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:1.5rem;">Who this is for</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:1.5rem;">
+        <div style="font-size:0.72rem;font-weight:700;color:var(--green);font-family:var(--mono);margin-bottom:1rem;letter-spacing:0.05em;">✓ BUILT FOR</div>
+        <div style="display:flex;flex-direction:column;gap:0.65rem;">
+          <div style="font-size:0.82rem;color:var(--text2);display:flex;gap:0.6rem;align-items:flex-start;"><span style="color:var(--green);margin-top:0.1rem;">→</span><span><strong style="color:var(--text);">Multi-agent pipeline engineers</strong> — anyone chaining Claude, GPT, Llama, or any mix of models in production</span></div>
+          <div style="font-size:0.82rem;color:var(--text2);display:flex;gap:0.6rem;align-items:flex-start;"><span style="color:var(--green);margin-top:0.1rem;">→</span><span><strong style="color:var(--text);">AI platform teams</strong> — building internal agent infrastructure that needs audit trails and reproducibility</span></div>
+          <div style="font-size:0.82rem;color:var(--text2);display:flex;gap:0.6rem;align-items:flex-start;"><span style="color:var(--green);margin-top:0.1rem;">→</span><span><strong style="color:var(--text);">Compliance &amp; enterprise</strong> — teams subject to EU AI Act, US state laws, or sector regulations requiring tamper-evident logs</span></div>
+          <div style="font-size:0.82rem;color:var(--text2);display:flex;gap:0.6rem;align-items:flex-start;"><span style="color:var(--green);margin-top:0.1rem;">→</span><span><strong style="color:var(--text);">Researchers</strong> — anyone who needs to reproduce, compare, or fork agent behavior deterministically</span></div>
+        </div>
+      </div>
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:1.5rem;">
+        <div style="font-size:0.72rem;font-weight:700;color:var(--red);font-family:var(--mono);margin-bottom:1rem;letter-spacing:0.05em;">✗ NOT FOR</div>
+        <div style="display:flex;flex-direction:column;gap:0.65rem;">
+          <div style="font-size:0.82rem;color:var(--text3);display:flex;gap:0.6rem;align-items:flex-start;"><span style="margin-top:0.1rem;">✗</span><span>Single-prompt chatbot builders — no agent handoffs means no lineage to track</span></div>
+          <div style="font-size:0.82rem;color:var(--text3);display:flex;gap:0.6rem;align-items:flex-start;"><span style="margin-top:0.1rem;">✗</span><span>Orchestration frameworks — we don't run your agents, LangChain and CrewAI do that</span></div>
+          <div style="font-size:0.82rem;color:var(--text3);display:flex;gap:0.6rem;align-items:flex-start;"><span style="margin-top:0.1rem;">✗</span><span>Vector / memory stores — we don't retrieve context by similarity, Pinecone does that</span></div>
+          <div style="font-size:0.82rem;color:var(--text3);display:flex;gap:0.6rem;align-items:flex-start;"><span style="margin-top:0.1rem;">✗</span><span>General observability — we don't monitor metrics or traces, Datadog does that</span></div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
