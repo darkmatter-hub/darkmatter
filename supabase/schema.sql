@@ -117,3 +117,25 @@ create policy "users see own webhook deliveries"
 create policy "service can insert webhook deliveries"
   on webhook_deliveries for insert
   with check (true);
+
+-- ═══════════════════════════════════════════════════
+-- DarkMatter — Schema v4: Context lineage + integrity
+-- Run in Supabase SQL Editor (additive, no drops)
+-- ═══════════════════════════════════════════════════
+
+alter table commits
+  add column if not exists schema_version  text    default '1.0',
+  add column if not exists payload         jsonb,
+  add column if not exists event_type      text    default 'commit',
+  add column if not exists parent_id       text    references commits(id),
+  add column if not exists trace_id        text,
+  add column if not exists branch_key      text    default 'main',
+  add column if not exists agent_info      jsonb,
+  add column if not exists integrity_hash  text,
+  add column if not exists parent_hash     text;
+
+-- Indexes for lineage traversal
+create index if not exists commits_parent_id_idx  on commits(parent_id);
+create index if not exists commits_trace_id_idx   on commits(trace_id);
+create index if not exists commits_branch_key_idx on commits(branch_key);
+create index if not exists commits_integrity_idx  on commits(integrity_hash);
