@@ -421,9 +421,16 @@ function buildContext(c, agentMap = {}) {
   return {
     id:             c.id,
     schema_version: c.schema_version || '1.0',
-    parent_id:      c.parent_id  || null,
-    trace_id:       c.trace_id   || null,
-    branch_key:     c.branch_key || 'main',
+    parent_id:      c.parent_id   || null,
+    trace_id:       c.trace_id    || null,
+    branch_key:     c.branch_key  || 'main',
+
+    // Fork lineage — present only when this is a forked branch
+    ...(c.fork_of ? {
+      fork_of:      c.fork_of,
+      fork_point:   c.fork_point   || null,
+      lineage_root: c.lineage_root || null,
+    } : {}),
 
     created_by: {
       agent_id:   ai.id   || c.from_agent,
@@ -451,6 +458,25 @@ function buildContext(c, agentMap = {}) {
 
     created_at: c.timestamp,
   };
+}
+
+// ── Resolve lineage root by walking parent chain ──────
+async function resolveLineageRoot(ctxId) {
+  let currentId = ctxId;
+  let rootId    = ctxId;
+  const MAX     = 100;
+  let depth     = 0;
+  while (currentId && depth < MAX) {
+    const { data } = await supabaseService
+      .from('commits').select('id, parent_id, lineage_root').eq('id', currentId).single();
+    if (!data) break;
+    if (data.lineage_root) return data.lineage_root; // cached
+    if (!data.parent_id)  { rootId = data.id; break; }
+    rootId    = data.id;
+    currentId = data.parent_id;
+    depth++;
+  }
+  return rootId;
 }
 
 // ═══════════════════════════════════════════════════
@@ -700,12 +726,279 @@ app.get('/api/lineage/:ctxId', requireApiKey, async (req, res) => {
   }
 });
 
-// ── GET /api/me ── who am I? ──────────────────────────
+// ── GET /api/replay/:ctxId ── full decision path with payloads ──
+app.get('/api/replay/:ctxId', requireApiKey, async (req, res) => {
+  try {
+    const { ctxId } = req.params;
+    const steps = [];
+    let currentId = ctxId;
+    const MAX_DEPTH = 50;
+
+    // Walk chain from tip to root collecting full commits
+    while (currentId && steps.length < MAX_DEPTH) {
+      const { data: commit } = await supabaseService
+        .from('commits')
+        .select('*')
+        .eq('id', currentId)
+        .single();
+
+      if (!commit) break;
+      steps.push(commit);
+      currentId = commit.parent_id;
+    }
+
+    // Reverse so steps go root → tip (chronological order)
+    steps.reverse();
+
+    // Verify integrity chain root → tip
+    let chainIntact = true;
+    for (let i = 1; i < steps.length; i++) {
+      const expected = steps[i].parent_hash;
+      const actual   = steps[i - 1].integrity_hash;
+      if (expected && actual && expected !== actual) {
+        chainIntact = false;
+        steps[i]._chainBroken = true;
+      }
+    }
+
+    // Build replay response — full payload at each step
+    const replay = steps.map((c, i) => {
+      const ctx = buildContext(c);
+      return {
+        step:       i + 1,
+        id:         c.id,
+        eventType:  ctx.event.type,
+        createdBy:  ctx.created_by,
+        targetAgent: ctx.event.to_agent_name || ctx.event.to_agent_id,
+        payload:    ctx.payload,
+        integrity: {
+          ...ctx.integrity,
+          chainValid: !c._chainBroken,
+        },
+        timestamp:  ctx.created_at,
+      };
+    });
+
+    res.json({
+      contextId:      ctxId,
+      rootId:         steps.length > 0 ? steps[0].id : ctxId,
+      totalSteps:     replay.length,
+      chainIntact,
+      replay,
+      summary: {
+        agents:    [...new Set(steps.map(s => s.agent_info?.name || s.from_agent).filter(Boolean))],
+        models:    [...new Set(steps.map(s => s.agent_info?.model).filter(Boolean))],
+        eventTypes:[...new Set(steps.map(s => s.event_type || 'commit'))],
+        duration:  steps.length > 1
+          ? `${Math.round((new Date(steps[steps.length-1].timestamp) - new Date(steps[0].timestamp)) / 1000)}s`
+          : '0s',
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
 app.get('/api/me', requireApiKey, async (req, res) => {
   res.json({
     agentId:   req.agent.agent_id,
     agentName: req.agent.agent_name,
   });
+});
+
+// ── POST /api/fork/:ctxId ── branch from a checkpoint ─
+app.post('/api/fork/:ctxId', apiLimiter, requireApiKey, async (req, res) => {
+  try {
+    const { ctxId } = req.params;
+    const { fromCheckpoint, toAgentId, payload, agent, traceId, branchKey } = req.body;
+
+    const forkPoint = fromCheckpoint || ctxId;
+    const { data: forkCommit } = await supabaseService
+      .from('commits')
+      .select('id, parent_id, lineage_root, integrity_hash')
+      .eq('id', forkPoint)
+      .single();
+
+    if (!forkCommit) return res.status(404).json({ error: `Fork point ${forkPoint} not found` });
+
+    const lineageRoot = forkCommit.lineage_root || await resolveLineageRoot(forkPoint);
+
+    const targetAgentId = toAgentId || req.agent.agent_id;
+    const { data: toAgent } = await supabaseService
+      .from('agents').select('agent_id').eq('agent_id', targetAgentId).single();
+    if (!toAgent) return res.status(404).json({ error: `Agent ${targetAgentId} not found` });
+
+    const forkId    = 'ctx_' + Date.now() + '_' + crypto.randomBytes(6).toString('hex');
+    const timestamp = new Date().toISOString();
+    const agentInfo = {
+      id:       req.agent.agent_id,
+      name:     req.agent.agent_name,
+      role:     agent?.role     || null,
+      provider: agent?.provider || null,
+      model:    agent?.model    || null,
+    };
+
+    const forkPayload = payload || {
+      input:  `Fork from ${forkPoint}`,
+      output: null,
+      memory: { forked_from: forkPoint, lineage_root: lineageRoot },
+    };
+
+    const normalizedPayload = JSON.stringify(forkPayload, Object.keys(forkPayload).sort());
+    const payloadHash       = crypto.createHash('sha256').update(normalizedPayload).digest('hex');
+    const chainInput        = payloadHash + (forkCommit.integrity_hash || 'root');
+    const integrityHash     = crypto.createHash('sha256').update(chainInput).digest('hex');
+    const resolvedBranch    = branchKey || `fork-${forkId.slice(-6)}`;
+
+    const { error } = await supabaseService.from('commits').insert({
+      id:                  forkId,
+      schema_version:      '1.0',
+      from_agent:          req.agent.agent_id,
+      to_agent:            targetAgentId,
+      context:             { ...forkPayload, _eventType: 'fork' },
+      payload:             forkPayload,
+      event_type:          'fork',
+      parent_id:           forkPoint,
+      fork_of:             ctxId,
+      fork_point:          forkPoint,
+      lineage_root:        lineageRoot,
+      trace_id:            traceId || null,
+      branch_key:          resolvedBranch,
+      agent_info:          agentInfo,
+      integrity_hash:      integrityHash,
+      parent_hash:         forkCommit.integrity_hash,
+      verified:            true,
+      verification_reason: 'Fork from authenticated agent',
+      timestamp,
+    });
+
+    if (error) throw error;
+
+    res.json({
+      id:           forkId,
+      fork_of:      ctxId,
+      fork_point:   forkPoint,
+      lineage_root: lineageRoot,
+      branch_key:   resolvedBranch,
+      parent_id:    forkPoint,
+      event:        { type: 'fork' },
+      integrity: {
+        payload_hash:        'sha256:' + integrityHash,
+        parent_hash:         'sha256:' + (forkCommit.integrity_hash || ''),
+        verification_status: 'valid',
+      },
+      created_at: timestamp,
+      message: `Forked from ${forkPoint}. Continue by committing with parentId: "${forkId}"`,
+    });
+  } catch (err) {
+    console.error('fork error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── GET /api/verify/:ctxId ── standalone trust object ─
+app.get('/api/verify/:ctxId', requireApiKey, async (req, res) => {
+  try {
+    const { ctxId } = req.params;
+    const chain     = [];
+    let currentId   = ctxId;
+    let brokenAt    = null;
+
+    while (currentId && chain.length < 50) {
+      const { data } = await supabaseService
+        .from('commits')
+        .select('id, parent_id, integrity_hash, parent_hash, lineage_root, fork_of, verified, timestamp')
+        .eq('id', currentId).single();
+      if (!data) break;
+      chain.push(data);
+      currentId = data.parent_id;
+    }
+
+    chain.reverse(); // root → tip
+    for (let i = 1; i < chain.length; i++) {
+      if (chain[i].parent_hash && chain[i-1].integrity_hash &&
+          chain[i].parent_hash !== chain[i-1].integrity_hash) {
+        brokenAt = chain[i].id; break;
+      }
+    }
+
+    const root = chain[0];
+    const tip  = chain[chain.length - 1];
+    res.json({
+      ctx_id:        ctxId,
+      chain_intact:  !brokenAt,
+      broken_at:     brokenAt,
+      length:        chain.length,
+      lineage_root:  root?.lineage_root || root?.id || ctxId,
+      root_hash:     root?.integrity_hash ? 'sha256:' + root.integrity_hash : null,
+      tip_hash:      tip?.integrity_hash  ? 'sha256:' + tip.integrity_hash  : null,
+      forked:        chain.some(c => c.fork_of),
+      fork_points:   chain.filter(c => c.fork_of).map(c => c.id),
+      verified_at:   new Date().toISOString(),
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── GET /api/export/:ctxId ── portable proof artifact ─
+app.get('/api/export/:ctxId', requireApiKey, async (req, res) => {
+  try {
+    const { ctxId } = req.params;
+    const chain     = [];
+    let currentId   = ctxId;
+
+    while (currentId && chain.length < 50) {
+      const { data } = await supabaseService
+        .from('commits').select('*').eq('id', currentId).single();
+      if (!data) break;
+      chain.push(data);
+      currentId = data.parent_id;
+    }
+    chain.reverse(); // root → tip
+
+    let chainIntact = true;
+    for (let i = 1; i < chain.length; i++) {
+      if (chain[i].parent_hash && chain[i-1].integrity_hash &&
+          chain[i].parent_hash !== chain[i-1].integrity_hash) {
+        chainIntact = false; break;
+      }
+    }
+
+    const root       = chain[0];
+    const tip        = chain[chain.length - 1];
+    const exportedAt = new Date().toISOString();
+
+    const exportObj = {
+      metadata: {
+        export_version: '1.0',
+        ctx_id:         ctxId,
+        lineage_root:   root?.lineage_root || root?.id,
+        chain_length:   chain.length,
+        exported_at:    exportedAt,
+        exported_by:    req.agent.agent_id,
+      },
+      integrity: {
+        chain_intact:    chainIntact,
+        algorithm:       'sha256',
+        root_hash:       root?.integrity_hash ? 'sha256:' + root.integrity_hash : null,
+        tip_hash:        tip?.integrity_hash  ? 'sha256:' + tip.integrity_hash  : null,
+        timestamp_range: { from: root?.timestamp, to: tip?.timestamp },
+      },
+      chain: chain.map(c => buildContext(c)),
+    };
+
+    exportObj.export_hash = 'sha256:' +
+      crypto.createHash('sha256').update(JSON.stringify(exportObj)).digest('hex');
+
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition',
+      `attachment; filename="darkmatter-export-${ctxId.slice(-8)}-${Date.now()}.json"`);
+    res.json(exportObj);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // ═══════════════════════════════════════════════════

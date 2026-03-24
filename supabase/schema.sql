@@ -139,3 +139,19 @@ create index if not exists commits_parent_id_idx  on commits(parent_id);
 create index if not exists commits_trace_id_idx   on commits(trace_id);
 create index if not exists commits_branch_key_idx on commits(branch_key);
 create index if not exists commits_integrity_idx  on commits(integrity_hash);
+
+-- ═══════════════════════════════════════════════════
+-- DarkMatter — Schema v5: Fork lineage fields
+-- Run in Supabase SQL Editor (additive)
+-- ═══════════════════════════════════════════════════
+
+alter table commits
+  add column if not exists fork_of      text references commits(id),
+  add column if not exists fork_point   text references commits(id),
+  add column if not exists lineage_root text references commits(id);
+-- fork_of:      original ctx_id this was forked from
+-- fork_point:   checkpoint ctx_id where the fork began
+-- lineage_root: root ctx_id of the entire graph (original root)
+
+create index if not exists commits_fork_of_idx      on commits(fork_of);
+create index if not exists commits_lineage_root_idx on commits(lineage_root);

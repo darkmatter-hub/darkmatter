@@ -471,20 +471,42 @@
     <div class="sec-head">
       <div>
         <div class="sec-title">Commit Log</div>
-        <div class="sec-sub">Context handoffs — click any row to inspect full context. Export for audits.</div>
+        <div class="sec-sub">Context handoffs — click any row to inspect. Export for audits. View chain to replay lineage.</div>
       </div>
-      <div style="display:flex;gap:0.5rem;">
+      <div style="display:flex;gap:0.5rem;align-items:center;">
+        <div style="display:flex;background:var(--bg3);border:1px solid var(--border);border-radius:6px;overflow:hidden;">
+          <button id="tab-log" onclick="switchLogTab('log')" style="background:var(--bg2);border:none;color:var(--text);padding:0.28rem 0.75rem;font-size:0.72rem;cursor:pointer;font-family:var(--sans);font-weight:500;border-right:1px solid var(--border);">Log</button>
+          <button id="tab-chain" onclick="switchLogTab('chain')" style="background:none;border:none;color:var(--text2);padding:0.28rem 0.75rem;font-size:0.72rem;cursor:pointer;font-family:var(--sans);">Chain View</button>
+        </div>
         <button class="logout-btn" onclick="exportLog()" style="border-color:var(--border2)">↓ Export</button>
-        <button class="logout-btn" onclick="loadCommits()" style="border-color:var(--border2)">↻ Refresh</button>
+        <button class="logout-btn" id="refresh-btn" onclick="refreshCurrentTab()" style="border-color:var(--border2)">↻ Refresh</button>
       </div>
     </div>
-    <div class="log-wrap">
-      <div class="log-cols">
-        <div>Message · click to expand context</div>
-        <div style="text-align:right">Time</div>
+
+    <!-- LOG TAB -->
+    <div id="view-log">
+      <div class="log-wrap">
+        <div class="log-cols">
+          <div>Message · click to expand context</div>
+          <div style="text-align:right">Time</div>
+        </div>
+        <div id="commit-list">
+          <div class="log-empty">No commits yet — connect an agent and start committing context</div>
+        </div>
       </div>
-      <div id="commit-list">
-        <div class="log-empty">No commits yet — connect an agent and start committing context</div>
+    </div>
+
+    <!-- CHAIN VIEW TAB -->
+    <div id="view-chain" style="display:none;">
+      <div style="display:flex;gap:0.75rem;align-items:center;margin-bottom:0.85rem;">
+        <input id="chain-ctx-input" type="text" placeholder="Enter context ID  e.g. ctx_1774358291224_bad9b976"
+          style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:0.4rem 0.75rem;font-size:0.72rem;color:var(--text);font-family:var(--mono);outline:none;"
+          onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"
+          onkeydown="if(event.key==='Enter') loadChainView()"/>
+        <button class="logout-btn" onclick="loadChainView()" style="border-color:var(--border2);white-space:nowrap;">View Chain</button>
+      </div>
+      <div id="chain-view-content">
+        <div class="log-empty">Enter a context ID above to view its full decision chain.</div>
       </div>
     </div>
   </div>
@@ -966,6 +988,133 @@ const context = (await res.json()).commits[0].context;`,
       await loadAgents();
       await loadCommits();
     } catch(e) { toast('Something went wrong'); }
+  }
+
+  // ── Log tab / Chain tab switching ────────────────────
+  function switchLogTab(tab) {
+    const logEl   = document.getElementById('view-log');
+    const chainEl = document.getElementById('view-chain');
+    const tabLog  = document.getElementById('tab-log');
+    const tabChn  = document.getElementById('tab-chain');
+    if (tab === 'log') {
+      logEl.style.display   = '';
+      chainEl.style.display = 'none';
+      tabLog.style.background  = 'var(--bg2)';
+      tabLog.style.color       = 'var(--text)';
+      tabChn.style.background  = 'none';
+      tabChn.style.color       = 'var(--text2)';
+    } else {
+      logEl.style.display   = 'none';
+      chainEl.style.display = '';
+      tabChn.style.background  = 'var(--bg2)';
+      tabChn.style.color       = 'var(--text)';
+      tabLog.style.background  = 'none';
+      tabLog.style.color       = 'var(--text2)';
+    }
+  }
+
+  function refreshCurrentTab() {
+    const chainVisible = document.getElementById('view-chain')?.style.display !== 'none';
+    if (chainVisible) loadChainView();
+    else loadCommits();
+  }
+
+  // ── Chain viewer ──────────────────────────────────────
+  async function loadChainView() {
+    const ctxId  = document.getElementById('chain-ctx-input')?.value?.trim();
+    const content = document.getElementById('chain-view-content');
+    if (!ctxId) { toast('Enter a context ID'); return; }
+
+    content.innerHTML = '<div class="log-empty">Loading chain...</div>';
+
+    try {
+      // Fetch replay (full chain with payloads)
+      const res  = await fetch(`/api/replay/${ctxId}`, { headers: authHeaders() });
+      if (!res.ok) throw new Error((await res.json()).error || 'Not found');
+      const data = await res.json();
+
+      const intactColor = data.chainIntact ? 'var(--green)' : 'var(--red)';
+      const intactLabel = data.chainIntact ? '✓ Chain intact' : '✗ Chain broken';
+
+      let html = `
+        <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.25rem;padding:0.75rem 1rem;background:var(--bg3);border:1px solid var(--border);border-radius:8px;flex-wrap:wrap;">
+          <div style="font-family:var(--mono);font-size:0.65rem;color:${intactColor};font-weight:600;">${intactLabel}</div>
+          <div style="font-size:0.7rem;color:var(--text3);">${data.totalSteps} step${data.totalSteps !== 1 ? 's' : ''}</div>
+          ${data.summary?.models?.length ? `<div style="font-size:0.7rem;color:var(--text3);">${data.summary.models.join(' → ')}</div>` : ''}
+          ${data.summary?.duration ? `<div style="font-size:0.7rem;color:var(--text3);">${data.summary.duration}</div>` : ''}
+          <div style="margin-left:auto;display:flex;gap:0.5rem;">
+            <button onclick="verifyChain('${ctxId}')" class="agent-btn" style="font-size:0.68rem;">🔍 Verify</button>
+            <button onclick="exportChain('${ctxId}')" class="agent-btn" style="font-size:0.68rem;">↓ Export</button>
+          </div>
+        </div>
+        <div style="position:relative;padding-left:1.5rem;">
+          <div style="position:absolute;left:9px;top:0;bottom:0;width:1px;background:var(--border);"></div>`;
+
+      data.replay.forEach((step, i) => {
+        const cb       = step.createdBy || {};
+        const isLast   = i === data.replay.length - 1;
+        const isFork   = step.eventType === 'fork';
+        const dotColor = isFork ? 'var(--amber)' :
+                         step.integrity?.chainValid ? 'var(--green)' : 'var(--red)';
+        const evBadge  = step.eventType || 'commit';
+        const output   = step.payload?.output || '';
+        const preview  = (typeof output === 'string' ? output : JSON.stringify(output))
+                           .replace(/\n/g,' ').slice(0, 90);
+
+        html += `
+          <div style="position:relative;margin-bottom:${isLast ? '0' : '1rem'};">
+            <div style="position:absolute;left:-1.5rem;top:0.65rem;width:10px;height:10px;border-radius:50%;background:${dotColor};box-shadow:0 0 5px ${dotColor};"></div>
+            <div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:0.85rem 1rem;cursor:pointer;"
+                 onclick="this.querySelector('.chain-payload').style.display = this.querySelector('.chain-payload').style.display === 'none' ? '' : 'none'">
+              <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.35rem;flex-wrap:wrap;">
+                <span style="font-family:var(--mono);font-size:0.6rem;color:var(--text3);">Step ${step.step}</span>
+                <span class="cbadge ${evBadge}" style="font-size:0.58rem;">${evBadge}</span>
+                <span style="font-size:0.78rem;font-weight:600;color:var(--text);">${escHtml(cb.agent_name || cb.agent_id || '?')}</span>
+                ${cb.model ? `<span style="font-size:0.65rem;color:var(--text3);">${escHtml(cb.model)}</span>` : ''}
+                <span style="margin-left:auto;font-family:var(--mono);font-size:0.6rem;color:var(--text3);">${ago(step.timestamp)}</span>
+              </div>
+              ${preview ? `<div style="font-size:0.75rem;color:var(--text2);line-height:1.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(preview)}${output.length > 90 ? '···' : ''}</div>` : ''}
+              <div class="chain-payload" style="display:none;margin-top:0.75rem;border-top:1px solid var(--border2);padding-top:0.75rem;">
+                <div style="font-family:var(--mono);font-size:0.65rem;color:var(--text3);margin-bottom:0.4rem;">ID: ${escHtml(step.id)}</div>
+                ${step.integrity?.payload_hash ? `<div style="font-family:var(--mono);font-size:0.62rem;color:var(--green);margin-bottom:0.4rem;">${escHtml(step.integrity.payload_hash.slice(0,30))}···</div>` : ''}
+                <pre style="font-size:0.68rem;color:var(--text2);white-space:pre-wrap;word-break:break-word;line-height:1.6;max-height:200px;overflow-y:auto;">${escHtml(JSON.stringify(step.payload, null, 2))}</pre>
+              </div>
+            </div>
+          </div>`;
+      });
+
+      html += `</div>`;
+      content.innerHTML = html;
+
+    } catch(e) {
+      content.innerHTML = `<div class="log-empty" style="color:var(--red);">Error: ${escHtml(e.message)}</div>`;
+    }
+  }
+
+  async function verifyChain(ctxId) {
+    try {
+      const res  = await fetch(`/api/verify/${ctxId}`, { headers: authHeaders() });
+      const data = await res.json();
+      if (data.chain_intact) {
+        toast(`✓ Chain verified — ${data.length} steps, integrity intact`);
+      } else {
+        toast(`✗ Chain broken at ${data.broken_at}`);
+      }
+    } catch(e) { toast('Verify failed: ' + e.message); }
+  }
+
+  async function exportChain(ctxId) {
+    try {
+      const res  = await fetch(`/api/export/${ctxId}`, { headers: authHeaders() });
+      const blob = await res.blob();
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href     = url;
+      a.download = `darkmatter-export-${ctxId.slice(-8)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast('✓ Export downloaded');
+    } catch(e) { toast('Export failed: ' + e.message); }
   }
 
   // ── Load commits ─────────────────────────────────────
