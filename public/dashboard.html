@@ -521,11 +521,11 @@
       </div>
       <div id="chain-view-content">
         <div class="log-empty" style="padding:2.5rem;">
-        <div style="font-size:1.5rem;margin-bottom:0.75rem;">⑂</div>
-        <div style="font-size:0.88rem;font-weight:600;color:var(--text);margin-bottom:0.35rem;">Chain viewer</div>
-        <div style="font-size:0.78rem;color:var(--text2);margin-bottom:1.25rem;">Enter any context ID from your commit log to visualize its full decision chain — replay steps, fork from any checkpoint, verify integrity.</div>
-        <div style="font-size:0.72rem;color:var(--text3);font-family:var(--mono);">tip: click ⑂ chain on any commit row to jump here instantly</div>
-      </div>
+          <div style="font-size:1.5rem;margin-bottom:0.75rem;">&#x2442;</div>
+          <div style="font-size:0.88rem;font-weight:600;color:var(--text);margin-bottom:0.35rem;">Chain viewer</div>
+          <div style="font-size:0.78rem;color:var(--text2);margin-bottom:1.25rem;">Enter any context ID from your commit log to visualize its full decision chain.</div>
+          <div style="font-size:0.72rem;color:var(--text3);font-family:var(--mono);">tip: click chain on any commit row to jump here instantly</div>
+        </div>
       </div>
     </div>
   </div>
@@ -1280,21 +1280,16 @@ const context = (await res.json()).commits[0].context;`,
       const list = document.getElementById('commit-list');
 
       if (!data.length) {
-        list.innerHTML = '<div class="log-empty" style="padding:2.5rem;">
-        <div style="font-size:1.5rem;margin-bottom:0.75rem;">🌑</div>
-        <div style="font-size:0.88rem;font-weight:600;color:var(--text);margin-bottom:0.35rem;">No commits yet</div>
-        <div style="font-size:0.78rem;color:var(--text2);margin-bottom:1.25rem;">Connect an agent and start committing context.</div>
-        <div style="display:flex;gap:0.6rem;justify-content:center;flex-wrap:wrap;">
-          <a href="https://github.com/darkmatter-hub/darkmatter#quickstart" target="_blank"
-             style="font-size:0.75rem;background:var(--gradient);color:#fff;padding:0.4rem 1rem;border-radius:6px;text-decoration:none;font-weight:500;">
-             Quickstart guide →
-          </a>
-          <button onclick="switchLogTab('chain');document.getElementById('chain-ctx-input').value='';document.getElementById('chain-view-content').innerHTML='<div class=\'log-empty\'>Enter a context ID from your first commit to explore the chain view.</div>'"
-            class="agent-btn" style="font-size:0.75rem;padding:0.4rem 1rem;">
-            Explore Chain View
-          </button>
-        </div>
-      </div>';
+        list.innerHTML = [
+          '<div class="log-empty" style="padding:2.5rem;">',
+          '<div style="font-size:1.5rem;margin-bottom:0.75rem;">🌑</div>',
+          '<div style="font-size:0.88rem;font-weight:600;color:var(--text);margin-bottom:0.35rem;">No commits yet</div>',
+          '<div style="font-size:0.78rem;color:var(--text2);margin-bottom:1.25rem;">Connect an agent and start committing context.</div>',
+          '<div style="display:flex;gap:0.6rem;justify-content:center;flex-wrap:wrap;">',
+          '<a href="https://github.com/darkmatter-hub/darkmatter#quickstart" target="_blank" style="font-size:0.75rem;background:linear-gradient(90deg,#7C3AED,#2563EB,#22D3EE);color:#fff;padding:0.4rem 1rem;border-radius:6px;text-decoration:none;font-weight:500;">Quickstart guide →</a>',
+          '</div>',
+          '</div>'
+        ].join('');
         return;
       }
 
