@@ -169,6 +169,21 @@ app.get('/dashboard', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/dashboard.html'));
 });
 
+// ── GET /demo ── live interactive demo (no login required)
+app.get('/demo', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/demo.html'));
+});
+
+// ── GET /blog ── blog index
+app.get('/blog', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/blog.html'));
+});
+
+// ── GET /blog/:slug ── individual blog posts
+app.get('/blog/:slug', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/blog.html'));
+});
+
 // ═══════════════════════════════════════════════════
 // AUTH ROUTES
 // ═══════════════════════════════════════════════════
@@ -1111,6 +1126,104 @@ app.post('/feedback', feedbackLimiter, async (req, res) => {
     console.error('feedback error:', err);
     res.json({ success: true }); // always return success to user
   }
+});
+
+// ── GET /api/demo ── public seeded demo chain (no auth) ─
+// Returns a static demo replay so /demo page works without login
+app.get('/api/demo', async (req, res) => {
+  const now   = new Date('2026-03-24T10:00:00Z');
+  const t = ms => new Date(now.getTime() + ms).toISOString();
+
+  // Deterministic fake hashes for demo — not real chain but visually correct
+  const h = str => crypto.createHash('sha256').update(str).digest('hex');
+  const h1 = h('demo-root-payload');
+  const h2 = h('demo-step2-' + h1);
+  const h3 = h('demo-step3-' + h2);
+  const h4 = h('demo-fork-'  + h2);
+  const h5 = h('demo-step5-' + h4);
+
+  const demo = {
+    contextId:   'ctx_demo_killerchain',
+    shortId:     'killerchain',
+    rootId:      'ctx_demo_001',
+    totalSteps:  5,
+    chainIntact: true,
+    mode:        'full',
+    isDemo:      true,
+    summary: {
+      agents:     ['research-agent', 'writer-agent', 'reviewer-agent'],
+      models:     ['claude-opus-4-6', 'gpt-4o', 'claude-opus-4-6'],
+      eventTypes: ['commit', 'commit', 'fork', 'commit', 'checkpoint'],
+      forkPoints: ['ctx_demo_003'],
+      duration:   '14s',
+    },
+    replay: [
+      {
+        step: 1, id: 'ctx_demo_001', short_id: 'demo_001', eventType: 'commit',
+        createdBy: { agent_id: 'dm_aaa', agent_name: 'research-agent', role: 'researcher', provider: 'anthropic', model: 'claude-opus-4-6' },
+        targetAgent: 'writer-agent',
+        payload: {
+          input:  'Analyze the business case for AI agent infrastructure in 2026.',
+          output: '1. Multi-agent pipelines are now production-grade — teams run Claude, GPT, and open-source models in sequence.\n2. Context loss between agents is the #1 reliability failure mode.\n3. Regulation (EU AI Act Art. 12, US state laws) requires tamper-evident audit trails for high-risk AI.',
+          memory: { topic: 'AI infrastructure', depth: 'high-level', key_points: 3 },
+        },
+        integrity: { payload_hash: 'sha256:' + h1, parent_hash: null, verification_status: 'valid', chainValid: true },
+        timestamp: t(0),
+      },
+      {
+        step: 2, id: 'ctx_demo_002', short_id: 'demo_002', eventType: 'commit',
+        createdBy: { agent_id: 'dm_bbb', agent_name: 'writer-agent', role: 'writer', provider: 'openai', model: 'gpt-4o' },
+        targetAgent: 'reviewer-agent',
+        payload: {
+          input:  'Research findings from research-agent.',
+          output: 'AI infrastructure is no longer optional for production teams. As multi-agent pipelines become standard, the ability to track, replay, and verify decisions across model boundaries is the missing primitive. DarkMatter fills this gap — providing a Git-like execution history layer that works across Claude, GPT, and any framework.',
+          memory: { style: 'executive', word_target: 150 },
+        },
+        integrity: { payload_hash: 'sha256:' + h2, parent_hash: 'sha256:' + h1, verification_status: 'valid', chainValid: true },
+        timestamp: t(4000),
+      },
+      {
+        step: 3, id: 'ctx_demo_003', short_id: 'demo_003', eventType: 'fork',
+        createdBy: { agent_id: 'dm_bbb', agent_name: 'writer-agent', role: 'writer', provider: 'openai', model: 'gpt-4o' },
+        targetAgent: 'writer-agent',
+        fork_of: 'ctx_demo_002', fork_point: 'ctx_demo_002',
+        payload: {
+          input:  'Fork from ctx_demo_002 — trying a shorter, punchier draft.',
+          output: null,
+          memory: { forked_from: 'ctx_demo_002', style: 'punchy', word_target: 80 },
+        },
+        integrity: { payload_hash: 'sha256:' + h3, parent_hash: 'sha256:' + h2, verification_status: 'valid', chainValid: true },
+        timestamp: t(6000),
+      },
+      {
+        step: 4, id: 'ctx_demo_004', short_id: 'demo_004', eventType: 'commit',
+        createdBy: { agent_id: 'dm_bbb', agent_name: 'writer-agent', role: 'writer', provider: 'openai', model: 'gpt-4o' },
+        targetAgent: 'reviewer-agent',
+        payload: {
+          input:  'Fork branch — shorter draft.',
+          output: 'Multi-agent AI is here. The missing layer: knowing exactly what each agent decided, and why. DarkMatter makes every AI workflow replayable, forkable, and provably tamper-evident.',
+          memory: { style: 'punchy', words: 38 },
+        },
+        integrity: { payload_hash: 'sha256:' + h4, parent_hash: 'sha256:' + h3, verification_status: 'valid', chainValid: true },
+        timestamp: t(9000),
+      },
+      {
+        step: 5, id: 'ctx_demo_005', short_id: 'demo_005', eventType: 'checkpoint',
+        createdBy: { agent_id: 'dm_ccc', agent_name: 'reviewer-agent', role: 'reviewer', provider: 'anthropic', model: 'claude-opus-4-6' },
+        targetAgent: 'reviewer-agent',
+        payload: {
+          input:  'Review both drafts and recommend.',
+          output: 'Score: 9/10. Strength: the punchy draft (fork branch) communicates the core value in one sentence — far more effective for developer audiences. Recommendation: use the forked draft for the announcement post.',
+          memory: { status: 'reviewed', pipeline_complete: true },
+          variables: { recommended_branch: 'fork', winning_ctx: 'ctx_demo_004' },
+        },
+        integrity: { payload_hash: 'sha256:' + h5, parent_hash: 'sha256:' + h4, verification_status: 'valid', chainValid: true },
+        timestamp: t(14000),
+      },
+    ],
+  };
+
+  res.json(demo);
 });
 
 // ── GET /api/stats ── public network stats ───────────
