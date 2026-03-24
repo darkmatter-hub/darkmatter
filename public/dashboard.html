@@ -491,7 +491,21 @@
           <div style="text-align:right">Time</div>
         </div>
         <div id="commit-list">
-          <div class="log-empty">No commits yet — connect an agent and start committing context</div>
+          <div class="log-empty" style="padding:2.5rem;">
+        <div style="font-size:1.5rem;margin-bottom:0.75rem;">🌑</div>
+        <div style="font-size:0.88rem;font-weight:600;color:var(--text);margin-bottom:0.35rem;">No commits yet</div>
+        <div style="font-size:0.78rem;color:var(--text2);margin-bottom:1.25rem;">Connect an agent and start committing context.</div>
+        <div style="display:flex;gap:0.6rem;justify-content:center;flex-wrap:wrap;">
+          <a href="https://github.com/darkmatter-hub/darkmatter#quickstart" target="_blank"
+             style="font-size:0.75rem;background:var(--gradient);color:#fff;padding:0.4rem 1rem;border-radius:6px;text-decoration:none;font-weight:500;">
+             Quickstart guide →
+          </a>
+          <button onclick="switchLogTab('chain');document.getElementById('chain-ctx-input').value='';document.getElementById('chain-view-content').innerHTML='<div class=\'log-empty\'>Enter a context ID from your first commit to explore the chain view.</div>'"
+            class="agent-btn" style="font-size:0.75rem;padding:0.4rem 1rem;">
+            Explore Chain View
+          </button>
+        </div>
+      </div>
         </div>
       </div>
     </div>
@@ -506,7 +520,12 @@
         <button class="logout-btn" onclick="loadChainView()" style="border-color:var(--border2);white-space:nowrap;">View Chain</button>
       </div>
       <div id="chain-view-content">
-        <div class="log-empty">Enter a context ID above to view its full decision chain.</div>
+        <div class="log-empty" style="padding:2.5rem;">
+        <div style="font-size:1.5rem;margin-bottom:0.75rem;">⑂</div>
+        <div style="font-size:0.88rem;font-weight:600;color:var(--text);margin-bottom:0.35rem;">Chain viewer</div>
+        <div style="font-size:0.78rem;color:var(--text2);margin-bottom:1.25rem;">Enter any context ID from your commit log to visualize its full decision chain — replay steps, fork from any checkpoint, verify integrity.</div>
+        <div style="font-size:0.72rem;color:var(--text3);font-family:var(--mono);">tip: click ⑂ chain on any commit row to jump here instantly</div>
+      </div>
       </div>
     </div>
   </div>
@@ -1052,21 +1071,37 @@ const context = (await res.json()).commits[0].context;`,
       const intactColor = data.chainIntact ? 'var(--green)' : 'var(--red)';
       const intactLabel = data.chainIntact ? '✓ Chain intact' : '✗ Chain broken';
 
+      // Build one-line chain summary
+      const forkCount  = data.summary?.forkPoints?.length || 0;
+      const agentCount = data.summary?.agents?.length || 0;
+      const brokenStep = data.replay?.findIndex(s => s.integrity?.chainValid === false);
+      const lastValidNode = brokenStep > 0 ? data.replay[brokenStep - 1]?.id : null;
+      const summaryParts = [
+        `${data.totalSteps} step${data.totalSteps !== 1 ? 's' : ''}`,
+        agentCount > 0 ? `${agentCount} agent${agentCount !== 1 ? 's' : ''}` : null,
+        forkCount > 0 ? `forked at step ${data.replay?.findIndex(s => s.eventType === 'fork') + 1}` : null,
+        data.chainIntact ? 'chain intact' : `broken at step ${brokenStep + 1}`,
+        data.summary?.duration && data.summary.duration !== '0s' ? data.summary.duration : null,
+      ].filter(Boolean).join(' · ');
+
       let html = `
         <!-- Chain header -->
-        <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1rem;padding:0.75rem 1rem;background:var(--bg3);border:1px solid var(--border);border-radius:8px;flex-wrap:wrap;">
-          <div style="font-family:var(--mono);font-size:0.65rem;color:${intactColor};font-weight:600;">${intactLabel}</div>
-          <div style="font-size:0.7rem;color:var(--text3);">${data.totalSteps} step${data.totalSteps !== 1 ? 's' : ''}</div>
-          ${data.summary?.models?.length ? `<div style="font-size:0.7rem;color:var(--text3);">${data.summary.models.join(' → ')}</div>` : ''}
-          ${data.summary?.duration && data.summary.duration !== '0s' ? `<div style="font-size:0.7rem;color:var(--text3);">${data.summary.duration}</div>` : ''}
-          <div style="margin-left:auto;display:flex;gap:0.5rem;flex-wrap:wrap;">
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:0.85rem 1rem;margin-bottom:1rem;">
+          <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;margin-bottom:0.5rem;">
+            <div style="font-family:var(--mono);font-size:0.65rem;color:${intactColor};font-weight:600;">${intactLabel}</div>
+            <div style="font-size:0.7rem;color:var(--text3);">${summaryParts}</div>
+          </div>
+          <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
             <button onclick="replayFromStart('${ctxId}')" class="agent-btn" style="font-size:0.68rem;">▶ Replay</button>
             <button onclick="verifyChain('${ctxId}')" class="agent-btn" style="font-size:0.68rem;">🔍 Verify</button>
             <button onclick="copyVerifySummary('${ctxId}')" class="agent-btn" style="font-size:0.68rem;">⎘ Copy proof</button>
             <button onclick="exportChain('${ctxId}')" class="agent-btn" style="font-size:0.68rem;">↓ Export</button>
           </div>
         </div>
-        ${!data.chainIntact ? `<div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.25);border-radius:6px;padding:0.6rem 0.85rem;margin-bottom:1rem;font-size:0.75rem;color:var(--red);">⚠ Chain integrity gap detected. Commits are still allowed (permissive mode) but this chain cannot be fully trusted. Fork from a verified node to start a clean branch.</div>` : ''}
+        ${!data.chainIntact ? `<div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.25);border-radius:6px;padding:0.75rem 1rem;margin-bottom:1rem;font-size:0.75rem;color:var(--red);display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
+          <span>⚠ Chain integrity gap at step ${brokenStep + 1}. Commits allowed (permissive) but chain is untrusted.</span>
+          ${lastValidNode ? `<button onclick="forkFromNode('${lastValidNode}')" class="agent-btn" style="font-size:0.68rem;color:var(--amber);border-color:rgba(245,158,11,0.4);white-space:nowrap;">⑂ Fork from last valid node</button>` : ''}
+        </div>` : ''}
         <!-- Color legend -->
         <div style="display:flex;gap:1rem;margin-bottom:1rem;flex-wrap:wrap;">
           <div style="display:flex;align-items:center;gap:0.35rem;font-size:0.65rem;color:var(--text3);"><div style="width:8px;height:8px;border-radius:50%;background:var(--green);"></div>verified</div>
@@ -1155,8 +1190,6 @@ const context = (await res.json()).commits[0].context;`,
   }
 
   async function forkFromNode(ctxId) {
-    const agentKey = JSON.parse(localStorage.getItem('dm_session') || '{}');
-    // Need agent API key to fork — prompt user
     const key = prompt('Enter your agent API key to fork from this node:');
     if (!key) return;
     try {
@@ -1167,10 +1200,14 @@ const context = (await res.json()).commits[0].context;`,
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      toast(`✓ Forked — new branch: ${shortId(data.id)}`);
-      // Pre-fill chain input with new fork ID
+      const newShort = shortId(data.id);
+      // Auto-switch to new branch in chain view
       const input = document.getElementById('chain-ctx-input');
       if (input) input.value = data.id;
+      // Show confirmation
+      toast(`✓ Fork created → ···${newShort}  Now viewing new branch`);
+      // Load the new branch immediately
+      setTimeout(() => loadChainView(), 300);
     } catch(e) { toast('Fork failed: ' + e.message); }
   }
 
@@ -1243,7 +1280,21 @@ const context = (await res.json()).commits[0].context;`,
       const list = document.getElementById('commit-list');
 
       if (!data.length) {
-        list.innerHTML = '<div class="log-empty">No commits yet — connect an agent and start committing context</div>';
+        list.innerHTML = '<div class="log-empty" style="padding:2.5rem;">
+        <div style="font-size:1.5rem;margin-bottom:0.75rem;">🌑</div>
+        <div style="font-size:0.88rem;font-weight:600;color:var(--text);margin-bottom:0.35rem;">No commits yet</div>
+        <div style="font-size:0.78rem;color:var(--text2);margin-bottom:1.25rem;">Connect an agent and start committing context.</div>
+        <div style="display:flex;gap:0.6rem;justify-content:center;flex-wrap:wrap;">
+          <a href="https://github.com/darkmatter-hub/darkmatter#quickstart" target="_blank"
+             style="font-size:0.75rem;background:var(--gradient);color:#fff;padding:0.4rem 1rem;border-radius:6px;text-decoration:none;font-weight:500;">
+             Quickstart guide →
+          </a>
+          <button onclick="switchLogTab('chain');document.getElementById('chain-ctx-input').value='';document.getElementById('chain-view-content').innerHTML='<div class=\'log-empty\'>Enter a context ID from your first commit to explore the chain view.</div>'"
+            class="agent-btn" style="font-size:0.75rem;padding:0.4rem 1rem;">
+            Explore Chain View
+          </button>
+        </div>
+      </div>';
         return;
       }
 
