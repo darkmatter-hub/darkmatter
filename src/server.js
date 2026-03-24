@@ -400,28 +400,58 @@ app.get('/dashboard/commits', requireAuth, async (req, res) => {
     if (error) throw error;
 
     res.json((data || []).map(c => ({
-      id:            c.id,
-      schemaVersion: c.schema_version || '0.9',
-      from:          agentMap[c.from_agent] || c.agent_info?.name || c.from_agent,
-      fromId:        c.from_agent,
-      to:            agentMap[c.to_agent]   || c.to_agent,
-      toId:          c.to_agent,
-      verified:      c.verified,
-      timestamp:     c.timestamp,
-      context:       c.context || {},
-      payload:       c.payload || c.context || {},
-      eventType:     c.event_type || (c.context?._eventType) || 'commit',
-      parentId:      c.parent_id   || null,
-      traceId:       c.trace_id    || null,
-      branchKey:     c.branch_key  || 'main',
-      agentInfo:     c.agent_info  || null,
-      integrityHash: c.integrity_hash || null,
-      parentHash:    c.parent_hash || null,
+      ...buildContext(c, agentMap),
+      // Dashboard extras — keep legacy fields for UI compatibility
+      from:      agentMap[c.from_agent] || c.agent_info?.name || c.from_agent,
+      fromId:    c.from_agent,
+      to:        agentMap[c.to_agent]   || c.to_agent,
+      toId:      c.to_agent,
+      context:   c.context || {},
     })));
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
+
+// ── Build canonical v2 context object from DB row ────
+function buildContext(c, agentMap = {}) {
+  const ai = c.agent_info || {};
+  const p  = c.payload || c.context || {};
+  const { _eventType, ...cleanPayload } = p;
+  return {
+    id:             c.id,
+    schema_version: c.schema_version || '1.0',
+    parent_id:      c.parent_id  || null,
+    trace_id:       c.trace_id   || null,
+    branch_key:     c.branch_key || 'main',
+
+    created_by: {
+      agent_id:   ai.id   || c.from_agent,
+      agent_name: ai.name || agentMap[c.from_agent] || c.from_agent,
+      role:       ai.role     || null,
+      provider:   ai.provider || null,
+      model:      ai.model    || null,
+    },
+
+    event: {
+      type:          c.event_type || _eventType || 'commit',
+      to_agent_id:   c.to_agent   || null,
+      to_agent_name: agentMap[c.to_agent] || c.to_agent || null,
+    },
+
+    payload: cleanPayload,
+
+    integrity: {
+      payload_hash:        c.integrity_hash ? 'sha256:' + c.integrity_hash : null,
+      parent_hash:         c.parent_hash    ? 'sha256:' + c.parent_hash    : null,
+      verification_status: c.verified ? 'valid' : 'rejected',
+      verification_reason: c.verification_reason || null,
+      verified_at:         c.saved_at || c.timestamp || null,
+    },
+
+    created_at: c.timestamp,
+  };
+}
 
 // ═══════════════════════════════════════════════════
 // AGENT API ROUTES (requires API key)
@@ -568,19 +598,23 @@ app.post('/api/commit', apiLimiter, requireApiKey, async (req, res) => {
       }).catch(err => console.error('webhook delivery error:', err));
     }
 
-    res.json({
-      id:             commitId,
-      schemaVersion,
-      from:           req.agent.agent_name,
-      to:             toAgentId,
-      verified:       true,
-      eventType:      resolvedType,
-      parentId:       parentId || null,
-      traceId:        traceId  || null,
-      branchKey:      branchKey || 'main',
-      integrityHash,
+    res.json(buildContext({
+      id:                  commitId,
+      schema_version:      schemaVersion,
+      from_agent:          req.agent.agent_id,
+      to_agent:            toAgentId,
+      payload:             resolvedPayload,
+      event_type:          resolvedType,
+      parent_id:           parentId  || null,
+      trace_id:            traceId   || null,
+      branch_key:          branchKey || 'main',
+      agent_info:          agentInfo,
+      integrity_hash:      integrityHash,
+      parent_hash:         parentHash,
+      verified:            true,
+      verification_reason: 'API key authenticated',
       timestamp,
-    });
+    }, { [req.agent.agent_id]: req.agent.agent_name, [toAgentId]: recipientAgent?.agent_name || toAgentId }));
   } catch (err) {
     console.error('commit error:', err);
     res.status(500).json({ error: err.message });
@@ -602,21 +636,8 @@ app.get('/api/pull', requireApiKey, async (req, res) => {
     res.json({
       agentId:   req.agent.agent_id,
       agentName: req.agent.agent_name,
-      commits:   (data || []).map(c => ({
-        id:             c.id,
-        schemaVersion:  c.schema_version || '0.9',
-        from:           c.from_agent,
-        payload:        c.payload || c.context || {},
-        eventType:      c.event_type || (c.context?._eventType) || 'commit',
-        parentId:       c.parent_id   || null,
-        traceId:        c.trace_id    || null,
-        branchKey:      c.branch_key  || 'main',
-        agentInfo:      c.agent_info  || null,
-        integrityHash:  c.integrity_hash || null,
-        verified:       c.verified,
-        timestamp:      c.timestamp,
-      })),
-      count: (data || []).length,
+      contexts:  (data || []).map(c => buildContext(c)),
+      count:     (data || []).length,
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
