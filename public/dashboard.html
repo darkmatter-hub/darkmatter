@@ -1044,6 +1044,7 @@ const context = (await res.json()).commits[0].context;`,
           ${data.summary?.duration ? `<div style="font-size:0.7rem;color:var(--text3);">${data.summary.duration}</div>` : ''}
           <div style="margin-left:auto;display:flex;gap:0.5rem;">
             <button onclick="verifyChain('${ctxId}')" class="agent-btn" style="font-size:0.68rem;">🔍 Verify</button>
+            <button onclick="copyVerifySummary('${ctxId}')" class="agent-btn" style="font-size:0.68rem;">⎘ Copy proof</button>
             <button onclick="exportChain('${ctxId}')" class="agent-btn" style="font-size:0.68rem;">↓ Export</button>
           </div>
         </div>
@@ -1101,6 +1102,30 @@ const context = (await res.json()).commits[0].context;`,
         toast(`✗ Chain broken at ${data.broken_at}`);
       }
     } catch(e) { toast('Verify failed: ' + e.message); }
+  }
+
+  async function copyVerifySummary(ctxId) {
+    try {
+      const res  = await fetch(`/api/verify/${ctxId}`, { headers: authHeaders() });
+      const data = await res.json();
+      const summary = [
+        `DarkMatter Verification Summary`,
+        `─────────────────────────────────`,
+        `Context ID    : ${data.ctx_id}`,
+        `Lineage Root  : ${data.lineage_root}`,
+        `Chain Length  : ${data.length} steps`,
+        `Chain Intact  : ${data.chain_intact ? '✓ YES' : '✗ BROKEN'}`,
+        data.broken_at ? `Broken At     : ${data.broken_at}` : null,
+        `Root Hash     : ${data.root_hash}`,
+        `Tip Hash      : ${data.tip_hash}`,
+        data.forked ? `Fork Points   : ${data.fork_points?.join(', ')}` : null,
+        `Verified At   : ${data.verified_at}`,
+        `─────────────────────────────────`,
+        `Verified by darkmatterhub.ai`,
+      ].filter(Boolean).join('\n');
+      await navigator.clipboard.writeText(summary);
+      toast('✓ Verification summary copied to clipboard');
+    } catch(e) { toast('Copy failed: ' + e.message); }
   }
 
   async function exportChain(ctxId) {
