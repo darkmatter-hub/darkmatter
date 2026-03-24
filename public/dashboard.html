@@ -1027,45 +1027,45 @@ const context = (await res.json()).commits[0].context;`,
     document.getElementById('ctx-meta').textContent =
       `${c.from} ──▶ ${c.to}  ·  ${ago(c.timestamp)}  ·  ${c.verified ? '✓ verified' : '✗ rejected'}`;
 
-    // Summary tab
+    // Summary tab — canonical v2 structure
     let summaryHtml = '';
-    const evType = (ctx._eventType || c.eventType || 'commit');
-    summaryHtml += `<div class="ctx-field"><div class="ctx-field-label">Status</div><div class="${c.verified ? 'ctx-badge-v' : 'ctx-badge-r'}">${c.verified ? '✓ Verified — content authenticated' : '✗ Rejected — not delivered to recipient'}</div></div>`;
+
+    const createdBy = c.created_by || {};
+    const event     = c.event     || {};
+    const integrity = c.integrity || {};
+    const evType    = event.type  || c.eventType || ctx._eventType || 'commit';
+    const fromName  = createdBy.agent_name || c.from   || '';
+    const fromId    = createdBy.agent_id   || c.fromId || '';
+    const toName    = event.to_agent_name  || c.to     || '';
+    const toId      = event.to_agent_id    || c.toId   || '';
+    const intHash   = integrity.payload_hash || (c.integrityHash ? 'sha256:' + c.integrityHash : null);
+    const intStatus = integrity.verification_status || (c.verified ? 'valid' : 'rejected');
+    const parentId  = c.parent_id  || c.parentId  || null;
+    const traceId   = c.trace_id   || c.traceId   || null;
+    const branchKey = c.branch_key || c.branchKey || 'main';
+    const schemaVer = c.schema_version || c.schemaVersion || '0.9';
+    const createdAt = c.created_at || c.timestamp;
+    const role      = createdBy.role     || c.agentInfo?.role;
+    const provider  = createdBy.provider || c.agentInfo?.provider;
+    const model     = createdBy.model    || c.agentInfo?.model;
+
+    summaryHtml += `<div class="ctx-field"><div class="ctx-field-label">Status</div><div class="${intStatus === 'valid' ? 'ctx-badge-v' : 'ctx-badge-r'}">${intStatus === 'valid' ? '✓ Verified — immutable, chain intact' : '✗ Rejected — not delivered to recipient'}</div></div>`;
     summaryHtml += `<div class="ctx-field"><div class="ctx-field-label">Event Type</div><div class="ctx-field-val"><span class="cbadge ${evType}" style="font-size:0.65rem;">${evType}</span></div></div>`;
-    summaryHtml += `<div class="ctx-field"><div class="ctx-field-label">From Agent</div><div class="ctx-field-val">${escHtml(c.from)}${c.fromId && c.fromId !== c.from ? `<span style="font-family:var(--mono);font-size:0.62rem;color:var(--text3);margin-left:0.6rem;padding-left:0.6rem;border-left:1px solid var(--border2);">${escHtml(c.fromId)}</span>` : ''}</div></div>`;
-    summaryHtml += `<div class="ctx-field"><div class="ctx-field-label">To Agent</div><div class="ctx-field-val">${escHtml(c.to)}${c.toId && c.toId !== c.to ? `<span style="font-family:var(--mono);font-size:0.62rem;color:var(--text3);margin-left:0.6rem;padding-left:0.6rem;border-left:1px solid var(--border2);">${escHtml(c.toId)}</span>` : ''}</div></div>`;
-    summaryHtml += `<div class="ctx-field"><div class="ctx-field-label">Timestamp</div><div class="ctx-field-val">${new Date(c.timestamp).toLocaleString()}</div></div>`;
+    summaryHtml += `<div class="ctx-field"><div class="ctx-field-label">Created By</div><div class="ctx-field-val">${escHtml(fromName)}${fromId && fromId !== fromName ? `<span style="font-family:var(--mono);font-size:0.62rem;color:var(--text3);margin-left:0.6rem;padding-left:0.6rem;border-left:1px solid var(--border2);">${escHtml(fromId)}</span>` : ''}</div></div>`;
+    summaryHtml += `<div class="ctx-field"><div class="ctx-field-label">Target Agent</div><div class="ctx-field-val">${escHtml(toName)}${toId && toId !== toName ? `<span style="font-family:var(--mono);font-size:0.62rem;color:var(--text3);margin-left:0.6rem;padding-left:0.6rem;border-left:1px solid var(--border2);">${escHtml(toId)}</span>` : ''}</div></div>`;
+    summaryHtml += `<div class="ctx-field"><div class="ctx-field-label">Created At</div><div class="ctx-field-val">${new Date(createdAt).toLocaleString()}</div></div>`;
+    if (parentId) summaryHtml += `<div class="ctx-field"><div class="ctx-field-label">Parent Context</div><div class="ctx-field-val" style="font-family:var(--mono);font-size:0.68rem;">${escHtml(parentId)}</div></div>`;
+    if (traceId)  summaryHtml += `<div class="ctx-field"><div class="ctx-field-label">Trace ID</div><div class="ctx-field-val" style="font-family:var(--mono);font-size:0.68rem;">${escHtml(traceId)}</div></div>`;
+    if (branchKey && branchKey !== 'main') summaryHtml += `<div class="ctx-field"><div class="ctx-field-label">Branch</div><div class="ctx-field-val">${escHtml(branchKey)}</div></div>`;
+    if (provider || model) summaryHtml += `<div class="ctx-field"><div class="ctx-field-label">Model</div><div class="ctx-field-val">${escHtml([provider, model].filter(Boolean).join(' / '))}</div></div>`;
+    if (role) summaryHtml += `<div class="ctx-field"><div class="ctx-field-label">Role</div><div class="ctx-field-val">${escHtml(role)}</div></div>`;
+    if (intHash) summaryHtml += `<div class="ctx-field"><div class="ctx-field-label">Integrity Hash</div><div class="ctx-field-val" style="font-family:var(--mono);font-size:0.62rem;color:var(--green);word-break:break-all;">${escHtml(intHash.slice(0,23))}···</div></div>`;
+    if (integrity.parent_hash) summaryHtml += `<div class="ctx-field"><div class="ctx-field-label">Parent Hash</div><div class="ctx-field-val" style="font-family:var(--mono);font-size:0.62rem;color:var(--text3);word-break:break-all;">${escHtml(integrity.parent_hash.slice(0,23))}···</div></div>`;
+    summaryHtml += `<div class="ctx-field"><div class="ctx-field-label">Schema</div><div class="ctx-field-val" style="font-family:var(--mono);font-size:0.68rem;color:var(--text3);">v${escHtml(schemaVer)}</div></div>`;
 
-    // Lineage fields
-    if (c.parentId) {
-      summaryHtml += `<div class="ctx-field"><div class="ctx-field-label">Parent Context</div><div class="ctx-field-val" style="font-family:var(--mono);font-size:0.68rem;">${escHtml(c.parentId)}</div></div>`;
-    }
-    if (c.traceId) {
-      summaryHtml += `<div class="ctx-field"><div class="ctx-field-label">Trace ID</div><div class="ctx-field-val" style="font-family:var(--mono);font-size:0.68rem;">${escHtml(c.traceId)}</div></div>`;
-    }
-    if (c.branchKey && c.branchKey !== 'main') {
-      summaryHtml += `<div class="ctx-field"><div class="ctx-field-label">Branch</div><div class="ctx-field-val">${escHtml(c.branchKey)}</div></div>`;
-    }
-
-    // Agent info
-    if (c.agentInfo?.model || c.agentInfo?.provider) {
-      const ai = c.agentInfo;
-      summaryHtml += `<div class="ctx-field"><div class="ctx-field-label">Agent Model</div><div class="ctx-field-val">${escHtml([ai.provider, ai.model].filter(Boolean).join(' / '))}</div></div>`;
-    }
-    if (c.agentInfo?.role) {
-      summaryHtml += `<div class="ctx-field"><div class="ctx-field-label">Agent Role</div><div class="ctx-field-val">${escHtml(c.agentInfo.role)}</div></div>`;
-    }
-
-    // Integrity
-    if (c.integrityHash) {
-      summaryHtml += `<div class="ctx-field"><div class="ctx-field-label">Integrity Hash</div><div class="ctx-field-val" style="font-family:var(--mono);font-size:0.62rem;color:var(--green);word-break:break-all;">sha256:${escHtml(c.integrityHash.slice(0,16))}···</div></div>`;
-    }
-
-    // Schema version
-    summaryHtml += `<div class="ctx-field"><div class="ctx-field-label">Schema</div><div class="ctx-field-val" style="font-family:var(--mono);font-size:0.68rem;color:var(--text3);">v${escHtml(c.schemaVersion || '0.9')}</div></div>`;
-
-    // Render each context key as its own field (skip internal _eventType key)
-    Object.entries(ctx).forEach(([k, v]) => {
+    // Payload fields — use canonical payload or fall back to context
+    const payloadToRender = (c.payload && Object.keys(c.payload).length > 0) ? c.payload : ctx;
+    Object.entries(payloadToRender).forEach(([k, v]) => {
       if (k === '_eventType') return;
       const val = typeof v === 'object' ? JSON.stringify(v, null, 2) : String(v);
       summaryHtml += `<div class="ctx-field">
@@ -1112,41 +1112,46 @@ const context = (await res.json()).commits[0].context;`,
 
       const rows = [
         [
-          'Context ID', 'Schema Version',
-          'From Agent', 'From Agent ID',
-          'To Agent',   'To Agent ID',
-          'Event Type', 'Verified',
-          'Parent ID',  'Trace ID', 'Branch',
-          'Agent Role', 'Agent Provider', 'Agent Model',
-          'Integrity Hash',
-          'Timestamp',
-          'Input', 'Output', 'Memory', 'Variables',
-          'Full Payload',
+          'context_id', 'schema_version',
+          'created_by_agent', 'created_by_agent_id',
+          'target_agent',     'target_agent_id',
+          'event_type', 'verification_status',
+          'parent_context_id', 'trace_id', 'branch_key',
+          'agent_role', 'agent_provider', 'agent_model',
+          'payload_hash', 'parent_hash',
+          'created_at',
+          'input', 'output', 'memory', 'variables',
+          'full_payload',
         ],
         ...data.map(c => {
-          const p = c.payload || c.context || {};
+          const cb = c.created_by || {};
+          const ev = c.event      || {};
+          const ig = c.integrity  || {};
+          const p  = c.payload    || c.context || {};
+          const { _eventType, ...cleanP } = p;
           return [
-            c.id          || '',
-            c.schemaVersion || '0.9',
-            c.from        || '',
-            c.fromId      || '',
-            c.to          || '',
-            c.toId        || '',
-            c.eventType   || 'commit',
-            c.verified    ? 'true' : 'false',
-            c.parentId    || '',
-            c.traceId     || '',
-            c.branchKey   || 'main',
-            c.agentInfo?.role     || '',
-            c.agentInfo?.provider || '',
-            c.agentInfo?.model    || '',
-            c.integrityHash ? 'sha256:' + c.integrityHash : '',
-            c.timestamp   || '',
+            c.id                || '',
+            c.schema_version    || c.schemaVersion || '1.0',
+            cb.agent_name       || c.from   || '',
+            cb.agent_id         || c.fromId || '',
+            ev.to_agent_name    || c.to     || '',
+            ev.to_agent_id      || c.toId   || '',
+            ev.type             || c.eventType || 'commit',
+            ig.verification_status || (c.verified ? 'valid' : 'rejected'),
+            c.parent_id         || c.parentId  || '',
+            c.trace_id          || c.traceId   || '',
+            c.branch_key        || c.branchKey || 'main',
+            cb.role             || c.agentInfo?.role     || '',
+            cb.provider         || c.agentInfo?.provider || '',
+            cb.model            || c.agentInfo?.model    || '',
+            ig.payload_hash     || (c.integrityHash ? 'sha256:' + c.integrityHash : ''),
+            ig.parent_hash      || (c.parentHash  ? 'sha256:' + c.parentHash  : ''),
+            c.created_at        || c.timestamp || '',
             typeof p.input     === 'object' ? JSON.stringify(p.input)     : (p.input     || ''),
             typeof p.output    === 'object' ? JSON.stringify(p.output)    : (p.output    || ''),
             typeof p.memory    === 'object' ? JSON.stringify(p.memory)    : (p.memory    || ''),
             typeof p.variables === 'object' ? JSON.stringify(p.variables) : (p.variables || ''),
-            JSON.stringify(p),
+            JSON.stringify(cleanP),
           ];
         })
       ];
