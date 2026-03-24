@@ -1029,12 +1029,40 @@ const context = (await res.json()).commits[0].context;`,
 
     // Summary tab
     let summaryHtml = '';
-    const evType = (ctx._eventType || 'commit');
+    const evType = (ctx._eventType || c.eventType || 'commit');
     summaryHtml += `<div class="ctx-field"><div class="ctx-field-label">Status</div><div class="${c.verified ? 'ctx-badge-v' : 'ctx-badge-r'}">${c.verified ? '✓ Verified — content authenticated' : '✗ Rejected — not delivered to recipient'}</div></div>`;
     summaryHtml += `<div class="ctx-field"><div class="ctx-field-label">Event Type</div><div class="ctx-field-val"><span class="cbadge ${evType}" style="font-size:0.65rem;">${evType}</span></div></div>`;
     summaryHtml += `<div class="ctx-field"><div class="ctx-field-label">From Agent</div><div class="ctx-field-val">${escHtml(c.from)}</div></div>`;
     summaryHtml += `<div class="ctx-field"><div class="ctx-field-label">To Agent</div><div class="ctx-field-val">${escHtml(c.to)}</div></div>`;
     summaryHtml += `<div class="ctx-field"><div class="ctx-field-label">Timestamp</div><div class="ctx-field-val">${new Date(c.timestamp).toLocaleString()}</div></div>`;
+
+    // Lineage fields
+    if (c.parentId) {
+      summaryHtml += `<div class="ctx-field"><div class="ctx-field-label">Parent Context</div><div class="ctx-field-val" style="font-family:var(--mono);font-size:0.68rem;">${escHtml(c.parentId)}</div></div>`;
+    }
+    if (c.traceId) {
+      summaryHtml += `<div class="ctx-field"><div class="ctx-field-label">Trace ID</div><div class="ctx-field-val" style="font-family:var(--mono);font-size:0.68rem;">${escHtml(c.traceId)}</div></div>`;
+    }
+    if (c.branchKey && c.branchKey !== 'main') {
+      summaryHtml += `<div class="ctx-field"><div class="ctx-field-label">Branch</div><div class="ctx-field-val">${escHtml(c.branchKey)}</div></div>`;
+    }
+
+    // Agent info
+    if (c.agentInfo?.model || c.agentInfo?.provider) {
+      const ai = c.agentInfo;
+      summaryHtml += `<div class="ctx-field"><div class="ctx-field-label">Agent Model</div><div class="ctx-field-val">${escHtml([ai.provider, ai.model].filter(Boolean).join(' / '))}</div></div>`;
+    }
+    if (c.agentInfo?.role) {
+      summaryHtml += `<div class="ctx-field"><div class="ctx-field-label">Agent Role</div><div class="ctx-field-val">${escHtml(c.agentInfo.role)}</div></div>`;
+    }
+
+    // Integrity
+    if (c.integrityHash) {
+      summaryHtml += `<div class="ctx-field"><div class="ctx-field-label">Integrity Hash</div><div class="ctx-field-val" style="font-family:var(--mono);font-size:0.62rem;color:var(--green);word-break:break-all;">sha256:${escHtml(c.integrityHash.slice(0,16))}···</div></div>`;
+    }
+
+    // Schema version
+    summaryHtml += `<div class="ctx-field"><div class="ctx-field-label">Schema</div><div class="ctx-field-val" style="font-family:var(--mono);font-size:0.68rem;color:var(--text3);">v${escHtml(c.schemaVersion || '0.9')}</div></div>`;
 
     // Render each context key as its own field (skip internal _eventType key)
     Object.entries(ctx).forEach(([k, v]) => {

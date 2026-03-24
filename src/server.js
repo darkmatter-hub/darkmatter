@@ -400,14 +400,23 @@ app.get('/dashboard/commits', requireAuth, async (req, res) => {
     if (error) throw error;
 
     res.json((data || []).map(c => ({
-      id:        c.id,
-      from:      agentMap[c.from_agent] || c.from_agent,
-      fromId:    c.from_agent,
-      to:        agentMap[c.to_agent]   || c.to_agent,
-      toId:      c.to_agent,
-      verified:  c.verified,
-      timestamp: c.timestamp,
-      context:   c.context || {},
+      id:            c.id,
+      schemaVersion: c.schema_version || '0.9',
+      from:          agentMap[c.from_agent] || c.from_agent,
+      fromId:        c.from_agent,
+      to:            agentMap[c.to_agent]   || c.to_agent,
+      toId:          c.to_agent,
+      verified:      c.verified,
+      timestamp:     c.timestamp,
+      context:       c.context || {},
+      payload:       c.payload || c.context || {},
+      eventType:     c.event_type || (c.context?._eventType) || 'commit',
+      parentId:      c.parent_id   || null,
+      traceId:       c.trace_id    || null,
+      branchKey:     c.branch_key  || 'main',
+      agentInfo:     c.agent_info  || null,
+      integrityHash: c.integrity_hash || null,
+      parentHash:    c.parent_hash || null,
     })));
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -421,19 +430,61 @@ app.get('/dashboard/commits', requireAuth, async (req, res) => {
 // ── POST /api/commit ─────────────────────────────────
 app.post('/api/commit', apiLimiter, requireApiKey, async (req, res) => {
   try {
-    const { toAgentId, context, eventType } = req.body;
-    if (!toAgentId || !context) {
-      return res.status(400).json({ error: 'toAgentId and context required' });
+    const {
+      toAgentId,
+      context,       // legacy flat context — still accepted
+      payload,       // v1 structured payload: { input, output, memory, artifacts, variables }
+      eventType,
+      parentId,      // parent context ID for lineage
+      traceId,       // optional — group commits into a run/trace
+      branchKey,     // optional — label for parallel branches
+      agent,         // optional — { role, provider, model } from caller
+    } = req.body;
+
+    // Accept either payload (v1) or context (legacy)
+    const resolvedPayload = payload || (context ? { output: context } : null);
+    if (!toAgentId || !resolvedPayload) {
+      return res.status(400).json({ error: 'toAgentId and payload (or context) required' });
     }
 
     // Validate eventType
     const VALID_TYPES = ['commit', 'revert', 'override', 'branch', 'merge', 'error', 'spawn', 'timeout', 'retry', 'checkpoint', 'consent', 'redact', 'escalate', 'audit'];
     const resolvedType = (eventType && VALID_TYPES.includes(eventType)) ? eventType : 'commit';
 
-    const commitId  = 'commit_' + Date.now() + '_' + crypto.randomBytes(4).toString('hex');
+    const commitId  = 'ctx_' + Date.now() + '_' + crypto.randomBytes(6).toString('hex');
     const timestamp = new Date().toISOString();
+    const schemaVersion = '1.0';
 
-    // Verify recipient exists
+    // ── Integrity: hash payload + parent hash ─────────
+    // Deterministically normalize payload for hashing
+    const normalizedPayload = JSON.stringify(resolvedPayload, Object.keys(resolvedPayload).sort());
+    const payloadHash = crypto.createHash('sha256').update(normalizedPayload).digest('hex');
+
+    // Fetch parent hash if parentId provided
+    let parentHash = null;
+    if (parentId) {
+      const { data: parentCommit } = await supabaseService
+        .from('commits')
+        .select('integrity_hash')
+        .eq('id', parentId)
+        .single();
+      if (parentCommit?.integrity_hash) parentHash = parentCommit.integrity_hash;
+    }
+
+    // Chain: hash(payload + parentHash) for tamper-evident chain
+    const chainInput = payloadHash + (parentHash || 'root');
+    const integrityHash = crypto.createHash('sha256').update(chainInput).digest('hex');
+
+    // ── Agent info ────────────────────────────────────
+    const agentInfo = {
+      id:       req.agent.agent_id,
+      name:     req.agent.agent_name,
+      role:     agent?.role     || null,
+      provider: agent?.provider || null,
+      model:    agent?.model    || null,
+    };
+
+    // ── Verify recipient exists ───────────────────────
     const { data: toAgent } = await supabaseService
       .from('agents')
       .select('agent_id')
@@ -441,21 +492,29 @@ app.post('/api/commit', apiLimiter, requireApiKey, async (req, res) => {
       .single();
 
     if (!toAgent) {
-      // Store as rejected commit — agent not found
       await supabaseService
         .from('commits')
         .insert({
           id:                  commitId,
+          schema_version:      schemaVersion,
           from_agent:          req.agent.agent_id,
           to_agent:            null,
-          context:             { ...context, _eventType: resolvedType },
+          context:             { ...resolvedPayload, _eventType: resolvedType },
+          payload:             resolvedPayload,
+          event_type:          resolvedType,
+          parent_id:           parentId || null,
+          trace_id:            traceId  || null,
+          branch_key:          branchKey || 'main',
+          agent_info:          agentInfo,
+          integrity_hash:      integrityHash,
+          parent_hash:         parentHash,
           verified:            false,
           verification_reason: `Recipient agent ${toAgentId} not found`,
           timestamp,
         });
 
       return res.status(404).json({
-        commitId,
+        id:        commitId,
         verified:  false,
         reason:    `Agent ${toAgentId} not found`,
         timestamp,
@@ -466,9 +525,18 @@ app.post('/api/commit', apiLimiter, requireApiKey, async (req, res) => {
       .from('commits')
       .insert({
         id:                  commitId,
+        schema_version:      schemaVersion,
         from_agent:          req.agent.agent_id,
         to_agent:            toAgentId,
-        context,
+        context:             { ...resolvedPayload, _eventType: resolvedType },
+        payload:             resolvedPayload,
+        event_type:          resolvedType,
+        parent_id:           parentId  || null,
+        trace_id:            traceId   || null,
+        branch_key:          branchKey || 'main',
+        agent_info:          agentInfo,
+        integrity_hash:      integrityHash,
+        parent_hash:         parentHash,
         verified:            true,
         verification_reason: 'API key authenticated',
         timestamp,
@@ -482,7 +550,7 @@ app.post('/api/commit', apiLimiter, requireApiKey, async (req, res) => {
       .update({ last_active: timestamp })
       .eq('agent_id', req.agent.agent_id);
 
-    // Deliver webhook to recipient agent if configured (fire and forget)
+    // Deliver webhook (fire and forget)
     const { data: recipientAgent } = await supabaseService
       .from('agents')
       .select('agent_id, agent_name, webhook_url, webhook_secret')
@@ -494,18 +562,23 @@ app.post('/api/commit', apiLimiter, requireApiKey, async (req, res) => {
         id:         commitId,
         from_agent: req.agent.agent_id,
         to_agent:   toAgentId,
-        context:    { ...context, _eventType: resolvedType },
+        context:    resolvedPayload,
         verified:   true,
         timestamp,
       }).catch(err => console.error('webhook delivery error:', err));
     }
 
     res.json({
-      commitId,
-      from:      req.agent.agent_name,
-      to:        toAgentId,
-      verified:  true,
-      eventType: resolvedType,
+      id:             commitId,
+      schemaVersion,
+      from:           req.agent.agent_name,
+      to:             toAgentId,
+      verified:       true,
+      eventType:      resolvedType,
+      parentId:       parentId || null,
+      traceId:        traceId  || null,
+      branchKey:      branchKey || 'main',
+      integrityHash,
       timestamp,
     });
   } catch (err) {
@@ -530,13 +603,76 @@ app.get('/api/pull', requireApiKey, async (req, res) => {
       agentId:   req.agent.agent_id,
       agentName: req.agent.agent_name,
       commits:   (data || []).map(c => ({
-        commitId:  c.id,
-        from:      c.from_agent,
-        context:   c.context,
-        timestamp: c.timestamp,
-        verified:  c.verified,
+        id:             c.id,
+        schemaVersion:  c.schema_version || '0.9',
+        from:           c.from_agent,
+        payload:        c.payload || c.context || {},
+        eventType:      c.event_type || (c.context?._eventType) || 'commit',
+        parentId:       c.parent_id   || null,
+        traceId:        c.trace_id    || null,
+        branchKey:      c.branch_key  || 'main',
+        agentInfo:      c.agent_info  || null,
+        integrityHash:  c.integrity_hash || null,
+        verified:       c.verified,
+        timestamp:      c.timestamp,
       })),
       count: (data || []).length,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── GET /api/lineage/:ctxId ── full ancestor chain ────
+app.get('/api/lineage/:ctxId', requireApiKey, async (req, res) => {
+  try {
+    const { ctxId } = req.params;
+    const chain = [];
+    let currentId = ctxId;
+    const MAX_DEPTH = 50; // prevent infinite loops
+
+    while (currentId && chain.length < MAX_DEPTH) {
+      const { data: commit } = await supabaseService
+        .from('commits')
+        .select('id, parent_id, from_agent, to_agent, event_type, agent_info, integrity_hash, parent_hash, branch_key, trace_id, timestamp, verified')
+        .eq('id', currentId)
+        .single();
+
+      if (!commit) break;
+
+      // Verify chain integrity
+      let chainValid = true;
+      if (chain.length > 0 && commit.integrity_hash) {
+        const prevParentHash = chain[chain.length - 1].parentHash;
+        chainValid = prevParentHash === commit.integrity_hash;
+      }
+
+      chain.push({
+        id:            commit.id,
+        parentId:      commit.parent_id,
+        fromAgent:     commit.from_agent,
+        toAgent:       commit.to_agent,
+        eventType:     commit.event_type || 'commit',
+        agentInfo:     commit.agent_info,
+        integrityHash: commit.integrity_hash,
+        parentHash:    commit.parent_hash,
+        branchKey:     commit.branch_key || 'main',
+        traceId:       commit.trace_id,
+        timestamp:     commit.timestamp,
+        verified:      commit.verified,
+        chainValid,
+        depth:         chain.length,
+      });
+
+      currentId = commit.parent_id;
+    }
+
+    res.json({
+      contextId: ctxId,
+      depth:     chain.length,
+      rootId:    chain.length > 0 ? chain[chain.length - 1].id : ctxId,
+      chain,
+      integrityVerified: chain.every(c => c.chainValid),
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
