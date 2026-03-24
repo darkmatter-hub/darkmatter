@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Blog — DarkMatter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg:      #0B0F14;
+    --bg2:     #121826;
+    --bg3:     #1a2332;
+    --border:  #1e2d45;
+    --text:    #e6edf3;
+    --text2:   #8b949e;
+    --text3:   #484f58;
+    --violet:  #7C3AED;
+    --cyan:    #22D3EE;
+    --green:   #10B981;
+    --gradient: linear-gradient(90deg,#7C3AED 0%,#2563EB 55%,#22D3EE 100%);
+    --display: 'Space Grotesk', sans-serif;
+    --sans:    'Inter', sans-serif;
+    --mono:    'IBM Plex Mono', monospace;
+  }
+  *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--bg); color:var(--text); font-family:var(--sans); min-height:100vh; }
+
+  /* NAV */
+  nav { display:flex; align-items:center; gap:0.8rem; padding:0.85rem 2rem; border-bottom:1px solid var(--border); position:sticky; top:0; z-index:50; background:rgba(11,15,20,0.95); backdrop-filter:blur(8px); }
+  .nav-logo { display:flex; align-items:center; gap:0.65rem; text-decoration:none; }
+  .nav-logo-mark { width:28px; height:28px; }
+  .nav-logo-name { font-family:var(--display); font-weight:700; font-size:1rem; color:var(--text); letter-spacing:-0.02em; }
+  .matter-grad { background:var(--gradient); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+  .nav-sep { flex:1; }
+  .nav-link { font-size:0.78rem; color:var(--text2); text-decoration:none; transition:color 0.15s; }
+  .nav-link:hover { color:var(--text); }
+  .nav-cta { font-size:0.78rem; background:var(--gradient); color:#fff; padding:0.3rem 0.85rem; border-radius:6px; text-decoration:none; font-weight:500; }
+
+  /* PAGE */
+  .page { max-width:720px; margin:0 auto; padding:3rem 2rem 5rem; }
+  .page-eyebrow { font-family:var(--mono); font-size:0.6rem; color:var(--text3); letter-spacing:0.15em; text-transform:uppercase; margin-bottom:1rem; }
+  .page-title { font-family:var(--display); font-size:2rem; font-weight:700; letter-spacing:-0.03em; margin-bottom:0.5rem; }
+  .page-sub { font-size:0.9rem; color:var(--text2); margin-bottom:3rem; }
+
+  /* POSTS */
+  .post { display:block; text-decoration:none; border:1px solid var(--border); border-radius:10px; padding:1.5rem; margin-bottom:1rem; background:var(--bg2); transition:border-color 0.15s, background 0.15s; }
+  .post:hover { border-color:var(--violet); background:var(--bg3); }
+  .post-meta { display:flex; align-items:center; gap:0.75rem; margin-bottom:0.65rem; flex-wrap:wrap; }
+  .post-date { font-family:var(--mono); font-size:0.62rem; color:var(--text3); }
+  .post-tag { font-family:var(--mono); font-size:0.58rem; padding:0.1rem 0.5rem; border-radius:100px; background:rgba(124,58,237,0.12); border:1px solid rgba(124,58,237,0.25); color:var(--violet); }
+  .post-title { font-family:var(--display); font-size:1.1rem; font-weight:700; color:var(--text); letter-spacing:-0.02em; margin-bottom:0.5rem; line-height:1.3; }
+  .post-excerpt { font-size:0.82rem; color:var(--text2); line-height:1.7; margin-bottom:0.75rem; }
+  .post-read { font-size:0.75rem; color:var(--violet); font-weight:500; }
+
+  /* FEATURED */
+  .post.featured { border-color:rgba(124,58,237,0.3); background:linear-gradient(135deg,rgba(124,58,237,0.05),rgba(37,99,235,0.03)); }
+  .post.featured .post-title { font-size:1.3rem; }
+
+  /* COMING SOON */
+  .coming-soon { border:1px dashed var(--border); border-radius:10px; padding:1.5rem; margin-bottom:1rem; opacity:0.6; }
+  .coming-soon .post-title { color:var(--text2); }
+
+  /* SUBSCRIBE */
+  .subscribe { border:1px solid var(--border); border-radius:10px; padding:1.75rem; text-align:center; margin-top:2rem; background:var(--bg2); }
+  .subscribe-title { font-family:var(--display); font-size:1rem; font-weight:700; margin-bottom:0.35rem; }
+  .subscribe-sub { font-size:0.82rem; color:var(--text2); margin-bottom:1.25rem; }
+  .subscribe-row { display:flex; gap:0.5rem; max-width:400px; margin:0 auto; }
+  .subscribe-input { flex:1; background:var(--bg); border:1px solid var(--border); border-radius:6px; padding:0.45rem 0.75rem; font-size:0.8rem; color:var(--text); font-family:var(--sans); outline:none; transition:border-color 0.15s; }
+  .subscribe-input:focus { border-color:var(--violet); }
+  .subscribe-btn { background:var(--gradient); color:#fff; border:none; border-radius:6px; padding:0.45rem 1rem; font-size:0.8rem; font-weight:600; cursor:pointer; font-family:var(--sans); white-space:nowrap; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="/">
+    <svg class="nav-logo-mark" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs><linearGradient id="nlg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#7C3AED"/><stop offset="55%" stop-color="#2563EB"/><stop offset="100%" stop-color="#22D3EE"/></linearGradient></defs>
+      <circle cx="20" cy="20" r="17" stroke="#1e2d45" stroke-width="0.8" stroke-dasharray="2 3"/>
+      <circle cx="20" cy="20" r="12" stroke="#243040" stroke-width="0.5" opacity="0.6"/>
+      <circle cx="20" cy="5"  r="3.2" fill="#7C3AED" opacity="0.95"/>
+      <circle cx="33" cy="28" r="2.6" fill="#2563EB" opacity="0.95"/>
+      <circle cx="7"  cy="28" r="2.2" fill="#22D3EE" opacity="0.9"/>
+      <line x1="20" y1="8"  x2="31" y2="26" stroke="url(#nlg)" stroke-width="0.6" opacity="0.5"/>
+      <line x1="20" y1="8"  x2="9"  y2="26" stroke="#7C3AED" stroke-width="0.6" opacity="0.4"/>
+      <line x1="30" y1="27" x2="10" y2="27" stroke="#22D3EE" stroke-width="0.6" opacity="0.4"/>
+      <circle cx="20" cy="20" r="2.5" fill="url(#nlg)" opacity="0.6"/>
+    </svg>
+    <span class="nav-logo-name">Dark<span class="matter-grad">Matter</span></span>
+  </a>
+  <div class="nav-sep"></div>
+  <a class="nav-link" href="/demo" style="margin-right:1rem;">Live Demo</a>
+  <a class="nav-cta" href="/signup">Get API Key →</a>
+</nav>
+
+<div class="page">
+  <div class="page-eyebrow">// writing</div>
+  <div class="page-title">Blog</div>
+  <div class="page-sub">Updates, thinking, and technical writing from the DarkMatter team.</div>
+
+  <!-- POST 1 — FEATURED, WILL BE WRITTEN -->
+  <a class="post featured" href="/blog/execution-lineage-for-ai-agents">
+    <div class="post-meta">
+      <span class="post-date">March 2026</span>
+      <span class="post-tag">announcement</span>
+    </div>
+    <div class="post-title">Introducing DarkMatter: execution lineage for AI agents</div>
+    <div class="post-excerpt">
+      Multi-agent AI systems are moving fast. What's missing is the layer underneath — the one that remembers exactly what happened, lets you replay any decision, and proves the chain was never tampered with. That's what we built.
+    </div>
+    <div class="post-read">Read post →</div>
+  </a>
+
+  <!-- POST 2 — COMING SOON -->
+  <div class="coming-soon">
+    <div class="post-meta">
+      <span class="post-date">Coming soon</span>
+      <span class="post-tag">technical</span>
+    </div>
+    <div class="post-title">Why we used SHA-256 hash chaining — and what it means for audit trails</div>
+    <div class="post-excerpt">How DarkMatter's cryptographic chain works, why parent hash chaining matters more than simple checksums, and what "tamper-evident" actually means in practice.</div>
+  </div>
+
+  <!-- POST 3 — COMING SOON -->
+  <div class="coming-soon">
+    <div class="post-meta">
+      <span class="post-date">Coming soon</span>
+      <span class="post-tag">use case</span>
+    </div>
+    <div class="post-title">Fork as a first-class primitive: branching AI workflows like Git branches code</div>
+    <div class="post-excerpt">What it means to fork an agent execution at a checkpoint, why this is qualitatively different from retrying a prompt, and how teams use it to explore alternate reasoning paths.</div>
+  </div>
+
+  <!-- SUBSCRIBE -->
+  <div class="subscribe">
+    <div class="subscribe-title">Get new posts by email</div>
+    <div class="subscribe-sub">No spam. Unsubscribe anytime.</div>
+    <div class="subscribe-row">
+      <input class="subscribe-input" type="email" id="sub-email" placeholder="you@company.com"/>
+      <button class="subscribe-btn" onclick="subscribe()">Subscribe</button>
+    </div>
+    <div id="sub-status" style="display:none;margin-top:0.75rem;font-size:0.78rem;color:var(--green);">✓ You're subscribed</div>
+  </div>
+</div>
+
+<script>
+  // Handle /blog/:slug — redirect to individual post content
+  const slug = window.location.pathname.replace('/blog/', '').replace('/blog', '');
+  if (slug && slug !== '' && slug !== '/') {
+    // Future: load post content dynamically. For now, show placeholder.
+    const known = { 'execution-lineage-for-ai-agents': true };
+    if (!known[slug]) {
+      document.querySelector('.page').innerHTML = [
+        '<div class="page-eyebrow">// post not found</div>',
+        '<div class="page-title" style="font-size:1.5rem;">Coming soon</div>',
+        '<div class="page-sub">This post is being written. <a href="/blog" style="color:var(--violet);">Back to blog →</a></div>',
+      ].join('');
+    }
+  }
+
+  function subscribe() {
+    const email = document.getElementById('sub-email').value.trim();
+    if (!email || !email.includes('@')) { return; }
+    fetch('/feedback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'subscribe', email, message: 'Blog subscription request' }),
+    });
+    document.getElementById('sub-status').style.display = 'block';
+    document.getElementById('sub-email').value = '';
+  }
+</script>
+</body>
+</html>
