@@ -561,8 +561,8 @@
     Move work across models without losing context.<br>
     Track every decision. Resume from any point.
   </p>
-  <p style="font-size:0.88rem;color:var(--text3);margin-bottom:2rem;text-align:center;position:relative;z-index:1;line-height:1.6;max-width:480px;">
-    DarkMatter connects agents like Git connects code —<br>commit, pull, and replay workflows across any model.
+  <p style="font-size:0.88rem;color:var(--text3);margin-bottom:2rem;text-align:center;position:relative;z-index:1;line-height:1.6;max-width:520px;">
+    DarkMatter is to AI agents what Git is to code —<br>an immutable record of decisions, portable across any model or system.
   </p>
 
 
@@ -585,6 +585,14 @@
   </div>
 </div>
 
+<!-- QUOTE STRIP -->
+<div style="border-top:1px solid var(--border);border-bottom:1px solid var(--border);background:var(--bg2);padding:1.25rem 2rem;text-align:center;">
+  <div style="font-family:var(--mono);font-size:0.78rem;color:var(--text2);letter-spacing:0.02em;">
+    "If you can't replay it, you don't control it." &nbsp;·&nbsp;
+    <span style="color:var(--text3);">Commit once. Reuse anywhere. Context that survives model boundaries.</span>
+  </div>
+</div>
+
 <!-- USE CASES -->
 <div class="usecase-section">
   <div class="usecase-inner">
@@ -593,17 +601,17 @@
     <div class="usecase-grid">
       <div class="uc-card">
         <div class="uc-icon">🔗</div>
-        <div class="uc-title">Move work between agents without losing context</div>
+        <div class="uc-title">Portable state across any model or system</div>
         <div class="uc-desc">Agent A researches, Agent B writes, Agent C reviews. Each inherits the previous agent's full verified context — no re-explaining, no dropped state.</div>
       </div>
       <div class="uc-card">
         <div class="uc-icon">🛡️</div>
-        <div class="uc-title">Cryptographically verified handoffs</div>
+        <div class="uc-title">Immutable, attributed handoffs</div>
         <div class="uc-desc">Agents can't trust context they didn't verify. DarkMatter authenticates every handoff — rejected commits are logged, not silently dropped.</div>
       </div>
       <div class="uc-card">
         <div class="uc-icon">🔄</div>
-        <div class="uc-title">Resume from any checkpoint, instantly</div>
+        <div class="uc-title">Checkpoint-based execution, not just logs</div>
         <div class="uc-desc">If an agent crashes mid-task, pull its last committed context and resume exactly where it left off. No restarts. No lost work.</div>
       </div>
       <div class="uc-card">
@@ -677,7 +685,7 @@
         <div style="border-top:1px solid var(--border);padding-top:1.25rem;">
           <div style="font-size:0.85rem;color:var(--text2);display:flex;gap:0.75rem;align-items:flex-start;">
             <span style="background:var(--gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;font-weight:700;font-size:1rem;">→</span>
-            <span>DarkMatter is <strong style="color:var(--text);">the context layer that connects them all</strong> — a reliable, verified, auditable postbox between every agent in your system.</span>
+            <span>DarkMatter is <strong style="color:var(--text);">the state and lineage layer</strong> — immutable, portable, replayable. It tracks how decisions are made, not just what happened.</span>
           </div>
         </div>
       </div>
@@ -697,7 +705,7 @@
         <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:1rem 1.25rem;position:relative;overflow:hidden;">
           <div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(124,58,237,0.06),rgba(34,211,238,0.04));pointer-events:none;"></div>
           <div style="font-size:0.72rem;font-weight:700;margin-bottom:0.2rem;background:var(--gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">DarkMatter</div>
-          <div style="font-size:0.72rem;color:var(--text2);position:relative;">verifies how agents <strong style="color:var(--text);">hand work to each other</strong></div>
+          <div style="font-size:0.72rem;color:var(--text2);position:relative;">tracks <strong style="color:var(--text);">how decisions are made</strong> — state, lineage, replay</div>
         </div>
       </div>
     </div>
@@ -718,8 +726,7 @@
         </div>
         <div style="font-size:0.8rem;color:var(--text2);line-height:1.75;margin-bottom:1.1rem;">
           When Agent X (Claude) finishes work and needs to hand off to Agent Y (GPT),
-          DarkMatter is the reliable layer in between. Commit context, pull it, inherit it —
-          the same primitives as Git, applied to AI agents.
+          DarkMatter gives every agent decision a permanent, immutable ID. Commit state, pass the ID, pull the full context anywhere — the same primitives as Git, applied to agent execution.
         </div>
         <div style="display:flex;flex-direction:column;gap:0.5rem;">
           <div style="font-size:0.78rem;color:var(--text2);display:flex;gap:0.5rem;">
@@ -744,11 +751,7 @@
           Independent audit trails for AI systems
         </div>
         <div style="font-size:0.8rem;color:var(--text2);line-height:1.75;margin-bottom:1.1rem;">
-          EU AI Act Articles 12 &amp; 19 require high-risk AI systems to produce automatically
-          generated, tamper-evident logs kept for at least six months. A company storing
-          its own AI logs faces the same credibility problem as auditing its own books —
-          DarkMatter provides the independent layer that makes those logs credible to
-          regulators and auditors.
+          EU AI Act Articles 12 &amp; 19 require high-risk AI systems to produce automatically generated, immutable, tamper-evident logs. A company storing its own AI logs faces the same credibility problem as auditing its own books — DarkMatter is the independent, append-only layer that makes those logs credible to regulators.
         </div>
         <div style="display:flex;flex-direction:column;gap:0.5rem;margin-bottom:1.1rem;">
           <div style="font-size:0.78rem;color:var(--text2);display:flex;gap:0.5rem;">
@@ -770,11 +773,12 @@
   </div>
 </div>
 
-<!-- FLOW VISUAL -->
+<!-- FLOW VISUAL + COMMIT GRAPH -->
 <div style="border-top:1px solid var(--border);padding:3rem 2rem;">
   <div style="max-width:860px;margin:0 auto;text-align:center;">
-    <div style="font-family:var(--mono);font-size:0.6rem;color:var(--text3);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:1rem;">How it fits</div>
-    <div style="font-size:1.2rem;font-weight:700;color:var(--text);letter-spacing:-0.02em;margin-bottom:2rem;font-family:var(--display);">DarkMatter sits between your agents</div>
+    <div style="font-family:var(--mono);font-size:0.6rem;color:var(--text3);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:1rem;">Decision lineage</div>
+    <div style="font-size:1.2rem;font-weight:700;color:var(--text);letter-spacing:-0.02em;margin-bottom:0.5rem;font-family:var(--display);">Every decision. Every handoff. Immutable.</div>
+    <div style="font-size:0.85rem;color:var(--text2);margin-bottom:2rem;">When developers say "send me the context ID" — they mean a DarkMatter context ID.</div>
     <div style="display:flex;align-items:center;justify-content:center;gap:0;flex-wrap:wrap;margin-bottom:1.5rem;">
 
       <!-- Agent A -->
@@ -814,8 +818,97 @@
       </div>
 
     </div>
-    <div style="font-size:0.78rem;color:var(--text3);font-family:var(--mono);">
-      // Agent A and Agent B never talk directly. DarkMatter is the verified postbox between them.
+    <div style="font-size:0.75rem;color:var(--text3);font-family:var(--mono);margin-top:0.5rem;">
+      // Agent A and Agent B never share infrastructure. DarkMatter is the immutable state layer between them.
+    </div>
+  </div>
+
+  <!-- COMMIT GRAPH -->
+  <div style="max-width:860px;margin:2.5rem auto 0;padding:0 2rem;">
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:2rem;font-family:var(--mono);font-size:0.72rem;overflow-x:auto;">
+      <div style="color:var(--text3);font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:1.25rem;">Decision graph — like git log, for agent state</div>
+      <!-- Row 1 -->
+      <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.6rem;">
+        <div style="width:10px;height:10px;border-radius:50%;background:var(--violet);flex-shrink:0;box-shadow:0 0 6px var(--violet);"></div>
+        <div style="color:var(--text2);">ctx_<span style="color:var(--accent);">a1b2c3</span></div>
+        <div style="color:var(--text3);">·</div>
+        <div style="color:var(--text3);">User input received</div>
+        <div style="margin-left:auto;color:var(--text3);font-size:0.62rem;">root</div>
+      </div>
+      <!-- Connector -->
+      <div style="margin-left:4px;width:1px;height:14px;background:linear-gradient(var(--violet),var(--accent));margin-bottom:0.6rem;"></div>
+      <!-- Row 2 -->
+      <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.6rem;">
+        <div style="width:10px;height:10px;border-radius:50%;background:var(--accent);flex-shrink:0;box-shadow:0 0 6px var(--accent);"></div>
+        <div style="color:var(--text2);">ctx_<span style="color:var(--accent);">d4e5f6</span></div>
+        <div style="color:var(--text3);">·</div>
+        <div style="color:var(--text3);">Agent A (Claude) — analysis complete</div>
+        <div style="margin-left:auto;"><span style="color:var(--violet);font-size:0.62rem;">parent: a1b2c3</span></div>
+      </div>
+      <!-- Fork connector -->
+      <div style="margin-left:4px;display:flex;gap:2rem;margin-bottom:0.6rem;">
+        <div style="width:1px;height:14px;background:linear-gradient(var(--accent),var(--green));"></div>
+        <div style="width:1px;height:14px;background:linear-gradient(var(--accent),var(--cyan));margin-left:60px;"></div>
+      </div>
+      <!-- Row 3 — branch -->
+      <div style="display:flex;gap:1.5rem;margin-bottom:0.6rem;">
+        <div style="display:flex;align-items:center;gap:0.75rem;flex:1;">
+          <div style="width:10px;height:10px;border-radius:50%;background:var(--green);flex-shrink:0;box-shadow:0 0 6px var(--green);"></div>
+          <div style="color:var(--text2);">ctx_<span style="color:var(--green);">g7h8i9</span></div>
+          <div style="color:var(--text3);">·</div>
+          <div style="color:var(--text3);">Agent B (GPT) — draft</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:0.75rem;flex:1;">
+          <div style="width:10px;height:10px;border-radius:50%;background:var(--cyan);flex-shrink:0;box-shadow:0 0 6px var(--cyan);"></div>
+          <div style="color:var(--text2);">ctx_<span style="color:var(--cyan);">j1k2l3</span></div>
+          <div style="color:var(--text3);">·</div>
+          <div style="color:var(--text3);">Agent C (Llama) — review</div>
+        </div>
+      </div>
+      <!-- Merge connector -->
+      <div style="margin-left:4px;width:1px;height:14px;background:linear-gradient(var(--green),var(--amber));margin-bottom:0.6rem;"></div>
+      <!-- Row 4 — merge -->
+      <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0;">
+        <div style="width:10px;height:10px;border-radius:50%;background:var(--amber);flex-shrink:0;box-shadow:0 0 6px var(--amber);"></div>
+        <div style="color:var(--text2);">ctx_<span style="color:var(--amber);">m4n5o6</span></div>
+        <div style="color:var(--text3);">·</div>
+        <div style="color:var(--text3);">Final state — merged, verified, auditable</div>
+        <div style="margin-left:auto;"><span style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);color:var(--green);padding:0.1rem 0.4rem;border-radius:100px;font-size:0.58rem;">✓ immutable</span></div>
+      </div>
+      <div style="border-top:1px solid var(--border);margin-top:1.25rem;padding-top:0.85rem;color:var(--text3);font-size:0.62rem;">
+        Each node is immutable. Each parent link is cryptographically attributed. The full chain is replayable at any point.
+      </div>
+    </div>
+  </div>
+
+  <!-- BEFORE / AFTER -->
+  <div style="max-width:860px;margin:2rem auto 0;padding:0 2rem;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;">
+      <!-- Before -->
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;">
+        <div style="background:rgba(239,68,68,0.06);border-bottom:1px solid var(--border);padding:0.6rem 1rem;font-family:var(--mono);font-size:0.6rem;color:var(--red);">WITHOUT DARKMATTER</div>
+        <div style="padding:1rem 1.25rem;font-family:var(--mono);font-size:0.72rem;line-height:2;">
+          <div style="color:var(--text3);"># context passed manually, brittle</div>
+          <div style="color:var(--text2);">summary = agent_a.<span style="color:var(--red);">run</span>(input)</div>
+          <div style="color:var(--text2);">draft &nbsp;&nbsp;= agent_b.<span style="color:var(--red);">run</span>(summary)</div>
+          <div style="color:var(--text3);margin-top:0.5rem;"># crashes → restart from zero</div>
+          <div style="color:var(--text3);"># no trace, no replay, no audit</div>
+        </div>
+      </div>
+      <!-- After -->
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;">
+        <div style="background:rgba(16,185,129,0.06);border-bottom:1px solid var(--border);padding:0.6rem 1rem;font-family:var(--mono);font-size:0.6rem;color:var(--green);">WITH DARKMATTER</div>
+        <div style="padding:1rem 1.25rem;font-family:var(--mono);font-size:0.72rem;line-height:2;">
+          <div style="color:var(--text3);"># commit state, pass the ID</div>
+          <div style="color:var(--text2);">ctx &nbsp;&nbsp;= dm.<span style="color:var(--green);">commit</span>(input, output=summary)</div>
+          <div style="color:var(--text2);">draft = dm.<span style="color:var(--green);">pull</span>(ctx.id, agent=<span style="color:var(--cyan);">"writer"</span>)</div>
+          <div style="color:var(--text3);margin-top:0.5rem;"># crashes → dm.resume(ctx.id)</div>
+          <div style="color:var(--text3);"># full lineage, immutable, auditable</div>
+        </div>
+      </div>
+    </div>
+    <div style="text-align:center;margin-top:1rem;font-family:var(--mono);font-size:0.68rem;color:var(--text3);">
+      // "send me the context ID" → that ID is a DarkMatter context ID
     </div>
   </div>
 </div>
