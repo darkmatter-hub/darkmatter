@@ -402,7 +402,7 @@ app.get('/dashboard/commits', requireAuth, async (req, res) => {
     res.json((data || []).map(c => ({
       id:            c.id,
       schemaVersion: c.schema_version || '0.9',
-      from:          agentMap[c.from_agent] || c.from_agent,
+      from:          agentMap[c.from_agent] || c.agent_info?.name || c.from_agent,
       fromId:        c.from_agent,
       to:            agentMap[c.to_agent]   || c.to_agent,
       toId:          c.to_agent,

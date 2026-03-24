@@ -1032,8 +1032,8 @@ const context = (await res.json()).commits[0].context;`,
     const evType = (ctx._eventType || c.eventType || 'commit');
     summaryHtml += `<div class="ctx-field"><div class="ctx-field-label">Status</div><div class="${c.verified ? 'ctx-badge-v' : 'ctx-badge-r'}">${c.verified ? '✓ Verified — content authenticated' : '✗ Rejected — not delivered to recipient'}</div></div>`;
     summaryHtml += `<div class="ctx-field"><div class="ctx-field-label">Event Type</div><div class="ctx-field-val"><span class="cbadge ${evType}" style="font-size:0.65rem;">${evType}</span></div></div>`;
-    summaryHtml += `<div class="ctx-field"><div class="ctx-field-label">From Agent</div><div class="ctx-field-val">${escHtml(c.from)}</div></div>`;
-    summaryHtml += `<div class="ctx-field"><div class="ctx-field-label">To Agent</div><div class="ctx-field-val">${escHtml(c.to)}</div></div>`;
+    summaryHtml += `<div class="ctx-field"><div class="ctx-field-label">From Agent</div><div class="ctx-field-val">${escHtml(c.from)}${c.fromId && c.fromId !== c.from ? `<span style="font-family:var(--mono);font-size:0.62rem;color:var(--text3);margin-left:0.5rem;">${escHtml(c.fromId)}</span>` : ''}</div></div>`;
+    summaryHtml += `<div class="ctx-field"><div class="ctx-field-label">To Agent</div><div class="ctx-field-val">${escHtml(c.to)}${c.toId && c.toId !== c.to ? `<span style="font-family:var(--mono);font-size:0.62rem;color:var(--text3);margin-left:0.5rem;">${escHtml(c.toId)}</span>` : ''}</div></div>`;
     summaryHtml += `<div class="ctx-field"><div class="ctx-field-label">Timestamp</div><div class="ctx-field-val">${new Date(c.timestamp).toLocaleString()}</div></div>`;
 
     // Lineage fields
