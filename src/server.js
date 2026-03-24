@@ -761,35 +761,49 @@ app.get('/api/replay/:ctxId', requireApiKey, async (req, res) => {
       }
     }
 
-    // Build replay response — full payload at each step
+    // Build replay response
+    const mode = req.query.mode; // 'summary' = no payloads, 'full' = default
+
     const replay = steps.map((c, i) => {
       const ctx = buildContext(c);
-      return {
-        step:       i + 1,
-        id:         c.id,
-        eventType:  ctx.event.type,
-        createdBy:  ctx.created_by,
+      const base = {
+        step:        i + 1,
+        id:          c.id,
+        short_id:    c.id.slice(-8),
+        eventType:   ctx.event.type,
+        createdBy:   ctx.created_by,
         targetAgent: ctx.event.to_agent_name || ctx.event.to_agent_id,
-        payload:    ctx.payload,
         integrity: {
           ...ctx.integrity,
           chainValid: !c._chainBroken,
         },
-        timestamp:  ctx.created_at,
+        timestamp: ctx.created_at,
+        ...(c.fork_of ? { fork_of: c.fork_of, fork_point: c.fork_point } : {}),
       };
+      // Full mode includes payloads; summary mode omits them
+      if (mode !== 'summary') base.payload = ctx.payload;
+      return base;
     });
 
     res.json({
-      contextId:      ctxId,
-      rootId:         steps.length > 0 ? steps[0].id : ctxId,
-      totalSteps:     replay.length,
+      contextId:   ctxId,
+      shortId:     ctxId.slice(-8),
+      rootId:      steps.length > 0 ? steps[0].id : ctxId,
+      totalSteps:  replay.length,
       chainIntact,
+      // Broken chain policy: permissive — allow but flag clearly
+      brokenChainPolicy: 'permissive',
+      ...(chainIntact ? {} : {
+        chainWarning: 'One or more links in this chain failed integrity verification. Commits on broken chains are allowed but flagged. Fork from a valid node to create a clean branch.',
+      }),
+      mode:  mode || 'full',
       replay,
       summary: {
-        agents:    [...new Set(steps.map(s => s.agent_info?.name || s.from_agent).filter(Boolean))],
-        models:    [...new Set(steps.map(s => s.agent_info?.model).filter(Boolean))],
-        eventTypes:[...new Set(steps.map(s => s.event_type || 'commit'))],
-        duration:  steps.length > 1
+        agents:     [...new Set(steps.map(s => s.agent_info?.name || s.from_agent).filter(Boolean))],
+        models:     [...new Set(steps.map(s => s.agent_info?.model).filter(Boolean))],
+        eventTypes: [...new Set(steps.map(s => s.event_type || 'commit'))],
+        forkPoints: steps.filter(s => s.fork_of).map(s => s.id),
+        duration:   steps.length > 1
           ? `${Math.round((new Date(steps[steps.length-1].timestamp) - new Date(steps[0].timestamp)) / 1000)}s`
           : '0s',
       },
@@ -1051,7 +1065,7 @@ app.get('/api/export/:ctxId', requireApiKey, async (req, res) => {
 
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Content-Disposition',
-      `attachment; filename="darkmatter-export-${ctxId.slice(-8)}-${Date.now()}.json"`);
+      `attachment; filename="darkmatter_ctx_${ctxId.slice(-8)}.json"`);
     res.json(exportObj);
   } catch (err) {
     res.status(500).json({ error: err.message });

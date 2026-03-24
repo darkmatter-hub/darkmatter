@@ -1032,6 +1032,10 @@ const context = (await res.json()).commits[0].context;`,
   }
 
   // ── Chain viewer ──────────────────────────────────────
+  function shortId(id) {
+    return id ? id.slice(-8) : '?';
+  }
+
   async function loadChainView() {
     const ctxId  = document.getElementById('chain-ctx-input')?.value?.trim();
     const content = document.getElementById('chain-view-content');
@@ -1040,8 +1044,8 @@ const context = (await res.json()).commits[0].context;`,
     content.innerHTML = '<div class="log-empty">Loading chain...</div>';
 
     try {
-      // Fetch replay (full chain with payloads)
-      const res  = await fetch(`/api/replay/${ctxId}`, { headers: authHeaders() });
+      // Use summary mode first for fast load, then can expand nodes
+      const res  = await fetch(`/api/replay/${ctxId}?mode=summary`, { headers: authHeaders() });
       if (!res.ok) throw new Error((await res.json()).error || 'Not found');
       const data = await res.json();
 
@@ -1049,48 +1053,69 @@ const context = (await res.json()).commits[0].context;`,
       const intactLabel = data.chainIntact ? '✓ Chain intact' : '✗ Chain broken';
 
       let html = `
-        <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.25rem;padding:0.75rem 1rem;background:var(--bg3);border:1px solid var(--border);border-radius:8px;flex-wrap:wrap;">
+        <!-- Chain header -->
+        <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1rem;padding:0.75rem 1rem;background:var(--bg3);border:1px solid var(--border);border-radius:8px;flex-wrap:wrap;">
           <div style="font-family:var(--mono);font-size:0.65rem;color:${intactColor};font-weight:600;">${intactLabel}</div>
           <div style="font-size:0.7rem;color:var(--text3);">${data.totalSteps} step${data.totalSteps !== 1 ? 's' : ''}</div>
           ${data.summary?.models?.length ? `<div style="font-size:0.7rem;color:var(--text3);">${data.summary.models.join(' → ')}</div>` : ''}
-          ${data.summary?.duration ? `<div style="font-size:0.7rem;color:var(--text3);">${data.summary.duration}</div>` : ''}
-          <div style="margin-left:auto;display:flex;gap:0.5rem;">
+          ${data.summary?.duration && data.summary.duration !== '0s' ? `<div style="font-size:0.7rem;color:var(--text3);">${data.summary.duration}</div>` : ''}
+          <div style="margin-left:auto;display:flex;gap:0.5rem;flex-wrap:wrap;">
+            <button onclick="replayFromStart('${ctxId}')" class="agent-btn" style="font-size:0.68rem;">▶ Replay</button>
             <button onclick="verifyChain('${ctxId}')" class="agent-btn" style="font-size:0.68rem;">🔍 Verify</button>
             <button onclick="copyVerifySummary('${ctxId}')" class="agent-btn" style="font-size:0.68rem;">⎘ Copy proof</button>
             <button onclick="exportChain('${ctxId}')" class="agent-btn" style="font-size:0.68rem;">↓ Export</button>
           </div>
         </div>
+        ${!data.chainIntact ? `<div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.25);border-radius:6px;padding:0.6rem 0.85rem;margin-bottom:1rem;font-size:0.75rem;color:var(--red);">⚠ Chain integrity gap detected. Commits are still allowed (permissive mode) but this chain cannot be fully trusted. Fork from a verified node to start a clean branch.</div>` : ''}
+        <!-- Color legend -->
+        <div style="display:flex;gap:1rem;margin-bottom:1rem;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:0.35rem;font-size:0.65rem;color:var(--text3);"><div style="width:8px;height:8px;border-radius:50%;background:var(--green);"></div>verified</div>
+          <div style="display:flex;align-items:center;gap:0.35rem;font-size:0.65rem;color:var(--text3);"><div style="width:8px;height:8px;border-radius:50%;background:var(--amber);"></div>fork point</div>
+          <div style="display:flex;align-items:center;gap:0.35rem;font-size:0.65rem;color:var(--text3);"><div style="width:8px;height:8px;border-radius:50%;background:var(--red);"></div>integrity broken</div>
+          <div style="display:flex;align-items:center;gap:0.35rem;font-size:0.65rem;color:var(--text3);">Root: <span style="font-family:var(--mono);">${shortId(data.rootId)}</span></div>
+        </div>
         <div style="position:relative;padding-left:1.5rem;">
           <div style="position:absolute;left:9px;top:0;bottom:0;width:1px;background:var(--border);"></div>`;
 
       data.replay.forEach((step, i) => {
-        const cb       = step.createdBy || {};
-        const isLast   = i === data.replay.length - 1;
-        const isFork   = step.eventType === 'fork';
-        const dotColor = isFork ? 'var(--amber)' :
-                         step.integrity?.chainValid ? 'var(--green)' : 'var(--red)';
+        const cb      = step.createdBy || {};
+        const isLast  = i === data.replay.length - 1;
+        const isFork  = step.eventType === 'fork';
+        const isBroken = step.integrity?.chainValid === false;
+        const dotColor = isFork ? 'var(--amber)' : isBroken ? 'var(--red)' : 'var(--green)';
         const evBadge  = step.eventType || 'commit';
-        const output   = step.payload?.output || '';
-        const preview  = (typeof output === 'string' ? output : JSON.stringify(output))
-                           .replace(/\n/g,' ').slice(0, 90);
+        const nodeId   = step.id;
+        const nodeShort = shortId(nodeId);
 
         html += `
-          <div style="position:relative;margin-bottom:${isLast ? '0' : '1rem'};">
-            <div style="position:absolute;left:-1.5rem;top:0.65rem;width:10px;height:10px;border-radius:50%;background:${dotColor};box-shadow:0 0 5px ${dotColor};"></div>
-            <div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:0.85rem 1rem;cursor:pointer;"
-                 onclick="this.querySelector('.chain-payload').style.display = this.querySelector('.chain-payload').style.display === 'none' ? '' : 'none'">
-              <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.35rem;flex-wrap:wrap;">
+          <div style="position:relative;margin-bottom:${isLast ? '0' : '0.85rem'};">
+            <div style="position:absolute;left:-1.5rem;top:0.65rem;width:10px;height:10px;border-radius:50%;background:${dotColor};box-shadow:0 0 5px ${dotColor};flex-shrink:0;"></div>
+            <div style="background:var(--bg2);border:1px solid ${isBroken ? 'rgba(239,68,68,0.3)' : 'var(--border)'};border-radius:8px;padding:0.75rem 0.9rem;">
+              <!-- Node header — always visible -->
+              <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;">
                 <span style="font-family:var(--mono);font-size:0.6rem;color:var(--text3);">Step ${step.step}</span>
                 <span class="cbadge ${evBadge}" style="font-size:0.58rem;">${evBadge}</span>
+                ${isFork ? '<span style="font-size:0.62rem;color:var(--amber);font-weight:600;">⑂ Fork point</span>' : ''}
                 <span style="font-size:0.78rem;font-weight:600;color:var(--text);">${escHtml(cb.agent_name || cb.agent_id || '?')}</span>
                 ${cb.model ? `<span style="font-size:0.65rem;color:var(--text3);">${escHtml(cb.model)}</span>` : ''}
-                <span style="margin-left:auto;font-family:var(--mono);font-size:0.6rem;color:var(--text3);">${ago(step.timestamp)}</span>
+                <span style="margin-left:auto;display:flex;align-items:center;gap:0.5rem;">
+                  <span style="font-family:var(--mono);font-size:0.6rem;color:var(--text3);">${ago(step.timestamp)}</span>
+                  <!-- Short ID + copy -->
+                  <button onclick="event.stopPropagation();copyCtxId('${nodeId}','${nodeShort}')"
+                    style="font-family:var(--mono);font-size:0.58rem;color:var(--text3);background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:0.08rem 0.35rem;cursor:pointer;transition:color 0.12s;"
+                    title="Copy full context ID"
+                    onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text3)'">${nodeShort} ⎘</button>
+                </span>
               </div>
-              ${preview ? `<div style="font-size:0.75rem;color:var(--text2);line-height:1.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(preview)}${output.length > 90 ? '···' : ''}</div>` : ''}
-              <div class="chain-payload" style="display:none;margin-top:0.75rem;border-top:1px solid var(--border2);padding-top:0.75rem;">
-                <div style="font-family:var(--mono);font-size:0.65rem;color:var(--text3);margin-bottom:0.4rem;">ID: ${escHtml(step.id)}</div>
-                ${step.integrity?.payload_hash ? `<div style="font-family:var(--mono);font-size:0.62rem;color:var(--green);margin-bottom:0.4rem;">${escHtml(step.integrity.payload_hash.slice(0,30))}···</div>` : ''}
-                <pre style="font-size:0.68rem;color:var(--text2);white-space:pre-wrap;word-break:break-word;line-height:1.6;max-height:200px;overflow-y:auto;">${escHtml(JSON.stringify(step.payload, null, 2))}</pre>
+              <!-- Action row -->
+              <div style="display:flex;gap:0.4rem;margin-top:0.5rem;flex-wrap:wrap;" id="actions-${nodeShort}">
+                <button onclick="loadNodePayload('${nodeId}','${nodeShort}')" class="agent-btn" style="font-size:0.65rem;">View payload</button>
+                <button onclick="forkFromNode('${nodeId}')" class="agent-btn" style="font-size:0.65rem;">⑂ Fork from here</button>
+                <button onclick="replayFromNode('${nodeId}')" class="agent-btn" style="font-size:0.65rem;">▶ Replay from here</button>
+              </div>
+              <!-- Payload — loaded on demand -->
+              <div id="payload-${nodeShort}" style="display:none;margin-top:0.65rem;border-top:1px solid var(--border2);padding-top:0.65rem;">
+                <div style="font-size:0.65rem;color:var(--text3);margin-bottom:0.25rem;font-family:var(--mono);">ctx_···${nodeShort}</div>
               </div>
             </div>
           </div>`;
@@ -1102,6 +1127,62 @@ const context = (await res.json()).commits[0].context;`,
     } catch(e) {
       content.innerHTML = `<div class="log-empty" style="color:var(--red);">Error: ${escHtml(e.message)}</div>`;
     }
+  }
+
+  function copyCtxId(fullId, shortId) {
+    navigator.clipboard.writeText(fullId);
+    toast(`Copied: ${shortId}···`);
+  }
+
+  async function loadNodePayload(ctxId, nodeShort) {
+    const el = document.getElementById('payload-' + nodeShort);
+    if (!el) return;
+    if (el.style.display !== 'none') { el.style.display = 'none'; return; }
+    el.innerHTML = '<div style="font-size:0.7rem;color:var(--text3);">Loading…</div>';
+    el.style.display = '';
+    try {
+      const res  = await fetch(`/api/replay/${ctxId}?mode=full`, { headers: authHeaders() });
+      const data = await res.json();
+      const step = data.replay?.[data.replay.length - 1];
+      if (!step?.payload) { el.innerHTML = '<div style="font-size:0.7rem;color:var(--text3);">No payload</div>'; return; }
+      if (step.integrity?.payload_hash) {
+        el.innerHTML += `<div style="font-family:var(--mono);font-size:0.62rem;color:var(--green);margin-bottom:0.35rem;">${escHtml(step.integrity.payload_hash.slice(0,30))}···</div>`;
+      }
+      el.innerHTML += `<pre style="font-size:0.68rem;color:var(--text2);white-space:pre-wrap;word-break:break-word;line-height:1.6;max-height:180px;overflow-y:auto;">${escHtml(JSON.stringify(step.payload, null, 2))}</pre>`;
+    } catch(e) {
+      el.innerHTML = `<div style="font-size:0.7rem;color:var(--red);">Failed: ${escHtml(e.message)}</div>`;
+    }
+  }
+
+  async function forkFromNode(ctxId) {
+    const agentKey = JSON.parse(localStorage.getItem('dm_session') || '{}');
+    // Need agent API key to fork — prompt user
+    const key = prompt('Enter your agent API key to fork from this node:');
+    if (!key) return;
+    try {
+      const res = await fetch(`/api/fork/${ctxId}`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fromCheckpoint: ctxId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      toast(`✓ Forked — new branch: ${shortId(data.id)}`);
+      // Pre-fill chain input with new fork ID
+      const input = document.getElementById('chain-ctx-input');
+      if (input) input.value = data.id;
+    } catch(e) { toast('Fork failed: ' + e.message); }
+  }
+
+  function replayFromStart(ctxId) {
+    document.getElementById('chain-ctx-input').value = ctxId;
+    toast('Replaying from root — scroll up to see full chain');
+    loadChainView();
+  }
+
+  function replayFromNode(ctxId) {
+    document.getElementById('chain-ctx-input').value = ctxId;
+    loadChainView();
   }
 
   async function verifyChain(ctxId) {
@@ -1170,13 +1251,15 @@ const context = (await res.json()).commits[0].context;`,
       window._commits = data;
 
       list.innerHTML = data.map((c, i) => {
-        const ctx     = c.context || {};
-        const preview = ctx.task || ctx.next_task || ctx.status ||
-                        (typeof ctx.output === 'string' ? ctx.output.slice(0,60) : '') ||
-                        Object.keys(ctx)[0] || 'context handoff';
-        const trimmed = preview.length > 58 ? preview.slice(0,58)+'...' : preview;
-        const evType = (ctx._eventType || 'commit');
-        const evLabel = { commit:'commit', revert:'revert', override:'override', branch:'branch', merge:'merge', error:'error', spawn:'spawn', timeout:'timeout', retry:'retry', checkpoint:'checkpoint', consent:'consent', redact:'redact', escalate:'escalate', audit:'audit' }[evType] || 'commit';
+        const p       = c.payload || c.context || {};
+        const preview = p.output || p.input || p.task || p.next_task || p.status ||
+                        (typeof (c.context||{}).output === 'string' ? c.context.output.slice(0,60) : '') ||
+                        Object.keys(p)[0] || 'context handoff';
+        const previewStr = typeof preview === 'object' ? JSON.stringify(preview) : String(preview);
+        const trimmed = previewStr.length > 58 ? previewStr.slice(0,58)+'...' : previewStr;
+        const evType  = c.event?.type || (c.context?._eventType) || c.eventType || 'commit';
+        const evLabel = { commit:'commit', revert:'revert', override:'override', branch:'branch', merge:'merge', error:'error', spawn:'spawn', timeout:'timeout', retry:'retry', checkpoint:'checkpoint', consent:'consent', redact:'redact', escalate:'escalate', audit:'audit', fork:'fork' }[evType] || 'commit';
+        const shortid = c.id ? c.id.slice(-8) : '';
         return `
         <div class="cr" style="cursor:pointer" onclick="openCtxModal(window._commits[${i}])" title="Click to inspect full context">
           <div style="min-width:0">
@@ -1185,7 +1268,15 @@ const context = (await res.json()).commits[0].context;`,
               <span class="cbadge ${evType}">${evLabel}</span>
               <span class="ctxt">${escHtml(trimmed)}</span>
             </div>
-            <div class="cby">${escHtml(c.from)} ──▶ ${escHtml(c.to)}</div>
+            <div class="cby" style="display:flex;align-items:center;gap:0.5rem;">
+              <span>${escHtml(c.from)} ──▶ ${escHtml(c.to)}</span>
+              ${shortid ? `<button onclick="event.stopPropagation();navigator.clipboard.writeText('${c.id}');this.textContent='✓';setTimeout(()=>this.textContent='${shortid} ⎘',1200);"
+                style="font-family:var(--mono);font-size:0.58rem;color:var(--text3);background:none;border:none;cursor:pointer;padding:0;user-select:none;"
+                title="Copy full context ID">${shortid} ⎘</button>` : ''}
+              ${c.id ? `<button onclick="event.stopPropagation();document.getElementById('chain-ctx-input').value='${c.id}';switchLogTab('chain');loadChainView();"
+                style="font-family:var(--mono);font-size:0.58rem;color:var(--text3);background:none;border:none;cursor:pointer;padding:0;user-select:none;transition:color 0.12s;"
+                title="View chain" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text3)'">⑂ chain</button>` : ''}
+            </div>
           </div>
           <div class="tme">${ago(c.timestamp)}</div>
         </div>`;
