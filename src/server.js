@@ -814,15 +814,42 @@ app.post('/api/fork/:ctxId', apiLimiter, requireApiKey, async (req, res) => {
     const { fromCheckpoint, toAgentId, payload, agent, traceId, branchKey } = req.body;
 
     const forkPoint = fromCheckpoint || ctxId;
+
+    // Fetch fork point — must exist
     const { data: forkCommit } = await supabaseService
       .from('commits')
-      .select('id, parent_id, lineage_root, integrity_hash')
+      .select('id, parent_id, lineage_root, integrity_hash, verified')
       .eq('id', forkPoint)
       .single();
 
-    if (!forkCommit) return res.status(404).json({ error: `Fork point ${forkPoint} not found` });
+    if (!forkCommit) {
+      return res.status(404).json({ error: `Fork point ${forkPoint} not found` });
+    }
 
+    // Edge case: do not allow forking from an unverified/rejected context
+    if (!forkCommit.verified) {
+      return res.status(400).json({
+        error: `Cannot fork from a rejected context. Fork point ${forkPoint} was not verified.`,
+        hint: 'Only verified contexts can be forked.'
+      });
+    }
+
+    // Edge case: forking from root is fine — parent_id will be null, lineage_root = itself
     const lineageRoot = forkCommit.lineage_root || await resolveLineageRoot(forkPoint);
+
+    // Edge case: verify the fork point is part of an intact chain before forking
+    // (warn but still allow — user may intentionally branch for recovery)
+    let sourceChainIntact = true;
+    if (forkCommit.parent_id) {
+      const { data: parentCommit } = await supabaseService
+        .from('commits')
+        .select('integrity_hash')
+        .eq('id', forkCommit.parent_id)
+        .single();
+      if (parentCommit?.integrity_hash && forkCommit.parent_hash) {
+        sourceChainIntact = parentCommit.integrity_hash === forkCommit.parent_hash;
+      }
+    }
 
     const targetAgentId = toAgentId || req.agent.agent_id;
     const { data: toAgent } = await supabaseService
@@ -842,14 +869,23 @@ app.post('/api/fork/:ctxId', apiLimiter, requireApiKey, async (req, res) => {
     const forkPayload = payload || {
       input:  `Fork from ${forkPoint}`,
       output: null,
-      memory: { forked_from: forkPoint, lineage_root: lineageRoot },
+      memory: {
+        forked_from:   forkPoint,
+        lineage_root:  lineageRoot,
+        is_root_fork:  !forkCommit.parent_id,  // flag if forking from root
+        source_intact: sourceChainIntact,
+      },
     };
 
-    const normalizedPayload = JSON.stringify(forkPayload, Object.keys(forkPayload).sort());
-    const payloadHash       = crypto.createHash('sha256').update(normalizedPayload).digest('hex');
-    const chainInput        = payloadHash + (forkCommit.integrity_hash || 'root');
-    const integrityHash     = crypto.createHash('sha256').update(chainInput).digest('hex');
-    const resolvedBranch    = branchKey || `fork-${forkId.slice(-6)}`;
+    // Deterministic payload hash — sort keys for stability
+    const normalizedPayload = JSON.stringify(
+      forkPayload,
+      Object.keys(forkPayload).sort()
+    );
+    const payloadHash    = crypto.createHash('sha256').update(normalizedPayload).digest('hex');
+    const chainInput     = payloadHash + (forkCommit.integrity_hash || 'root');
+    const integrityHash  = crypto.createHash('sha256').update(chainInput).digest('hex');
+    const resolvedBranch = branchKey || `fork-${forkId.slice(-6)}`;
 
     const { error } = await supabaseService.from('commits').insert({
       id:                  forkId,
@@ -876,13 +912,15 @@ app.post('/api/fork/:ctxId', apiLimiter, requireApiKey, async (req, res) => {
     if (error) throw error;
 
     res.json({
-      id:           forkId,
-      fork_of:      ctxId,
-      fork_point:   forkPoint,
-      lineage_root: lineageRoot,
-      branch_key:   resolvedBranch,
-      parent_id:    forkPoint,
-      event:        { type: 'fork' },
+      id:                  forkId,
+      fork_of:             ctxId,
+      fork_point:          forkPoint,
+      lineage_root:        lineageRoot,
+      branch_key:          resolvedBranch,
+      parent_id:           forkPoint,
+      is_root_fork:        !forkCommit.parent_id,
+      source_chain_intact: sourceChainIntact,
+      event:               { type: 'fork' },
       integrity: {
         payload_hash:        'sha256:' + integrityHash,
         parent_hash:         'sha256:' + (forkCommit.integrity_hash || ''),
@@ -890,6 +928,9 @@ app.post('/api/fork/:ctxId', apiLimiter, requireApiKey, async (req, res) => {
       },
       created_at: timestamp,
       message: `Forked from ${forkPoint}. Continue by committing with parentId: "${forkId}"`,
+      ...(sourceChainIntact ? {} : {
+        warning: 'Source chain has an integrity gap. Fork was created but source lineage is not fully intact.'
+      }),
     });
   } catch (err) {
     console.error('fork error:', err);
@@ -989,6 +1030,22 @@ app.get('/api/export/:ctxId', requireApiKey, async (req, res) => {
       chain: chain.map(c => buildContext(c)),
     };
 
+    // chain_hash = hash of stable data only (excludes exported_at, exported_by)
+    // This means two exports of the same unchanged chain produce the same chain_hash
+    const stableData = {
+      ctx_id:       ctxId,
+      lineage_root: exportObj.metadata.lineage_root,
+      chain_length: exportObj.metadata.chain_length,
+      root_hash:    exportObj.integrity.root_hash,
+      tip_hash:     exportObj.integrity.tip_hash,
+      chain_ids:    chain.map(c => c.id),
+    };
+    exportObj.integrity.chain_hash = 'sha256:' +
+      crypto.createHash('sha256')
+        .update(JSON.stringify(stableData, Object.keys(stableData).sort()))
+        .digest('hex');
+
+    // export_hash includes everything (including timestamp) — uniquely identifies this export instance
     exportObj.export_hash = 'sha256:' +
       crypto.createHash('sha256').update(JSON.stringify(exportObj)).digest('hex');
 
