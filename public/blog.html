@@ -165,9 +165,11 @@
         <p>What's missing is the layer underneath. The one that remembers exactly what happened, lets you replay any decision, and proves the chain was never tampered with.</p>
         <p>That's what we built. DarkMatter is the execution history layer for AI agents.</p>
         <h2>The problem</h2>
-        <p>When Agent A hands work to Agent B, what actually happens? The output gets passed — usually as a string, sometimes as JSON — and Agent B starts fresh with whatever it received. There's no record of what Agent A decided, why it decided it, or whether the handoff was intact.</p>
-        <p>If Agent B produces a bad result, you can't trace it back. If a regulator asks what your AI system did, you can't prove it. If an agent crashes mid-pipeline, you restart from zero.</p>
-        <p>This is the context problem. It's not glamorous. But it's the thing that makes multi-agent systems unreliable at scale.</p>
+        <p>When Agent A hands work to Agent B, what actually happens? The output gets passed — usually as a string, sometimes as JSON — and Agent B starts fresh with whatever it received.</p>
+        <p>Some frameworks handle this internally. LangGraph, for example, has solid checkpointing within a single graph. But three things remain unsolved across the ecosystem:</p>
+        <p><strong>Cross-framework lineage.</strong> If your pipeline mixes LangGraph with raw API calls, a CrewAI agent, or any other tool, there's no unified history across all of it. Each framework tracks its own state independently.</p>
+        <p><strong>Cryptographic tamper-evidence.</strong> Checkpoints stored inside your own infrastructure have a credibility problem — you could have modified them. There's no way to prove to a regulator or auditor that the history is intact. DarkMatter uses SHA-256 parent hash chaining so tampering at any node breaks every downstream hash.</p>
+        <p><strong>Portable, independent audit artifacts.</strong> A LangGraph thread ID is meaningless outside your deployment. A DarkMatter context ID carries the full verified chain and is shareable across teams, companies, and systems — with a downloadable proof artifact that doesn't require access to your infrastructure to verify.</p>
         <h2>What DarkMatter does</h2>
         <p>Every agent action becomes a <strong>context commit</strong> — an immutable, attributed, cryptographically chained record of what the agent received, what it produced, and who it sent work to next.</p>
         <p>These commits chain together with parent hash linkage, so every step is verifiable. You can replay any workflow from root to tip. You can fork from any checkpoint to explore alternate execution paths. You can export a portable audit artifact that proves exactly what happened.</p>
