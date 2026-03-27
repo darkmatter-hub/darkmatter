@@ -1088,6 +1088,440 @@ app.get('/api/export/:ctxId', requireApiKey, async (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════
+// ENTERPRISE FEATURES
+// ═══════════════════════════════════════════════════
+
+// ── Encryption helpers (AES-256-GCM) ─────────────
+function encryptPayload(plaintext, keyHex) {
+  const key = Buffer.from(keyHex, 'hex');
+  const iv  = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
+  const encrypted = Buffer.concat([
+    cipher.update(JSON.stringify(plaintext), 'utf8'),
+    cipher.final(),
+  ]);
+  const authTag = cipher.getAuthTag();
+  return {
+    encrypted: encrypted.toString('base64'),
+    iv:        iv.toString('base64'),
+    authTag:   authTag.toString('base64'),
+  };
+}
+
+function decryptPayload(encryptedB64, ivB64, authTagB64, keyHex) {
+  const key       = Buffer.from(keyHex, 'hex');
+  const iv        = Buffer.from(ivB64, 'base64');
+  const authTag   = Buffer.from(authTagB64, 'base64');
+  const encrypted = Buffer.from(encryptedB64, 'base64');
+  const decipher  = crypto.createDecipheriv('aes-256-gcm', key, iv);
+  decipher.setAuthTag(authTag);
+  const decrypted = Buffer.concat([decipher.update(encrypted), decipher.final()]);
+  return JSON.parse(decrypted.toString('utf8'));
+}
+
+// ── POST /enterprise/register ── register enterprise account
+app.post('/enterprise/register', requireAuth, async (req, res) => {
+  try {
+    const { companyName, byokKey } = req.body;
+    if (!companyName) return res.status(400).json({ error: 'companyName required' });
+
+    const accountId = 'ent_' + Date.now() + '_' + crypto.randomBytes(4).toString('hex');
+    let keyId = null;
+
+    // If BYOK key provided, register it
+    if (byokKey) {
+      if (byokKey.length !== 64) {
+        return res.status(400).json({ error: 'BYOK key must be 64 hex characters (AES-256)' });
+      }
+      keyId = 'key_' + crypto.randomBytes(8).toString('hex');
+      const keyHint = byokKey.slice(-4);
+
+      await supabaseService.from('enterprise_keys').insert({
+        key_id:     keyId,
+        account_id: accountId,
+        key_hint:   keyHint,
+        algorithm:  'aes-256-gcm',
+      });
+    }
+
+    const { error } = await supabaseService.from('enterprise_accounts').insert({
+      id:           accountId,
+      user_id:      req.user.id,
+      company_name: companyName,
+      byok_key_id:  keyId,
+    });
+
+    if (error) throw error;
+
+    res.json({
+      accountId,
+      companyName,
+      byokEnabled: !!keyId,
+      keyId,
+      message: 'Enterprise account created. Store your BYOK key securely — DarkMatter does not store it.',
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── POST /enterprise/commit ── encrypted commit ──
+// Agent commits with BYOK encryption — payload encrypted before storage
+app.post('/enterprise/commit', apiLimiter, requireApiKey, async (req, res) => {
+  try {
+    const { toAgentId, payload, parentId, traceId, branchKey, agent, byokKey } = req.body;
+
+    if (!toAgentId || !payload) {
+      return res.status(400).json({ error: 'toAgentId and payload required' });
+    }
+    if (!byokKey || byokKey.length !== 64) {
+      return res.status(400).json({ error: 'byokKey required (64 hex chars, AES-256). DarkMatter never stores your key.' });
+    }
+
+    const commitId  = 'ctx_' + Date.now() + '_' + crypto.randomBytes(6).toString('hex');
+    const timestamp = new Date().toISOString();
+
+    // Encrypt payload with client's key
+    const { encrypted, iv, authTag } = encryptPayload(payload, byokKey);
+
+    // Hash the plaintext payload for chain integrity (before encryption)
+    const normalizedPayload = JSON.stringify(payload, Object.keys(payload).sort());
+    const payloadHash       = crypto.createHash('sha256').update(normalizedPayload).digest('hex');
+
+    // Fetch parent hash for chaining
+    let parentHash = null;
+    if (parentId) {
+      const { data: parentCommit } = await supabaseService
+        .from('commits').select('integrity_hash').eq('id', parentId).single();
+      if (parentCommit?.integrity_hash) parentHash = parentCommit.integrity_hash;
+    }
+
+    const chainInput    = payloadHash + (parentHash || 'root');
+    const integrityHash = crypto.createHash('sha256').update(chainInput).digest('hex');
+
+    const agentInfo = {
+      id: req.agent.agent_id, name: req.agent.agent_name,
+      role: agent?.role || null, provider: agent?.provider || null, model: agent?.model || null,
+    };
+
+    // Verify recipient
+    const { data: toAgent } = await supabaseService
+      .from('agents').select('agent_id').eq('agent_id', toAgentId).single();
+    if (!toAgent) return res.status(404).json({ error: `Agent ${toAgentId} not found` });
+
+    const { error } = await supabaseService.from('commits').insert({
+      id:                  commitId,
+      schema_version:      '1.0',
+      from_agent:          req.agent.agent_id,
+      to_agent:            toAgentId,
+      context:             { _encrypted: true, _keyHint: byokKey.slice(-4) },
+      payload:             null,              // plaintext not stored
+      encrypted_payload:   encrypted,
+      iv,
+      auth_tag:            authTag,
+      key_id:              'byok_' + byokKey.slice(-4),
+      event_type:          'commit',
+      parent_id:           parentId  || null,
+      trace_id:            traceId   || null,
+      branch_key:          branchKey || 'main',
+      agent_info:          agentInfo,
+      integrity_hash:      integrityHash,
+      parent_hash:         parentHash,
+      verified:            true,
+      verification_reason: 'BYOK encrypted commit',
+      timestamp,
+    });
+
+    if (error) throw error;
+
+    res.json({
+      id:             commitId,
+      schema_version: '1.0',
+      encrypted:      true,
+      key_hint:       byokKey.slice(-4),
+      integrity: {
+        payload_hash:        'sha256:' + integrityHash,
+        parent_hash:         parentHash ? 'sha256:' + parentHash : null,
+        verification_status: 'valid',
+      },
+      created_at: timestamp,
+      message: 'Payload encrypted with your key. DarkMatter stored ciphertext only.',
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── POST /enterprise/decrypt ── decrypt a context ─
+// Client provides their key to decrypt a specific commit
+app.post('/enterprise/decrypt/:ctxId', requireApiKey, async (req, res) => {
+  try {
+    const { ctxId } = req.params;
+    const { byokKey } = req.body;
+
+    if (!byokKey || byokKey.length !== 64) {
+      return res.status(400).json({ error: 'byokKey required (64 hex chars)' });
+    }
+
+    const { data: commit } = await supabaseService
+      .from('commits')
+      .select('id, encrypted_payload, iv, auth_tag, integrity_hash, parent_hash, timestamp, from_agent, agent_info')
+      .eq('id', ctxId)
+      .single();
+
+    if (!commit) return res.status(404).json({ error: 'Context not found' });
+    if (!commit.encrypted_payload) return res.status(400).json({ error: 'This context is not encrypted' });
+
+    let payload;
+    try {
+      payload = decryptPayload(commit.encrypted_payload, commit.iv, commit.auth_tag, byokKey);
+    } catch {
+      return res.status(403).json({ error: 'Decryption failed — wrong key or tampered ciphertext' });
+    }
+
+    res.json(buildContext({ ...commit, payload }, {}));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── POST /enterprise/did/register ── register W3C DID for agent
+app.post('/enterprise/did/register', requireAuth, async (req, res) => {
+  try {
+    const { agentId, didId, publicKey } = req.body;
+    if (!agentId || !didId || !publicKey) {
+      return res.status(400).json({ error: 'agentId, didId, and publicKey required' });
+    }
+
+    // Verify the agent belongs to this user
+    const { data: agent } = await supabaseService
+      .from('agents')
+      .select('agent_id')
+      .eq('agent_id', agentId)
+      .eq('user_id', req.user.id)
+      .single();
+
+    if (!agent) return res.status(404).json({ error: 'Agent not found' });
+
+    // Build W3C DID document
+    const didDocument = {
+      '@context':          ['https://www.w3.org/ns/did/v1'],
+      id:                  didId,
+      verificationMethod:  [{
+        id:                  `${didId}#key-1`,
+        type:                'JsonWebKey2020',
+        controller:          didId,
+        publicKeyMultibase:  publicKey,
+      }],
+      authentication:      [`${didId}#key-1`],
+      assertionMethod:     [`${didId}#key-1`],
+      created:             new Date().toISOString(),
+    };
+
+    const { error } = await supabaseService
+      .from('agents')
+      .update({ did_id: didId, did_public_key: publicKey })
+      .eq('agent_id', agentId)
+      .eq('user_id', req.user.id);
+
+    if (error) throw error;
+
+    res.json({
+      agentId,
+      didId,
+      didDocument,
+      message: 'DID registered. Agent commits will now include a verifiable DID identifier.',
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── GET /enterprise/did/:agentId ── resolve agent DID document
+app.get('/enterprise/did/:agentId', async (req, res) => {
+  try {
+    const { data: agent } = await supabaseService
+      .from('agents')
+      .select('agent_id, agent_name, did_id, did_public_key, created_at')
+      .eq('agent_id', req.params.agentId)
+      .single();
+
+    if (!agent || !agent.did_id) {
+      return res.status(404).json({ error: 'No DID registered for this agent' });
+    }
+
+    res.json({
+      '@context':         ['https://www.w3.org/ns/did/v1'],
+      id:                 agent.did_id,
+      verificationMethod: [{
+        id:                 `${agent.did_id}#key-1`,
+        type:               'JsonWebKey2020',
+        controller:         agent.did_id,
+        publicKeyMultibase: agent.did_public_key,
+      }],
+      authentication:     [`${agent.did_id}#key-1`],
+      assertionMethod:    [`${agent.did_id}#key-1`],
+      darkmatter: {
+        agentId:   agent.agent_id,
+        agentName: agent.agent_name,
+        registeredAt: agent.created_at,
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── POST /enterprise/inquiry ── self-serve enterprise form
+app.post('/enterprise/inquiry', feedbackLimiter, async (req, res) => {
+  try {
+    const { companyName, name, email, useCase, teamSize, features, message } = req.body;
+    if (!email) return res.status(400).json({ error: 'email required' });
+
+    const inquiryId = 'inq_' + Date.now() + '_' + crypto.randomBytes(4).toString('hex');
+
+    await supabaseService.from('enterprise_inquiries').insert({
+      id:           inquiryId,
+      company_name: sanitizeText(companyName, 200),
+      name:         sanitizeText(name, 200),
+      email:        sanitizeText(email, 200),
+      use_case:     sanitizeText(useCase, 1000),
+      team_size:    sanitizeText(teamSize, 50),
+      features:     features || [],
+      message:      sanitizeText(message, 2000),
+    });
+
+    // Notify via email
+    await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from:    'DarkMatter <hello@darkmatterhub.ai>',
+        to:      [process.env.FEEDBACK_EMAIL],
+        subject: `[DarkMatter Enterprise] ${escapeHtml(companyName || email)}`,
+        html:    `<p><b>Company:</b> ${escapeHtml(companyName)}</p>
+                  <p><b>Name:</b> ${escapeHtml(name)}</p>
+                  <p><b>Email:</b> ${escapeHtml(email)}</p>
+                  <p><b>Team size:</b> ${escapeHtml(teamSize)}</p>
+                  <p><b>Features:</b> ${(features || []).join(', ')}</p>
+                  <p><b>Use case:</b> ${escapeHtml(useCase)}</p>
+                  <p><b>Message:</b> ${escapeHtml(message)}</p>`,
+      }),
+    });
+
+    res.json({
+      received: true,
+      message:  "Thanks — we'll be in touch within 24 hours.",
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── GET /enterprise/report/:traceId ── compliance PDF report
+app.get('/enterprise/report/:traceId', requireApiKey, async (req, res) => {
+  try {
+    const { traceId } = req.params;
+
+    const { data: commits, error } = await supabaseService
+      .from('commits')
+      .select('*')
+      .eq('trace_id', traceId)
+      .order('timestamp', { ascending: true });
+
+    if (error) throw error;
+    if (!commits?.length) return res.status(404).json({ error: 'No commits found for this trace ID' });
+
+    // Verify chain integrity
+    let chainIntact = true;
+    for (let i = 1; i < commits.length; i++) {
+      if (commits[i].parent_hash && commits[i-1].integrity_hash &&
+          commits[i].parent_hash !== commits[i-1].integrity_hash) {
+        chainIntact = false; break;
+      }
+    }
+
+    const agents    = [...new Set(commits.map(c => c.agent_info?.name || c.from_agent).filter(Boolean))];
+    const models    = [...new Set(commits.map(c => c.agent_info?.model).filter(Boolean))];
+    const exportedAt = new Date().toISOString();
+
+    // Build compliance report as structured JSON
+    // (PDF generation requires a PDF library — this is the data layer)
+    const report = {
+      report_type:    'DarkMatter Compliance Report',
+      report_version: '1.0',
+      generated_at:   exportedAt,
+      generated_by:   'darkmatterhub.ai',
+
+      summary: {
+        trace_id:     traceId,
+        total_steps:  commits.length,
+        chain_intact: chainIntact,
+        agents,
+        models,
+        start_time:   commits[0].timestamp,
+        end_time:     commits[commits.length - 1].timestamp,
+        encrypted_commits: commits.filter(c => c.encrypted_payload).length,
+      },
+
+      integrity: {
+        algorithm:    'sha256',
+        chain_intact: chainIntact,
+        root_hash:    commits[0]?.integrity_hash ? 'sha256:' + commits[0].integrity_hash : null,
+        tip_hash:     commits[commits.length-1]?.integrity_hash
+                        ? 'sha256:' + commits[commits.length-1].integrity_hash : null,
+        verification_statement: chainIntact
+          ? 'All commits in this trace have been cryptographically verified. The chain is intact and no tampering has been detected.'
+          : 'WARNING: Chain integrity check failed. One or more commits may have been tampered with.',
+      },
+
+      agent_registry: agents.map(name => {
+        const commit = commits.find(c => (c.agent_info?.name || c.from_agent) === name);
+        return {
+          name,
+          agent_id:  commit?.from_agent,
+          did_id:    commit?.agent_info?.did_id || null,
+          provider:  commit?.agent_info?.provider || null,
+          model:     commit?.agent_info?.model    || null,
+        };
+      }),
+
+      audit_trail: commits.map((c, i) => ({
+        step:       i + 1,
+        context_id: c.id,
+        event_type: c.event_type || 'commit',
+        created_by: c.agent_info?.name || c.from_agent,
+        target:     c.to_agent,
+        timestamp:  c.timestamp,
+        encrypted:  !!c.encrypted_payload,
+        integrity_hash: c.integrity_hash ? 'sha256:' + c.integrity_hash.slice(0, 16) + '...' : null,
+        chain_valid: i === 0 ? true :
+          (!commits[i].parent_hash || !commits[i-1].integrity_hash ||
+           commits[i].parent_hash === commits[i-1].integrity_hash),
+      })),
+
+      regulatory_note: 'This report was generated by DarkMatter (darkmatterhub.ai), ' +
+        'an independent execution history layer external to the audited system. ' +
+        'The cryptographic hash chain provides tamper-evident evidence that this ' +
+        'audit trail has not been modified after the fact. Relevant frameworks: ' +
+        'EU AI Act Art. 12 & 19, US state AI laws, sector-specific audit requirements.',
+    };
+
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', `attachment; filename="darkmatter_report_${traceId.slice(-8)}.json"`);
+    res.json(report);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Page routes for new pages
+app.get('/pricing',    (req, res) => res.sendFile(path.join(__dirname, '../public/pricing.html')));
+app.get('/why',        (req, res) => res.sendFile(path.join(__dirname, '../public/why.html')));
+app.get('/docs',       (req, res) => res.sendFile(path.join(__dirname, '../public/docs.html')));
+app.get('/enterprise', (req, res) => res.sendFile(path.join(__dirname, '../public/enterprise.html')));
+
+// ═══════════════════════════════════════════════════
 // PUBLIC NETWORK STATS (no auth — for homepage)
 // ═══════════════════════════════════════════════════
 

@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Enterprise — DarkMatter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+  :root{--bg:#0B0F14;--bg2:#121826;--bg3:#1a2332;--border:#1e2d45;--text:#e6edf3;--text2:#8b949e;--text3:#484f58;--violet:#7C3AED;--blue:#2563EB;--cyan:#22D3EE;--green:#10B981;--gradient:linear-gradient(90deg,#7C3AED 0%,#2563EB 55%,#22D3EE 100%);--display:'Space Grotesk',sans-serif;--sans:'Inter',sans-serif;--mono:'IBM Plex Mono',monospace;}
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:var(--sans);-webkit-font-smoothing:antialiased;}
+  nav{display:flex;align-items:center;gap:0.8rem;padding:0.85rem 2rem;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:50;background:rgba(11,15,20,0.95);backdrop-filter:blur(8px);}
+  .nav-logo{display:flex;align-items:center;gap:0.65rem;text-decoration:none;}
+  .nav-logo-mark{width:28px;height:28px;}
+  .nav-logo-name{font-family:var(--display);font-weight:700;font-size:1rem;color:var(--text);letter-spacing:-0.02em;}
+  .matter-grad{background:var(--gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+  .nav-sep{flex:1;}
+  .nav-link{font-size:0.78rem;color:var(--text2);text-decoration:none;transition:color 0.15s;}
+  .nav-link:hover{color:var(--text);}
+  .page{max-width:860px;margin:0 auto;padding:4rem 2rem 5rem;display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:start;}
+  @media(max-width:700px){.page{grid-template-columns:1fr;gap:2rem;}}
+  .left-eyebrow{font-family:var(--mono);font-size:0.6rem;color:var(--text3);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:1rem;}
+  .left-title{font-family:var(--display);font-size:1.8rem;font-weight:700;letter-spacing:-0.03em;line-height:1.25;margin-bottom:1rem;}
+  .left-sub{font-size:0.88rem;color:var(--text2);line-height:1.75;margin-bottom:2rem;}
+  .feature-list{display:flex;flex-direction:column;gap:0.85rem;margin-bottom:2rem;}
+  .feature-item{display:flex;gap:0.65rem;align-items:flex-start;}
+  .feature-icon{width:28px;height:28px;border-radius:7px;background:rgba(124,58,237,0.12);border:1px solid rgba(124,58,237,0.2);display:flex;align-items:center;justify-content:center;font-size:0.75rem;flex-shrink:0;}
+  .feature-text{}
+  .feature-title{font-size:0.85rem;font-weight:600;color:var(--text);margin-bottom:0.15rem;}
+  .feature-desc{font-size:0.75rem;color:var(--text2);line-height:1.55;}
+  .contact-note{font-size:0.75rem;color:var(--text3);line-height:1.6;}
+  /* Form */
+  .form-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:2rem;}
+  .form-title{font-family:var(--display);font-size:1.1rem;font-weight:700;margin-bottom:0.35rem;}
+  .form-sub{font-size:0.78rem;color:var(--text2);margin-bottom:1.5rem;}
+  .field{margin-bottom:1rem;}
+  .field label{display:block;font-size:0.72rem;color:var(--text2);margin-bottom:0.35rem;font-weight:500;}
+  .field input,.field textarea,.field select{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:0.55rem 0.75rem;color:var(--text);font-family:var(--sans);font-size:0.82rem;outline:none;transition:border-color 0.15s;}
+  .field input:focus,.field textarea:focus,.field select:focus{border-color:var(--violet);}
+  .field textarea{resize:vertical;min-height:90px;}
+  .field select option{background:var(--bg2);}
+  .checkbox-group{display:flex;flex-direction:column;gap:0.5rem;}
+  .checkbox-item{display:flex;align-items:center;gap:0.5rem;font-size:0.8rem;color:var(--text2);cursor:pointer;}
+  .checkbox-item input[type="checkbox"]{accent-color:var(--violet);width:14px;height:14px;}
+  .submit-btn{width:100%;background:var(--gradient);color:#fff;border:none;border-radius:7px;padding:0.75rem 1rem;font-size:0.88rem;font-weight:600;cursor:pointer;font-family:var(--sans);margin-top:0.5rem;transition:opacity 0.15s;}
+  .submit-btn:hover{opacity:0.9;}
+  .success{display:none;text-align:center;padding:2rem 0;}
+  .success-icon{font-size:2rem;margin-bottom:0.75rem;}
+  .success-title{font-family:var(--display);font-size:1.1rem;font-weight:700;margin-bottom:0.35rem;}
+  .success-sub{font-size:0.82rem;color:var(--text2);}
+</style>
+</head>
+<body>
+<nav>
+  <a class="nav-logo" href="/">
+    <svg class="nav-logo-mark" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs><linearGradient id="nlg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#7C3AED"/><stop offset="55%" stop-color="#2563EB"/><stop offset="100%" stop-color="#22D3EE"/></linearGradient></defs>
+      <circle cx="20" cy="20" r="17" stroke="#1e2d45" stroke-width="0.8" stroke-dasharray="2 3"/>
+      <circle cx="20" cy="20" r="12" stroke="#243040" stroke-width="0.5" opacity="0.6"/>
+      <circle cx="20" cy="5" r="3.2" fill="#7C3AED" opacity="0.95"/>
+      <circle cx="33" cy="28" r="2.6" fill="#2563EB" opacity="0.95"/>
+      <circle cx="7" cy="28" r="2.2" fill="#22D3EE" opacity="0.9"/>
+      <line x1="20" y1="8" x2="31" y2="26" stroke="url(#nlg)" stroke-width="0.6" opacity="0.5"/>
+      <line x1="20" y1="8" x2="9" y2="26" stroke="#7C3AED" stroke-width="0.6" opacity="0.4"/>
+      <line x1="30" y1="27" x2="10" y2="27" stroke="#22D3EE" stroke-width="0.6" opacity="0.4"/>
+      <circle cx="20" cy="20" r="2.5" fill="url(#nlg)" opacity="0.6"/>
+    </svg>
+    <span class="nav-logo-name">Dark<span class="matter-grad">Matter</span></span>
+  </a>
+  <div class="nav-sep"></div>
+  <a class="nav-link" href="/pricing" style="margin-right:1rem;">Pricing</a>
+  <a class="nav-link" href="/why">Why DarkMatter</a>
+</nav>
+
+<div class="page">
+  <!-- Left -->
+  <div>
+    <div class="left-eyebrow">// enterprise</div>
+    <h1 class="left-title">Built for teams that can't afford ambiguity in their AI systems</h1>
+    <p class="left-sub">Enterprise plans include BYOK encryption, W3C DID agent identity, dedicated tenant instances, and SLA support. We'll respond within 24 hours.</p>
+
+    <div class="feature-list">
+      <div class="feature-item">
+        <div class="feature-icon">🔐</div>
+        <div class="feature-text">
+          <div class="feature-title">BYOK Encryption</div>
+          <div class="feature-desc">Your context payloads encrypted with a key you control. DarkMatter stores only ciphertext — we cannot read your data.</div>
+        </div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon">🪪</div>
+        <div class="feature-text">
+          <div class="feature-title">W3C DID Agent Identity</div>
+          <div class="feature-desc">Cryptographically verifiable agent identities using W3C Decentralized Identifiers. Audit trails independently verifiable without trusting DarkMatter.</div>
+        </div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon">🏢</div>
+        <div class="feature-text">
+          <div class="feature-title">Dedicated Tenant Instance</div>
+          <div class="feature-desc">Your own isolated infrastructure. No shared database with other customers. Deploy in our cloud or inside your network.</div>
+        </div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon">📋</div>
+        <div class="feature-text">
+          <div class="feature-title">Compliance Reports</div>
+          <div class="feature-desc">Structured audit artifacts ready for regulators. EU AI Act Art. 12 and 19, financial sector, healthcare AI, and custom formats.</div>
+        </div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon">⚡</div>
+        <div class="feature-text">
+          <div class="feature-title">SLA and Priority Support</div>
+          <div class="feature-desc">Uptime SLA, dedicated Slack channel, and a direct line to the team. Not a ticket queue.</div>
+        </div>
+      </div>
+    </div>
+
+    <p class="contact-note">Prefer email? Reach us directly at <a href="mailto:hello@darkmatterhub.ai" style="color:var(--violet);text-decoration:none;">hello@darkmatterhub.ai</a>. We typically respond same day.</p>
+  </div>
+
+  <!-- Right: Form -->
+  <div>
+    <div class="form-card">
+      <div id="form-wrap">
+        <div class="form-title">Tell us about your use case</div>
+        <div class="form-sub">No sales pitch. We'll read this and respond with something useful.</div>
+
+        <div class="field">
+          <label>Company name</label>
+          <input type="text" id="ent-company" placeholder="Acme Corp"/>
+        </div>
+        <div class="field">
+          <label>Your name</label>
+          <input type="text" id="ent-name" placeholder="Jane Smith"/>
+        </div>
+        <div class="field">
+          <label>Work email *</label>
+          <input type="email" id="ent-email" placeholder="jane@acme.com"/>
+        </div>
+        <div class="field">
+          <label>Team size</label>
+          <select id="ent-size">
+            <option value="">Select...</option>
+            <option value="1-10">1-10 people</option>
+            <option value="11-50">11-50 people</option>
+            <option value="51-200">51-200 people</option>
+            <option value="200+">200+ people</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Features you need</label>
+          <div class="checkbox-group">
+            <label class="checkbox-item"><input type="checkbox" value="byok"/> BYOK encryption</label>
+            <label class="checkbox-item"><input type="checkbox" value="did"/> W3C DID agent identity</label>
+            <label class="checkbox-item"><input type="checkbox" value="dedicated"/> Dedicated tenant instance</label>
+            <label class="checkbox-item"><input type="checkbox" value="compliance"/> Compliance reports</label>
+            <label class="checkbox-item"><input type="checkbox" value="selfhost"/> Self-host deployment</label>
+          </div>
+        </div>
+        <div class="field">
+          <label>What are you building?</label>
+          <textarea id="ent-usecase" placeholder="Brief description of your pipeline, the problem you're solving, and any compliance or security requirements..."></textarea>
+        </div>
+
+        <button class="submit-btn" onclick="submitEnterprise()">Send inquiry →</button>
+        <div id="ent-error" style="display:none;margin-top:0.75rem;font-size:0.75rem;color:#EF4444;"></div>
+      </div>
+
+      <div class="success" id="form-success">
+        <div class="success-icon">✓</div>
+        <div class="success-title">Got it — we'll be in touch within 24 hours</div>
+        <div class="success-sub">In the meantime, explore the <a href="/demo" style="color:var(--violet);text-decoration:none;">live demo</a> or <a href="/docs" style="color:var(--violet);text-decoration:none;">read the docs</a>.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  async function submitEnterprise() {
+    const email = document.getElementById('ent-email').value.trim();
+    if (!email) {
+      const err = document.getElementById('ent-error');
+      err.textContent = 'Email is required.';
+      err.style.display = 'block';
+      return;
+    }
+
+    const features = [...document.querySelectorAll('.checkbox-item input:checked')].map(el => el.value);
+
+    try {
+      const res = await fetch('/enterprise/inquiry', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          companyName: document.getElementById('ent-company').value,
+          name:        document.getElementById('ent-name').value,
+          email,
+          teamSize:    document.getElementById('ent-size').value,
+          useCase:     document.getElementById('ent-usecase').value,
+          features,
+        }),
+      });
+      const data = await res.json();
+      if (data.received) {
+        document.getElementById('form-wrap').style.display = 'none';
+        document.getElementById('form-success').style.display = 'block';
+      }
+    } catch(e) {
+      const err = document.getElementById('ent-error');
+      err.textContent = 'Something went wrong — please email hello@darkmatterhub.ai directly.';
+      err.style.display = 'block';
+    }
+  }
+</script>
+</body>
+</html>

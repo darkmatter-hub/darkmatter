@@ -155,3 +155,83 @@ alter table commits
 
 create index if not exists commits_fork_of_idx      on commits(fork_of);
 create index if not exists commits_lineage_root_idx on commits(lineage_root);
+
+-- ═══════════════════════════════════════════════════
+-- DarkMatter — Schema v6: Enterprise features
+-- Run in Supabase SQL Editor (additive)
+-- ═══════════════════════════════════════════════════
+
+-- Enterprise accounts table
+create table if not exists enterprise_accounts (
+  id              text primary key,
+  user_id         uuid references auth.users(id) on delete cascade,
+  company_name    text not null,
+  plan            text default 'enterprise',   -- 'pro' | 'enterprise'
+  byok_key_id     text,                        -- identifier for their encryption key
+  byok_algorithm  text default 'aes-256-gcm',
+  tenant_schema   text,                        -- isolated schema name if dedicated
+  did_document    jsonb,                       -- W3C DID document for this account
+  created_at      timestamptz default now(),
+  active          boolean default true
+);
+
+-- Add enterprise fields to agents table
+alter table agents
+  add column if not exists did_id          text,        -- W3C DID identifier
+  add column if not exists did_public_key  text,        -- DID verification key
+  add column if not exists encrypted       boolean default false,
+  add column if not exists key_id          text;        -- reference to enterprise key
+
+-- Add encryption fields to commits table
+alter table commits
+  add column if not exists encrypted_payload  text,     -- AES-256-GCM encrypted blob
+  add column if not exists key_id             text,     -- key used for encryption
+  add column if not exists iv                 text,     -- initialization vector
+  add column if not exists auth_tag           text,     -- GCM auth tag
+  add column if not exists did_signature      text;     -- DID signature on payload hash
+
+-- Enterprise keys table (stores key metadata, never the actual key)
+create table if not exists enterprise_keys (
+  key_id          text primary key,
+  account_id      text references enterprise_accounts(id) on delete cascade,
+  key_hint        text,           -- last 4 chars of key for identification
+  algorithm       text default 'aes-256-gcm',
+  created_at      timestamptz default now(),
+  rotated_at      timestamptz,
+  active          boolean default true
+);
+
+-- Enterprise inquiries (self-serve form)
+create table if not exists enterprise_inquiries (
+  id              text primary key,
+  company_name    text,
+  name            text,
+  email           text not null,
+  use_case        text,
+  team_size       text,
+  features        text[],         -- ['byok','did','dedicated','compliance']
+  message         text,
+  created_at      timestamptz default now(),
+  contacted       boolean default false
+);
+
+-- Indexes
+create index if not exists enterprise_accounts_user_idx on enterprise_accounts(user_id);
+create index if not exists enterprise_keys_account_idx  on enterprise_keys(account_id);
+create index if not exists commits_key_id_idx           on commits(key_id);
+
+-- RLS
+alter table enterprise_accounts  enable row level security;
+alter table enterprise_keys       enable row level security;
+alter table enterprise_inquiries  enable row level security;
+
+create policy "users see own enterprise account"
+  on enterprise_accounts for all
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+create policy "service manages enterprise keys"
+  on enterprise_keys for all using (true) with check (true);
+
+create policy "service manages inquiries"
+  on enterprise_inquiries for insert with check (true);
