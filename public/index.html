@@ -222,25 +222,9 @@
     .cta-secondary:hover { border-color: var(--text2); color: var(--text); }
 
     /* ── STATS ── */
-    .stats-row {
-      display: flex; align-items: center; gap: 2.5rem;
-      justify-content: center; flex-wrap: wrap;
-      position: relative; z-index: 1;
-    }
-
-    .stat-item { text-align: center; }
-
-    .stat-num {
-      font-size: 1.9rem; font-weight: 800;
-      line-height: 1; margin-bottom: 0.2rem;
-      color: var(--text); font-variant-numeric: tabular-nums;
-    }
     .stat-num.c { color: var(--accent); }
     .stat-num.g { color: var(--green); }
     .stat-num.r { color: var(--red); }
-
-    .stat-lbl { font-size: 0.7rem; color: var(--text3); }
-    .stat-sep { width: 1px; height: 28px; background: var(--border); }
 
     /* ══════════════════════════════════════
        USE CASE SECTION
@@ -579,13 +563,7 @@
       Live Demo →
     </a>
   </div>
-</div>
-    <div class="stat-sep"></div>
-    <div class="stat-item"><div class="stat-num" id="stat-commits">—</div><div class="stat-lbl">commits</div></div>
-    <div class="stat-sep"></div>
-    <div class="stat-item"><div class="stat-num g" id="stat-verified">—</div><div class="stat-lbl">verified</div></div>
-    <div class="stat-sep"></div>
-    <div class="stat-item"><div class="stat-num r" id="stat-rejected">—</div><div class="stat-lbl">rejected</div></div>
+</div><div class="stat-lbl">commits</div></div><div class="stat-lbl">verified</div></div><div class="stat-lbl">rejected</div></div>
   </div>
 </div>
 
@@ -770,7 +748,7 @@
             <span style="color:var(--green)">✓</span> Stored outside your infrastructure — tamper-evident
           </div>
           <div style="font-size:0.78rem;color:var(--text2);display:flex;gap:0.5rem;">
-            <span style="color:var(--green)">✓</span> Meets EU AI Act Art. 12 &amp; 19 logging requirements
+            <span style="color:var(--green)">✓</span> Meets regulations such as EU AI Act Art. 12 &amp; 19 logging requirements
           </div>
           <div style="font-size:0.78rem;color:var(--text2);display:flex;gap:0.5rem;">
             <span style="color:var(--green)">✓</span> Export full audit log as CSV for regulators
@@ -1135,10 +1113,6 @@ print(context["nextTask"])  # "generate executive summary"`;
     try {
       const res  = await fetch('/api/stats');
       const data = await res.json();
-      document.getElementById('stat-agents').textContent   = typeof data.agents   === 'number' ? data.agents   : '—';
-      document.getElementById('stat-commits').textContent  = typeof data.commits  === 'number' ? data.commits  : '—';
-      document.getElementById('stat-verified').textContent = typeof data.verified === 'number' ? data.verified : '—';
-      document.getElementById('stat-rejected').textContent = typeof data.rejected === 'number' ? data.rejected : '—';
     } catch(e) {}
   }
 
