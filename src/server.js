@@ -1091,6 +1091,39 @@ app.get('/api/export/:ctxId', requireApiKey, async (req, res) => {
 // ENTERPRISE FEATURES
 // ═══════════════════════════════════════════════════
 
+// ── requireEnterprise middleware ─────────────────
+async function requireEnterprise(req, res, next) {
+  try {
+    const userId = req.user?.id || req.agent?.user_id;
+
+    if (!userId) {
+      return res.status(403).json({
+        error: 'Enterprise plan required',
+        hint:  'BYOK encryption, W3C DID, and compliance reports require an Enterprise plan. See darkmatterhub.ai/pricing',
+      });
+    }
+
+    const { data: account } = await supabaseService
+      .from('enterprise_accounts')
+      .select('id, plan, active')
+      .eq('user_id', userId)
+      .eq('active', true)
+      .single();
+
+    if (!account) {
+      return res.status(403).json({
+        error: 'Enterprise plan required',
+        hint:  'Visit darkmatterhub.ai/enterprise to get started.',
+      });
+    }
+
+    req.enterpriseAccount = account;
+    next();
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}
+
 // ── Encryption helpers (AES-256-GCM) ─────────────
 function encryptPayload(plaintext, keyHex) {
   const key = Buffer.from(keyHex, 'hex');
@@ -1167,7 +1200,7 @@ app.post('/enterprise/register', requireAuth, async (req, res) => {
 
 // ── POST /enterprise/commit ── encrypted commit ──
 // Agent commits with BYOK encryption — payload encrypted before storage
-app.post('/enterprise/commit', apiLimiter, requireApiKey, async (req, res) => {
+app.post('/enterprise/commit', apiLimiter, requireApiKey, requireEnterprise, async (req, res) => {
   try {
     const { toAgentId, payload, parentId, traceId, branchKey, agent, byokKey } = req.body;
 
@@ -1254,7 +1287,7 @@ app.post('/enterprise/commit', apiLimiter, requireApiKey, async (req, res) => {
 
 // ── POST /enterprise/decrypt ── decrypt a context ─
 // Client provides their key to decrypt a specific commit
-app.post('/enterprise/decrypt/:ctxId', requireApiKey, async (req, res) => {
+app.post('/enterprise/decrypt/:ctxId', requireApiKey, requireEnterprise, async (req, res) => {
   try {
     const { ctxId } = req.params;
     const { byokKey } = req.body;
@@ -1419,7 +1452,7 @@ app.post('/enterprise/inquiry', feedbackLimiter, async (req, res) => {
 });
 
 // ── GET /enterprise/report/:traceId ── compliance PDF report
-app.get('/enterprise/report/:traceId', requireApiKey, async (req, res) => {
+app.get('/enterprise/report/:traceId', requireApiKey, requireEnterprise, async (req, res) => {
   try {
     const { traceId } = req.params;
 
