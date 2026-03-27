@@ -89,6 +89,9 @@
       position: relative;
     }
 
+    .nav-flat { font-size:0.78rem; color:var(--text2); text-decoration:none; transition:color 0.15s; padding:0.2rem 0; }
+    .nav-flat:hover { color:var(--text); }
+    .cta-nav { font-size:0.78rem; background:var(--gradient); color:#fff; padding:0.3rem 0.85rem; border-radius:6px; text-decoration:none; font-weight:500; white-space:nowrap; }
     .btn-signin {
       background: none; border: 1px solid var(--border);
       color: var(--text2); padding: 0.32rem 0.85rem;
@@ -105,43 +108,7 @@
       text-decoration: none; font-family: var(--sans);
       transition: filter 0.15s;
     }
-    .btn-signup:hover { filter: brightness(1.1); }
-
-    .hbtn {
-      background: var(--bg3); border: 1px solid var(--border);
-      width: 34px; height: 34px; border-radius: 6px;
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      gap: 4px; cursor: pointer; transition: background 0.15s;
-    }
-    .hbtn:hover { background: var(--border); }
-
-    .hbr {
-      display: block; width: 13px; height: 1.5px;
-      background: var(--text2); border-radius: 2px;
-    }
-
-    .ddrop {
-      display: none; position: absolute;
-      top: calc(100% + 8px); right: 0; min-width: 240px;
-      background: var(--bg2); border: 1px solid var(--border);
-      border-radius: 8px; box-shadow: 0 16px 48px rgba(0,0,0,0.5);
-      overflow: hidden; z-index: 200;
-    }
-    .ddrop.open { display: block; animation: ddin 0.12s ease; }
-    @keyframes ddin { from{opacity:0;transform:translateY(-5px)} to{opacity:1;transform:translateY(0)} }
-
-    .ddhead { padding:0.6rem 1rem 0.3rem; font-family:var(--mono); font-size:0.56rem; color:var(--text3); letter-spacing:0.14em; text-transform:uppercase; }
-
-    .dditem {
-      display:flex; align-items:center; gap:0.7rem;
-      padding:0.6rem 1rem; color:var(--text); text-decoration:none;
-      font-size:0.82rem; font-weight:500;
-      border-top:1px solid var(--bg3); transition:background 0.1s;
-    }
-    .dditem:hover { background:var(--bg3); }
-    .ddicon { color:var(--text2); font-size:0.9rem; }
-    .ddhint { font-size:0.65rem; color:var(--text3); font-weight:400; display:block; margin-top:1px; }
+    .btn-signup:hover { filter: brightness(1.1); } }
 
     /* ══════════════════════════════════════
        HERO
@@ -504,43 +471,6 @@
     <a class="btn-signin" href="/login" title="Sign in / Sign up" style="display:flex;align-items:center;gap:0.35rem;font-size:0.78rem;color:var(--text2);text-decoration:none;padding:0.25rem 0.6rem;border:1px solid var(--border);border-radius:6px;transition:all 0.15s;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--text)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text2)'">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
     </a>
-    <button class="hbtn" onclick="toggleMenu()" id="hb">
-      <span class="hbr"></span><span class="hbr"></span><span class="hbr"></span>
-    </button>
-    <div class="ddrop" id="dd">
-      <div class="ddhead">DarkMatter</div>
-      <a class="dditem" href="/signup">
-        <span class="ddicon">✦</span>
-        <div>Sign up free<span class="ddhint">Create account · get API key</span></div>
-      </a>
-      <a class="dditem" href="/demo">
-        <div>Live Demo<span class="ddhint">See a 3-agent chain in action</span></div>
-      </a>
-      <a class="dditem" href="/blog">
-        <div>Blog<span class="ddhint">Updates and technical writing</span></div>
-      </a>
-      <a class="dditem" href="https://github.com/darkmatter-hub/darkmatter" target="_blank">
-        <span class="ddicon">⌥</span>
-        <div>GitHub<span class="ddhint">Source code · MIT License</span></div>
-      </a>
-      <a class="dditem" href="https://github.com/darkmatter-hub/darkmatter#real-world-example-claude--gpt-pipeline" target="_blank">
-        <span class="ddicon">⚡</span>
-        <div>Real-world Example<span class="ddhint">Claude → GPT pipeline walkthrough</span></div>
-      </a>
-      <a class="dditem" href="https://github.com/darkmatter-hub/darkmatter#api-reference" target="_blank">
-        <span class="ddicon">⌘</span>
-        <div>API Docs<span class="ddhint">Full endpoint reference</span></div>
-      </a>
-      <a class="dditem" href="https://github.com/darkmatter-hub/darkmatter/issues/new" target="_blank">
-        <span class="ddicon">◎</span>
-        <div>Open an Issue<span class="ddhint">Bug reports · feedback</span></div>
-      </a>
-      <a class="dditem" href="https://github.com/darkmatter-hub/darkmatter/blob/main/PRODUCTION.md" target="_blank">
-        <span class="ddicon">⬡</span>
-        <div>Self-host<span class="ddhint">Deploy inside your own network</span></div>
-      </a>
-    </div>
-  </div>
 </header>
 
 <!-- HERO -->
@@ -562,8 +492,6 @@
     <a class="cta-secondary" href="/demo">
       Live Demo →
     </a>
-  </div>
-</div><div class="stat-lbl">commits</div></div><div class="stat-lbl">verified</div></div><div class="stat-lbl">rejected</div></div>
   </div>
 </div>
 
@@ -1117,7 +1045,6 @@ print(context["nextTask"])  # "generate executive summary"`;
   }
 
   // ── Menu ─────────────────────────────────────────────
-  function toggleMenu() { document.getElementById('dd').classList.toggle('open'); }
   document.addEventListener('click', e => {
     const b=document.getElementById('hb'), d=document.getElementById('dd');
     if(b&&d&&!b.contains(e.target)&&!d.contains(e.target)) d.classList.remove('open');
@@ -1159,9 +1086,7 @@ print(context["nextTask"])  # "generate executive summary"`;
       // Hide GitHub button when logged in — Dashboard is the primary action
       const ctaSecondary = document.querySelector('.cta-secondary');
       if (ctaSecondary) ctaSecondary.style.display = 'none';
-      document.querySelectorAll('.dditem').forEach(el => {
-        if (el.href && el.href.includes('/signup')) el.style.display = 'none';
-      });
+      document.querySelectorAll(');
     }
   } catch(e) {}
 
