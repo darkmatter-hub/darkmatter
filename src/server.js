@@ -1549,6 +1549,7 @@ app.get('/enterprise/report/:traceId', requireApiKey, requireEnterprise, async (
 });
 
 // Page routes for new pages
+app.get('/security',   (req, res) => res.sendFile(path.join(__dirname, '../public/security.html')));
 app.get('/pricing',    (req, res) => res.sendFile(path.join(__dirname, '../public/pricing.html')));
 app.get('/why',        (req, res) => res.sendFile(path.join(__dirname, '../public/why.html')));
 app.get('/docs',       (req, res) => res.sendFile(path.join(__dirname, '../public/docs.html')));

@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Security — DarkMatter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+  :root{--bg:#0B0F14;--bg2:#121826;--bg3:#1a2332;--border:#1e2d45;--text:#e6edf3;--text2:#8b949e;--text3:#484f58;--violet:#7C3AED;--blue:#2563EB;--cyan:#22D3EE;--green:#10B981;--amber:#F59E0B;--gradient:linear-gradient(90deg,#7C3AED 0%,#2563EB 55%,#22D3EE 100%);--display:'Space Grotesk',sans-serif;--sans:'Inter',sans-serif;--mono:'IBM Plex Mono',monospace;}
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:var(--sans);-webkit-font-smoothing:antialiased;}
+  nav{display:flex;align-items:center;gap:1.5rem;padding:0.85rem 2rem;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:50;background:rgba(11,15,20,0.95);backdrop-filter:blur(8px);}
+  .nav-logo{display:flex;align-items:center;gap:0.65rem;text-decoration:none;margin-right:auto;}
+  .nav-logo-mark{width:28px;height:28px;}
+  .nav-logo-name{font-family:var(--display);font-weight:700;font-size:1rem;color:var(--text);letter-spacing:-0.02em;}
+  .matter-grad{background:var(--gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+  .nav-link{font-size:0.78rem;color:var(--text2);text-decoration:none;transition:color 0.15s;}
+  .nav-link:hover{color:var(--text);}
+  .nav-cta{font-size:0.78rem;background:var(--gradient);color:#fff;padding:0.3rem 0.85rem;border-radius:6px;text-decoration:none;font-weight:500;}
+  .page{max-width:780px;margin:0 auto;padding:3.5rem 2rem 5rem;}
+  .eyebrow{font-family:var(--mono);font-size:0.6rem;color:var(--text3);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:0.85rem;}
+  h1{font-family:var(--display);font-size:2rem;font-weight:700;letter-spacing:-0.03em;margin-bottom:0.75rem;}
+  .lead{font-size:0.95rem;color:var(--text2);line-height:1.75;margin-bottom:2.5rem;padding-bottom:2rem;border-bottom:1px solid var(--border);}
+  h2{font-family:var(--display);font-size:1.05rem;font-weight:700;letter-spacing:-0.02em;margin:2.5rem 0 0.85rem;color:var(--text);}
+  p{font-size:0.87rem;color:var(--text2);line-height:1.75;margin-bottom:0.75rem;}
+  .control-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.85rem;margin-bottom:2rem;}
+  @media(max-width:600px){.control-grid{grid-template-columns:1fr;}}
+  .control{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:1rem 1.1rem;}
+  .control-title{font-size:0.82rem;font-weight:600;color:var(--text);margin-bottom:0.25rem;display:flex;align-items:center;gap:0.5rem;}
+  .control-badge{font-family:var(--mono);font-size:0.55rem;padding:0.1rem 0.4rem;border-radius:100px;font-weight:500;}
+  .badge-active{background:rgba(16,185,129,0.12);color:var(--green);border:1px solid rgba(16,185,129,0.25);}
+  .badge-ent{background:rgba(124,58,237,0.12);color:var(--violet);border:1px solid rgba(124,58,237,0.25);}
+  .badge-wip{background:rgba(245,158,11,0.12);color:var(--amber);border:1px solid rgba(245,158,11,0.25);}
+  .control-desc{font-size:0.75rem;color:var(--text2);line-height:1.6;}
+  .resp-table{width:100%;border-collapse:collapse;font-size:0.82rem;margin-bottom:2rem;}
+  .resp-table th{font-family:var(--mono);font-size:0.58rem;color:var(--text3);letter-spacing:0.1em;text-transform:uppercase;padding:0.5rem 0.75rem;border-bottom:1px solid var(--border);text-align:left;}
+  .resp-table th:not(:first-child){text-align:center;}
+  .resp-table td{padding:0.6rem 0.75rem;border-bottom:1px solid var(--bg3);color:var(--text2);vertical-align:top;}
+  .resp-table td:not(:first-child){text-align:center;}
+  .resp-table tr:hover td{background:var(--bg2);}
+  .tick{color:var(--green);font-weight:700;}
+  .ctick{color:var(--violet);font-weight:700;}
+  .downloads{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin:1.5rem 0;}
+  @media(max-width:500px){.downloads{grid-template-columns:1fr;}}
+  .dl-card{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:1.25rem;display:flex;flex-direction:column;gap:0.5rem;transition:border-color 0.15s;}
+  .dl-card:hover{border-color:var(--violet);}
+  .dl-title{font-size:0.9rem;font-weight:600;color:var(--text);}
+  .dl-desc{font-size:0.75rem;color:var(--text2);line-height:1.5;flex:1;}
+  .dl-btn{display:inline-flex;align-items:center;gap:0.4rem;font-size:0.75rem;color:var(--violet);text-decoration:none;font-weight:500;margin-top:0.25rem;}
+  .dl-btn:hover{text-decoration:underline;}
+  .cert-row{display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:2rem;}
+  .cert{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:1rem 1.25rem;flex:1;min-width:180px;}
+  .cert-title{font-size:0.82rem;font-weight:600;color:var(--text);margin-bottom:0.2rem;}
+  .cert-status{font-family:var(--mono);font-size:0.6rem;color:var(--amber);letter-spacing:0.08em;}
+  .cert-desc{font-size:0.72rem;color:var(--text2);margin-top:0.35rem;line-height:1.5;}
+</style>
+</head>
+<body>
+<nav>
+  <a class="nav-logo" href="/">
+    <svg class="nav-logo-mark" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs><linearGradient id="nlg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#7C3AED"/><stop offset="55%" stop-color="#2563EB"/><stop offset="100%" stop-color="#22D3EE"/></linearGradient></defs>
+      <circle cx="20" cy="20" r="17" stroke="#1e2d45" stroke-width="0.8" stroke-dasharray="2 3"/>
+      <circle cx="20" cy="20" r="12" stroke="#243040" stroke-width="0.5" opacity="0.6"/>
+      <circle cx="20" cy="5" r="3.2" fill="#7C3AED" opacity="0.95"/>
+      <circle cx="33" cy="28" r="2.6" fill="#2563EB" opacity="0.95"/>
+      <circle cx="7" cy="28" r="2.2" fill="#22D3EE" opacity="0.9"/>
+      <line x1="20" y1="8" x2="31" y2="26" stroke="url(#nlg)" stroke-width="0.6" opacity="0.5"/>
+      <line x1="20" y1="8" x2="9" y2="26" stroke="#7C3AED" stroke-width="0.6" opacity="0.4"/>
+      <line x1="30" y1="27" x2="10" y2="27" stroke="#22D3EE" stroke-width="0.6" opacity="0.4"/>
+      <circle cx="20" cy="20" r="2.5" fill="url(#nlg)" opacity="0.6"/>
+    </svg>
+    <span class="nav-logo-name">Dark<span class="matter-grad">Matter</span></span>
+  </a>
+  <a class="nav-link" href="/docs">Docs</a>
+  <a class="nav-link" href="/pricing">Pricing</a>
+  <a class="nav-link" href="/enterprise">Enterprise</a>
+  <a class="nav-cta" href="/signup">Get API Key</a>
+</nav>
+
+<div class="page">
+  <div class="eyebrow">Security</div>
+  <h1>Security at DarkMatter</h1>
+  <p class="lead">DarkMatter is infrastructure for AI audit trails. Security is not a feature — it is the foundation. This page describes our controls, shared responsibilities, and the documents available for your security review team.</p>
+
+  <!-- Downloads -->
+  <h2>Documents for your team</h2>
+  <div class="downloads">
+    <div class="dl-card">
+      <div class="dl-title">Legal and Compliance Overview</div>
+      <div class="dl-desc">For Legal, Compliance, and DPO teams. Covers regulatory alignment (EU AI Act, US state laws, financial sector), data handling, retention policies, and the independence guarantee.</div>
+      <a class="dl-btn" href="/darkmatter-compliance.pdf" download>Download PDF →</a>
+    </div>
+    <div class="dl-card">
+      <div class="dl-title">Information Security Overview</div>
+      <div class="dl-desc">For InfoSec and CISO teams. Covers encryption controls, authentication model, rate limiting, SSRF protection, shared responsibility model, and incident response.</div>
+      <a class="dl-btn" href="/darkmatter-security.pdf" download>Download PDF →</a>
+    </div>
+  </div>
+
+  <!-- Security controls -->
+  <h2>Security controls</h2>
+  <div class="control-grid">
+    <div class="control">
+      <div class="control-title">Encryption in transit <span class="control-badge badge-active">Active</span></div>
+      <div class="control-desc">TLS 1.3 enforced on all API endpoints and dashboard traffic. No unencrypted connections accepted.</div>
+    </div>
+    <div class="control">
+      <div class="control-title">Encryption at rest <span class="control-badge badge-active">Active</span></div>
+      <div class="control-desc">All data encrypted at rest via Supabase managed AES-256 encryption.</div>
+    </div>
+    <div class="control">
+      <div class="control-title">BYOK encryption <span class="control-badge badge-ent">Enterprise</span></div>
+      <div class="control-desc">Client-provided AES-256-GCM key. DarkMatter stores only ciphertext. Your key is never stored on our systems.</div>
+    </div>
+    <div class="control">
+      <div class="control-title">Tamper-evident chain <span class="control-badge badge-active">Active</span></div>
+      <div class="control-desc">SHA-256 parent hash chaining. Modifying any commit breaks every downstream hash — detectable without trusting DarkMatter.</div>
+    </div>
+    <div class="control">
+      <div class="control-title">Authentication <span class="control-badge badge-active">Active</span></div>
+      <div class="control-desc">Supabase JWT for dashboard. Bearer token API keys for agents. Keys hashed at rest, never stored in plaintext.</div>
+    </div>
+    <div class="control">
+      <div class="control-title">Rate limiting <span class="control-badge badge-active">Active</span></div>
+      <div class="control-desc">Per-endpoint limits: auth 20 req/15min, API 120 req/min, feedback 5 req/hr.</div>
+    </div>
+    <div class="control">
+      <div class="control-title">SSRF protection <span class="control-badge badge-active">Active</span></div>
+      <div class="control-desc">Webhook URLs validated against blocklist of private IP ranges, loopback, and cloud metadata endpoints.</div>
+    </div>
+    <div class="control">
+      <div class="control-title">Security headers <span class="control-badge badge-active">Active</span></div>
+      <div class="control-desc">helmet.js: HSTS, X-Frame-Options, X-Content-Type-Options, referrer policy.</div>
+    </div>
+    <div class="control">
+      <div class="control-title">Row-level security <span class="control-badge badge-active">Active</span></div>
+      <div class="control-desc">Supabase RLS policies enforce tenant isolation at the database layer. Users can only access their own agents and commits.</div>
+    </div>
+    <div class="control">
+      <div class="control-title">Input sanitization <span class="control-badge badge-active">Active</span></div>
+      <div class="control-desc">All user input sanitized and length-limited before processing or storage. HTML injection prevented.</div>
+    </div>
+    <div class="control">
+      <div class="control-title">W3C DID identity <span class="control-badge badge-ent">Enterprise</span></div>
+      <div class="control-desc">Cryptographically verifiable agent identities. Audit trails independently verifiable without trusting DarkMatter.</div>
+    </div>
+    <div class="control">
+      <div class="control-title">SOC 2 Type 2 <span class="control-badge badge-wip">In progress</span></div>
+      <div class="control-desc">Working toward SOC 2 Type 2 certification. Expected completion 2027. Contact us for current security posture documentation.</div>
+    </div>
+  </div>
+
+  <!-- Shared responsibility -->
+  <h2>Shared responsibility model</h2>
+  <p>Security is a shared responsibility between DarkMatter and our customers.</p>
+  <table class="resp-table">
+    <thead>
+      <tr><th>Responsibility</th><th>DarkMatter</th><th>Customer</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Platform infrastructure and hosting security</td><td class="tick">Yes</td><td></td></tr>
+      <tr><td>Encryption in transit and at rest</td><td class="tick">Yes</td><td></td></tr>
+      <tr><td>Database security and backups</td><td class="tick">Yes</td><td></td></tr>
+      <tr><td>Rate limiting and DDoS mitigation</td><td class="tick">Yes</td><td></td></tr>
+      <tr><td>API key hashing and secure storage</td><td class="tick">Yes</td><td></td></tr>
+      <tr><td>Tamper-evident hash chain integrity</td><td class="tick">Yes</td><td></td></tr>
+      <tr><td>BYOK key custody, storage, and rotation</td><td></td><td class="ctick">Customer</td></tr>
+      <tr><td>Agent API key rotation and revocation</td><td></td><td class="ctick">Customer</td></tr>
+      <tr><td>Secure storage of API keys in customer systems</td><td></td><td class="ctick">Customer</td></tr>
+      <tr><td>Content and classification of committed payloads</td><td></td><td class="ctick">Customer</td></tr>
+      <tr><td>Agent authorization and access control logic</td><td></td><td class="ctick">Customer</td></tr>
+      <tr><td>Network security for self-hosted deployments</td><td></td><td class="ctick">Customer</td></tr>
+    </tbody>
+  </table>
+
+  <!-- Sub-processors -->
+  <h2>Sub-processors</h2>
+  <p>DarkMatter uses the following third-party sub-processors. Enterprise customers with specific data residency requirements should consider the self-hosted deployment option.</p>
+  <table class="resp-table">
+    <thead>
+      <tr><th>Provider</th><th>Purpose</th><th>Region</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Supabase</td><td>PostgreSQL database and authentication</td><td>US (AWS us-east-1)</td></tr>
+      <tr><td>Railway</td><td>Application hosting and deployment</td><td>US</td></tr>
+      <tr><td>Resend</td><td>Transactional email (confirmation, notifications)</td><td>US</td></tr>
+      <tr><td>Cloudflare</td><td>DNS, CDN, and DDoS mitigation</td><td>Global edge</td></tr>
+    </tbody>
+  </table>
+
+  <!-- Certifications -->
+  <h2>Certifications and compliance</h2>
+  <div class="cert-row">
+    <div class="cert">
+      <div class="cert-title">SOC 2 Type 2</div>
+      <div class="cert-status">In progress</div>
+      <div class="cert-desc">Audit period expected to begin Q1 2027. Contact us for current security documentation.</div>
+    </div>
+    <div class="cert">
+      <div class="cert-title">EU AI Act alignment</div>
+      <div class="cert-status">Supported</div>
+      <div class="cert-desc">DarkMatter's audit trail architecture is designed to support Art. 12 and 19 logging requirements.</div>
+    </div>
+    <div class="cert">
+      <div class="cert-title">GDPR</div>
+      <div class="cert-status">Supported</div>
+      <div class="cert-desc">Data export and deletion available at any time. DPA available on request for enterprise customers.</div>
+    </div>
+  </div>
+
+  <!-- Contact -->
+  <h2>Vulnerability disclosure and contact</h2>
+  <p>To report a security vulnerability, email <a href="mailto:hello@darkmatterhub.ai" style="color:var(--violet);text-decoration:none;">hello@darkmatterhub.ai</a> with details. We target acknowledgment within 24 hours and resolution within 7 days for critical issues.</p>
+  <p>For security review requests, vendor questionnaires, or DPA inquiries, contact <a href="mailto:hello@darkmatterhub.ai" style="color:var(--violet);text-decoration:none;">hello@darkmatterhub.ai</a>.</p>
+</div>
+</body>
+</html>
