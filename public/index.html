@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>DarkMatter — Git for AI Agents</title>
+  <title>DarkMatter, Git for AI Agents</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      /* Brand palette — DarkMatter */
+      /* Brand palette, DarkMatter */
       --bg:      #0B0F14;
       --bg2:     #121826;
       --bg3:     #1a2235;
@@ -468,9 +468,15 @@
   </a>
 
   <div class="hright">
-    <a class="btn-signin" href="/login" title="Sign in / Sign up" style="display:flex;align-items:center;gap:0.35rem;font-size:0.78rem;color:var(--text2);text-decoration:none;padding:0.25rem 0.6rem;border:1px solid var(--border);border-radius:6px;transition:all 0.15s;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--text)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text2)'">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    <a class="nav-flat" href="/demo">Demo</a>
+    <a class="nav-flat" href="/docs">Docs</a>
+    <a class="nav-flat" href="/pricing">Pricing</a>
+    <a class="nav-flat" href="/why">Why</a>
+    <a class="nav-flat" href="/blog">Blog</a>
+    <a class="btn-signin" href="/login" title="Sign in / Sign up" style="display:flex;align-items:center;gap:0.35rem;">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
     </a>
+  </div>
 </header>
 
 <!-- HERO -->
@@ -478,11 +484,10 @@
 
   <h1 class="hero-h1">Replay, fork, and verify<br><span class="matter-grad">any AI workflow.</span></h1>
 
-  <p class="hero-sub">
-    DarkMatter records agent execution as a verifiable chain,<br>
-    so you can resume, branch, and prove what happened across any model.
+  <p class="hero-sub" style="text-align:center;margin-left:auto;margin-right:auto;">
+    DarkMatter records agent execution as a verifiable chain, so you can resume, branch, and prove what happened across any model.
   </p>
-  <p style="font-size:0.82rem;color:var(--text3);margin-bottom:2rem;text-align:center;position:relative;z-index:1;line-height:1.6;max-width:480px;font-family:var(--mono);">
+  <p style="font-size:0.82rem;color:var(--text3);margin-bottom:2rem;text-align:center;margin-left:auto;margin-right:auto;position:relative;z-index:1;line-height:1.6;font-family:var(--mono);">
     Git-like history for AI workflows.
   </p>
 
@@ -507,17 +512,17 @@
 <div class="usecase-section">
   <div class="usecase-inner">
     <div class="usecase-title">What teams build with DarkMatter</div>
-    <div class="usecase-sub">Any time one AI agent hands work to another — across models, teams, or compliance boundaries.</div>
+    <div class="usecase-sub">Any time one AI agent hands work to another, across models, teams, and compliance boundaries.</div>
     <div class="usecase-grid">
       <div class="uc-card">
         <div class="uc-icon">🔗</div>
         <div class="uc-title">Portable state across any model or system</div>
-        <div class="uc-desc">Agent A researches, Agent B writes, Agent C reviews. Each inherits the previous agent's full verified context — no re-explaining, no dropped state.</div>
+        <div class="uc-desc">Agent A researches, Agent B writes, Agent C reviews. Each inherits the previous agent's full verified context, no re-explaining, no dropped state.</div>
       </div>
       <div class="uc-card">
         <div class="uc-icon">🛡️</div>
         <div class="uc-title">Immutable, attributed handoffs</div>
-        <div class="uc-desc">Agents can't trust context they didn't verify. DarkMatter authenticates every handoff — rejected commits are logged, not silently dropped.</div>
+        <div class="uc-desc">Agents can't trust context they didn't verify. DarkMatter authenticates every handoff, rejected commits are logged, not silently dropped.</div>
       </div>
       <div class="uc-card">
         <div class="uc-icon">🔄</div>
@@ -527,7 +532,7 @@
       <div class="uc-card">
         <div class="uc-icon">🌐</div>
         <div class="uc-title">Claude → GPT → Llama. Any combination.</div>
-        <div class="uc-desc">DarkMatter is model-agnostic. Any agent with an API key can commit and pull context — regardless of which LLM, provider, or framework powers it.</div>
+        <div class="uc-desc">DarkMatter is model-agnostic. Any agent with an API key can commit and pull context, regardless of which LLM, provider, or framework powers it.</div>
       </div>
       <div class="uc-card">
         <div class="uc-icon">⚡</div>
@@ -547,7 +552,7 @@
       Multi-agent AI is exploding.<br>The infrastructure isn't ready.
     </div>
     <div style="font-size:0.92rem;color:var(--text2);max-width:600px;margin:0 auto 2.5rem;line-height:1.75;">
-      Teams are chaining Claude, GPT, and open-source models together into production workflows —
+      Teams are chaining Claude, GPT, and open-source models together into production workflows ,
       but there's no standard way to pass context between them reliably, audit what happened,
       or recover when something breaks.
     </div>
@@ -555,7 +560,7 @@
       <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:1.25rem;">
         <div style="font-size:1.5rem;margin-bottom:0.6rem;">🔀</div>
         <div style="font-size:0.88rem;font-weight:700;color:var(--text);margin-bottom:0.35rem;">Cross-model is the norm</div>
-        <div style="font-size:0.78rem;color:var(--text2);line-height:1.65;">Production pipelines rarely use a single model. Claude for reasoning, GPT for writing, Llama for cost — but nothing connects them reliably.</div>
+        <div style="font-size:0.78rem;color:var(--text2);line-height:1.65;">Production pipelines rarely use a single model. Claude for reasoning, GPT for writing, Llama for cost, but nothing connects them reliably.</div>
       </div>
       <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:1.25rem;">
         <div style="font-size:1.5rem;margin-bottom:0.6rem;">⚖️</div>
@@ -596,7 +601,7 @@
         <div style="border-top:1px solid var(--border);padding-top:1.25rem;">
           <div style="font-size:0.85rem;color:var(--text2);display:flex;gap:0.75rem;align-items:flex-start;">
             <span style="background:var(--gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;font-weight:700;font-size:1rem;">→</span>
-            <span>DarkMatter is <strong style="color:var(--text);">the execution history layer</strong> — immutable, portable, replayable. It records exactly what happened, and lets you replay or fork it.</span>
+            <span>DarkMatter is <strong style="color:var(--text);">the execution history layer</strong>, immutable, portable, replayable. It records exactly what happened, and lets you replay or fork it.</span>
           </div>
         </div>
       </div>
@@ -616,13 +621,13 @@
         <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:1rem 1.25rem;position:relative;overflow:hidden;">
           <div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(124,58,237,0.06),rgba(34,211,238,0.04));pointer-events:none;"></div>
           <div style="font-size:0.72rem;font-weight:700;margin-bottom:0.2rem;background:var(--gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">DarkMatter</div>
-          <div style="font-size:0.72rem;color:var(--text2);position:relative;"><strong style="color:var(--text);">remembers exactly what happened</strong> — replay, fork, prove</div>
+          <div style="font-size:0.72rem;color:var(--text2);position:relative;"><strong style="color:var(--text);">remembers exactly what happened</strong>, replay, fork, prove</div>
         </div>
       </div>
     </div>
     <div style="margin-top:2rem;padding:1.25rem 1.5rem;background:var(--bg3);border:1px solid var(--border);border-radius:8px;font-size:0.88rem;color:var(--text2);line-height:1.7;text-align:center;">
       LangChain runs your agents. Pinecone finds your data. Datadog monitors your system.<br>
-      <strong style="color:var(--text);">DarkMatter remembers exactly what happened — and lets you replay or fork it.</strong>
+      <strong style="color:var(--text);">DarkMatter remembers exactly what happened, and lets you replay or fork it.</strong>
     </div>
   </div>
 </div>
@@ -641,7 +646,7 @@
         </div>
         <div style="font-size:0.8rem;color:var(--text2);line-height:1.75;margin-bottom:1.1rem;">
           When Agent X (Claude) finishes work and needs to hand off to Agent Y (GPT),
-          DarkMatter gives every agent decision a permanent, immutable ID. Commit state, pass the ID, pull the full context anywhere — the same primitives as Git, applied to agent execution.
+          DarkMatter gives every agent decision a permanent, immutable ID. Commit state, pass the ID, pull the full context anywhere, the same primitives as Git, applied to agent execution.
         </div>
         <div style="display:flex;flex-direction:column;gap:0.5rem;">
           <div style="font-size:0.78rem;color:var(--text2);display:flex;gap:0.5rem;">
@@ -666,14 +671,14 @@
           Independent audit trails for AI systems
         </div>
         <div style="font-size:0.8rem;color:var(--text2);line-height:1.75;margin-bottom:1.1rem;">
-          Regulations including the EU AI Act (Art. 12 &amp; 19), US state AI laws, and sector-specific frameworks require high-risk AI systems to produce immutable, tamper-evident logs. A company storing its own AI logs faces the same credibility problem as auditing its own books — DarkMatter is the independent, append-only layer that makes those logs credible to any regulator.
+          Regulations including the EU AI Act (Art. 12 &amp; 19), US state AI laws, and sector-specific frameworks require high-risk AI systems to produce immutable, tamper-evident logs. A company storing its own AI logs faces the same credibility problem as auditing its own books, DarkMatter is the independent, append-only layer that makes those logs credible to any regulator.
         </div>
         <div style="display:flex;flex-direction:column;gap:0.5rem;margin-bottom:1.1rem;">
           <div style="font-size:0.78rem;color:var(--text2);display:flex;gap:0.5rem;">
-            <span style="color:var(--green)">✓</span> Logs every agent action — commit, revert, override, consent, escalate, redact and more
+            <span style="color:var(--green)">✓</span> Logs every agent action, commit, revert, override, consent, escalate, redact and more
           </div>
           <div style="font-size:0.78rem;color:var(--text2);display:flex;gap:0.5rem;">
-            <span style="color:var(--green)">✓</span> Stored outside your infrastructure — tamper-evident
+            <span style="color:var(--green)">✓</span> Stored outside your infrastructure, tamper-evident
           </div>
           <div style="font-size:0.78rem;color:var(--text2);display:flex;gap:0.5rem;">
             <span style="color:var(--green)">✓</span> Meets regulations such as EU AI Act Art. 12 &amp; 19 logging requirements
@@ -697,19 +702,19 @@
       <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:1.5rem;">
         <div style="font-size:0.72rem;font-weight:700;color:var(--green);font-family:var(--mono);margin-bottom:1rem;letter-spacing:0.05em;">✓ BUILT FOR</div>
         <div style="display:flex;flex-direction:column;gap:0.65rem;">
-          <div style="font-size:0.82rem;color:var(--text2);display:flex;gap:0.6rem;align-items:flex-start;"><span style="color:var(--green);margin-top:0.1rem;">→</span><span><strong style="color:var(--text);">Multi-agent pipeline engineers</strong> — anyone chaining Claude, GPT, Llama, or any mix of models in production</span></div>
-          <div style="font-size:0.82rem;color:var(--text2);display:flex;gap:0.6rem;align-items:flex-start;"><span style="color:var(--green);margin-top:0.1rem;">→</span><span><strong style="color:var(--text);">AI platform teams</strong> — building internal agent infrastructure that needs audit trails and reproducibility</span></div>
-          <div style="font-size:0.82rem;color:var(--text2);display:flex;gap:0.6rem;align-items:flex-start;"><span style="color:var(--green);margin-top:0.1rem;">→</span><span><strong style="color:var(--text);">Compliance &amp; enterprise</strong> — teams subject to EU AI Act, US state laws, or sector regulations requiring tamper-evident logs</span></div>
-          <div style="font-size:0.82rem;color:var(--text2);display:flex;gap:0.6rem;align-items:flex-start;"><span style="color:var(--green);margin-top:0.1rem;">→</span><span><strong style="color:var(--text);">Researchers</strong> — anyone who needs to reproduce, compare, or fork agent behavior deterministically</span></div>
+          <div style="font-size:0.82rem;color:var(--text2);display:flex;gap:0.6rem;align-items:flex-start;"><span style="color:var(--green);margin-top:0.1rem;">→</span><span><strong style="color:var(--text);">Multi-agent pipeline engineers</strong>, anyone chaining Claude, GPT, Llama, or any mix of models in production</span></div>
+          <div style="font-size:0.82rem;color:var(--text2);display:flex;gap:0.6rem;align-items:flex-start;"><span style="color:var(--green);margin-top:0.1rem;">→</span><span><strong style="color:var(--text);">AI platform teams</strong>, building internal agent infrastructure that needs audit trails and reproducibility</span></div>
+          <div style="font-size:0.82rem;color:var(--text2);display:flex;gap:0.6rem;align-items:flex-start;"><span style="color:var(--green);margin-top:0.1rem;">→</span><span><strong style="color:var(--text);">Compliance &amp; enterprise</strong>, teams subject to EU AI Act, US state laws, or sector regulations requiring tamper-evident logs</span></div>
+          <div style="font-size:0.82rem;color:var(--text2);display:flex;gap:0.6rem;align-items:flex-start;"><span style="color:var(--green);margin-top:0.1rem;">→</span><span><strong style="color:var(--text);">Researchers</strong>, anyone who needs to reproduce, compare, or fork agent behavior deterministically</span></div>
         </div>
       </div>
       <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:1.5rem;">
         <div style="font-size:0.72rem;font-weight:700;color:var(--red);font-family:var(--mono);margin-bottom:1rem;letter-spacing:0.05em;">✗ NOT FOR</div>
         <div style="display:flex;flex-direction:column;gap:0.65rem;">
-          <div style="font-size:0.82rem;color:var(--text3);display:flex;gap:0.6rem;align-items:flex-start;"><span style="margin-top:0.1rem;">✗</span><span>Single-prompt chatbot builders — no agent handoffs means no lineage to track</span></div>
-          <div style="font-size:0.82rem;color:var(--text3);display:flex;gap:0.6rem;align-items:flex-start;"><span style="margin-top:0.1rem;">✗</span><span>Orchestration frameworks — we don't run your agents, LangChain and CrewAI do that</span></div>
-          <div style="font-size:0.82rem;color:var(--text3);display:flex;gap:0.6rem;align-items:flex-start;"><span style="margin-top:0.1rem;">✗</span><span>Vector / memory stores — we don't retrieve context by similarity, Pinecone does that</span></div>
-          <div style="font-size:0.82rem;color:var(--text3);display:flex;gap:0.6rem;align-items:flex-start;"><span style="margin-top:0.1rem;">✗</span><span>General observability — we don't monitor metrics or traces, Datadog does that</span></div>
+          <div style="font-size:0.82rem;color:var(--text3);display:flex;gap:0.6rem;align-items:flex-start;"><span style="margin-top:0.1rem;">✗</span><span>Single-prompt chatbot builders, no agent handoffs means no lineage to track</span></div>
+          <div style="font-size:0.82rem;color:var(--text3);display:flex;gap:0.6rem;align-items:flex-start;"><span style="margin-top:0.1rem;">✗</span><span>Orchestration frameworks, we don't run your agents, LangChain and CrewAI do that</span></div>
+          <div style="font-size:0.82rem;color:var(--text3);display:flex;gap:0.6rem;align-items:flex-start;"><span style="margin-top:0.1rem;">✗</span><span>Vector / memory stores, we don't retrieve context by similarity, Pinecone does that</span></div>
+          <div style="font-size:0.82rem;color:var(--text3);display:flex;gap:0.6rem;align-items:flex-start;"><span style="margin-top:0.1rem;">✗</span><span>General observability, we don't monitor metrics or traces, Datadog does that</span></div>
         </div>
       </div>
     </div>
@@ -721,7 +726,7 @@
   <div style="max-width:860px;margin:0 auto;text-align:center;">
     <div style="font-family:var(--mono);font-size:0.6rem;color:var(--text3);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:1rem;">Decision lineage</div>
     <div style="font-size:1.2rem;font-weight:700;color:var(--text);letter-spacing:-0.02em;margin-bottom:0.5rem;font-family:var(--display);">Every decision. Every handoff. Immutable.</div>
-    <div style="font-size:0.85rem;color:var(--text2);margin-bottom:2rem;">When developers say "send me the context ID" — they mean a DarkMatter context ID.</div>
+    <div style="font-size:0.85rem;color:var(--text2);margin-bottom:2rem;">When developers say "send me the context ID", they mean a DarkMatter context ID.</div>
     <div style="display:flex;align-items:center;justify-content:center;gap:0;flex-wrap:wrap;margin-bottom:1.5rem;">
 
       <!-- Agent A -->
@@ -769,7 +774,7 @@
   <!-- COMMIT GRAPH -->
   <div style="max-width:860px;margin:2.5rem auto 0;padding:0 2rem;">
     <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:2rem;font-family:var(--mono);font-size:0.72rem;overflow-x:auto;">
-      <div style="color:var(--text3);font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:1.25rem;">Decision graph — like git log, for agent state</div>
+      <div style="color:var(--text3);font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:1.25rem;">Decision graph, like git log, for agent state</div>
       <!-- Row 1 -->
       <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.6rem;">
         <div style="width:10px;height:10px;border-radius:50%;background:var(--violet);flex-shrink:0;box-shadow:0 0 6px var(--violet);"></div>
@@ -785,7 +790,7 @@
         <div style="width:10px;height:10px;border-radius:50%;background:var(--accent);flex-shrink:0;box-shadow:0 0 6px var(--accent);"></div>
         <div style="color:var(--text2);">ctx_<span style="color:var(--accent);">d4e5f6</span></div>
         <div style="color:var(--text3);">·</div>
-        <div style="color:var(--text3);">Agent A (Claude) — analysis complete</div>
+        <div style="color:var(--text3);">Agent A (Claude), analysis complete</div>
         <div style="margin-left:auto;"><span style="color:var(--violet);font-size:0.62rem;">parent: a1b2c3</span></div>
       </div>
       <!-- Fork connector -->
@@ -799,13 +804,13 @@
           <div style="width:10px;height:10px;border-radius:50%;background:var(--green);flex-shrink:0;box-shadow:0 0 6px var(--green);"></div>
           <div style="color:var(--text2);">ctx_<span style="color:var(--green);">g7h8i9</span></div>
           <div style="color:var(--text3);">·</div>
-          <div style="color:var(--text3);">Agent B (GPT) — draft</div>
+          <div style="color:var(--text3);">Agent B (GPT), draft</div>
         </div>
         <div style="display:flex;align-items:center;gap:0.75rem;flex:1;">
           <div style="width:10px;height:10px;border-radius:50%;background:var(--cyan);flex-shrink:0;box-shadow:0 0 6px var(--cyan);"></div>
           <div style="color:var(--text2);">ctx_<span style="color:var(--cyan);">j1k2l3</span></div>
           <div style="color:var(--text3);">·</div>
-          <div style="color:var(--text3);">Agent C (Llama) — review</div>
+          <div style="color:var(--text3);">Agent C (Llama), review</div>
         </div>
       </div>
       <!-- Merge connector -->
@@ -815,7 +820,7 @@
         <div style="width:10px;height:10px;border-radius:50%;background:var(--amber);flex-shrink:0;box-shadow:0 0 6px var(--amber);"></div>
         <div style="color:var(--text2);">ctx_<span style="color:var(--amber);">m4n5o6</span></div>
         <div style="color:var(--text3);">·</div>
-        <div style="color:var(--text3);">Final state — merged, verified, auditable</div>
+        <div style="color:var(--text3);">Final state, merged, verified, auditable</div>
         <div style="margin-left:auto;"><span style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);color:var(--green);padding:0.1rem 0.4rem;border-radius:100px;font-size:0.58rem;">✓ immutable</span></div>
       </div>
       <div style="border-top:1px solid var(--border);margin-top:1.25rem;padding-top:0.85rem;color:var(--text3);font-size:0.62rem;">
@@ -865,7 +870,7 @@
     <div class="step">
       <div class="step-emoji">🔑</div>
       <div class="step-title">Sign up and create your agent</div>
-      <div class="step-desc">Create a free account, name your agent, and get a unique API key from your dashboard in seconds. Paste it into your code — that's all it takes to connect.</div>
+      <div class="step-desc">Create a free account, name your agent, and get a unique API key from your dashboard in seconds. Paste it into your code, that's all it takes to connect.</div>
       <div class="step-tag tg">free · 30 seconds</div>
     </div>
     <div class="step-arrow"><div>▶</div><div class="arrow-label">API key</div></div>
@@ -907,7 +912,7 @@
     <div style="display:flex;flex-direction:column;gap:0.75rem;">
       <div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;overflow:hidden;">
         <div style="display:flex;align-items:center;justify-content:space-between;padding:0.5rem 1rem;border-bottom:1px solid var(--border);">
-          <span style="font-family:var(--mono);font-size:0.58rem;color:var(--text3);letter-spacing:0.1em;text-transform:uppercase;">1 — commit context</span>
+          <span style="font-family:var(--mono);font-size:0.58rem;color:var(--text3);letter-spacing:0.1em;text-transform:uppercase;">1, commit context</span>
           <span style="font-size:0.65rem;color:var(--text3);font-family:var(--mono);">Agent A → Agent B</span>
         </div>
         <div style="padding:0.85rem 1rem;font-family:var(--mono);font-size:0.72rem;line-height:1.8;overflow-x:auto;white-space:pre;"><span style="color:var(--text3);"># sign and checkpoint agent state</span>
@@ -915,18 +920,18 @@ curl -X POST https://darkmatterhub.ai/api/commit   -H <span style="color:var(--c
       </div>
       <div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;overflow:hidden;">
         <div style="display:flex;align-items:center;justify-content:space-between;padding:0.5rem 1rem;border-bottom:1px solid var(--border);">
-          <span style="font-family:var(--mono);font-size:0.58rem;color:var(--text3);letter-spacing:0.1em;text-transform:uppercase;">2 — pull &amp; inherit</span>
+          <span style="font-family:var(--mono);font-size:0.58rem;color:var(--text3);letter-spacing:0.1em;text-transform:uppercase;">2, pull &amp; inherit</span>
           <span style="font-size:0.65rem;color:var(--text3);font-family:var(--mono);">verified, immutable</span>
         </div>
-        <div style="padding:0.85rem 1rem;font-family:var(--mono);font-size:0.72rem;line-height:1.8;overflow-x:auto;white-space:pre;"><span style="color:var(--text3);"># Agent B pulls — full payload + integrity proof</span>
+        <div style="padding:0.85rem 1rem;font-family:var(--mono);font-size:0.72rem;line-height:1.8;overflow-x:auto;white-space:pre;"><span style="color:var(--text3);"># Agent B pulls, full payload + integrity proof</span>
 curl https://darkmatterhub.ai/api/pull   -H <span style="color:var(--cyan);">"Authorization: Bearer AGENT_B_KEY"</span></div>
       </div>
       <div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;overflow:hidden;">
         <div style="display:flex;align-items:center;justify-content:space-between;padding:0.5rem 1rem;border-bottom:1px solid var(--border);">
-          <span style="font-family:var(--mono);font-size:0.58rem;color:var(--text3);letter-spacing:0.1em;text-transform:uppercase;">3 — replay the chain</span>
+          <span style="font-family:var(--mono);font-size:0.58rem;color:var(--text3);letter-spacing:0.1em;text-transform:uppercase;">3, replay the chain</span>
           <span style="font-size:0.65rem;color:var(--text3);font-family:var(--mono);">root → tip, verified</span>
         </div>
-        <div style="padding:0.85rem 1rem;font-family:var(--mono);font-size:0.72rem;line-height:1.8;overflow-x:auto;white-space:pre;"><span style="color:var(--text3);"># full decision path — every agent, every decision, integrity verified</span>
+        <div style="padding:0.85rem 1rem;font-family:var(--mono);font-size:0.72rem;line-height:1.8;overflow-x:auto;white-space:pre;"><span style="color:var(--text3);"># full decision path, every agent, every decision, integrity verified</span>
 curl https://darkmatterhub.ai/api/replay/CTX_ID   -H <span style="color:var(--cyan);">"Authorization: Bearer YOUR_KEY"</span></div>
       </div>
     </div>
@@ -941,22 +946,16 @@ curl https://darkmatterhub.ai/api/replay/CTX_ID   -H <span style="color:var(--cy
   <div style="max-width:860px;margin:0 auto;">
     <div style="font-size:0.72rem;font-family:var(--mono);color:var(--text3);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:1rem;">Self-host or deploy privately</div>
     <div style="display:flex;gap:3rem;flex-wrap:wrap;align-items:flex-start;">
-      <div style="flex:1;min-width:220px;display:flex;flex-direction:column;gap:0.6rem;">
-        <div style="font-size:0.82rem;color:var(--text2);display:flex;gap:0.6rem;">
-          <span style="color:var(--accent)">→</span>
-          <span><strong style="color:var(--text)">Self-host</strong> — deploy DarkMatter inside your own infrastructure. Nothing leaves your network.</span>
+      <div style="flex:1;min-width:220px;display:flex;flex-direction:column;gap:0.75rem;">
+        <div style="font-size:0.82rem;color:var(--text2);">
+          <strong style="color:var(--text);">Self-host</strong>
+          &nbsp;&mdash;&nbsp;Deploy inside your own infrastructure. Nothing leaves your network.&nbsp;<a href="https://github.com/darkmatter-hub/darkmatter/blob/main/PRODUCTION.md" target="_blank" style="color:var(--accent);text-decoration:none;white-space:nowrap;">Self-hosting guide &rarr;</a>
         </div>
-        <div style="font-size:0.82rem;color:var(--text2);display:flex;gap:0.6rem;">
-          <span style="color:var(--accent)">→</span>
-          <span><strong style="color:var(--text)">BYOK</strong> — Bring Your Own Key encryption. DarkMatter stores only ciphertext — your key never leaves your infrastructure.</span>
+        <div style="font-size:0.82rem;color:var(--text2);">
+          <strong style="color:var(--text);">BYOK</strong>
+          &nbsp;&mdash;&nbsp;Bring Your Own Key encryption. DarkMatter stores only ciphertext, your key never leaves your infrastructure.
         </div>
       </div>
-      <a href="https://github.com/darkmatter-hub/darkmatter/blob/main/PRODUCTION.md" target="_blank"
-         style="background:none;border:1px solid var(--border);color:var(--text2);padding:0.4rem 1rem;border-radius:6px;font-size:0.78rem;font-weight:500;text-decoration:none;white-space:nowrap;transition:all 0.15s;align-self:center;"
-         onmouseover="this.style.borderColor='var(--text2)';this.style.color='var(--text)'"
-         onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text2)'">
-        Self-hosting guide →
-      </a>
     </div>
   </div>
 </div>
@@ -988,6 +987,7 @@ curl https://darkmatterhub.ai/api/replay/CTX_ID   -H <span style="color:var(--cy
     <a class="footer-link" href="/why">Why DarkMatter</a>
     <a class="footer-link" href="/blog">Blog</a>
     <a class="footer-link" href="/enterprise">Enterprise</a>
+    <a class="footer-link" href="/security">Security</a>
     <a class="footer-link" href="https://github.com/darkmatter-hub/darkmatter" target="_blank">GitHub</a>
     <span style="color:var(--text3);font-size:0.72rem">© 2026 DarkMatter</span>
   </div>
@@ -1051,7 +1051,7 @@ print(context["nextTask"])  # "generate executive summary"`;
   });
 
   // ── Catch Supabase auth redirect on homepage ─────────
-  // Supabase sends token to Site URL root — intercept and forward to dashboard
+  // Supabase sends token to Site URL root, intercept and forward to dashboard
   if (window.location.hash && window.location.hash.includes('access_token')) {
     try {
       const params       = new URLSearchParams(window.location.hash.substring(1));
@@ -1071,7 +1071,7 @@ print(context["nextTask"])  # "generate executive summary"`;
     } catch(e) { console.error('Auth redirect error', e); }
   }
 
-  // ── Session check — update UI if already logged in ─────
+  // ── Session check, update UI if already logged in ─────
   try {
     const s = JSON.parse(localStorage.getItem('dm_session') || '{}');
     if (s?.access_token) {
@@ -1083,7 +1083,7 @@ print(context["nextTask"])  # "generate executive summary"`;
       }
       const cta = document.querySelector('.cta-primary');
       if (cta) { cta.textContent = 'Go to Dashboard →'; cta.href = '/dashboard'; }
-      // Hide GitHub button when logged in — Dashboard is the primary action
+      // Hide GitHub button when logged in, Dashboard is the primary action
       const ctaSecondary = document.querySelector('.cta-secondary');
       if (ctaSecondary) ctaSecondary.style.display = 'none';
       document.querySelectorAll(');
