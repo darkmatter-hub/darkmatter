@@ -103,11 +103,11 @@
   <h2>Security controls</h2>
   <div class="control-grid">
     <div class="control">
-      <div class="control-title">Encryption in transit <span class="control-badge badge-active">Active</span></div>
+      <div class="control-title">Encryption in transit</div>
       <div class="control-desc">TLS 1.3 enforced on all API endpoints and dashboard traffic. No unencrypted connections accepted.</div>
     </div>
     <div class="control">
-      <div class="control-title">Encryption at rest <span class="control-badge badge-active">Active</span></div>
+      <div class="control-title">Encryption at rest</div>
       <div class="control-desc">All data encrypted at rest via Supabase managed AES-256 encryption.</div>
     </div>
     <div class="control">
@@ -115,31 +115,31 @@
       <div class="control-desc">Client-provided AES-256-GCM key. DarkMatter stores only ciphertext. Your key is never stored on our systems.</div>
     </div>
     <div class="control">
-      <div class="control-title">Tamper-evident chain <span class="control-badge badge-active">Active</span></div>
+      <div class="control-title">Tamper-evident chain</div>
       <div class="control-desc">SHA-256 parent hash chaining. Modifying any commit breaks every downstream hash — detectable without trusting DarkMatter.</div>
     </div>
     <div class="control">
-      <div class="control-title">Authentication <span class="control-badge badge-active">Active</span></div>
+      <div class="control-title">Authentication</div>
       <div class="control-desc">Supabase JWT for dashboard. Bearer token API keys for agents. Keys hashed at rest, never stored in plaintext.</div>
     </div>
     <div class="control">
-      <div class="control-title">Rate limiting <span class="control-badge badge-active">Active</span></div>
+      <div class="control-title">Rate limiting</div>
       <div class="control-desc">Per-endpoint limits: auth 20 req/15min, API 120 req/min, feedback 5 req/hr.</div>
     </div>
     <div class="control">
-      <div class="control-title">SSRF protection <span class="control-badge badge-active">Active</span></div>
+      <div class="control-title">SSRF protection</div>
       <div class="control-desc">Webhook URLs validated against blocklist of private IP ranges, loopback, and cloud metadata endpoints.</div>
     </div>
     <div class="control">
-      <div class="control-title">Security headers <span class="control-badge badge-active">Active</span></div>
+      <div class="control-title">Security headers</div>
       <div class="control-desc">helmet.js: HSTS, X-Frame-Options, X-Content-Type-Options, referrer policy.</div>
     </div>
     <div class="control">
-      <div class="control-title">Row-level security <span class="control-badge badge-active">Active</span></div>
+      <div class="control-title">Row-level security</div>
       <div class="control-desc">Supabase RLS policies enforce tenant isolation at the database layer. Users can only access their own agents and commits.</div>
     </div>
     <div class="control">
-      <div class="control-title">Input sanitization <span class="control-badge badge-active">Active</span></div>
+      <div class="control-title">Input sanitization</div>
       <div class="control-desc">All user input sanitized and length-limited before processing or storage. HTML injection prevented.</div>
     </div>
     <div class="control">
@@ -212,8 +212,5 @@
 
   <!-- Contact -->
   <h2>Vulnerability disclosure and contact</h2>
-  <p>To report a security vulnerability, email <a href="mailto:hello@darkmatterhub.ai" style="color:var(--violet);text-decoration:none;">hello@darkmatterhub.ai</a> with details. We target acknowledgment within 24 hours and resolution within 7 days for critical issues.</p>
-  <p>For security review requests, vendor questionnaires, or DPA inquiries, contact <a href="mailto:hello@darkmatterhub.ai" style="color:var(--violet);text-decoration:none;">hello@darkmatterhub.ai</a>.</p>
-</div>
-</body>
-</html>
+  <p>To report a security vulnerability, email <a href="/cdn-cgi/l/email-protection#234b464f4f4c63474251484e42575746514b56410d424a" style="color:var(--violet);text-decoration:none;"><span class="__cf_email__" data-cfemail="28404d444447684c495a4345495c5c4d5a405d4a064941">[email&#160;protected]</span></a> with details.</p>
+  <p>For security review requests, vendor questionnaires, or DPA inquiries, contact <a h
