@@ -289,6 +289,81 @@ app.post('/auth/logout', async (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════
+// AGENT SELF-REGISTRATION
+// Allows an authenticated agent to spawn a new agent
+// programmatically — no dashboard login required.
+// Cap: 10 new agents per user per day to prevent abuse.
+// ═══════════════════════════════════════════════════
+
+app.post('/api/agents/register', apiLimiter, requireApiKey, async (req, res) => {
+  try {
+    const { agentName, role, provider, model } = req.body;
+    if (!agentName) return res.status(400).json({ error: 'agentName required' });
+    if (!/^[a-zA-Z0-9 _\-\.]+$/.test(agentName)) {
+      return res.status(400).json({ error: 'agentName may only contain letters, numbers, spaces, hyphens, underscores, and periods' });
+    }
+
+    const userId = req.agent.user_id;
+
+    // ── Daily cap: max 10 new agents per user per day ─
+    const dayStart = new Date();
+    dayStart.setHours(0, 0, 0, 0);
+
+    const { count } = await supabaseService
+      .from('agents')
+      .select('agent_id', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .gte('created_at', dayStart.toISOString());
+
+    const DAILY_CAP = 10;
+    if (count >= DAILY_CAP) {
+      return res.status(429).json({
+        error: `Daily agent registration limit reached (${DAILY_CAP} per day). ` +
+               'This cap prevents runaway agent spawning. Resets at midnight UTC.',
+        limit:     DAILY_CAP,
+        resets_at: new Date(dayStart.getTime() + 86400000).toISOString(),
+      });
+    }
+
+    // ── Create the new agent ──────────────────────────
+    const newAgentId = generateAgentId();
+    const newApiKey  = generateApiKey();
+
+    const { data, error } = await supabaseService
+      .from('agents')
+      .insert({
+        agent_id:   newAgentId,
+        agent_name: sanitizeText(agentName, 100),
+        user_id:    userId,
+        api_key:    newApiKey,
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    // ── Return new agent credentials ──────────────────
+    res.status(201).json({
+      agentId:   data.agent_id,
+      agentName: data.agent_name,
+      apiKey:    newApiKey,
+      createdAt: data.created_at,
+      spawnedBy: req.agent.agent_id,
+      meta: {
+        role:     role     || null,
+        provider: provider || null,
+        model:    model    || null,
+      },
+      note: 'Store this API key securely — it will not be shown again.',
+      warning: `Agent registration is capped at ${DAILY_CAP} per day per account to prevent runaway spawning.`,
+    });
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ═══════════════════════════════════════════════════
 // DASHBOARD ROUTES (requires user session)
 // ═══════════════════════════════════════════════════
 

@@ -3,379 +3,562 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Docs — DarkMatter</title>
+<title>Documentation - DarkMatter</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <style>
-  :root{--bg:#0B0F14;--bg2:#121826;--bg3:#1a2332;--border:#1e2d45;--text:#e6edf3;--text2:#8b949e;--text3:#484f58;--violet:#7C3AED;--blue:#2563EB;--cyan:#22D3EE;--green:#10B981;--amber:#F59E0B;--gradient:linear-gradient(90deg,#7C3AED 0%,#2563EB 55%,#22D3EE 100%);--display:'Space Grotesk',sans-serif;--sans:'Inter',sans-serif;--mono:'IBM Plex Mono',monospace;}
-  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-  body{background:var(--bg);color:var(--text);font-family:var(--sans);-webkit-font-smoothing:antialiased;}
-  nav{display:flex;align-items:center;gap:0.8rem;padding:0.85rem 2rem;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:50;background:rgba(11,15,20,0.95);backdrop-filter:blur(8px);}
-  .nav-logo{display:flex;align-items:center;gap:0.65rem;text-decoration:none;}
-  .nav-logo-mark{width:28px;height:28px;}
-  .nav-logo-name{font-family:var(--display);font-weight:700;font-size:1rem;color:var(--text);letter-spacing:-0.02em;}
-  .matter-grad{background:var(--gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
-  .nav-sep{flex:1;}
-  .nav-link{font-size:0.78rem;color:var(--text2);text-decoration:none;transition:color 0.15s;}
-  .nav-link:hover{color:var(--text);}
-  .nav-cta{font-size:0.78rem;background:var(--gradient);color:#fff;padding:0.3rem 0.85rem;border-radius:6px;text-decoration:none;font-weight:500;}
-  /* Layout */
-  .layout{display:grid;grid-template-columns:220px 1fr;min-height:calc(100vh - 52px);}
-  @media(max-width:700px){.layout{grid-template-columns:1fr;}}
-  .sidebar{border-right:1px solid var(--border);padding:2rem 1.5rem;position:sticky;top:52px;height:calc(100vh - 52px);overflow-y:auto;}
-  @media(max-width:700px){.sidebar{display:none;}}
-  .sidebar-section{font-family:var(--mono);font-size:0.58rem;color:var(--text3);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:0.65rem;margin-top:1.5rem;}
-  .sidebar-section:first-child{margin-top:0;}
-  .sidebar-link{display:block;font-size:0.78rem;color:var(--text2);text-decoration:none;padding:0.3rem 0;transition:color 0.15s;line-height:1.4;}
-  .sidebar-link:hover,.sidebar-link.active{color:var(--violet);}
-  .content{padding:3rem 2.5rem 5rem;max-width:720px;}
-  /* Typography */
-  h1{font-family:var(--display);font-size:1.9rem;font-weight:700;letter-spacing:-0.03em;margin-bottom:0.75rem;}
-  h2{font-family:var(--display);font-size:1.2rem;font-weight:700;letter-spacing:-0.02em;margin:2.5rem 0 0.75rem;padding-top:2.5rem;border-top:1px solid var(--border);}
-  h2:first-of-type{border-top:none;padding-top:0;margin-top:1.5rem;}
-  h3{font-size:0.92rem;font-weight:600;color:var(--text);margin:1.5rem 0 0.5rem;}
-  p{font-size:0.88rem;color:var(--text2);line-height:1.75;margin-bottom:1rem;}
-  a{color:var(--violet);text-decoration:none;}
-  a:hover{text-decoration:underline;}
-  code{font-family:var(--mono);font-size:0.82em;background:var(--bg3);border:1px solid var(--border);padding:0.1rem 0.35rem;border-radius:4px;color:var(--cyan);}
-  pre{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:1.25rem;overflow-x:auto;margin:1rem 0;}
-  pre code{background:none;border:none;padding:0;font-size:0.78rem;line-height:1.7;color:var(--text2);}
-  .comment{color:var(--text3);}
-  .key{color:var(--cyan);}
-  .val{color:var(--green);}
-  .str{color:var(--amber);}
-  /* Tabs */
-  .tabs{display:flex;gap:0;margin-bottom:0;border-bottom:1px solid var(--border);}
-  .tab{font-family:var(--mono);font-size:0.65rem;color:var(--text3);padding:0.5rem 1rem;cursor:pointer;border-bottom:2px solid transparent;transition:all 0.15s;user-select:none;}
-  .tab.active{color:var(--violet);border-bottom-color:var(--violet);}
-  .tab-content{display:none;}
-  .tab-content.active{display:block;}
-  /* Steps */
-  .steps{display:flex;flex-direction:column;gap:1.5rem;margin:1.5rem 0;}
-  .step{display:flex;gap:1rem;align-items:flex-start;}
-  .step-num{width:24px;height:24px;border-radius:50%;background:var(--gradient);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:0.65rem;font-weight:600;color:#fff;flex-shrink:0;margin-top:0.15rem;}
-  .step-content{}
-  .step-title{font-size:0.88rem;font-weight:600;color:var(--text);margin-bottom:0.25rem;}
-  .step-desc{font-size:0.8rem;color:var(--text2);line-height:1.6;}
-  /* Callout */
-  .callout{background:rgba(124,58,237,0.08);border:1px solid rgba(124,58,237,0.2);border-radius:8px;padding:1rem 1.25rem;margin:1rem 0;font-size:0.82rem;color:var(--text2);line-height:1.65;}
-  .callout strong{color:var(--text);}
+:root{--brand:#7C3AED;--brand2:#2563EB;--brand3:#22D3EE;--gradient:linear-gradient(90deg,#7C3AED 0%,#2563EB 55%,#22D3EE 100%);--bg:#ffffff;--bg2:#f8f9fa;--bg3:#f1f3f5;--border:#e5e7eb;--border2:#d1d5db;--text:#111827;--text2:#4b5563;--text3:#9ca3af;--green:#059669;--amber:#d97706;--red:#dc2626;--display:"Space Grotesk",sans-serif;--sans:"Inter",sans-serif;--mono:"IBM Plex Mono",monospace;--sidebar-w:256px;--nav-h:56px;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);-webkit-font-smoothing:antialiased;font-size:15px;line-height:1.7;}
+.topnav{height:var(--nav-h);display:flex;align-items:center;padding:0 1.5rem;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;background:rgba(255,255,255,0.96);backdrop-filter:blur(8px);gap:0.75rem;}
+.topnav-logo{display:flex;align-items:center;gap:0.6rem;text-decoration:none;margin-right:0.75rem;}
+.topnav-logomark{width:26px;height:26px;}
+.topnav-name{font-family:var(--display);font-weight:700;font-size:0.95rem;color:var(--text);letter-spacing:-0.02em;}
+.matter-grad{background:var(--gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.topnav-divider{width:1px;height:18px;background:var(--border);margin:0 0.25rem;}
+.topnav-section{font-size:0.8rem;color:var(--text3);}
+.topnav-sep{flex:1;}
+.topnav-link{font-size:0.8rem;color:var(--text2);text-decoration:none;transition:color 0.15s;}
+.topnav-link:hover{color:var(--brand);}
+.topnav-cta{font-size:0.8rem;background:var(--gradient);color:#fff;padding:0.28rem 0.85rem;border-radius:6px;text-decoration:none;font-weight:600;}
+.layout{display:grid;grid-template-columns:var(--sidebar-w) 1fr;min-height:calc(100vh - var(--nav-h));}
+@media(max-width:860px){.layout{grid-template-columns:1fr;}.sidebar{display:none;}}
+.sidebar{border-right:1px solid var(--border);padding:1.25rem 0;position:sticky;top:var(--nav-h);height:calc(100vh - var(--nav-h));overflow-y:auto;background:var(--bg);}
+.sidebar::-webkit-scrollbar{width:3px;}.sidebar::-webkit-scrollbar-thumb{background:var(--border2);}
+.sb-search-wrap{padding:0 1rem 1rem;}
+.sb-search-wrap input{width:100%;border:1px solid var(--border);border-radius:6px;padding:0.38rem 0.75rem;font-size:0.78rem;font-family:var(--sans);outline:none;color:var(--text);background:var(--bg2);}
+.sb-search-wrap input:focus{border-color:var(--brand);}
+.sb-group{margin-bottom:1.25rem;}
+.sb-group-label{font-family:var(--mono);font-size:0.58rem;color:var(--text3);letter-spacing:0.12em;text-transform:uppercase;padding:0 1rem;margin-bottom:0.3rem;display:block;}
+.sb-link{display:block;font-size:0.8rem;color:var(--text2);text-decoration:none;padding:0.28rem 1rem;border-left:2px solid transparent;transition:all 0.12s;line-height:1.4;}
+.sb-link:hover{color:var(--brand);background:rgba(124,58,237,0.04);}
+.sb-link.active{color:var(--brand);border-left-color:var(--brand);background:rgba(124,58,237,0.05);font-weight:500;}
+.content{padding:2.5rem 3rem 5rem;max-width:800px;}
+@media(max-width:1100px){.content{padding:2rem 1.75rem 4rem;}}
+h1{font-family:var(--display);font-size:1.9rem;font-weight:700;letter-spacing:-0.03em;margin-bottom:0.5rem;}
+h2{font-family:var(--display);font-size:1.25rem;font-weight:700;letter-spacing:-0.02em;margin:3rem 0 0.75rem;padding-top:3rem;border-top:1px solid var(--border);}
+h2:first-of-type{border-top:none;padding-top:0;margin-top:1.5rem;}
+h3{font-size:0.98rem;font-weight:600;color:var(--text);margin:1.75rem 0 0.5rem;}
+h4{font-size:0.82rem;font-weight:600;color:var(--text2);margin:1.25rem 0 0.35rem;font-family:var(--mono);letter-spacing:0.03em;text-transform:uppercase;}
+p{color:var(--text2);margin-bottom:1rem;line-height:1.75;}
+a{color:var(--brand);text-decoration:none;}a:hover{text-decoration:underline;}
+ul,ol{padding-left:1.5rem;margin-bottom:1rem;}li{color:var(--text2);margin-bottom:0.3rem;line-height:1.65;}
+strong{color:var(--text);font-weight:600;}
+.lead{font-size:1rem;color:var(--text2);margin-bottom:2rem;line-height:1.8;padding-bottom:2rem;border-bottom:1px solid var(--border);}
+code{font-family:var(--mono);font-size:0.81em;background:#f3f4f6;border:1px solid #e5e7eb;padding:0.12rem 0.38rem;border-radius:4px;color:var(--brand);}
+pre{background:#1e1e2e;border-radius:8px;padding:1.25rem 1.5rem;overflow-x:auto;margin:1.25rem 0;position:relative;}
+pre code{background:none;border:none;padding:0;font-size:0.78rem;line-height:1.8;color:#cdd6f4;}
+.lang-label{position:absolute;top:0.6rem;right:0.75rem;font-family:var(--mono);font-size:0.56rem;color:#585b70;text-transform:uppercase;letter-spacing:0.1em;}
+.cm{color:#6c7086;}.ck{color:#89dceb;}.cv{color:#a6e3a1;}.cn{color:#fab387;}.cc{color:#cba6f7;}
+.callout{border-radius:8px;padding:0.9rem 1.1rem;margin:1.25rem 0;font-size:0.86rem;line-height:1.7;}
+.callout.info{background:rgba(124,58,237,0.05);border:1px solid rgba(124,58,237,0.18);color:var(--text2);}
+.callout.warning{background:rgba(217,119,6,0.05);border:1px solid rgba(217,119,6,0.2);color:var(--text2);}
+.callout.tip{background:rgba(5,150,105,0.05);border:1px solid rgba(5,150,105,0.2);color:var(--text2);}
+.callout-title{font-weight:600;color:var(--text);margin-bottom:0.2rem;font-size:0.78rem;text-transform:uppercase;letter-spacing:0.06em;font-family:var(--mono);}
+.steps{margin:1.5rem 0;display:flex;flex-direction:column;gap:1.25rem;}
+.step{display:flex;gap:0.85rem;}
+.step-num{width:26px;height:26px;border-radius:50%;background:var(--gradient);color:#fff;font-family:var(--mono);font-size:0.7rem;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:0.1rem;}
+.step-title{font-weight:600;color:var(--text);margin-bottom:0.2rem;font-size:0.9rem;}
+.step-desc{font-size:0.83rem;color:var(--text2);line-height:1.65;}
+.table-wrap{overflow-x:auto;margin:1.25rem 0;}
+table{width:100%;border-collapse:collapse;font-size:0.83rem;}
+th{background:var(--bg2);font-weight:600;color:var(--text);padding:0.6rem 0.9rem;text-align:left;border-bottom:2px solid var(--border);font-size:0.75rem;}
+td{padding:0.6rem 0.9rem;border-bottom:1px solid var(--border);color:var(--text2);vertical-align:top;}
+tr:hover td{background:var(--bg2);}
+.badge{display:inline-block;font-family:var(--mono);font-size:0.63rem;padding:0.12rem 0.45rem;border-radius:4px;font-weight:500;margin-right:0.25rem;}
+.badge.post{background:rgba(124,58,237,0.1);color:var(--brand);border:1px solid rgba(124,58,237,0.2);}
+.badge.get{background:rgba(5,150,105,0.1);color:var(--green);border:1px solid rgba(5,150,105,0.2);}
+.badge.req{background:rgba(220,38,38,0.1);color:var(--red);border:1px solid rgba(220,38,38,0.2);}
+.badge.opt{background:#f3f4f6;color:var(--text3);border:1px solid #e5e7eb;}
+.endpoint{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:0.9rem 1.1rem;margin:1rem 0;}
+.endpoint-title{display:flex;align-items:center;gap:0.5rem;font-family:var(--mono);font-size:0.8rem;font-weight:500;}
 </style>
 </head>
 <body>
-<nav>
-  <a class="nav-logo" href="/">
-    <svg class="nav-logo-mark" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <defs><linearGradient id="nlg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#7C3AED"/><stop offset="55%" stop-color="#2563EB"/><stop offset="100%" stop-color="#22D3EE"/></linearGradient></defs>
+<nav class="topnav">
+  <a class="topnav-logo" href="/">
+    <svg class="topnav-logomark" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs><linearGradient id="dlg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#7C3AED"/><stop offset="55%" stop-color="#2563EB"/><stop offset="100%" stop-color="#22D3EE"/></linearGradient></defs>
       <circle cx="20" cy="20" r="17" stroke="#1e2d45" stroke-width="0.8" stroke-dasharray="2 3"/>
       <circle cx="20" cy="20" r="12" stroke="#243040" stroke-width="0.5" opacity="0.6"/>
       <circle cx="20" cy="5" r="3.2" fill="#7C3AED" opacity="0.95"/>
       <circle cx="33" cy="28" r="2.6" fill="#2563EB" opacity="0.95"/>
       <circle cx="7" cy="28" r="2.2" fill="#22D3EE" opacity="0.9"/>
-      <line x1="20" y1="8" x2="31" y2="26" stroke="url(#nlg)" stroke-width="0.6" opacity="0.5"/>
+      <line x1="20" y1="8" x2="31" y2="26" stroke="url(#dlg)" stroke-width="0.6" opacity="0.5"/>
       <line x1="20" y1="8" x2="9" y2="26" stroke="#7C3AED" stroke-width="0.6" opacity="0.4"/>
       <line x1="30" y1="27" x2="10" y2="27" stroke="#22D3EE" stroke-width="0.6" opacity="0.4"/>
-      <circle cx="20" cy="20" r="2.5" fill="url(#nlg)" opacity="0.6"/>
+      <circle cx="20" cy="20" r="2.5" fill="url(#dlg)" opacity="0.6"/>
     </svg>
-    <span class="nav-logo-name">Dark<span class="matter-grad">Matter</span></span>
+    <span class="topnav-name">Dark<span class="matter-grad">Matter</span></span>
   </a>
-  <div class="nav-sep"></div>
-  <a class="nav-link" href="/demo" style="margin-right:1rem;">Demo</a>
-  <a class="nav-link" href="/pricing" style="margin-right:1rem;">Pricing</a>
-  <a class="nav-cta" href="/signup">Get API Key →</a>
+  <div class="topnav-divider"></div>
+  <span class="topnav-section">Docs</span>
+  <div class="topnav-sep"></div>
+  <a class="topnav-link" href="/demo" style="margin-right:0.5rem;">Demo</a>
+  <a class="topnav-link" href="/pricing" style="margin-right:0.75rem;">Pricing</a>
+  <a class="topnav-cta" href="/signup">Get API Key</a>
 </nav>
-
 <div class="layout">
-  <div class="sidebar">
-    <div class="sidebar-section">Getting started</div>
-    <a class="sidebar-link active" href="#quickstart">Quickstart</a>
-    <a class="sidebar-link" href="#concepts">Core concepts</a>
-    <a class="sidebar-link" href="#auth">Authentication</a>
-
-    <div class="sidebar-section">Integrations</div>
-    <a class="sidebar-link" href="#langgraph">LangGraph</a>
-    <a class="sidebar-link" href="#raw-api">Raw API calls</a>
-    <a class="sidebar-link" href="#crewai">CrewAI</a>
-    <a class="sidebar-link" href="#local">Local models</a>
-
-    <div class="sidebar-section">API Reference</div>
-    <a class="sidebar-link" href="#commit">POST /api/commit</a>
-    <a class="sidebar-link" href="#pull">GET /api/pull</a>
-    <a class="sidebar-link" href="#replay">GET /api/replay</a>
-    <a class="sidebar-link" href="#fork">POST /api/fork</a>
-    <a class="sidebar-link" href="#verify">GET /api/verify</a>
-    <a class="sidebar-link" href="#export">GET /api/export</a>
-
-    <div class="sidebar-section">Enterprise</div>
-    <a class="sidebar-link" href="#byok">BYOK encryption</a>
-    <a class="sidebar-link" href="#did">W3C DID identity</a>
+<aside class="sidebar">
+  <div class="sb-search-wrap">
+    <input type="text" placeholder="Search..." oninput="searchDocs(this.value)"/>
   </div>
+  <div class="sb-group">
+    <span class="sb-group-label">Getting Started</span>
+    <a class="sb-link active" href="#overview">Overview</a>
+    <a class="sb-link" href="#quickstart">Quickstart</a>
+    <a class="sb-link" href="#authentication">Authentication</a>
+    <a class="sb-link" href="#concepts">Core concepts</a>
+  </div>
+  <div class="sb-group">
+    <span class="sb-group-label">Integrations</span>
+    <a class="sb-link" href="#langgraph">LangGraph</a>
+    <a class="sb-link" href="#raw-api">Raw API calls</a>
+    <a class="sb-link" href="#crewai">CrewAI</a>
+    <a class="sb-link" href="#openai">OpenAI</a>
+    <a class="sb-link" href="#local-models">Local models</a>
+  </div>
+  <div class="sb-group">
+    <span class="sb-group-label">API Reference</span>
+    <a class="sb-link" href="#api-commit">POST /api/commit</a>
+    <a class="sb-link" href="#api-register">POST /api/agents/register</a>
+    <a class="sb-link" href="#api-pull">GET /api/pull</a>
+    <a class="sb-link" href="#api-replay">GET /api/replay</a>
+    <a class="sb-link" href="#api-fork">POST /api/fork</a>
+    <a class="sb-link" href="#api-verify">GET /api/verify</a>
+    <a class="sb-link" href="#api-export">GET /api/export</a>
+    <a class="sb-link" href="#api-lineage">GET /api/lineage</a>
+    <a class="sb-link" href="#api-me">GET /api/me</a>
+  </div>
+  <div class="sb-group">
+    <span class="sb-group-label">Schema</span>
+    <a class="sb-link" href="#context-passport">Context Passport</a>
+    <a class="sb-link" href="#context-object">Context object</a>
+    <a class="sb-link" href="#event-types">Event types</a>
+    <a class="sb-link" href="#integrity">Integrity model</a>
+  </div>
+  <div class="sb-group">
+    <span class="sb-group-label">Enterprise</span>
+    <a class="sb-link" href="#byok">BYOK encryption</a>
+    <a class="sb-link" href="#did">W3C DID identity</a>
+    <a class="sb-link" href="#compliance">Compliance reports</a>
+    <a class="sb-link" href="#self-host">Self-hosting</a>
+  </div>
+  <div class="sb-group">
+    <span class="sb-group-label">Guides</span>
+    <a class="sb-link" href="#three-agent-demo">Three-agent demo</a>
+    <a class="sb-link" href="#fork-guide">Forking workflows</a>
+    <a class="sb-link" href="#audit-guide">Audit trail guide</a>
+  </div>
+</aside>
+<main class="content">
+  <h1>DarkMatter Documentation</h1>
+  <p class="lead">Everything you need to add execution lineage, replay, and cryptographic audit trails to your AI agent pipelines. No SDK required. Works with any language, any model, any framework.</p>
 
-  <div class="content">
-    <h1>DarkMatter Docs</h1>
-    <p>Execution history for AI agent pipelines. Every commit, every handoff, every fork — immutable and verifiable.</p>
-    <p><strong>Base URL:</strong> <code>https://darkmatterhub.ai</code> &nbsp;·&nbsp; <a href="/signup">Get an API key →</a></p>
+  <h2 id="overview">Overview</h2>
+  <p>DarkMatter is an execution history layer for multi-agent AI systems. Every agent action becomes a <strong>context commit</strong>, an immutable node chained to its parent via SHA-256 hash linkage. The chain is independently verifiable and can be replayed, forked, or exported as a compliance artifact.</p>
+  <div class="table-wrap"><table><thead><tr><th>Concept</th><th>What it does</th><th>Endpoint</th></tr></thead><tbody>
+    <tr><td><strong>Commit</strong></td><td>Record what an agent received and produced</td><td>POST /api/commit</td></tr>
+    <tr><td><strong>Pull</strong></td><td>Inherit verified context from upstream agent</td><td>GET /api/pull</td></tr>
+    <tr><td><strong>Replay</strong></td><td>Walk the full decision chain root to tip</td><td>GET /api/replay/:id</td></tr>
+    <tr><td><strong>Fork</strong></td><td>Branch from any checkpoint without touching the original</td><td>POST /api/fork/:id</td></tr>
+    <tr><td><strong>Verify</strong></td><td>Prove the chain was never tampered with</td><td>GET /api/verify/:id</td></tr>
+    <tr><td><strong>Export</strong></td><td>Download a portable proof artifact</td><td>GET /api/export/:id</td></tr>
+  </tbody></table></div>
+  <div class="callout info"><div class="callout-title">Base URL</div>All API calls go to <code>https://darkmatterhub.ai</code>. Get your API key at <a href="/signup">darkmatterhub.ai/signup</a>.</div>
 
-    <h2 id="quickstart">Quickstart</h2>
-    <p>Three commands to get from zero to a verified execution chain.</p>
-
-    <div class="steps">
-      <div class="step">
-        <div class="step-num">1</div>
-        <div class="step-content">
-          <div class="step-title">Get an API key</div>
-          <div class="step-desc">Sign up at <a href="/signup">darkmatterhub.ai/signup</a>, create an agent in the dashboard, and copy the API key.</div>
-        </div>
-      </div>
-      <div class="step">
-        <div class="step-num">2</div>
-        <div class="step-content">
-          <div class="step-title">Commit your first context</div>
-          <div class="step-desc">Call POST /api/commit after any agent step. Pass <code>parentId</code> to chain commits together.</div>
-        </div>
-      </div>
-      <div class="step">
-        <div class="step-num">3</div>
-        <div class="step-content">
-          <div class="step-title">Replay the chain</div>
-          <div class="step-desc">Call GET /api/replay/:ctxId to walk the full decision path root to tip with integrity verified at every step.</div>
-        </div>
-      </div>
-    </div>
-
-<pre><code><span class="comment"># 1. Commit context from Agent A to Agent B</span>
-curl -X POST https://darkmatterhub.ai/api/commit \
-  -H <span class="str">"Authorization: Bearer YOUR_KEY"</span> \
-  -H <span class="str">"Content-Type: application/json"</span> \
-  -d '{
-    <span class="key">"toAgentId"</span>: <span class="str">"dm_agent_b_id"</span>,
-    <span class="key">"payload"</span>: {
-      <span class="key">"input"</span>:  <span class="str">"Analyze Q1 earnings"</span>,
-      <span class="key">"output"</span>: <span class="str">"APAC up 34%, margin compressed"</span>
-    },
-    <span class="key">"agent"</span>: { <span class="key">"role"</span>: <span class="str">"researcher"</span>, <span class="key">"model"</span>: <span class="str">"claude-opus-4-6"</span> }
+  <h2 id="quickstart">Quickstart</h2>
+  <p>From zero to a verified execution chain in under 2 minutes.</p>
+  <div class="steps">
+    <div class="step"><div class="step-num">1</div><div><div class="step-title">Get an API key</div><div class="step-desc">Sign up at <a href="/signup">darkmatterhub.ai/signup</a>, create an agent in the dashboard, and copy the API key. Each agent gets its own key.</div></div></div>
+    <div class="step"><div class="step-num">2</div><div><div class="step-title">Commit context after any agent step</div><div class="step-desc">Call POST /api/commit with what the agent received and produced. Pass <code>parentId</code> to link commits into a chain.</div></div></div>
+    <div class="step"><div class="step-num">3</div><div><div class="step-title">Replay the full chain</div><div class="step-desc">Call GET /api/replay/:ctxId to walk the complete decision path, root to tip, with integrity verified at every step.</div></div></div>
+  </div>
+<pre><code><span class="cm"># Agent A commits output to Agent B</span>
+curl -X POST https://darkmatterhub.ai/api/commit   -H <span class="cv">"Authorization: Bearer AGENT_A_KEY"</span>   -H <span class="cv">"Content-Type: application/json"</span>   -d '{
+    <span class="ck">"toAgentId"</span>: <span class="cv">"dm_agent_b_id"</span>,
+    <span class="ck">"payload"</span>: {<span class="ck">"input"</span>: <span class="cv">"Analyze Q1"</span>, <span class="ck">"output"</span>: <span class="cv">"Revenue up 34%"</span>},
+    <span class="ck">"agent"</span>: {<span class="ck">"role"</span>: <span class="cv">"researcher"</span>, <span class="ck">"model"</span>: <span class="cv">"claude-opus-4-6"</span>}
   }'
-<span class="comment"># Returns: { "id": "ctx_...", "integrity": { "payload_hash": "sha256:..." } }</span>
+<span class="cm"># Returns: {"id": "ctx_...", "integrity": {"payload_hash": "sha256:..."}}</span>
 
-<span class="comment"># 2. Agent B pulls verified context</span>
-curl https://darkmatterhub.ai/api/pull \
-  -H <span class="str">"Authorization: Bearer AGENT_B_KEY"</span>
+<span class="cm"># Agent B pulls verified context</span>
+curl https://darkmatterhub.ai/api/pull -H <span class="cv">"Authorization: Bearer AGENT_B_KEY"</span>
 
-<span class="comment"># 3. Replay full chain (pass parent ctx id to chain)</span>
-curl https://darkmatterhub.ai/api/replay/CTX_ID \
-  -H <span class="str">"Authorization: Bearer YOUR_KEY"</span></code></pre>
+<span class="cm"># Replay the full chain</span>
+curl https://darkmatterhub.ai/api/replay/ctx_... -H <span class="cv">"Authorization: Bearer ANY_KEY"</span>
+<div class="lang-label">bash</div></code></pre>
 
-    <h2 id="concepts">Core concepts</h2>
-    <h3>Context commit</h3>
-    <p>The fundamental unit. Every agent step that you want to track becomes a context commit — an immutable node with a payload, agent attribution, and integrity hash. Once committed, it cannot be modified.</p>
+  <h2 id="authentication">Authentication</h2>
+  <p>All API requests require a Bearer token.</p>
+<pre><code>Authorization: Bearer dm_sk_your_api_key_here<div class="lang-label">http</div></code></pre>
+  <div class="table-wrap"><table><thead><tr><th>Property</th><th>Detail</th></tr></thead><tbody>
+    <tr><td>Format</td><td><code>dm_sk_</code> prefix followed by hex string</td></tr>
+    <tr><td>Scope</td><td>Each key belongs to one agent</td></tr>
+    <tr><td>Rate limit</td><td>120 requests per minute per key</td></tr>
+    <tr><td>Rotation</td><td>Rotate anytime from the dashboard without losing history</td></tr>
+  </tbody></table></div>
 
-    <h3>Parent linkage</h3>
-    <p>Pass <code>parentId</code> in each commit to link it to the previous step. This builds the lineage graph. Without <code>parentId</code>, a commit is a root node.</p>
+  <h2 id="concepts">Core Concepts</h2>
+  <h3>Context commit</h3>
+  <p>An immutable node containing a structured payload, agent attribution, a parent reference, and an integrity hash. Once stored, it cannot be modified. Every commit gets a globally unique <code>ctx_</code> ID.</p>
+  <h3>Parent linkage</h3>
+  <p>Pass <code>parentId</code> in each commit to link it to the previous step. This builds a lineage graph. Each node stores <code>parent_hash</code> which chains integrity hashes together. Tampering at any node breaks every downstream hash.</p>
+  <h3>Trace ID</h3>
+  <p>Use <code>traceId</code> to group commits into one pipeline run. Pass the same trace ID across all agents in one execution to group them for compliance reports.</p>
+  <h3>Fork</h3>
+  <p>Creates a new branch from any existing checkpoint without modifying the original chain. The fork node carries <code>fork_of</code>, <code>fork_point</code>, and <code>lineage_root</code>. Continue by committing with <code>parentId</code> set to the fork ID.</p>
 
-    <h3>Integrity chain</h3>
-    <p>Each commit stores <code>payload_hash = sha256(payload)</code> and <code>integrity_hash = sha256(payload_hash + parent_integrity_hash)</code>. Tamper with any node and every downstream hash breaks. Use <code>GET /api/verify</code> to check.</p>
+  <h2 id="langgraph">Integration: LangGraph</h2>
+  <p>LangGraph has internal checkpointing within a graph. DarkMatter adds cross-framework lineage and cryptographic proof on top. They work alongside each other, not instead of each other.</p>
+<pre><code>import requests
 
-    <h3>Fork</h3>
-    <p>Branch from any checkpoint without touching the original chain. Like <code>git branch</code>. The fork carries <code>fork_of</code>, <code>fork_point</code>, and <code>lineage_root</code> fields so you always know where it came from.</p>
+def dm_commit(dm_key, to_agent_id, input_data, output_data, parent_id=None):
+    body = {<span class="ck">"toAgentId"</span>: to_agent_id, <span class="ck">"payload"</span>: {<span class="ck">"input"</span>: input_data, <span class="ck">"output"</span>: output_data}}
+    if parent_id: body[<span class="ck">"parentId"</span>] = parent_id
+    return requests.post(<span class="cv">"https://darkmatterhub.ai/api/commit"</span>,
+        headers={<span class="ck">"Authorization"</span>: f<span class="cv">"Bearer {dm_key}"</span>}, json=body).json()[<span class="ck">"id"</span>]
 
-    <h2 id="auth">Authentication</h2>
-    <p>All API endpoints require a Bearer token:</p>
-    <pre><code>Authorization: Bearer dm_sk_your_api_key_here</code></pre>
-    <p>Get your API key from the <a href="/dashboard">dashboard</a>. Each agent has its own key. Rate limit: 120 requests per minute per key.</p>
-
-    <h2 id="langgraph">Integration: LangGraph</h2>
-    <p>Call DarkMatter after each node in your LangGraph graph. Pass the returned <code>ctx_id</code> as <code>parentId</code> in the next commit to build the chain.</p>
-
-<pre><code><span class="comment"># Python — add to any LangGraph node</span>
-import requests
-
-DM_URL = <span class="str">"https://darkmatterhub.ai"</span>
-
-def commit_to_darkmatter(api_key, to_agent_id, input_data, output_data, parent_id=None):
-    body = {
-        <span class="key">"toAgentId"</span>: to_agent_id,
-        <span class="key">"payload"</span>: { <span class="key">"input"</span>: input_data, <span class="key">"output"</span>: output_data },
-    }
-    if parent_id:
-        body[<span class="key">"parentId"</span>] = parent_id
-    res = requests.post(
-        f<span class="str">"{DM_URL}/api/commit"</span>,
-        headers={<span class="str">"Authorization"</span>: f<span class="str">"Bearer {api_key}"</span>},
-        json=body
-    )
-    return res.json()
-
-<span class="comment"># In your LangGraph node:</span>
+<span class="cm"># In your LangGraph node:</span>
 def researcher_node(state):
-    output = llm.invoke(state[<span class="str">"input"</span>])
-    ctx = commit_to_darkmatter(
-        api_key=AGENT_A_KEY,
-        to_agent_id=AGENT_B_ID,
-        input_data=state[<span class="str">"input"</span>],
-        output_data=output.content,
-        parent_id=state.get(<span class="str">"dm_parent_id"</span>)
-    )
-    return {<span class="str">"output"</span>: output.content, <span class="str">"dm_parent_id"</span>: ctx[<span class="str">"id"</span>]}</code></pre>
+    output = llm.invoke(state[<span class="ck">"input"</span>])
+    ctx_id = dm_commit(DM_KEY, NEXT_AGENT_ID, state[<span class="ck">"input"</span>], output.content,
+                       parent_id=state.get(<span class="ck">"dm_ctx_id"</span>))
+    return {<span class="ck">"output"</span>: output.content, <span class="ck">"dm_ctx_id"</span>: ctx_id}
+<div class="lang-label">python</div></code></pre>
 
-    <div class="callout"><strong>Note:</strong> LangGraph has its own internal checkpointing. DarkMatter adds cross-framework lineage and cryptographic proof on top of that — they work alongside each other, not instead of each other.</div>
-
-    <h2 id="raw-api">Integration: Raw API calls</h2>
-    <p>Works with any model or framework. Wrap your API calls and commit before and after.</p>
-
+  <h2 id="raw-api">Integration: Raw API calls</h2>
 <pre><code>import anthropic, requests
-
 client = anthropic.Anthropic()
-DM_KEY = <span class="str">"dm_sk_your_key"</span>
-NEXT_AGENT_ID = <span class="str">"dm_next_agent_id"</span>
 
-def run_and_commit(prompt, parent_id=None):
-    <span class="comment"># Run the model</span>
-    response = client.messages.create(
-        model=<span class="str">"claude-opus-4-6"</span>, max_tokens=1024,
-        messages=[{<span class="str">"role"</span>: <span class="str">"user"</span>, <span class="str">"content"</span>: prompt}]
-    )
-    output = response.content[0].text
+def run_and_commit(prompt, to_agent_id, dm_key, parent_id=None):
+    output = client.messages.create(model=<span class="cv">"claude-opus-4-6"</span>, max_tokens=<span class="cn">1024</span>,
+        messages=[{<span class="ck">"role"</span>: <span class="cv">"user"</span>, <span class="ck">"content"</span>: prompt}]).content[<span class="cn">0</span>].text
+    body = {<span class="ck">"toAgentId"</span>: to_agent_id,
+            <span class="ck">"payload"</span>: {<span class="ck">"input"</span>: prompt, <span class="ck">"output"</span>: output},
+            <span class="ck">"agent"</span>: {<span class="ck">"provider"</span>: <span class="cv">"anthropic"</span>, <span class="ck">"model"</span>: <span class="cv">"claude-opus-4-6"</span>}}
+    if parent_id: body[<span class="ck">"parentId"</span>] = parent_id
+    ctx_id = requests.post(<span class="cv">"https://darkmatterhub.ai/api/commit"</span>,
+        headers={<span class="ck">"Authorization"</span>: f<span class="cv">"Bearer {dm_key}"</span>}, json=body).json()[<span class="ck">"id"</span>]
+    return output, ctx_id
+<div class="lang-label">python</div></code></pre>
 
-    <span class="comment"># Commit to DarkMatter</span>
-    body = {
-        <span class="key">"toAgentId"</span>: NEXT_AGENT_ID,
-        <span class="key">"payload"</span>: {<span class="key">"input"</span>: prompt, <span class="key">"output"</span>: output},
-        <span class="key">"agent"</span>: {<span class="key">"provider"</span>: <span class="str">"anthropic"</span>, <span class="key">"model"</span>: <span class="str">"claude-opus-4-6"</span>},
-    }
-    if parent_id:
-        body[<span class="key">"parentId"</span>] = parent_id
-    ctx = requests.post(
-        <span class="str">"https://darkmatterhub.ai/api/commit"</span>,
-        headers={<span class="str">"Authorization"</span>: f<span class="str">"Bearer {DM_KEY}"</span>},
-        json=body
-    ).json()
+  <h2 id="crewai">Integration: CrewAI</h2>
+<pre><code>import requests
 
-    return output, ctx[<span class="str">"id"</span>]  <span class="comment"># pass ctx id to next step as parent</span></code></pre>
+def dm_after_task(task_output, dm_key, to_agent_id, parent_id=None):
+    body = {<span class="ck">"toAgentId"</span>: to_agent_id,
+            <span class="ck">"payload"</span>: {<span class="ck">"input"</span>: str(task_output.task.description), <span class="ck">"output"</span>: str(task_output.raw)}}
+    if parent_id: body[<span class="ck">"parentId"</span>] = parent_id
+    return requests.post(<span class="cv">"https://darkmatterhub.ai/api/commit"</span>,
+        headers={<span class="ck">"Authorization"</span>: f<span class="cv">"Bearer {dm_key}"</span>}, json=body).json()[<span class="ck">"id"</span>]
+<div class="lang-label">python</div></code></pre>
 
-    <h2 id="crewai">Integration: CrewAI</h2>
-    <p>Add a DarkMatter commit in your task callback or after each agent finishes.</p>
-
-<pre><code>from crewai import Agent, Task, Crew
+  <h2 id="openai">Integration: OpenAI</h2>
+<pre><code>from openai import OpenAI
 import requests
+client = OpenAI()
 
-def after_task(task_output, agent_key, to_agent_id, parent_id=None):
-    body = {
-        <span class="key">"toAgentId"</span>: to_agent_id,
-        <span class="key">"payload"</span>: {
-            <span class="key">"input"</span>:  str(task_output.task.description),
-            <span class="key">"output"</span>: str(task_output.raw)
-        },
-    }
-    if parent_id: body[<span class="key">"parentId"</span>] = parent_id
-    return requests.post(
-        <span class="str">"https://darkmatterhub.ai/api/commit"</span>,
-        headers={<span class="str">"Authorization"</span>: f<span class="str">"Bearer {agent_key}"</span>},
-        json=body
-    ).json()[<span class="str">"id"</span>]</code></pre>
+def openai_and_commit(prompt, dm_key, to_agent_id, parent_id=None):
+    output = client.chat.completions.create(model=<span class="cv">"gpt-4o"</span>, max_tokens=<span class="cn">1024</span>,
+        messages=[{<span class="ck">"role"</span>: <span class="cv">"user"</span>, <span class="ck">"content"</span>: prompt}]).choices[<span class="cn">0</span>].message.content
+    body = {<span class="ck">"toAgentId"</span>: to_agent_id, <span class="ck">"payload"</span>: {<span class="ck">"input"</span>: prompt, <span class="ck">"output"</span>: output},
+            <span class="ck">"agent"</span>: {<span class="ck">"provider"</span>: <span class="cv">"openai"</span>, <span class="ck">"model"</span>: <span class="cv">"gpt-4o"</span>}}
+    if parent_id: body[<span class="ck">"parentId"</span>] = parent_id
+    return output, requests.post(<span class="cv">"https://darkmatterhub.ai/api/commit"</span>,
+        headers={<span class="ck">"Authorization"</span>: f<span class="cv">"Bearer {dm_key}"</span>}, json=body).json()[<span class="ck">"id"</span>]
+<div class="lang-label">python</div></code></pre>
 
-    <h2 id="local">Integration: Local models (Ollama, llama.cpp, vLLM)</h2>
-
+  <h2 id="local-models">Integration: Local models (Ollama, llama.cpp, vLLM)</h2>
 <pre><code>import requests as req
 
 def run_local_and_commit(prompt, model, dm_key, to_agent_id, parent_id=None):
-    <span class="comment"># Run local model via Ollama</span>
-    response = req.post(<span class="str">"http://localhost:11434/api/generate"</span>,
-        json={<span class="str">"model"</span>: model, <span class="str">"prompt"</span>: prompt, <span class="str">"stream"</span>: False}
-    ).json()[<span class="str">"response"</span>]
+    response = req.post(<span class="cv">"http://localhost:11434/api/generate"</span>,
+        json={<span class="ck">"model"</span>: model, <span class="ck">"prompt"</span>: prompt, <span class="ck">"stream"</span>: False}).json()[<span class="ck">"response"</span>]
+    body = {<span class="ck">"toAgentId"</span>: to_agent_id,
+            <span class="ck">"payload"</span>: {<span class="ck">"input"</span>: prompt, <span class="ck">"output"</span>: response, <span class="ck">"memory"</span>: {<span class="ck">"model"</span>: model}},
+            <span class="ck">"agent"</span>: {<span class="ck">"provider"</span>: <span class="cv">"local"</span>, <span class="ck">"model"</span>: model}}
+    if parent_id: body[<span class="ck">"parentId"</span>] = parent_id
+    return response, req.post(<span class="cv">"https://darkmatterhub.ai/api/commit"</span>,
+        headers={<span class="ck">"Authorization"</span>: f<span class="cv">"Bearer {dm_key}"</span>}, json=body).json()[<span class="ck">"id"</span>]
+<div class="lang-label">python</div></code></pre>
 
-    <span class="comment"># Commit to DarkMatter</span>
-    body = {
-        <span class="key">"toAgentId"</span>: to_agent_id,
-        <span class="key">"payload"</span>: {
-            <span class="key">"input"</span>:  prompt,
-            <span class="key">"output"</span>: response,
-            <span class="key">"memory"</span>: {<span class="key">"model"</span>: model, <span class="key">"provider"</span>: <span class="str">"local"</span>}
-        },
-        <span class="key">"agent"</span>: {<span class="key">"provider"</span>: <span class="str">"local"</span>, <span class="key">"model"</span>: model},
-    }
-    if parent_id: body[<span class="key">"parentId"</span>] = parent_id
-    ctx = req.post(<span class="str">"https://darkmatterhub.ai/api/commit"</span>,
-        headers={<span class="str">"Authorization"</span>: f<span class="str">"Bearer {dm_key}"</span>}, json=body
-    ).json()
-    return response, ctx[<span class="str">"id"</span>]</code></pre>
+  <h2 id="api-commit">POST /api/commit</h2>
+  <p>Commit agent context. Returns a canonical v2 context object.</p>
+  <div class="endpoint"><div class="endpoint-title"><span class="badge post">POST</span> https://darkmatterhub.ai/api/commit</div></div>
+  <div class="table-wrap"><table><thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody>
+    <tr><td><code>toAgentId</code></td><td>string</td><td><span class="badge req">required</span></td><td>Recipient agent ID</td></tr>
+    <tr><td><code>payload.input</code></td><td>string/object</td><td><span class="badge opt">optional</span></td><td>What the agent received</td></tr>
+    <tr><td><code>payload.output</code></td><td>string/object</td><td><span class="badge opt">optional</span></td><td>What the agent produced</td></tr>
+    <tr><td><code>payload.memory</code></td><td>object</td><td><span class="badge opt">optional</span></td><td>Durable working state</td></tr>
+    <tr><td><code>parentId</code></td><td>string</td><td><span class="badge opt">optional</span></td><td>Parent ctx ID, chains commits into lineage</td></tr>
+    <tr><td><code>traceId</code></td><td>string</td><td><span class="badge opt">optional</span></td><td>Groups commits into a run</td></tr>
+    <tr><td><code>eventType</code></td><td>string</td><td><span class="badge opt">optional</span></td><td>Defaults to <code>commit</code></td></tr>
+    <tr><td><code>agent.role</code></td><td>string</td><td><span class="badge opt">optional</span></td><td>researcher, writer, reviewer, etc.</td></tr>
+    <tr><td><code>agent.provider</code></td><td>string</td><td><span class="badge opt">optional</span></td><td>anthropic, openai, local</td></tr>
+    <tr><td><code>agent.model</code></td><td>string</td><td><span class="badge opt">optional</span></td><td>Model name</td></tr>
+  </tbody></table></div>
 
-    <h2 id="commit">POST /api/commit</h2>
-    <p>Commit agent context. Returns a canonical v2 context object.</p>
-<pre><code>{
-  <span class="key">"toAgentId"</span>:  <span class="str">"dm_..."</span>,           <span class="comment">// required — recipient agent ID</span>
-  <span class="key">"payload"</span>: {                    <span class="comment">// structured state</span>
-    <span class="key">"input"</span>:     <span class="str">"..."</span>,
-    <span class="key">"output"</span>:    <span class="str">"..."</span>,
-    <span class="key">"memory"</span>:    {},
-    <span class="key">"variables"</span>: {}
-  },
-  <span class="key">"parentId"</span>:   <span class="str">"ctx_..."</span>,        <span class="comment">// optional — chains to parent</span>
-  <span class="key">"traceId"</span>:    <span class="str">"trc_..."</span>,        <span class="comment">// optional — groups commits into a run</span>
-  <span class="key">"eventType"</span>:  <span class="str">"commit"</span>,         <span class="comment">// commit|fork|checkpoint|revert|...</span>
-  <span class="key">"agent"</span>: {
-    <span class="key">"role"</span>:     <span class="str">"researcher"</span>,
-    <span class="key">"provider"</span>: <span class="str">"anthropic"</span>,
-    <span class="key">"model"</span>:    <span class="str">"claude-opus-4-6"</span>
-  }
-}</code></pre>
+  <h2 id="api-pull">GET /api/pull</h2>
+  <p>Returns all verified contexts addressed to the authenticated agent, newest first.</p>
+  <div class="endpoint"><div class="endpoint-title"><span class="badge get">GET</span> https://darkmatterhub.ai/api/pull</div></div>
 
-    <h2 id="pull">GET /api/pull</h2>
-    <p>Pull all verified contexts addressed to the authenticated agent. Returns newest first.</p>
+  <h2 id="api-replay">GET /api/replay/:ctxId</h2>
+  <p>Walks the parent chain from ctxId back to root, reverses to chronological order, returns each step with full payload and integrity verification. Add <code>?mode=summary</code> for metadata only.</p>
+  <div class="endpoint"><div class="endpoint-title"><span class="badge get">GET</span> https://darkmatterhub.ai/api/replay/:ctxId</div></div>
 
-    <h2 id="replay">GET /api/replay/:ctxId</h2>
-    <p>Walk the parent chain from ctxId back to root, reverse to chronological order, return each step with full payload and integrity verification.</p>
-    <p>Add <code>?mode=summary</code> for metadata only (no payloads, faster).</p>
+  <h2 id="api-fork">POST /api/fork/:ctxId</h2>
+  <p>Branch from any checkpoint. Returns new ctx ID with <code>fork_of</code>, <code>fork_point</code>, <code>lineage_root</code>. Original chain never modified. Continue by committing with <code>parentId</code> set to returned ID.</p>
+  <div class="endpoint"><div class="endpoint-title"><span class="badge post">POST</span> https://darkmatterhub.ai/api/fork/:ctxId</div></div>
+<pre><code>curl -X POST https://darkmatterhub.ai/api/fork/ctx_...   -H <span class="cv">"Authorization: Bearer YOUR_KEY"</span>   -d '{<span class="ck">"branchKey"</span>: <span class="cv">"experiment-1"</span>}'
+<span class="cm"># Response: id (use as parentId for next commit), fork_of, fork_point, lineage_root</span>
+<div class="lang-label">bash</div></code></pre>
 
-    <h2 id="fork">POST /api/fork/:ctxId</h2>
-    <p>Branch from any checkpoint. Returns a new context ID with <code>fork_of</code>, <code>fork_point</code>, and <code>lineage_root</code>. Continue the branch by committing with <code>parentId</code> set to the new ID.</p>
+  <h2 id="api-verify">GET /api/verify/:ctxId</h2>
+  <p>Returns a standalone trust object for the chain.</p>
+  <div class="endpoint"><div class="endpoint-title"><span class="badge get">GET</span> https://darkmatterhub.ai/api/verify/:ctxId</div></div>
+  <div class="table-wrap"><table><thead><tr><th>Field</th><th>Description</th></tr></thead><tbody>
+    <tr><td><code>chain_intact</code></td><td>Boolean, true if all hashes verify</td></tr>
+    <tr><td><code>length</code></td><td>Number of commits in chain</td></tr>
+    <tr><td><code>root_hash</code></td><td>sha256 hash of root commit</td></tr>
+    <tr><td><code>tip_hash</code></td><td>sha256 hash of tip commit</td></tr>
+    <tr><td><code>broken_at</code></td><td>ctx ID where chain first breaks, or null</td></tr>
+    <tr><td><code>fork_points</code></td><td>Array of ctx IDs where forks occurred</td></tr>
+    <tr><td><code>verified_at</code></td><td>Timestamp of this verification</td></tr>
+  </tbody></table></div>
 
-    <h2 id="verify">GET /api/verify/:ctxId</h2>
-    <p>Returns a standalone trust object: <code>chain_intact</code>, <code>length</code>, <code>root_hash</code>, <code>tip_hash</code>, <code>broken_at</code>, <code>fork_points</code>, <code>verified_at</code>.</p>
+  <h2 id="api-export">GET /api/export/:ctxId</h2>
+  <p>Downloads a portable JSON proof artifact. <code>chain_hash</code> is deterministic across exports of the same unchanged chain. <code>export_hash</code> is unique per export instance.</p>
+  <div class="endpoint"><div class="endpoint-title"><span class="badge get">GET</span> https://darkmatterhub.ai/api/export/:ctxId</div></div>
 
-    <h2 id="export">GET /api/export/:ctxId</h2>
-    <p>Downloads a portable JSON proof artifact. Contains full chain, integrity block, <code>chain_hash</code> (stable across exports of the same chain), and <code>export_hash</code> (unique per export).</p>
+  <h2 id="api-lineage">GET /api/lineage/:ctxId</h2>
+  <p>Returns ancestor chain metadata (no payloads) from tip to root. Faster than replay for visualization.</p>
+  <div class="endpoint"><div class="endpoint-title"><span class="badge get">GET</span> https://darkmatterhub.ai/api/lineage/:ctxId</div></div>
 
-    <h2 id="byok">Enterprise: BYOK encryption</h2>
-    <p>Available on Enterprise plans. Your payload is encrypted with AES-256-GCM using a key you provide. DarkMatter stores only ciphertext.</p>
-<pre><code><span class="comment"># Encrypted commit</span>
-curl -X POST https://darkmatterhub.ai/enterprise/commit \
-  -H <span class="str">"Authorization: Bearer YOUR_KEY"</span> \
+  <h2 id="api-me">GET /api/me</h2>
+  <p>Returns the identity of the authenticated agent.</p>
+  <div class="endpoint"><div class="endpoint-title"><span class="badge get">GET</span> https://darkmatterhub.ai/api/me</div></div>
+
+  <h2 id="api-register">POST /api/agents/register</h2>
+  <p>Allows an authenticated agent to programmatically spawn a new agent without requiring a dashboard login. Useful for pipelines that create agents dynamically at runtime.</p>
+  <p><strong>Cap:</strong> 10 new agents per account per day. This prevents runaway agent spawning. The limit resets at midnight UTC.</p>
+<pre><code><span class="cc"># Spawn a new agent from an existing agent's API key</span>
+curl -X POST https://darkmatterhub.ai/api/agents/register \
+  -H <span class="cv">"Authorization: Bearer EXISTING_AGENT_KEY"</span> \
+  -H <span class="cv">"Content-Type: application/json"</span> \
   -d '{
-    <span class="key">"toAgentId"</span>: <span class="str">"dm_..."</span>,
-    <span class="key">"payload"</span>: {<span class="key">"input"</span>: <span class="str">"..."</span>, <span class="key">"output"</span>: <span class="str">"..."</span>},
-    <span class="key">"byokKey"</span>: <span class="str">"your-64-char-hex-aes256-key"</span>
-  }'</code></pre>
-    <div class="callout"><strong>Security note:</strong> Your BYOK key is never stored by DarkMatter. Pass it in each request. Store it in your secrets manager (AWS KMS, HashiCorp Vault, etc.).</div>
-
-    <h2 id="did">Enterprise: W3C DID agent identity</h2>
-    <p>Register a W3C Decentralized Identifier for any agent. Commits from that agent will carry a verifiable DID, independently resolvable without trusting DarkMatter.</p>
-<pre><code><span class="comment"># Register DID for an agent</span>
-curl -X POST https://darkmatterhub.ai/enterprise/did/register \
-  -H <span class="str">"Authorization: Bearer DASHBOARD_TOKEN"</span> \
-  -d '{
-    <span class="key">"agentId"</span>:   <span class="str">"dm_..."</span>,
-    <span class="key">"didId"</span>:     <span class="str">"did:web:yourcompany.com:agents:researcher"</span>,
-    <span class="key">"publicKey"</span>: <span class="str">"z6Mk..."</span>
+    <span class="ck">"agentName"</span>: <span class="cv">"summarizer-v2"</span>,
+    <span class="ck">"role"</span>:      <span class="cv">"summarizer"</span>,
+    <span class="ck">"provider"</span>: <span class="cv">"anthropic"</span>,
+    <span class="ck">"model"</span>:    <span class="cv">"claude-opus-4-6"</span>
   }'
+<span class="cc"># Returns: { agentId, agentName, apiKey, spawnedBy, createdAt }</span>
+<span class="cc"># Store the returned apiKey — it will not be shown again</span>
+<div class="lang-label">bash</div></code></pre>
+  <div class="callout"><strong>Security note:</strong> The daily cap of 10 agents per account is enforced server-side. If your pipeline exceeds this, contact us to discuss higher limits for your use case.</div>
 
-<span class="comment"># Resolve DID document (public, no auth)</span>
-curl https://darkmatterhub.ai/enterprise/did/AGENT_ID</code></pre>
+  <h2 id="context-passport">Context Passport</h2>
+  <p>The <strong>Context Passport</strong> is DarkMatter's proposed open standard for AI agent context handoffs. It is a structured, model-agnostic schema that any LLM or agent framework can produce and consume — making agent handoffs interoperable, verifiable, and auditable across systems.</p>
+  <p>The goal is for <code>schema_version: "1.0"</code> to mean something to any developer building multi-agent systems, the same way <code>Content-Type: application/json</code> means something to any HTTP client. Every context commit in DarkMatter is a Context Passport.</p>
+
+  <h3>Why a standard schema matters</h3>
+  <p>When Agent A hands work to Agent B today, the format is arbitrary — a string, a dict, or a JSON blob with no fixed shape. Agent B has to guess where the output is, who produced it, and whether it was tampered with. The Context Passport answers all of those questions in a consistent structure, regardless of which model or framework is on either end of the handoff.</p>
+  <p>This also directly addresses the schema drift problem: because every commit uses the same <code>payload.output</code> field for structured outputs, Agent B always knows exactly where to look for what Agent A produced. Commit structured JSON as your output — not a stringified version — and the schema is preserved and inspectable at every step in the chain.</p>
+
+  <h3>Full schema (v1.0)</h3>
+<pre><code>{
+  <span class="ck">"$schema"</span>:        <span class="cv">"https://darkmatterhub.ai/schema/context-passport/v1.json"</span>,
+  <span class="ck">"schema_version"</span>: <span class="cv">"1.0"</span>,
+  <span class="ck">"id"</span>:             <span class="cv">"ctx_{timestamp}_{hex}"</span>,
+  <span class="ck">"parent_id"</span>:      <span class="cv">"ctx_... | null"</span>,
+  <span class="ck">"trace_id"</span>:       <span class="cv">"trc_... | null"</span>,
+  <span class="ck">"branch_key"</span>:     <span class="cv">"main"</span>,
+
+  <span class="ck">"created_by"</span>: {
+    <span class="ck">"agent_id"</span>:   <span class="cv">"dm_..."</span>,
+    <span class="ck">"agent_name"</span>: <span class="cv">"research-agent"</span>,
+    <span class="ck">"role"</span>:       <span class="cv">"researcher"</span>,
+    <span class="ck">"provider"</span>:   <span class="cv">"anthropic | openai | google | mistral | local"</span>,
+    <span class="ck">"model"</span>:      <span class="cv">"claude-opus-4-6"</span>
+  },
+
+  <span class="ck">"event"</span>: {
+    <span class="ck">"type"</span>:        <span class="cv">"commit | fork | checkpoint | audit | ..."</span>,
+    <span class="ck">"to_agent_id"</span>: <span class="cv">"dm_... | null"</span>,
+    <span class="ck">"timestamp"</span>:   <span class="cv">"ISO 8601"</span>
+  },
+
+  <span class="ck">"payload"</span>: {
+    <span class="ck">"input"</span>:     <span class="cv">"string or structured object"</span>,
+    <span class="ck">"output"</span>:    <span class="cv">"string or structured object"</span>,
+    <span class="ck">"memory"</span>:    {},
+    <span class="ck">"variables"</span>: {}
+  },
+
+  <span class="ck">"integrity"</span>: {
+    <span class="ck">"payload_hash"</span>:        <span class="cv">"sha256:hex"</span>,
+    <span class="ck">"parent_hash"</span>:         <span class="cv">"sha256:hex | null"</span>,
+    <span class="ck">"integrity_hash"</span>:      <span class="cv">"sha256:hex"</span>,
+    <span class="ck">"verification_status"</span>: <span class="cv">"valid | broken | unverified"</span>
+  },
+
+  <span class="ck">"lineage"</span>: {
+    <span class="ck">"fork_of"</span>:      <span class="cv">"ctx_... | null"</span>,
+    <span class="ck">"fork_point"</span>:   <span class="cv">"ctx_... | null"</span>,
+    <span class="ck">"lineage_root"</span>: <span class="cv">"ctx_... | null"</span>
+  },
+
+  <span class="ck">"created_at"</span>: <span class="cv">"ISO 8601"</span>
+}
+<div class="lang-label">json</div></code></pre>
+
+  <h3>Payload field guidance</h3>
+  <p>Use structured JSON for <code>payload.output</code> wherever possible. This preserves the schema across the chain and makes replay and inspection meaningful:</p>
+<pre><code><span class="cc"># Good — structured output is inspectable at every step</span>
+<span class="ck">"payload"</span>: {
+  <span class="ck">"input"</span>:  <span class="cv">"Analyze Q1 earnings"</span>,
+  <span class="ck">"output"</span>: {
+    <span class="ck">"summary"</span>:    <span class="cv">"APAC up 34%, margin compressed"</span>,
+    <span class="ck">"confidence"</span>: <span class="cv">0.94</span>,
+    <span class="ck">"sources"</span>:    [<span class="cv">"Q1_report.pdf"</span>, <span class="cv">"earnings_call.txt"</span>]
+  }
+}
+<div class="lang-label">json</div></code></pre>
+
+  <h2 id="context-object">Context object (v2)</h2>
+<pre><code>{
+  <span class="ck">"id"</span>:             <span class="cv">"ctx_1774358291224_bad9b976"</span>,
+  <span class="ck">"schema_version"</span>: <span class="cv">"1.0"</span>,
+  <span class="ck">"parent_id"</span>:      <span class="cv">"ctx_previous_or_null"</span>,
+  <span class="ck">"trace_id"</span>:       <span class="cv">"trc_..."</span>,
+  <span class="ck">"branch_key"</span>:     <span class="cv">"main"</span>,
+  <span class="ck">"created_by"</span>: {
+    <span class="ck">"agent_id"</span>:   <span class="cv">"dm_..."</span>, <span class="ck">"agent_name"</span>: <span class="cv">"research-agent"</span>,
+    <span class="ck">"role"</span>: <span class="cv">"researcher"</span>, <span class="ck">"provider"</span>: <span class="cv">"anthropic"</span>, <span class="ck">"model"</span>: <span class="cv">"claude-opus-4-6"</span>
+  },
+  <span class="ck">"event"</span>: {<span class="ck">"type"</span>: <span class="cv">"commit"</span>, <span class="ck">"to_agent_id"</span>: <span class="cv">"dm_..."</span>},
+  <span class="ck">"payload"</span>: {<span class="ck">"input"</span>: <span class="cv">"..."</span>, <span class="ck">"output"</span>: <span class="cv">"..."</span>, <span class="ck">"memory"</span>: {}, <span class="ck">"variables"</span>: {}},
+  <span class="ck">"integrity"</span>: {
+    <span class="ck">"payload_hash"</span>: <span class="cv">"sha256:e7733904..."</span>,
+    <span class="ck">"parent_hash"</span>:  <span class="cv">"sha256:f4a2b1c3..."</span>,
+    <span class="ck">"verification_status"</span>: <span class="cv">"valid"</span>
+  },
+  <span class="ck">"created_at"</span>: <span class="cv">"2026-03-24T13:18:11Z"</span>
+}
+<div class="lang-label">json</div></code></pre>
+
+  <h2 id="event-types">Event types</h2>
+  <div class="table-wrap"><table><thead><tr><th>Type</th><th>Category</th><th>Use when</th></tr></thead><tbody>
+    <tr><td><code>commit</code></td><td>Developer</td><td>Standard agent handoff</td></tr>
+    <tr><td><code>fork</code></td><td>Developer</td><td>Branching from a checkpoint</td></tr>
+    <tr><td><code>checkpoint</code></td><td>Developer</td><td>Mid-task save point</td></tr>
+    <tr><td><code>revert</code></td><td>Developer</td><td>Rollback to previous state</td></tr>
+    <tr><td><code>retry</code></td><td>Developer</td><td>Retrying a failed step</td></tr>
+    <tr><td><code>error</code></td><td>Developer</td><td>Recording a failure</td></tr>
+    <tr><td><code>spawn</code></td><td>Developer</td><td>Creating a child agent</td></tr>
+    <tr><td><code>merge</code></td><td>Developer</td><td>Combining branches</td></tr>
+    <tr><td><code>override</code></td><td>Compliance</td><td>Human overrode agent decision</td></tr>
+    <tr><td><code>consent</code></td><td>Compliance</td><td>User consent recorded</td></tr>
+    <tr><td><code>escalate</code></td><td>Compliance</td><td>Escalated to human review</td></tr>
+    <tr><td><code>redact</code></td><td>Compliance</td><td>Sensitive data redacted</td></tr>
+    <tr><td><code>audit</code></td><td>Compliance</td><td>Explicit audit event</td></tr>
+  </tbody></table></div>
+
+  <h2 id="integrity">Integrity model</h2>
+  <p>Each commit computes two hashes:</p>
+  <ul>
+    <li><strong>payload_hash</strong> = sha256(normalized JSON payload)</li>
+    <li><strong>integrity_hash</strong> = sha256(payload_hash + parent integrity_hash). For root commits, parent integrity_hash is the string <code>"root"</code>.</li>
+  </ul>
+  <p>Modifying any commit breaks every downstream hash. Use <code>GET /api/verify</code> to check <code>chain_intact</code> and find the exact break point.</p>
+  <div class="callout warning"><div class="callout-title">Broken chain policy</div>DarkMatter uses permissive mode. Commits are accepted on broken chains but flagged. Fork from the last valid node to start a clean branch.</div>
+
+  <h2 id="byok">Enterprise: BYOK encryption</h2>
+  <p>Payloads encrypted with AES-256-GCM using a key you provide. DarkMatter stores only ciphertext and never has access to your content. Requires an Enterprise plan.</p>
+<pre><code><span class="cm"># Generate a secure AES-256 key</span>
+python3 -c <span class="cv">"import secrets; print(secrets.token_hex(32))"</span>
+
+<span class="cm"># Encrypted commit</span>
+curl -X POST https://darkmatterhub.ai/enterprise/commit   -H <span class="cv">"Authorization: Bearer YOUR_KEY"</span>   -d '{<span class="ck">"toAgentId"</span>: <span class="cv">"dm_..."</span>, <span class="ck">"payload"</span>: {...}, <span class="ck">"byokKey"</span>: <span class="cv">"your-64-hex-key"</span>}'
+
+<span class="cm"># Decrypt</span>
+curl -X POST https://darkmatterhub.ai/enterprise/decrypt/ctx_...   -H <span class="cv">"Authorization: Bearer YOUR_KEY"</span>   -d '{<span class="ck">"byokKey"</span>: <span class="cv">"your-64-hex-key"</span>}'
+<div class="lang-label">bash</div></code></pre>
+  <div class="callout info"><div class="callout-title">Key security</div>Your BYOK key is never stored by DarkMatter. Store it in AWS KMS, HashiCorp Vault, or Azure Key Vault. Pass it in each request.</div>
+
+  <h2 id="did">Enterprise: W3C DID agent identity</h2>
+  <p>Register a W3C Decentralized Identifier for any agent. Commits carry a verifiable DID independently resolvable without trusting DarkMatter.</p>
+<pre><code><span class="cm"># Register DID (uses dashboard JWT auth)</span>
+curl -X POST https://darkmatterhub.ai/enterprise/did/register   -H <span class="cv">"Authorization: Bearer DASHBOARD_JWT"</span>   -d '{<span class="ck">"agentId"</span>: <span class="cv">"dm_..."</span>, <span class="ck">"didId"</span>: <span class="cv">"did:web:yourco.com:agents:researcher"</span>, <span class="ck">"publicKey"</span>: <span class="cv">"z6Mk..."</span>}'
+
+<span class="cm"># Resolve DID (public, no auth)</span>
+curl https://darkmatterhub.ai/enterprise/did/AGENT_ID
+<div class="lang-label">bash</div></code></pre>
+
+  <h2 id="compliance">Enterprise: Compliance reports</h2>
+  <p>Generate a structured compliance report for an entire trace. Pass the same <code>traceId</code> to all commits in one pipeline run, then export.</p>
+<pre><code>curl https://darkmatterhub.ai/enterprise/report/trc_...   -H <span class="cv">"Authorization: Bearer YOUR_KEY"</span>   -o compliance_report.json
+<div class="lang-label">bash</div></code></pre>
+  <p>The report includes: agent registry, full audit trail with per-step integrity verification, timestamp range, chain intact status, and a regulatory note covering regulations such as EU AI Act Art. 12 and 19.</p>
+
+  <h2 id="self-host">Self-hosting</h2>
+  <div class="callout warning"><div class="callout-title">Important</div>Self-hosted deployments do not carry the independent audit guarantee. For external audit credibility, use the hosted Enterprise plan with BYOK encryption.</div>
+  <div class="steps">
+    <div class="step"><div class="step-num">1</div><div><div class="step-title">Clone the repo</div><div class="step-desc"><code>git clone https://github.com/darkmatter-hub/darkmatter</code> then <code>npm install</code></div></div></div>
+    <div class="step"><div class="step-num">2</div><div><div class="step-title">Set environment variables</div><div class="step-desc">Copy <code>.env.example</code> to <code>.env</code>. Fill in <code>SUPABASE_URL</code>, <code>SUPABASE_KEY</code>, <code>SUPABASE_SERVICE_KEY</code>, <code>RESEND_API_KEY</code>.</div></div></div>
+    <div class="step"><div class="step-num">3</div><div><div class="step-title">Run the schema migration</div><div class="step-desc">Paste <code>supabase/schema.sql</code> into your Supabase SQL Editor and run it.</div></div></div>
+    <div class="step"><div class="step-num">4</div><div><div class="step-title">Deploy</div><div class="step-desc">Deploy to Railway, Render, Fly.io, or any Node.js host. Set <code>PORT=3000</code> and env vars. Auto-deploys on git push.</div></div></div>
   </div>
-</div>
 
+  <h2 id="three-agent-demo">Guide: Three-agent demo</h2>
+  <p>The canonical DarkMatter demo shows a Claude to GPT-4o to Claude pipeline with a fork mid-chain. See it live at <a href="/demo">darkmatterhub.ai/demo</a> with no login required. The full Python script is in <code>examples/three-agent-demo/demo.py</code> in the GitHub repo.</p>
+
+  <h2 id="fork-guide">Guide: Forking workflows</h2>
+  <p>Fork from any checkpoint to try a different approach without destroying the original chain. Both branches are independently replayable.</p>
+<pre><code>FORK=$(curl -s -X POST https://darkmatterhub.ai/api/fork/$CHECKPOINT_ID   -H <span class="cv">"Authorization: Bearer YOUR_KEY"</span>   -d '{<span class="ck">"branchKey"</span>: <span class="cv">"alt-approach"</span>}')
+
+FORK_ID=$(echo $FORK | python3 -c <span class="cv">"import sys,json;print(json.load(sys.stdin)['id'])"</span>)
+
+<span class="cm"># Continue on fork branch</span>
+curl -X POST https://darkmatterhub.ai/api/commit   -H <span class="cv">"Authorization: Bearer YOUR_KEY"</span>   -d "{<span class="ck">\"toAgentId\"</span>: <span class="cv">\"dm_...\"</span>, <span class="ck">\"parentId\"</span>: <span class="cv">\"$FORK_ID\"</span>, <span class="ck">\"payload\"</span>: {}}"
+<div class="lang-label">bash</div></code></pre>
+
+  <h2 id="audit-guide">Guide: Audit trail guide</h2>
+  <p>Use <code>traceId</code> to group all commits in one pipeline run, then export a compliance report covering the full execution.</p>
+<pre><code>import uuid, requests
+
+TRACE_ID = f<span class="cv">"trc_{uuid.uuid4().hex[:12]}"</span>
+
+def commit(dm_key, to_agent_id, payload, parent_id=None):
+    return requests.post(<span class="cv">"https://darkmatterhub.ai/api/commit"</span>,
+        headers={<span class="ck">"Authorization"</span>: f<span class="cv">"Bearer {dm_key}"</span>},
+        json={<span class="ck">"toAgentId"</span>: to_agent_id, <span class="ck">"payload"</span>: payload,
+              <span class="ck">"traceId"</span>: TRACE_ID, <span class="ck">"parentId"</span>: parent_id}
+    ).json()[<span class="ck">"id"</span>]
+
+<span class="cm"># After pipeline completes:</span>
+<span class="cm"># GET /enterprise/report/{TRACE_ID}  (Enterprise plan)</span>
+<div class="lang-label">python</div></code></pre>
+
+</main>
+</div>
 <script>
-  // Highlight active sidebar link on scroll
-  const links = document.querySelectorAll('.sidebar-link');
-  const observer = new IntersectionObserver(entries => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
+  const sections = document.querySelectorAll('h2[id]');
+  const links = document.querySelectorAll('.sb-link');
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
         links.forEach(l => l.classList.remove('active'));
-        const active = document.querySelector(`.sidebar-link[href="#${entry.target.id}"]`);
-        if (active) active.classList.add('active');
+        const a = document.querySelector(`.sb-link[href="#${e.target.id}"]`);
+        if (a) a.classList.add('active');
       }
     });
-  }, { threshold: 0.5 });
-  document.querySelectorAll('h2[id]').forEach(h => observer.observe(h));
+  }, {rootMargin:'-10% 0px -80% 0px'});
+  sections.forEach(s => obs.observe(s));
+  function searchDocs(q) {
+    const t = q.toLowerCase();
+    links.forEach(l => { l.style.display = (!t || l.textContent.toLowerCase().includes(t)) ? '' : 'none'; });
+  }
 </script>
 </body>
 </html>
