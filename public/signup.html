@@ -9,9 +9,9 @@
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --bg:#0d1117; --bg2:#161b22; --bg3:#21262d;
-      --border:#30363d; --border2:#21262d;
-      --text:#e6edf3; --text2:#7d8590; --text3:#3d444e;
+      --bg:#ffffff; --bg2:#f8f9fa; --bg3:#f1f3f5;
+      --border:#e5e7eb; --border2:#d1d5db;
+      --text:#111827; --text2:#4b5563; --text3:#9ca3af;
       --accent:#58a6ff; --green:#3fb950; --red:#f85149;
       --mono:'IBM Plex Mono',monospace; --sans:'Inter',sans-serif; --display:'Space Grotesk',sans-serif;
     }
@@ -39,7 +39,7 @@
     .field input { background:var(--bg); border:1px solid var(--border); border-radius:6px; padding:0.6rem 0.8rem; color:var(--text); font-family:var(--sans); font-size:0.85rem; outline:none; transition:border-color 0.15s; }
     .field input:focus { border-color:var(--accent); }
     .field input::placeholder { color:var(--text3); }
-    .submit-btn { background:var(--green); color:#0d1117; font-weight:700; font-size:0.85rem; padding:0.65rem 1rem; border-radius:6px; border:none; cursor:pointer; transition:filter 0.15s; width:100%; font-family:var(--sans); }
+    .submit-btn { background:var(--green); color:#ffffff; font-weight:700; font-size:0.85rem; padding:0.65rem 1rem; border-radius:6px; border:none; cursor:pointer; transition:filter 0.15s; width:100%; font-family:var(--sans); }
     .submit-btn:hover { filter:brightness(1.1); }
     .submit-btn:disabled { opacity:0.5; cursor:not-allowed; }
     .error-msg { background:rgba(248,81,73,0.1); border:1px solid rgba(248,81,73,0.3); border-radius:6px; padding:0.6rem 0.8rem; font-size:0.78rem; color:var(--red); display:none; }
