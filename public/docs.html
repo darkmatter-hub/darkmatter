@@ -172,12 +172,47 @@ tr:hover td{background:var(--bg2);}
   <div class="callout info"><div class="callout-title">Base URL</div>All API calls go to <code>https://darkmatterhub.ai</code>. Get your API key at <a href="/signup">darkmatterhub.ai/signup</a>.</div>
 
   <h2 id="quickstart">Quickstart</h2>
-  <p>From zero to a verified execution chain in under 2 minutes.</p>
+
+  <div class="callout info"><div class="callout-title">Try it first — no signup required</div>
+  Install the SDK and run the demo locally. See exactly what DarkMatter records, replays, forks, and verifies — all on your machine.</div>
+
+<pre><code>pip install darkmatter
+darkmatter demo<div class="lang-label">bash</div></code></pre>
+
+  <p>You'll see a 3-step chain commit, verify, replay, fork, and diff — locally. Then get your free API key to run it in production.</p>
+
+  <h3 id="single-dev">Single developer (no multi-agent needed)</h3>
+  <p>You don't need multiple agents to use DarkMatter. One developer, one pipeline, full replay of every step. Commit to yourself:</p>
+
+<pre><code>import darkmatter as dm
+
+MY_AGENT = <span class="cv">"dm_agent_your_id"</span>
+parent_id = None
+
+<span class="cm"># Record each step of your pipeline</span>
+for step in pipeline_steps:
+    result = run_step(step)
+    ctx = dm.commit(
+        to_agent_id=MY_AGENT,
+        payload={<span class="ck">"input"</span>: step, <span class="ck">"output"</span>: result},
+        parent_id=parent_id,
+    )
+    parent_id = ctx[<span class="cv">"id"</span>]
+
+<span class="cm"># Replay it</span>
+replay = dm.replay(parent_id)
+for s in replay[<span class="cv">"replay"</span>]:
+    print(s[<span class="cv">"step"</span>], s[<span class="cv">"payload"</span>][<span class="cv">"output"</span>])<div class="lang-label">python</div></code></pre>
+
+  <h3>From zero to verified chain</h3>
   <div class="steps">
-    <div class="step"><div class="step-num">1</div><div><div class="step-title">Get an API key</div><div class="step-desc">Sign up at <a href="/signup">darkmatterhub.ai/signup</a>, create an agent in the dashboard, and copy the API key. Each agent gets its own key.</div></div></div>
-    <div class="step"><div class="step-num">2</div><div><div class="step-title">Commit context after any agent step</div><div class="step-desc">Call POST /api/commit with what the agent received and produced. Pass <code>parentId</code> to link commits into a chain.</div></div></div>
-    <div class="step"><div class="step-num">3</div><div><div class="step-title">Replay the full chain</div><div class="step-desc">Call GET /api/replay/:ctxId to walk the complete decision path, root to tip, with integrity verified at every step.</div></div></div>
+    <div class="step"><div class="step-num">1</div><div><div class="step-title">Install the SDK</div><div class="step-desc"><code>pip install darkmatter</code> or <code>npm install darkmatter-js</code>. Zero dependencies. Runs on Python 3.8+ or Node 18+.</div></div></div>
+    <div class="step"><div class="step-num">2</div><div><div class="step-title">Get a free API key</div><div class="step-desc">Sign up at <a href="/signup">darkmatterhub.ai/signup</a>, create an agent in the dashboard, copy the key. Set <code>DARKMATTER_API_KEY=dm_sk_...</code></div></div></div>
+    <div class="step"><div class="step-num">3</div><div><div class="step-title">Commit after each step</div><div class="step-desc">Call <code>dm.commit()</code> with the input and output. Pass <code>parent_id</code> to link commits into a chain. That's it.</div></div></div>
+    <div class="step"><div class="step-num">4</div><div><div class="step-title">Replay, fork, verify</div><div class="step-desc"><code>dm.replay(ctx_id)</code> walks the chain root→tip. <code>dm.fork(ctx_id)</code> branches without modifying the original. <code>dm.verify(ctx_id)</code> proves the chain is intact.</div></div></div>
   </div>
+
+  <h3>curl (no SDK)</h3>
 <pre><code><span class="cm"># Agent A commits output to Agent B</span>
 curl -X POST https://darkmatterhub.ai/api/commit   -H <span class="cv">"Authorization: Bearer AGENT_A_KEY"</span>   -H <span class="cv">"Content-Type: application/json"</span>   -d '{
     <span class="ck">"toAgentId"</span>: <span class="cv">"dm_agent_b_id"</span>,
@@ -214,9 +249,25 @@ curl https://darkmatterhub.ai/api/replay/ctx_... -H <span class="cv">"Authorizat
   <p>Creates a new branch from any existing checkpoint without modifying the original chain. The fork node carries <code>fork_of</code>, <code>fork_point</code>, and <code>lineage_root</code>. Continue by committing with <code>parentId</code> set to the fork ID.</p>
 
   <h2 id="langgraph">Integration: LangGraph</h2>
-  <p>LangGraph has internal checkpointing within a single graph. DarkMatter adds the layer above: cross-framework lineage, cryptographic tamper-evidence, and an independent audit trail that survives outside your infrastructure. They work alongside each other.</p>
-  <h3>Pattern: commit after each node</h3>
-  <p>Add a <code>dm_commit</code> call at the end of each node function. Pass the returned <code>ctx_id</code> through state so each downstream node can link to it as its parent.</p>
+  <p>LangGraph handles internal graph checkpointing. DarkMatter adds cross-framework lineage and an independent record that lives outside your infrastructure. They're complementary.</p>
+
+  <h3>One-line wrapper (recommended)</h3>
+  <p>Zero changes to your existing graph. <code>DarkMatterTracer</code> intercepts every node completion and commits automatically:</p>
+
+<pre><code>from darkmatter.integrations.langgraph import DarkMatterTracer
+
+<span class="cm"># Your existing compiled app — unchanged</span>
+app = workflow.compile()
+
+<span class="cm"># One line to add DarkMatter</span>
+app = DarkMatterTracer(app, agent_id=<span class="cv">"MY_AGENT_ID"</span>, to_agent_id=<span class="cv">"MY_AGENT_ID"</span>)
+
+<span class="cm"># Use exactly as before — every node auto-commits</span>
+result = app.invoke({<span class="ck">"input"</span>: <span class="cv">"Write a report"</span>})
+print(result)<div class="lang-label">python</div></code></pre>
+
+  <h3>Manual pattern (more control)</h3>
+  <p>Add a <code>dm_commit</code> call at the end of each node. Pass the returned <code>ctx_id</code> through state:</p>
 <pre><code>import os, requests
 from langgraph.graph import StateGraph, END
 from typing import TypedDict, Optional
@@ -374,6 +425,27 @@ ctx2 = dm_commit(task2.description, result.tasks_output[<span class="cn">1</span
 <div class="lang-label">python</div></code></pre>
 
   <h2 id="anthropic-sdk">Integration: Anthropic SDK</h2>
+  <p>Wrap your existing Anthropic client in one line. Every <code>messages.create()</code> call auto-commits:</p>
+
+<pre><code>import anthropic
+from darkmatter.integrations.anthropic import dm_client
+
+<span class="cm"># Wrap once — use everywhere</span>
+client = dm_client(
+    anthropic.Anthropic(),
+    agent_id=<span class="cv">"agent-01"</span>,
+    to_agent_id=<span class="cv">"agent-01"</span>,
+)
+
+<span class="cm"># Identical interface to anthropic.Anthropic()</span>
+response = client.messages.create(
+    model=<span class="cv">"claude-opus-4-6"</span>,
+    max_tokens=1024,
+    messages=[{<span class="ck">"role"</span>: <span class="cv">"user"</span>, <span class="ck">"content"</span>: <span class="cv">"Analyze Q1 earnings"</span>}]
+)
+print(client.last_ctx_id)  <span class="cm"># ctx_1234567890_abc123</span><div class="lang-label">python</div></code></pre>
+
+  <h3>Manual pattern</h3>
   <p>Wrap the Anthropic client so every <code>messages.create()</code> call automatically produces a Context Passport. One line to wrap, zero changes to the rest of your code.</p>
 <pre><code>import os, requests
 import anthropic
@@ -880,6 +952,58 @@ curl -X POST https://darkmatterhub.ai/api/agents/register \
   </ul>
   <p>Modifying any commit breaks every downstream hash. Use <code>GET /api/verify</code> to check <code>chain_intact</code> and find the exact break point.</p>
   <div class="callout warning"><div class="callout-title">Broken chain policy</div>DarkMatter uses permissive mode. Commits are accepted on broken chains but flagged. Fork from the last valid node to start a clean branch.</div>
+
+
+  <h2 id="search">Query and search</h2>
+  <p>Search your execution history by model, provider, event type, trace ID, or full-text across payloads. Free on all plans.</p>
+
+<pre><code>import darkmatter as dm
+
+<span class="cm"># Find all checkpoints from Claude on a specific trace</span>
+results = dm.search(model=<span class="cv">"claude-opus-4-6"</span>, event=<span class="cv">"checkpoint"</span>)
+for ctx in results[<span class="cv">"results"</span>]:
+    print(ctx[<span class="cv">"id"</span>], ctx[<span class="cv">"payload"</span>][<span class="cv">"output"</span>])
+
+<span class="cm"># Full-text search across payloads</span>
+results = dm.search(q=<span class="cv">"APAC earnings"</span>, limit=20)
+
+<span class="cm"># Filter by trace ID and date range</span>
+results = dm.search(
+    trace_id=<span class="cv">"trc_abc123"</span>,
+    from_date=<span class="cv">"2026-03-01"</span>,
+    to_date=<span class="cv">"2026-03-31"</span>,
+)<div class="lang-label">python</div></code></pre>
+
+  <table><thead><tr><th>Parameter</th><th>Description</th></tr></thead><tbody>
+    <tr><td><code>q</code></td><td>Full-text search across payload JSON</td></tr>
+    <tr><td><code>model</code></td><td>Filter by model name</td></tr>
+    <tr><td><code>provider</code></td><td>Filter by provider (anthropic, openai, local)</td></tr>
+    <tr><td><code>event</code></td><td>Filter by event type (commit, checkpoint, fork…)</td></tr>
+    <tr><td><code>traceId</code></td><td>Filter by trace ID (group of commits from one run)</td></tr>
+    <tr><td><code>from</code> / <code>to</code></td><td>ISO date range</td></tr>
+    <tr><td><code>limit</code></td><td>Max results (default 50, max 200)</td></tr>
+  </tbody></table>
+
+  <h2 id="diff">Chain diff</h2>
+  <p>Compare two execution chains step by step. Use this to compare two pipeline runs, an original vs a fork, or the same pipeline run with different models.</p>
+
+<pre><code>import darkmatter as dm
+
+<span class="cm"># Compare original run vs fork</span>
+d = dm.diff(original_ctx_id, fork_ctx_id)
+
+print(f<span class="cv">"{d['changedSteps']} steps changed"</span>)
+print(f<span class="cv">"Models A: {d['summary']['modelsA']}"</span>)
+print(f<span class="cv">"Models B: {d['summary']['modelsB']}"</span>)
+
+for step in d[<span class="cv">"steps"</span>]:
+    if step[<span class="cv">"diff"</span>][<span class="cv">"modelChanged"</span>]:
+        print(f<span class="cv">"Step {step['step']}: model changed"</span>)
+        print(f<span class="cv">"  {step['a']['model']} → {step['b']['model']}"</span>)
+    if step[<span class="cv">"diff"</span>][<span class="cv">"payloadChanged"</span>]:
+        print(f<span class="cv">"Step {step['step']}: payload changed"</span>)<div class="lang-label">python</div></code></pre>
+
+  <p>See also: <a href="#fork">fork a checkpoint</a>, then diff to compare the branches.</p>
 
   <h2 id="byok">BYOK encryption</h2>
   <p>Payloads encrypted with AES-256-GCM using a key you provide. DarkMatter stores only ciphertext and never has access to your content. Available on all plans including Free.</p>

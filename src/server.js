@@ -1635,6 +1635,133 @@ app.get('/why',        (req, res) => res.sendFile(path.join(__dirname, '../publi
 app.get('/docs',       (req, res) => res.sendFile(path.join(__dirname, '../public/docs.html')));
 app.get('/enterprise', (req, res) => res.sendFile(path.join(__dirname, '../public/enterprise.html')));
 
+
+// ═══════════════════════════════════════════════════
+// SEARCH / QUERY  (free on all plans)
+// GET /api/search?q=&model=&provider=&event=&from=&to=&traceId=&limit=
+// ═══════════════════════════════════════════════════
+app.get('/api/search', apiLimiter, requireApiKey, async (req, res) => {
+  try {
+    const {
+      q, model, provider, event, from, to,
+      traceId, agentId, verified,
+      limit = 50,
+    } = req.query;
+
+    const { data: userAgents } = await supabaseService
+      .from('agents').select('agent_id').eq('user_id', req.agent.user_id);
+
+    const agentIds = (userAgents || []).map(a => a.agent_id);
+    if (!agentIds.length) return res.json({ results: [], count: 0, query: req.query });
+
+    const idList = agentIds.map(id => `"${id}"`).join(',');
+    let query = supabaseService
+      .from('commits').select('*')
+      .or(`from_agent.in.(${idList}),to_agent.in.(${idList})`)
+      .order('timestamp', { ascending: false })
+      .limit(Math.min(parseInt(limit) || 50, 200));
+
+    if (event)    query = query.eq('event_type', event);
+    if (traceId)  query = query.eq('trace_id', traceId);
+    if (from)     query = query.gte('timestamp', from);
+    if (to)       query = query.lte('timestamp', to);
+    if (verified !== undefined) query = query.eq('verified', verified === 'true');
+    if (agentId)  query = query.or(`from_agent.eq.${agentId},to_agent.eq.${agentId}`);
+    if (model)    query = query.contains('agent_info', { model });
+    if (provider) query = query.contains('agent_info', { provider });
+
+    const { data: commits, error } = await query;
+    if (error) throw error;
+
+    let results = commits || [];
+    if (q) {
+      const qLower = q.toLowerCase();
+      results = results.filter(c =>
+        JSON.stringify(c.payload || c.context || '').toLowerCase().includes(qLower)
+      );
+    }
+
+    res.json({
+      results: results.map(c => buildContext(c)),
+      count:   results.length,
+      query:   { q, model, provider, event, from, to, traceId, agentId, limit },
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ═══════════════════════════════════════════════════
+// CHAIN DIFF
+// GET /api/diff/:ctxIdA/:ctxIdB
+// Compares two chains step-by-step
+// ═══════════════════════════════════════════════════
+app.get('/api/diff/:ctxIdA/:ctxIdB', requireApiKey, async (req, res) => {
+  try {
+    const { ctxIdA, ctxIdB } = req.params;
+
+    async function getChain(tipId) {
+      const steps = [];
+      let currentId = tipId;
+      while (currentId && steps.length < 50) {
+        const { data } = await supabaseService
+          .from('commits').select('*').eq('id', currentId).single();
+        if (!data) break;
+        steps.push(data);
+        currentId = data.parent_id;
+      }
+      return steps.reverse();
+    }
+
+    const [chainA, chainB] = await Promise.all([getChain(ctxIdA), getChain(ctxIdB)]);
+    if (!chainA.length) return res.status(404).json({ error: `Context ${ctxIdA} not found` });
+    if (!chainB.length) return res.status(404).json({ error: `Context ${ctxIdB} not found` });
+
+    const maxLen = Math.max(chainA.length, chainB.length);
+    const steps = [];
+
+    for (let i = 0; i < maxLen; i++) {
+      const a = chainA[i] ? buildContext(chainA[i]) : null;
+      const b = chainB[i] ? buildContext(chainB[i]) : null;
+
+      steps.push({
+        step: i + 1,
+        a: a ? { id: a.id, model: a.created_by?.model, provider: a.created_by?.provider,
+                  eventType: a.event?.type, payload: a.payload, timestamp: a.created_at } : null,
+        b: b ? { id: b.id, model: b.created_by?.model, provider: b.created_by?.provider,
+                  eventType: b.event?.type, payload: b.payload, timestamp: b.created_at } : null,
+        diff: {
+          payloadChanged:  JSON.stringify(a?.payload) !== JSON.stringify(b?.payload),
+          modelChanged:    a?.created_by?.model !== b?.created_by?.model,
+          providerChanged: a?.created_by?.provider !== b?.created_by?.provider,
+          onlyInA: !b,
+          onlyInB: !a,
+        },
+      });
+    }
+
+    const changed = steps.filter(s =>
+      s.diff.payloadChanged || s.diff.modelChanged || s.diff.onlyInA || s.diff.onlyInB
+    ).length;
+
+    res.json({
+      ctxIdA, ctxIdB,
+      lengthA: chainA.length, lengthB: chainB.length,
+      totalSteps: maxLen, changedSteps: changed,
+      identical: changed === 0,
+      summary: {
+        modelsA:       [...new Set(chainA.map(c => c.agent_info?.model).filter(Boolean))],
+        modelsB:       [...new Set(chainB.map(c => c.agent_info?.model).filter(Boolean))],
+        payloadChanges: steps.filter(s => s.diff.payloadChanged).length,
+        modelChanges:   steps.filter(s => s.diff.modelChanged).length,
+      },
+      steps,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ═══════════════════════════════════════════════════
 // PUBLIC NETWORK STATS (no auth — for homepage)
 // ═══════════════════════════════════════════════════
