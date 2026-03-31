@@ -235,3 +235,19 @@ create policy "service manages enterprise keys"
 
 create policy "service manages inquiries"
   on enterprise_inquiries for insert with check (true);
+
+-- ═══════════════════════════════════════════════════
+-- Schema v7: payload_hash column (fixes integrity naming)
+-- Run in Supabase SQL Editor
+-- ═══════════════════════════════════════════════════
+
+-- Add payload_hash column to store sha256(normalize(payload)) separately from integrity_hash
+alter table commits
+  add column if not exists payload_hash text;  -- sha256(normalize(payload)), stored without sha256: prefix
+
+-- Index for future integrity auditing queries
+create index if not exists commits_payload_hash_idx on commits(payload_hash);
+
+-- Note: existing commits will have payload_hash = null
+-- They remain valid — payload_hash is optional in buildContext
+-- New commits from this version onward will have it populated
