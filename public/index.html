@@ -430,7 +430,13 @@
       .cr { grid-template-columns:1fr auto; }
       .choff, .cr>:nth-child(3) { display:none; }
     }
-  </style>
+    @media(max-width:640px){
+    .integrations-grid{grid-template-columns:repeat(2,1fr)!important;}
+    .cp-grid{grid-template-columns:1fr!important;gap:1.5rem!important;}
+    header .hright{gap:0.75rem;}
+    .nav-flat{font-size:0.72rem;}
+  }
+</style>
 </head>
 <body>
 
@@ -503,8 +509,7 @@
 <!-- QUOTE STRIP -->
 <div style="border-top:1px solid var(--border);border-bottom:1px solid var(--border);background:var(--bg2);padding:1.25rem 2rem;text-align:center;">
   <div style="font-family:var(--mono);font-size:0.78rem;color:var(--text2);letter-spacing:0.02em;">
-    "If you can't replay it, you don't control it." &nbsp;·&nbsp;
-    <span style="color:var(--text3);">Commit. Reuse anywhere. Context that survives model boundaries.</span>
+    <span style="color:var(--text2);">Commit. Reuse anywhere. Context that survives model boundaries.</span>
   </div>
 </div>
 
@@ -579,7 +584,7 @@
 <!-- DIFFERENTIATION -->
 <div style="padding:3rem 2rem;border-top:1px solid var(--border);">
   <div style="max-width:860px;margin:0 auto;">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:3rem;align-items:center;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:3rem;align-items:center;" class="cp-grid">
       <div>
         <div style="font-family:var(--mono);font-size:0.6rem;color:var(--text3);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:1rem;">Positioning</div>
         <div style="font-size:1.35rem;font-weight:700;color:var(--text);letter-spacing:-0.02em;margin-bottom:0.5rem;font-family:var(--display);">Not another AI tool.</div>
@@ -901,42 +906,78 @@
   </div>
 </div>
 
-<!-- QUICKSTART -->
+<!-- INTEGRATIONS -->
 <div style="border-top:1px solid var(--border);padding:3rem 2rem;">
   <div style="max-width:860px;margin:0 auto;">
-    <div style="font-family:var(--mono);font-size:0.6rem;color:var(--text3);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:1rem;">Quickstart</div>
-    <div style="display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:0.5rem;margin-bottom:1.5rem;">
-      <div style="font-size:1.1rem;font-weight:700;color:var(--text);font-family:var(--display);">Three commands. Any language. 2 minutes.</div>
-      <a href="/demo" style="font-size:0.78rem;color:var(--accent);text-decoration:none;font-weight:500;white-space:nowrap;">See live demo →</a>
+    <div style="font-family:var(--mono);font-size:0.6rem;color:var(--text3);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:0.85rem;">Integrations</div>
+    <div style="font-size:1.1rem;font-weight:700;color:var(--text);font-family:var(--display);letter-spacing:-0.02em;margin-bottom:0.5rem;">Works with your existing stack</div>
+    <p style="font-size:0.85rem;color:var(--text2);margin-bottom:1.5rem;max-width:520px;">One commit call after each agent step. No new infrastructure, no framework lock-in.</p>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0.75rem;" class="integrations-grid">
+      <a href="/docs#langgraph" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:1rem;text-decoration:none;transition:border-color 0.15s;" onmouseover="this.style.borderColor='var(--violet)'" onmouseout="this.style.borderColor='var(--border)'">
+        <div style="font-size:0.88rem;font-weight:600;color:var(--text);margin-bottom:0.2rem;">LangGraph</div>
+        <div style="font-size:0.72rem;color:var(--text3);">Node callback</div>
+      </a>
+      <a href="/docs#anthropic-sdk" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:1rem;text-decoration:none;transition:border-color 0.15s;" onmouseover="this.style.borderColor='var(--violet)'" onmouseout="this.style.borderColor='var(--border)'">
+        <div style="font-size:0.88rem;font-weight:600;color:var(--text);margin-bottom:0.2rem;">Anthropic SDK</div>
+        <div style="font-size:0.72rem;color:var(--text3);">Claude pipelines</div>
+      </a>
+      <a href="/docs#openai-sdk" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:1rem;text-decoration:none;transition:border-color 0.15s;" onmouseover="this.style.borderColor='var(--violet)'" onmouseout="this.style.borderColor='var(--border)'">
+        <div style="font-size:0.88rem;font-weight:600;color:var(--text);margin-bottom:0.2rem;">OpenAI SDK</div>
+        <div style="font-size:0.72rem;color:var(--text3);">GPT-4o pipelines</div>
+      </a>
+      <a href="/docs#crewai" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:1rem;text-decoration:none;transition:border-color 0.15s;" onmouseover="this.style.borderColor='var(--violet)'" onmouseout="this.style.borderColor='var(--border)'">
+        <div style="font-size:0.88rem;font-weight:600;color:var(--text);margin-bottom:0.2rem;">CrewAI</div>
+        <div style="font-size:0.72rem;color:var(--text3);">Task callbacks</div>
+      </a>
+      <a href="/docs#aws-bedrock" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:1rem;text-decoration:none;transition:border-color 0.15s;" onmouseover="this.style.borderColor='var(--violet)'" onmouseout="this.style.borderColor='var(--border)'">
+        <div style="font-size:0.88rem;font-weight:600;color:var(--text);margin-bottom:0.2rem;">AWS Bedrock</div>
+        <div style="font-size:0.72rem;color:var(--text3);">Bedrock Agents</div>
+      </a>
+      <a href="/docs#local-models" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:1rem;text-decoration:none;transition:border-color 0.15s;" onmouseover="this.style.borderColor='var(--violet)'" onmouseout="this.style.borderColor='var(--border)'">
+        <div style="font-size:0.88rem;font-weight:600;color:var(--text);margin-bottom:0.2rem;">Local models</div>
+        <div style="font-size:0.72rem;color:var(--text3);">Ollama, llama.cpp, vLLM</div>
+      </a>
+      <a href="/docs#otel" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:1rem;text-decoration:none;transition:border-color 0.15s;" onmouseover="this.style.borderColor='var(--violet)'" onmouseout="this.style.borderColor='var(--border)'">
+        <div style="font-size:0.88rem;font-weight:600;color:var(--text);margin-bottom:0.2rem;">OpenTelemetry</div>
+        <div style="font-size:0.72rem;color:var(--text3);">OTEL span exporter</div>
+      </a>
+      <a href="/docs#langchain" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:1rem;text-decoration:none;transition:border-color 0.15s;" onmouseover="this.style.borderColor='var(--violet)'" onmouseout="this.style.borderColor='var(--border)'">
+        <div style="font-size:0.88rem;font-weight:600;color:var(--text);margin-bottom:0.2rem;">LangChain</div>
+        <div style="font-size:0.72rem;color:var(--text3);">Chain callbacks</div>
+      </a>
     </div>
-    <div style="display:flex;flex-direction:column;gap:0.75rem;">
-      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;overflow:hidden;">
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:0.5rem 1rem;border-bottom:1px solid var(--border);">
-          <span style="font-family:var(--mono);font-size:0.58rem;color:var(--text3);letter-spacing:0.1em;text-transform:uppercase;">1, commit context</span>
-          <span style="font-size:0.65rem;color:var(--text3);font-family:var(--mono);">Agent A → Agent B</span>
-        </div>
-        <div style="padding:0.85rem 1rem;font-family:var(--mono);font-size:0.72rem;line-height:1.8;overflow-x:auto;white-space:pre;"><span style="color:var(--text3);"># sign and checkpoint agent state</span>
-curl -X POST https://darkmatterhub.ai/api/commit   -H <span style="color:var(--cyan);">"Authorization: Bearer YOUR_AGENT_KEY"</span>   -d <span style="color:var(--cyan);">'{"toAgentId":"AGENT_B_ID","payload":{"input":"...","output":"..."},"agent":{"model":"claude-opus-4-6"}}'</span></div>
-      </div>
-      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;overflow:hidden;">
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:0.5rem 1rem;border-bottom:1px solid var(--border);">
-          <span style="font-family:var(--mono);font-size:0.58rem;color:var(--text3);letter-spacing:0.1em;text-transform:uppercase;">2, pull &amp; inherit</span>
-          <span style="font-size:0.65rem;color:var(--text3);font-family:var(--mono);">verified, immutable</span>
-        </div>
-        <div style="padding:0.85rem 1rem;font-family:var(--mono);font-size:0.72rem;line-height:1.8;overflow-x:auto;white-space:pre;"><span style="color:var(--text3);"># Agent B pulls, full payload + integrity proof</span>
-curl https://darkmatterhub.ai/api/pull   -H <span style="color:var(--cyan);">"Authorization: Bearer AGENT_B_KEY"</span></div>
-      </div>
-      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;overflow:hidden;">
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:0.5rem 1rem;border-bottom:1px solid var(--border);">
-          <span style="font-family:var(--mono);font-size:0.58rem;color:var(--text3);letter-spacing:0.1em;text-transform:uppercase;">3, replay the chain</span>
-          <span style="font-size:0.65rem;color:var(--text3);font-family:var(--mono);">root → tip, verified</span>
-        </div>
-        <div style="padding:0.85rem 1rem;font-family:var(--mono);font-size:0.72rem;line-height:1.8;overflow-x:auto;white-space:pre;"><span style="color:var(--text3);"># full decision path, every agent, every decision, integrity verified</span>
-curl https://darkmatterhub.ai/api/replay/CTX_ID   -H <span style="color:var(--cyan);">"Authorization: Bearer YOUR_KEY"</span></div>
-      </div>
+    <div style="margin-top:1rem;">
+      <a href="/docs#integrations" style="font-size:0.78rem;color:var(--accent);text-decoration:none;font-weight:500;">View all integration guides →</a>
     </div>
-    <div style="margin-top:1rem;font-family:var(--mono);font-size:0.65rem;color:var(--text3);">
-      // add parentId to chain commits. use /api/fork to branch. /api/verify for integrity proof. /api/export for audit artifact.
+  </div>
+</div>
+
+<!-- CONTEXT PASSPORT -->
+<div style="border-top:1px solid var(--border);padding:3.5rem 2rem;">
+  <div style="max-width:860px;margin:0 auto;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:3rem;align-items:center;" class="cp-grid">
+      <div>
+        <div style="font-family:var(--mono);font-size:0.6rem;color:var(--text3);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:0.85rem;">Open Standard</div>
+        <div style="font-family:var(--display);font-size:1.4rem;font-weight:700;letter-spacing:-0.02em;margin-bottom:0.75rem;line-height:1.3;">Context Passport</div>
+        <p style="font-size:0.88rem;color:var(--text2);line-height:1.75;margin-bottom:1rem;">A proposed open standard for AI agent context handoffs. Structured, verifiable, and model-agnostic — a shared envelope format that any AI agent can produce and consume.</p>
+        <p style="font-size:0.88rem;color:var(--text2);line-height:1.75;margin-bottom:1.25rem;">Every DarkMatter commit is a Context Passport. The standard is CC0 — free for anyone to implement.</p>
+        <a href="https://contextpassport.com" target="_blank" style="font-size:0.85rem;color:var(--accent);text-decoration:none;font-weight:500;">Read the specification at contextpassport.com →</a>
+      </div>
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:1.25rem;font-family:var(--mono);font-size:0.72rem;line-height:1.9;overflow-x:auto;">
+        <div style="color:var(--text3);margin-bottom:0.5rem;"># every commit is a Context Passport</div>
+        <div><span style="color:var(--cyan);">"id"</span><span style="color:var(--text2);">:         </span><span style="color:var(--green);">"ctx_1774358291224_bad9b976"</span><span style="color:var(--text2);">,</span></div>
+        <div><span style="color:var(--cyan);">"parent_id"</span><span style="color:var(--text2);">:  </span><span style="color:var(--green);">"ctx_previous"</span><span style="color:var(--text2);">,</span></div>
+        <div><span style="color:var(--cyan);">"created_by"</span><span style="color:var(--text2);">: {</span></div>
+        <div style="padding-left:1rem;"><span style="color:var(--cyan);">"agent_name"</span><span style="color:var(--text2);">: </span><span style="color:var(--green);">"research-agent"</span><span style="color:var(--text2);">,</span></div>
+        <div style="padding-left:1rem;"><span style="color:var(--cyan);">"provider"</span><span style="color:var(--text2);">:   </span><span style="color:var(--green);">"anthropic"</span><span style="color:var(--text2);">,</span></div>
+        <div style="padding-left:1rem;"><span style="color:var(--cyan);">"model"</span><span style="color:var(--text2);">:      </span><span style="color:var(--green);">"claude-opus-4-6"</span></div>
+        <div><span style="color:var(--text2);">},</span></div>
+        <div><span style="color:var(--cyan);">"integrity"</span><span style="color:var(--text2);">: {</span></div>
+        <div style="padding-left:1rem;"><span style="color:var(--cyan);">"payload_hash"</span><span style="color:var(--text2);">:   </span><span style="color:var(--green);">"sha256:e7733904..."</span><span style="color:var(--text2);">,</span></div>
+        <div style="padding-left:1rem;"><span style="color:var(--cyan);">"integrity_hash"</span><span style="color:var(--text2);">: </span><span style="color:var(--green);">"sha256:8a1c9d22..."</span><span style="color:var(--text2);">,</span></div>
+        <div style="padding-left:1rem;"><span style="color:var(--cyan);">"verification_status"</span><span style="color:var(--text2);">: </span><span style="color:var(--green);">"valid"</span></div>
+        <div><span style="color:var(--text2);">}</span></div>
+      </div>
     </div>
   </div>
 </div>

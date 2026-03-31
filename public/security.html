@@ -54,6 +54,23 @@
   .cert-title{font-size:0.82rem;font-weight:600;color:var(--text);margin-bottom:0.2rem;}
   .cert-status{font-family:var(--mono);font-size:0.6rem;color:var(--amber);letter-spacing:0.08em;}
   .cert-desc{font-size:0.72rem;color:var(--text2);margin-top:0.35rem;line-height:1.5;}
+
+  @media(max-width:640px){
+    nav{padding:0.75rem 1rem;gap:0.75rem;flex-wrap:wrap;}
+    .nav-link{font-size:0.72rem;}
+    .nav-logo-name{font-size:0.9rem;}
+    .page, section{padding-left:1.25rem;padding-right:1.25rem;}
+    h1{font-size:1.5rem!important;}
+    h2{font-size:1.1rem!important;}
+    .plans{grid-template-columns:1fr!important;}
+    .problem-grid,.audience-grid,.downloads,.impl-grid{grid-template-columns:1fr!important;}
+    .analogy-grid{grid-template-columns:1fr!important;}
+    table{font-size:0.72rem;}
+    th,td{padding:0.4rem 0.5rem;}
+    pre{padding:0.85rem;overflow-x:auto;}
+    .layout{grid-template-columns:1fr!important;}
+    .page{grid-template-columns:1fr!important;}
+  }
 </style>
 </head>
 <body>
@@ -115,8 +132,8 @@
       <div class="control-desc">All data encrypted at rest via Supabase managed AES-256 encryption.</div>
     </div>
     <div class="control">
-      <div class="control-title">BYOK encryption <span class="control-badge badge-ent">Enterprise</span></div>
-      <div class="control-desc">Client-provided AES-256-GCM key. DarkMatter stores only ciphertext. Your key is never stored on our systems.</div>
+      <div class="control-title">BYOK encryption</div>
+      <div class="control-desc">Client-provided AES-256-GCM key, available on all plans. DarkMatter stores only ciphertext. Your key is never stored on our systems.</div>
     </div>
     <div class="control">
       <div class="control-title">Tamper-evident chain</div>
@@ -147,7 +164,7 @@
       <div class="control-desc">All user input sanitized and length-limited before processing or storage. HTML injection prevented.</div>
     </div>
     <div class="control">
-      <div class="control-title">W3C DID identity <span class="control-badge badge-ent">Enterprise</span></div>
+      <div class="control-title">W3C DID identity</div>
       <div class="control-desc">Cryptographically verifiable agent identities. Audit trails independently verifiable without trusting DarkMatter.</div>
     </div>
     <div class="control">

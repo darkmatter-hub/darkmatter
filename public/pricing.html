@@ -61,6 +61,23 @@
   .faq-item{border-bottom:1px solid var(--border);padding:1.1rem 0;}
   .faq-q{font-size:0.88rem;font-weight:600;margin-bottom:0.4rem;}
   .faq-a{font-size:0.8rem;color:var(--text2);line-height:1.7;}
+
+  @media(max-width:640px){
+    nav{padding:0.75rem 1rem;gap:0.75rem;flex-wrap:wrap;}
+    .nav-link{font-size:0.72rem;}
+    .nav-logo-name{font-size:0.9rem;}
+    .page, section{padding-left:1.25rem;padding-right:1.25rem;}
+    h1{font-size:1.5rem!important;}
+    h2{font-size:1.1rem!important;}
+    .plans{grid-template-columns:1fr!important;}
+    .problem-grid,.audience-grid,.downloads,.impl-grid{grid-template-columns:1fr!important;}
+    .analogy-grid{grid-template-columns:1fr!important;}
+    table{font-size:0.72rem;}
+    th,td{padding:0.4rem 0.5rem;}
+    pre{padding:0.85rem;overflow-x:auto;}
+    .layout{grid-template-columns:1fr!important;}
+    .page{grid-template-columns:1fr!important;}
+  }
 </style>
 </head>
 <body>
@@ -93,7 +110,7 @@
 <div class="page">
   <h1>Simple, honest pricing</h1>
   <p class="sub">Start free. Scale when you need to.</p>
-  <p class="sub2">All plans include full functionality. Pricing scales with usage and retention.</p>
+  <p class="sub2">No feature gating. Every plan includes the full product. Pricing scales with usage, retention, and organizational scale.</p>
 
   <div class="plans">
 
@@ -101,7 +118,7 @@
     <div class="plan">
       <div class="plan-name">Free</div>
       <div class="plan-price">$0<span>/month</span></div>
-      <div class="plan-desc">For developers building and debugging AI workflows.</div>
+      <div class="plan-desc">Full product, no feature limits. Start building immediately.</div>
       <a class="plan-cta secondary" href="/signup">Get started free</a>
       <hr class="plan-div"/>
       <div class="plan-features">
@@ -110,14 +127,15 @@
         <div class="pf"><span class="ck">✓</span><span>Up to 5 agents</span></div>
         <div class="pf"><span class="ck">✓</span><span>Up to 5,000 contexts</span></div>
         <div class="pf"><span class="ck">✓</span><span>30-day retention</span></div>
-        <div class="pf-section">Features</div>
+        <div class="pf-section">Full product — no feature limits</div>
         <div class="pf"><span class="ck">✓</span><span>Full replay and fork</span></div>
-        <div class="pf"><span class="ck">✓</span><span>Verify endpoint</span></div>
-        <div class="pf"><span class="ck">✓</span><span>Chain viewer</span></div>
-        <div class="pf"><span class="ck">✓</span><span>Export artifacts (JSON + integrity)</span></div>
-        <div class="pf"><span class="ck">✓</span><span>Hooks and policies</span></div>
+        <div class="pf"><span class="ck">✓</span><span>Verify and export</span></div>
+        <div class="pf"><span class="ck">✓</span><span>BYOK encryption</span></div>
+        <div class="pf"><span class="ck">✓</span><span>W3C DID agent identity</span></div>
+        <div class="pf"><span class="ck">✓</span><span>Compliance reports</span></div>
+        <div class="pf"><span class="ck">✓</span><span>Agent self-registration</span></div>
         <div class="pf"><span class="ck">✓</span><span>Context Passport schema</span></div>
-        <div class="pf"><span class="ck">✓</span><span>Agent self-registration API</span></div>
+        <div class="pf"><span class="ck">✓</span><span>Chain viewer and hooks</span></div>
       </div>
     </div>
 
@@ -126,19 +144,17 @@
       <div class="plan-badge">Most popular</div>
       <div class="plan-name">Pro</div>
       <div class="plan-price">$39<span>/month</span></div>
-      <div class="plan-desc">For developers and small teams running production workflows.</div>
+      <div class="plan-desc">Same full product. More commits, more agents, longer retention.</div>
       <a class="plan-cta primary" href="/signup">Start Pro</a>
       <hr class="plan-div"/>
       <div class="plan-features">
-        <div class="pf-section">Usage</div>
+        <div class="pf-section">More scale, same full product</div>
         <div class="pf highlight"><span class="ck">✓</span><span>500,000 commits per month</span></div>
         <div class="pf highlight"><span class="ck">✓</span><span>Up to 20 agents</span></div>
         <div class="pf highlight"><span class="ck">✓</span><span>Up to 50,000 contexts</span></div>
         <div class="pf highlight"><span class="ck">✓</span><span>90-day retention</span></div>
-        <div class="pf-section">Features</div>
         <div class="pf"><span class="ck">✓</span><span>Everything in Free</span></div>
-        <div class="pf highlight"><span class="ck">✓</span><span>Query and search</span></div>
-        <div class="pf"><span class="ck">✓</span><span>Compliance reports per trace</span></div>
+        <div class="pf highlight"><span class="ck">✓</span><span>Query and search across chains</span></div>
       </div>
     </div>
 
@@ -146,21 +162,17 @@
     <div class="plan">
       <div class="plan-name">Enterprise</div>
       <div class="plan-price" style="font-size:1.6rem;padding-top:0.3rem;">Custom<span style="font-size:0.85rem;"> pricing</span></div>
-      <div class="plan-desc">For organizations running large-scale AI systems.</div>
+      <div class="plan-desc">Unlimited scale, long-term audit trails, organizational governance.</div>
       <a class="plan-cta secondary" href="/enterprise">Start Enterprise trial</a>
       <hr class="plan-div"/>
       <div class="plan-features">
-        <div class="pf-section">Usage</div>
+        <div class="pf-section">Organizational scale</div>
         <div class="pf highlight"><span class="ck">✓</span><span>Custom commits, pooled or unlimited</span></div>
         <div class="pf highlight"><span class="ck">✓</span><span>Unlimited agents</span></div>
         <div class="pf highlight"><span class="ck">✓</span><span>Unlimited contexts</span></div>
         <div class="pf highlight"><span class="ck">✓</span><span>Custom retention, up to 1 year and beyond</span></div>
-        <div class="pf-section">Features</div>
         <div class="pf"><span class="ck">✓</span><span>Everything in Pro</span></div>
-        <div class="pf highlight"><span class="ck">✓</span><span>BYOK encryption (AES-256-GCM)</span></div>
-        <div class="pf highlight"><span class="ck">✓</span><span>W3C DID agent identity</span></div>
-        <div class="pf highlight"><span class="ck">✓</span><span>Advanced query and analytics</span></div>
-        <div class="pf highlight"><span class="ck">✓</span><span>Private deployment option</span></div>
+        <div class="pf highlight"><span class="ck">✓</span><span>Advanced analytics across all agents</span></div>
       </div>
     </div>
   </div>
@@ -189,12 +201,11 @@
         <tr><td>Agent self-registration API</td><td class="tick">✓</td><td class="tick">✓</td><td class="tick">✓</td></tr>
         <tr class="tgroup"><td colspan="4">Scale and organization</td></tr>
         <tr><td>Query and search</td><td class="cross">—</td><td class="tick">✓</td><td class="tick">✓</td></tr>
-        <tr><td>Compliance reports</td><td class="cross">—</td><td class="tick">✓</td><td class="tick">✓</td></tr>
+        <tr><td>Compliance reports</td><td class="tick">✓</td><td class="tick">✓</td><td class="tick">✓</td></tr>
         <tr><td>Advanced analytics</td><td class="cross">—</td><td class="cross">—</td><td class="tick">✓</td></tr>
-        <tr class="tgroup"><td colspan="4">Enterprise controls</td></tr>
-        <tr><td>BYOK encryption</td><td class="cross">—</td><td class="cross">—</td><td class="tick">✓</td></tr>
-        <tr><td>W3C DID agent identity</td><td class="cross">—</td><td class="cross">—</td><td class="tick">✓</td></tr>
-        <tr><td>Private deployment</td><td class="cross">—</td><td class="cross">—</td><td class="tick">✓</td></tr>
+        <tr class="tgroup"><td colspan="4">Organizational scale</td></tr>
+        <tr><td>BYOK encryption</td><td class="tick">✓</td><td class="tick">✓</td><td class="tick">✓</td></tr>
+        <tr><td>W3C DID agent identity</td><td class="tick">✓</td><td class="tick">✓</td><td class="tick">✓</td></tr>
         <tr><td>Self-host (MIT license)</td><td class="tick">✓</td><td class="tick">✓</td><td class="tick">✓</td></tr>
       </tbody>
     </table>

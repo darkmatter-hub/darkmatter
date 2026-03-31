@@ -113,10 +113,14 @@ tr:hover td{background:var(--bg2);}
   <div class="sb-group">
     <span class="sb-group-label">Integrations</span>
     <a class="sb-link" href="#langgraph">LangGraph</a>
-    <a class="sb-link" href="#raw-api">Raw API calls</a>
+    <a class="sb-link" href="#langchain">LangChain</a>
     <a class="sb-link" href="#crewai">CrewAI</a>
-    <a class="sb-link" href="#openai">OpenAI</a>
+    <a class="sb-link" href="#anthropic-sdk">Anthropic SDK</a>
+    <a class="sb-link" href="#openai-sdk">OpenAI SDK</a>
     <a class="sb-link" href="#local-models">Local models</a>
+    <a class="sb-link" href="#aws-bedrock">AWS Bedrock</a>
+    <a class="sb-link" href="#google-adk">Google ADK</a>
+    <a class="sb-link" href="#otel">OpenTelemetry</a>
   </div>
   <div class="sb-group">
     <span class="sb-group-label">API Reference</span>
@@ -210,78 +214,482 @@ curl https://darkmatterhub.ai/api/replay/ctx_... -H <span class="cv">"Authorizat
   <p>Creates a new branch from any existing checkpoint without modifying the original chain. The fork node carries <code>fork_of</code>, <code>fork_point</code>, and <code>lineage_root</code>. Continue by committing with <code>parentId</code> set to the fork ID.</p>
 
   <h2 id="langgraph">Integration: LangGraph</h2>
-  <p>LangGraph has internal checkpointing within a graph. DarkMatter adds cross-framework lineage and cryptographic proof on top. They work alongside each other, not instead of each other.</p>
-<pre><code>import requests
+  <p>LangGraph has internal checkpointing within a single graph. DarkMatter adds the layer above: cross-framework lineage, cryptographic tamper-evidence, and an independent audit trail that survives outside your infrastructure. They work alongside each other.</p>
+  <h3>Pattern: commit after each node</h3>
+  <p>Add a <code>dm_commit</code> call at the end of each node function. Pass the returned <code>ctx_id</code> through state so each downstream node can link to it as its parent.</p>
+<pre><code>import os, requests
+from langgraph.graph import StateGraph, END
+from typing import TypedDict, Optional
 
-def dm_commit(dm_key, to_agent_id, input_data, output_data, parent_id=None):
-    body = {<span class="ck">"toAgentId"</span>: to_agent_id, <span class="ck">"payload"</span>: {<span class="ck">"input"</span>: input_data, <span class="ck">"output"</span>: output_data}}
+DM_URL  = <span class="cv">"https://darkmatterhub.ai"</span>
+DM_KEY  = os.environ[<span class="cv">"DARKMATTER_API_KEY"</span>]
+
+<span class="cm"># Add dm_ctx_id and dm_trace_id to your graph state</span>
+class AgentState(TypedDict):
+    input:        str
+    output:       Optional[str]
+    dm_ctx_id:    Optional[str]   <span class="cm"># carries the last committed ctx ID</span>
+    dm_trace_id:  Optional[str]   <span class="cm"># groups all nodes into one trace</span>
+
+def dm_commit(payload: dict, to_agent_id: str, parent_id: str = None, trace_id: str = None, role: str = None) -> str:
+    body = {
+        <span class="ck">"toAgentId"</span>: to_agent_id,
+        <span class="ck">"payload"</span>:   payload,
+        <span class="ck">"agent"</span>:     {<span class="ck">"role"</span>: role} if role else {},
+    }
     if parent_id: body[<span class="ck">"parentId"</span>] = parent_id
-    return requests.post(<span class="cv">"https://darkmatterhub.ai/api/commit"</span>,
-        headers={<span class="ck">"Authorization"</span>: f<span class="cv">"Bearer {dm_key}"</span>}, json=body).json()[<span class="ck">"id"</span>]
+    if trace_id:  body[<span class="ck">"traceId"</span>]  = trace_id
+    return requests.post(
+        f<span class="cv">"{DM_URL}/api/commit"</span>,
+        headers={<span class="ck">"Authorization"</span>: f<span class="cv">"Bearer {DM_KEY}"</span>},
+        json=body, timeout=5
+    ).json()[<span class="ck">"id"</span>]
 
-<span class="cm"># In your LangGraph node:</span>
-def researcher_node(state):
+def researcher_node(state: AgentState) -> AgentState:
     output = llm.invoke(state[<span class="ck">"input"</span>])
-    ctx_id = dm_commit(DM_KEY, NEXT_AGENT_ID, state[<span class="ck">"input"</span>], output.content,
-                       parent_id=state.get(<span class="ck">"dm_ctx_id"</span>))
+    ctx_id = dm_commit(
+        payload    = {<span class="ck">"input"</span>: state[<span class="ck">"input"</span>], <span class="ck">"output"</span>: output.content},
+        to_agent_id= WRITER_AGENT_ID,
+        parent_id  = state.get(<span class="ck">"dm_ctx_id"</span>),
+        trace_id   = state.get(<span class="ck">"dm_trace_id"</span>),
+        role       = <span class="cv">"researcher"</span>
+    )
     return {<span class="ck">"output"</span>: output.content, <span class="ck">"dm_ctx_id"</span>: ctx_id}
+
+def writer_node(state: AgentState) -> AgentState:
+    draft = writer_llm.invoke(state[<span class="ck">"output"</span>])
+    ctx_id = dm_commit(
+        payload    = {<span class="ck">"input"</span>: state[<span class="ck">"output"</span>], <span class="ck">"output"</span>: draft.content},
+        to_agent_id= REVIEWER_AGENT_ID,
+        parent_id  = state[<span class="ck">"dm_ctx_id"</span>],   <span class="cm"># chains to researcher</span>
+        trace_id   = state.get(<span class="ck">"dm_trace_id"</span>),
+        role       = <span class="cv">"writer"</span>
+    )
+    return {<span class="ck">"output"</span>: draft.content, <span class="ck">"dm_ctx_id"</span>: ctx_id}
+
+<span class="cm"># Build and run</span>
+import uuid
+graph = StateGraph(AgentState)
+graph.add_node(<span class="cv">"researcher"</span>, researcher_node)
+graph.add_node(<span class="cv">"writer"</span>,     writer_node)
+graph.add_edge(<span class="cv">"researcher"</span>, <span class="cv">"writer"</span>)
+graph.add_edge(<span class="cv">"writer"</span>,     END)
+app = graph.compile()
+
+result = app.invoke({
+    <span class="ck">"input"</span>:       <span class="cv">"Analyze Q1 earnings"</span>,
+    <span class="ck">"dm_trace_id"</span>: f<span class="cv">"trc_{uuid.uuid4().hex[:12]}"</span>
+})
 <div class="lang-label">python</div></code></pre>
+  <div class="callout"><strong>LangGraph note:</strong> LangGraph's own checkpointing persists internal graph state. DarkMatter captures what was passed between agents and produces a cross-framework, cryptographically verifiable chain. Use both together.</div>
 
-  <h2 id="raw-api">Integration: Raw API calls</h2>
-<pre><code>import anthropic, requests
-client = anthropic.Anthropic()
+  <h2 id="langchain">Integration: LangChain</h2>
+  <p>Use the <code>DarkMatterCallbackHandler</code> pattern to automatically commit context after any LangChain chain or LLM call without modifying your chain logic.</p>
+<pre><code>import os, requests
+from langchain_core.callbacks.base import BaseCallbackHandler
+from langchain_core.outputs import LLMResult
+from langchain_anthropic import ChatAnthropic
+from langchain_core.prompts import ChatPromptTemplate
 
-def run_and_commit(prompt, to_agent_id, dm_key, parent_id=None):
-    output = client.messages.create(model=<span class="cv">"claude-opus-4-6"</span>, max_tokens=<span class="cn">1024</span>,
-        messages=[{<span class="ck">"role"</span>: <span class="cv">"user"</span>, <span class="ck">"content"</span>: prompt}]).content[<span class="cn">0</span>].text
-    body = {<span class="ck">"toAgentId"</span>: to_agent_id,
-            <span class="ck">"payload"</span>: {<span class="ck">"input"</span>: prompt, <span class="ck">"output"</span>: output},
-            <span class="ck">"agent"</span>: {<span class="ck">"provider"</span>: <span class="cv">"anthropic"</span>, <span class="ck">"model"</span>: <span class="cv">"claude-opus-4-6"</span>}}
-    if parent_id: body[<span class="ck">"parentId"</span>] = parent_id
-    ctx_id = requests.post(<span class="cv">"https://darkmatterhub.ai/api/commit"</span>,
-        headers={<span class="ck">"Authorization"</span>: f<span class="cv">"Bearer {dm_key}"</span>}, json=body).json()[<span class="ck">"id"</span>]
-    return output, ctx_id
+DM_URL = <span class="cv">"https://darkmatterhub.ai"</span>
+DM_KEY = os.environ[<span class="cv">"DARKMATTER_API_KEY"</span>]
+
+class DarkMatterCallbackHandler(BaseCallbackHandler):
+    def __init__(self, agent_id: str, to_agent_id: str, trace_id: str = None, role: str = None):
+        self.agent_id    = agent_id
+        self.to_agent_id = to_agent_id
+        self.trace_id    = trace_id
+        self.role        = role
+        self.last_input  = None
+        self.last_ctx_id = None
+
+    def on_llm_start(self, serialized, prompts, **kwargs):
+        self.last_input = prompts[<span class="cn">0</span>] if prompts else None
+
+    def on_llm_end(self, response: LLMResult, **kwargs):
+        output = response.generations[<span class="cn">0</span>][<span class="cn">0</span>].text
+        body = {
+            <span class="ck">"toAgentId"</span>: self.to_agent_id,
+            <span class="ck">"payload"</span>:   {<span class="ck">"input"</span>: self.last_input, <span class="ck">"output"</span>: output},
+            <span class="ck">"agent"</span>:     {<span class="ck">"role"</span>: self.role, <span class="ck">"provider"</span>: <span class="cv">"anthropic"</span>},
+        }
+        if self.last_ctx_id: body[<span class="ck">"parentId"</span>] = self.last_ctx_id
+        if self.trace_id:    body[<span class="ck">"traceId"</span>]  = self.trace_id
+        result = requests.post(f<span class="cv">"{DM_URL}/api/commit"</span>,
+            headers={<span class="ck">"Authorization"</span>: f<span class="cv">"Bearer {DM_KEY}"</span>},
+            json=body, timeout=5).json()
+        self.last_ctx_id = result.get(<span class="ck">"id"</span>)
+
+<span class="cm"># Use with any LangChain chain</span>
+dm_handler = DarkMatterCallbackHandler(
+    agent_id    = AGENT_A_ID,
+    to_agent_id = AGENT_B_ID,
+    trace_id    = <span class="cv">"trc_my_run_001"</span>,
+    role        = <span class="cv">"analyst"</span>
+)
+
+llm    = ChatAnthropic(model=<span class="cv">"claude-opus-4-6"</span>, callbacks=[dm_handler])
+prompt = ChatPromptTemplate.from_template(<span class="cv">"Analyze: {topic}"</span>)
+chain  = prompt | llm
+
+result = chain.invoke({<span class="ck">"topic"</span>: <span class="cv">"Q1 earnings"</span>})
+<span class="cm"># Context Passport automatically committed after LLM responds</span>
 <div class="lang-label">python</div></code></pre>
 
   <h2 id="crewai">Integration: CrewAI</h2>
-<pre><code>import requests
+  <p>Commit after each task using CrewAI's <code>output_json</code> or by wrapping the task execution. Pass <code>dm_ctx_id</code> between tasks to build the lineage chain.</p>
+<pre><code>import os, requests, uuid
+from crewai import Agent, Task, Crew
+from langchain_anthropic import ChatAnthropic
 
-def dm_after_task(task_output, dm_key, to_agent_id, parent_id=None):
-    body = {<span class="ck">"toAgentId"</span>: to_agent_id,
-            <span class="ck">"payload"</span>: {<span class="ck">"input"</span>: str(task_output.task.description), <span class="ck">"output"</span>: str(task_output.raw)}}
+DM_URL = <span class="cv">"https://darkmatterhub.ai"</span>
+DM_KEY = os.environ[<span class="cv">"DARKMATTER_API_KEY"</span>]
+TRACE  = f<span class="cv">"trc_{uuid.uuid4().hex[:12]}"</span>
+
+def dm_commit(task_desc: str, output: str, to_id: str, parent_id: str = None, role: str = None) -> str:
+    body = {
+        <span class="ck">"toAgentId"</span>: to_id,
+        <span class="ck">"payload"</span>:   {<span class="ck">"input"</span>: task_desc, <span class="ck">"output"</span>: output},
+        <span class="ck">"agent"</span>:     {<span class="ck">"role"</span>: role},
+        <span class="ck">"traceId"</span>:   TRACE,
+    }
     if parent_id: body[<span class="ck">"parentId"</span>] = parent_id
-    return requests.post(<span class="cv">"https://darkmatterhub.ai/api/commit"</span>,
-        headers={<span class="ck">"Authorization"</span>: f<span class="cv">"Bearer {dm_key}"</span>}, json=body).json()[<span class="ck">"id"</span>]
+    return requests.post(f<span class="cv">"{DM_URL}/api/commit"</span>,
+        headers={<span class="ck">"Authorization"</span>: f<span class="cv">"Bearer {DM_KEY}"</span>},
+        json=body, timeout=5).json()[<span class="ck">"id"</span>]
+
+llm       = ChatAnthropic(model=<span class="cv">"claude-opus-4-6"</span>)
+researcher = Agent(role=<span class="cv">"Researcher"</span>, goal=<span class="cv">"Find key facts"</span>, llm=llm)
+writer     = Agent(role=<span class="cv">"Writer"</span>, goal=<span class="cv">"Write the report"</span>, llm=llm)
+
+task1 = Task(description=<span class="cv">"Research Q1 earnings trends"</span>, agent=researcher)
+task2 = Task(description=<span class="cv">"Write a summary report"</span>, agent=writer)
+
+crew   = Crew(agents=[researcher, writer], tasks=[task1, task2])
+result = crew.kickoff()
+
+<span class="cm"># Commit after each task output</span>
+ctx1 = dm_commit(task1.description, result.tasks_output[<span class="cn">0</span>].raw, WRITER_AGENT_ID, role=<span class="cv">"researcher"</span>)
+ctx2 = dm_commit(task2.description, result.tasks_output[<span class="cn">1</span>].raw, REVIEWER_AGENT_ID, parent_id=ctx1, role=<span class="cv">"writer"</span>)
 <div class="lang-label">python</div></code></pre>
 
-  <h2 id="openai">Integration: OpenAI</h2>
-<pre><code>from openai import OpenAI
-import requests
-client = OpenAI()
+  <h2 id="anthropic-sdk">Integration: Anthropic SDK</h2>
+  <p>Wrap the Anthropic client so every <code>messages.create()</code> call automatically produces a Context Passport. One line to wrap, zero changes to the rest of your code.</p>
+<pre><code>import os, requests
+import anthropic
 
-def openai_and_commit(prompt, dm_key, to_agent_id, parent_id=None):
-    output = client.chat.completions.create(model=<span class="cv">"gpt-4o"</span>, max_tokens=<span class="cn">1024</span>,
-        messages=[{<span class="ck">"role"</span>: <span class="cv">"user"</span>, <span class="ck">"content"</span>: prompt}]).choices[<span class="cn">0</span>].message.content
-    body = {<span class="ck">"toAgentId"</span>: to_agent_id, <span class="ck">"payload"</span>: {<span class="ck">"input"</span>: prompt, <span class="ck">"output"</span>: output},
-            <span class="ck">"agent"</span>: {<span class="ck">"provider"</span>: <span class="cv">"openai"</span>, <span class="ck">"model"</span>: <span class="cv">"gpt-4o"</span>}}
-    if parent_id: body[<span class="ck">"parentId"</span>] = parent_id
-    return output, requests.post(<span class="cv">"https://darkmatterhub.ai/api/commit"</span>,
-        headers={<span class="ck">"Authorization"</span>: f<span class="cv">"Bearer {dm_key}"</span>}, json=body).json()[<span class="ck">"id"</span>]
+DM_URL = <span class="cv">"https://darkmatterhub.ai"</span>
+DM_KEY = os.environ[<span class="cv">"DARKMATTER_API_KEY"</span>]
+
+class DarkMatterAnthropicClient:
+    <span class="cv">"""Drop-in wrapper for anthropic.Anthropic() that commits a Context Passport after each call."""</span>
+
+    def __init__(self, anthropic_client, dm_api_key: str, agent_id: str, to_agent_id: str,
+                 trace_id: str = None, role: str = None):
+        self._client     = anthropic_client
+        self.dm_key      = dm_api_key
+        self.agent_id    = agent_id
+        self.to_agent_id = to_agent_id
+        self.trace_id    = trace_id
+        self.role        = role
+        self.last_ctx_id = None
+
+    def messages_create(self, **kwargs) -> anthropic.types.Message:
+        response = self._client.messages.create(**kwargs)
+        output   = response.content[<span class="cn">0</span>].text
+
+        <span class="cm"># Extract input from messages kwarg</span>
+        messages = kwargs.get(<span class="ck">"messages"</span>, [])
+        inp      = messages[-<span class="cn">1</span>][<span class="cv">"content"</span>] if messages else None
+
+        body = {
+            <span class="ck">"toAgentId"</span>: self.to_agent_id,
+            <span class="ck">"payload"</span>:   {<span class="ck">"input"</span>: inp, <span class="ck">"output"</span>: output},
+            <span class="ck">"agent"</span>:     {
+                <span class="ck">"provider"</span>: <span class="cv">"anthropic"</span>,
+                <span class="ck">"model"</span>:    kwargs.get(<span class="ck">"model"</span>),
+                <span class="ck">"role"</span>:     self.role,
+            },
+        }
+        if self.last_ctx_id: body[<span class="ck">"parentId"</span>] = self.last_ctx_id
+        if self.trace_id:    body[<span class="ck">"traceId"</span>]  = self.trace_id
+
+        result           = requests.post(f<span class="cv">"{DM_URL}/api/commit"</span>,
+            headers={<span class="ck">"Authorization"</span>: f<span class="cv">"Bearer {DM_KEY}"</span>},
+            json=body, timeout=5).json()
+        self.last_ctx_id = result.get(<span class="ck">"id"</span>)
+        return response
+
+<span class="cm"># Usage — one line to wrap</span>
+dm_client = DarkMatterAnthropicClient(
+    anthropic_client = anthropic.Anthropic(),
+    dm_api_key       = DM_KEY,
+    agent_id         = RESEARCHER_ID,
+    to_agent_id      = WRITER_ID,
+    trace_id         = <span class="cv">"trc_q1_analysis"</span>,
+    role             = <span class="cv">"researcher"</span>
+)
+
+<span class="cm"># Exact same call as normal Anthropic SDK — Context Passport committed automatically</span>
+response = dm_client.messages_create(
+    model     = <span class="cv">"claude-opus-4-6"</span>,
+    max_tokens= <span class="cn">1024</span>,
+    messages  = [{<span class="ck">"role"</span>: <span class="cv">"user"</span>, <span class="ck">"content"</span>: <span class="cv">"Analyze Q1 earnings"</span>}]
+)
+<div class="lang-label">python</div></code></pre>
+
+  <h2 id="openai-sdk">Integration: OpenAI SDK</h2>
+  <p>Same wrapper pattern for OpenAI. Works with GPT-4o, o1, o3, and any OpenAI-compatible endpoint.</p>
+<pre><code>import os, requests
+from openai import OpenAI
+
+DM_URL = <span class="cv">"https://darkmatterhub.ai"</span>
+DM_KEY = os.environ[<span class="cv">"DARKMATTER_API_KEY"</span>]
+
+class DarkMatterOpenAIClient:
+    def __init__(self, openai_client, dm_api_key: str, agent_id: str, to_agent_id: str,
+                 trace_id: str = None, role: str = None):
+        self._client     = openai_client
+        self.dm_key      = dm_api_key
+        self.to_agent_id = to_agent_id
+        self.trace_id    = trace_id
+        self.role        = role
+        self.last_ctx_id = None
+
+    def chat_completions_create(self, **kwargs):
+        response = self._client.chat.completions.create(**kwargs)
+        output   = response.choices[<span class="cn">0</span>].message.content
+        messages = kwargs.get(<span class="ck">"messages"</span>, [])
+        inp      = messages[-<span class="cn">1</span>][<span class="cv">"content"</span>] if messages else None
+
+        body = {
+            <span class="ck">"toAgentId"</span>: self.to_agent_id,
+            <span class="ck">"payload"</span>:   {<span class="ck">"input"</span>: inp, <span class="ck">"output"</span>: output},
+            <span class="ck">"agent"</span>:     {<span class="ck">"provider"</span>: <span class="cv">"openai"</span>, <span class="ck">"model"</span>: kwargs.get(<span class="ck">"model"</span>), <span class="ck">"role"</span>: self.role},
+        }
+        if self.last_ctx_id: body[<span class="ck">"parentId"</span>] = self.last_ctx_id
+        if self.trace_id:    body[<span class="ck">"traceId"</span>]  = self.trace_id
+        result           = requests.post(f<span class="cv">"{DM_URL}/api/commit"</span>,
+            headers={<span class="ck">"Authorization"</span>: f<span class="cv">"Bearer {DM_KEY}"</span>},
+            json=body, timeout=5).json()
+        self.last_ctx_id = result.get(<span class="ck">"id"</span>)
+        return response
+
+<span class="cm"># Usage</span>
+dm_client = DarkMatterOpenAIClient(
+    openai_client = OpenAI(),
+    dm_api_key    = DM_KEY,
+    agent_id      = AGENT_ID,
+    to_agent_id   = NEXT_AGENT_ID,
+    trace_id      = <span class="cv">"trc_pipeline_001"</span>,
+    role          = <span class="cv">"analyst"</span>
+)
+
+response = dm_client.chat_completions_create(
+    model    = <span class="cv">"gpt-4o"</span>,
+    messages = [{<span class="ck">"role"</span>: <span class="cv">"user"</span>, <span class="ck">"content"</span>: <span class="cv">"Summarize the findings"</span>}]
+)
 <div class="lang-label">python</div></code></pre>
 
   <h2 id="local-models">Integration: Local models (Ollama, llama.cpp, vLLM)</h2>
-<pre><code>import requests as req
+  <p>Works with any local inference server. Use the same wrapper pattern — commit after each generation.</p>
+<pre><code>import os, requests as req
 
-def run_local_and_commit(prompt, model, dm_key, to_agent_id, parent_id=None):
+DM_URL = <span class="cv">"https://darkmatterhub.ai"</span>
+DM_KEY = os.environ[<span class="cv">"DARKMATTER_API_KEY"</span>]
+
+def run_ollama_and_commit(prompt: str, model: str, to_agent_id: str,
+                          parent_id: str = None, trace_id: str = None) -> tuple[str, str]:
+    <span class="cm"># Run local model via Ollama</span>
     response = req.post(<span class="cv">"http://localhost:11434/api/generate"</span>,
-        json={<span class="ck">"model"</span>: model, <span class="ck">"prompt"</span>: prompt, <span class="ck">"stream"</span>: False}).json()[<span class="ck">"response"</span>]
-    body = {<span class="ck">"toAgentId"</span>: to_agent_id,
-            <span class="ck">"payload"</span>: {<span class="ck">"input"</span>: prompt, <span class="ck">"output"</span>: response, <span class="ck">"memory"</span>: {<span class="ck">"model"</span>: model}},
-            <span class="ck">"agent"</span>: {<span class="ck">"provider"</span>: <span class="cv">"local"</span>, <span class="ck">"model"</span>: model}}
+        json={<span class="ck">"model"</span>: model, <span class="ck">"prompt"</span>: prompt, <span class="ck">"stream"</span>: False}).json()[<span class="cv">"response"</span>]
+
+    <span class="cm"># Commit Context Passport</span>
+    body = {
+        <span class="ck">"toAgentId"</span>: to_agent_id,
+        <span class="ck">"payload"</span>:   {
+            <span class="ck">"input"</span>:  prompt,
+            <span class="ck">"output"</span>: response,
+            <span class="ck">"memory"</span>: {<span class="ck">"model"</span>: model, <span class="ck">"provider"</span>: <span class="cv">"local"</span>}
+        },
+        <span class="ck">"agent"</span>: {<span class="ck">"provider"</span>: <span class="cv">"local"</span>, <span class="ck">"model"</span>: model},
+    }
     if parent_id: body[<span class="ck">"parentId"</span>] = parent_id
-    return response, req.post(<span class="cv">"https://darkmatterhub.ai/api/commit"</span>,
-        headers={<span class="ck">"Authorization"</span>: f<span class="cv">"Bearer {dm_key}"</span>}, json=body).json()[<span class="ck">"id"</span>]
+    if trace_id:  body[<span class="ck">"traceId"</span>]  = trace_id
+    ctx_id = req.post(f<span class="cv">"{DM_URL}/api/commit"</span>,
+        headers={<span class="ck">"Authorization"</span>: f<span class="cv">"Bearer {DM_KEY}"</span>},
+        json=body, timeout=5).json()[<span class="ck">"id"</span>]
+    return response, ctx_id
+
+<span class="cm"># vLLM — same pattern, different endpoint</span>
+def run_vllm_and_commit(prompt, model, to_agent_id, parent_id=None, trace_id=None):
+    response = req.post(<span class="cv">"http://localhost:8000/v1/completions"</span>,
+        json={<span class="ck">"model"</span>: model, <span class="ck">"prompt"</span>: prompt, <span class="ck">"max_tokens"</span>: <span class="cn">512</span>}
+    ).json()[<span class="cv">"choices"</span>][<span class="cn">0</span>][<span class="cv">"text"</span>]
+    <span class="cm"># ... same commit pattern as above</span>
 <div class="lang-label">python</div></code></pre>
+
+  <h2 id="aws-bedrock">Integration: AWS Bedrock</h2>
+  <p>Wrap the Bedrock runtime client to commit a Context Passport after each agent invocation. Works with Bedrock Agents, Bedrock Flows, and direct model invocations.</p>
+<pre><code>import os, json, boto3, requests
+
+DM_URL = <span class="cv">"https://darkmatterhub.ai"</span>
+DM_KEY = os.environ[<span class="cv">"DARKMATTER_API_KEY"</span>]
+
+class DarkMatterBedrockClient:
+    def __init__(self, region: str, dm_api_key: str, agent_id: str, to_agent_id: str,
+                 trace_id: str = None, role: str = None):
+        self._client     = boto3.client(<span class="cv">"bedrock-runtime"</span>, region_name=region)
+        self.dm_key      = dm_api_key
+        self.to_agent_id = to_agent_id
+        self.trace_id    = trace_id
+        self.role        = role
+        self.last_ctx_id = None
+
+    def invoke_model(self, model_id: str, prompt: str, **kwargs) -> dict:
+        <span class="cm"># Invoke Bedrock model</span>
+        body = json.dumps({<span class="ck">"prompt"</span>: prompt, <span class="ck">"max_tokens"</span>: kwargs.get(<span class="ck">"max_tokens"</span>, <span class="cn">1024</span>)})
+        response = self._client.invoke_model(modelId=model_id, body=body)
+        result   = json.loads(response[<span class="cv">"body"</span>].read())
+        output   = result.get(<span class="cv">"completion"</span>) or result.get(<span class="cv">"content"</span>, [{}])[<span class="cn">0</span>].get(<span class="cv">"text"</span>, <span class="cv">""</span>)
+
+        <span class="cm"># Commit Context Passport</span>
+        commit_body = {
+            <span class="ck">"toAgentId"</span>: self.to_agent_id,
+            <span class="ck">"payload"</span>:   {<span class="ck">"input"</span>: prompt, <span class="ck">"output"</span>: output},
+            <span class="ck">"agent"</span>:     {<span class="ck">"provider"</span>: <span class="cv">"aws_bedrock"</span>, <span class="ck">"model"</span>: model_id, <span class="ck">"role"</span>: self.role},
+        }
+        if self.last_ctx_id: commit_body[<span class="ck">"parentId"</span>] = self.last_ctx_id
+        if self.trace_id:    commit_body[<span class="ck">"traceId"</span>]  = self.trace_id
+        r = requests.post(f<span class="cv">"{DM_URL}/api/commit"</span>,
+            headers={<span class="ck">"Authorization"</span>: f<span class="cv">"Bearer {self.dm_key}"</span>},
+            json=commit_body, timeout=5).json()
+        self.last_ctx_id = r.get(<span class="ck">"id"</span>)
+        return result
+
+<span class="cm"># Usage</span>
+bedrock = DarkMatterBedrockClient(
+    region       = <span class="cv">"us-east-1"</span>,
+    dm_api_key   = DM_KEY,
+    agent_id     = AGENT_ID,
+    to_agent_id  = NEXT_AGENT_ID,
+    trace_id     = <span class="cv">"trc_bedrock_001"</span>,
+    role         = <span class="cv">"processor"</span>
+)
+result = bedrock.invoke_model(
+    model_id = <span class="cv">"anthropic.claude-opus-4-6-v1:0"</span>,
+    prompt   = <span class="cv">"Analyze this contract for risk clauses"</span>
+)
+<span class="cm"># Context Passport committed — retrieve with GET /api/replay/{ctx_id}</span>
+<div class="lang-label">python</div></code></pre>
+
+  <h2 id="google-adk">Integration: Google ADK</h2>
+  <p>Google Agent Development Kit uses an event-based model. Commit a Context Passport in your agent's response handler.</p>
+<pre><code>import os, requests
+from google.adk.agents import LlmAgent
+from google.adk.sessions import InMemorySessionService
+
+DM_URL = <span class="cv">"https://darkmatterhub.ai"</span>
+DM_KEY = os.environ[<span class="cv">"DARKMATTER_API_KEY"</span>]
+
+class DarkMatterADKAgent(LlmAgent):
+    def __init__(self, *args, dm_api_key: str, agent_id: str, to_agent_id: str,
+                 trace_id: str = None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.dm_key      = dm_api_key
+        self.agent_id    = agent_id
+        self.to_agent_id = to_agent_id
+        self.trace_id    = trace_id
+        self.last_ctx_id = None
+
+    async def _run_async_impl(self, ctx):
+        async for event in super()._run_async_impl(ctx):
+            yield event
+            <span class="cm"># Commit after final response</span>
+            if event.is_final_response() and event.content:
+                output = <span class="cv">" "</span>.join(p.text for p in event.content.parts if hasattr(p, <span class="cv">"text"</span>))
+                body   = {
+                    <span class="ck">"toAgentId"</span>: self.to_agent_id,
+                    <span class="ck">"payload"</span>:   {<span class="ck">"input"</span>: str(ctx.user_content), <span class="ck">"output"</span>: output},
+                    <span class="ck">"agent"</span>:     {<span class="ck">"provider"</span>: <span class="cv">"google"</span>, <span class="ck">"model"</span>: self.model, <span class="ck">"role"</span>: self.name},
+                }
+                if self.last_ctx_id: body[<span class="ck">"parentId"</span>] = self.last_ctx_id
+                if self.trace_id:    body[<span class="ck">"traceId"</span>]  = self.trace_id
+                r = requests.post(f<span class="cv">"{DM_URL}/api/commit"</span>,
+                    headers={<span class="ck">"Authorization"</span>: f<span class="cv">"Bearer {self.dm_key}"</span>},
+                    json=body, timeout=5).json()
+                self.last_ctx_id = r.get(<span class="ck">"id"</span>)
+
+<span class="cm"># Usage</span>
+agent = DarkMatterADKAgent(
+    name         = <span class="cv">"research_agent"</span>,
+    model        = <span class="cv">"gemini-2.0-flash"</span>,
+    dm_api_key   = DM_KEY,
+    agent_id     = AGENT_ID,
+    to_agent_id  = NEXT_AGENT_ID,
+    trace_id     = <span class="cv">"trc_adk_run_001"</span>
+)
+<div class="lang-label">python</div></code></pre>
+
+  <h2 id="otel">Integration: OpenTelemetry</h2>
+  <p>Export DarkMatter commits as OTEL spans so they flow into Datadog, Grafana, Honeycomb, or any OTEL-compatible backend. Alternatively, receive OTEL spans from your pipeline and convert them to Context Passports.</p>
+<pre><code>import os, requests
+from opentelemetry.sdk.trace import ReadableSpan
+from opentelemetry.sdk.trace.export import SpanExporter, SpanExportResult
+
+DM_URL = <span class="cv">"https://darkmatterhub.ai"</span>
+DM_KEY = os.environ[<span class="cv">"DARKMATTER_API_KEY"</span>]
+
+class DarkMatterSpanExporter(SpanExporter):
+    <span class="cv">"""Converts OTEL spans to Context Passports and commits them to DarkMatter."""</span>
+
+    def __init__(self, dm_api_key: str, agent_id: str, to_agent_id: str, trace_id: str = None):
+        self.dm_key      = dm_api_key
+        self.agent_id    = agent_id
+        self.to_agent_id = to_agent_id
+        self.trace_id    = trace_id
+
+    def export(self, spans: list[ReadableSpan]) -> SpanExportResult:
+        for span in spans:
+            attrs  = dict(span.attributes or {})
+            inp    = attrs.get(<span class="cv">"llm.input"</span>) or attrs.get(<span class="cv">"gen_ai.prompt"</span>)
+            output = attrs.get(<span class="cv">"llm.output"</span>) or attrs.get(<span class="cv">"gen_ai.completion"</span>)
+            model  = attrs.get(<span class="cv">"llm.model_name"</span>) or attrs.get(<span class="cv">"gen_ai.response.model"</span>)
+
+            if not (inp or output):
+                continue
+
+            body = {
+                <span class="ck">"toAgentId"</span>: self.to_agent_id,
+                <span class="ck">"payload"</span>:   {<span class="ck">"input"</span>: inp, <span class="ck">"output"</span>: output},
+                <span class="ck">"agent"</span>:     {<span class="ck">"model"</span>: model, <span class="ck">"role"</span>: span.name},
+                <span class="ck">"eventType"</span>: <span class="cv">"commit"</span>,
+            }
+            if self.trace_id: body[<span class="ck">"traceId"</span>] = self.trace_id
+
+            requests.post(f<span class="cv">"{DM_URL}/api/commit"</span>,
+                headers={<span class="ck">"Authorization"</span>: f<span class="cv">"Bearer {self.dm_key}"</span>},
+                json=body, timeout=5)
+        return SpanExportResult.SUCCESS
+
+    def shutdown(self): pass
+
+<span class="cm"># Register with OTEL tracer provider</span>
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+
+provider = TracerProvider()
+provider.add_span_processor(
+    BatchSpanProcessor(DarkMatterSpanExporter(
+        dm_api_key   = DM_KEY,
+        agent_id     = AGENT_ID,
+        to_agent_id  = NEXT_AGENT_ID,
+        trace_id     = <span class="cv">"trc_otel_pipeline"</span>
+    ))
+)
+<span class="cm"># All OTEL spans now automatically produce Context Passports in DarkMatter</span>
+<div class="lang-label">python</div></code></pre>
+  <div class="callout"><strong>OTEL semantic conventions:</strong> DarkMatter maps <code>gen_ai.prompt</code> to <code>payload.input</code>, <code>gen_ai.completion</code> to <code>payload.output</code>, and <code>gen_ai.response.model</code> to <code>agent.model</code>. Custom attributes in <code>llm.*</code> namespace are also supported.</div>
 
   <h2 id="api-commit">POST /api/commit</h2>
   <p>Commit agent context. Returns a canonical v2 context object.</p>
@@ -473,8 +881,8 @@ curl -X POST https://darkmatterhub.ai/api/agents/register \
   <p>Modifying any commit breaks every downstream hash. Use <code>GET /api/verify</code> to check <code>chain_intact</code> and find the exact break point.</p>
   <div class="callout warning"><div class="callout-title">Broken chain policy</div>DarkMatter uses permissive mode. Commits are accepted on broken chains but flagged. Fork from the last valid node to start a clean branch.</div>
 
-  <h2 id="byok">Enterprise: BYOK encryption</h2>
-  <p>Payloads encrypted with AES-256-GCM using a key you provide. DarkMatter stores only ciphertext and never has access to your content. Requires an Enterprise plan.</p>
+  <h2 id="byok">BYOK encryption</h2>
+  <p>Payloads encrypted with AES-256-GCM using a key you provide. DarkMatter stores only ciphertext and never has access to your content. Available on all plans including Free.</p>
 <pre><code><span class="cm"># Generate a secure AES-256 key</span>
 python3 -c <span class="cv">"import secrets; print(secrets.token_hex(32))"</span>
 
@@ -486,7 +894,7 @@ curl -X POST https://darkmatterhub.ai/enterprise/decrypt/ctx_...   -H <span clas
 <div class="lang-label">bash</div></code></pre>
   <div class="callout info"><div class="callout-title">Key security</div>Your BYOK key is never stored by DarkMatter. Store it in AWS KMS, HashiCorp Vault, or Azure Key Vault. Pass it in each request.</div>
 
-  <h2 id="did">Enterprise: W3C DID agent identity</h2>
+  <h2 id="did">W3C DID agent identity</h2>
   <p>Register a W3C Decentralized Identifier for any agent. Commits carry a verifiable DID independently resolvable without trusting DarkMatter.</p>
 <pre><code><span class="cm"># Register DID (uses dashboard JWT auth)</span>
 curl -X POST https://darkmatterhub.ai/enterprise/did/register   -H <span class="cv">"Authorization: Bearer DASHBOARD_JWT"</span>   -d '{<span class="ck">"agentId"</span>: <span class="cv">"dm_..."</span>, <span class="ck">"didId"</span>: <span class="cv">"did:web:yourco.com:agents:researcher"</span>, <span class="ck">"publicKey"</span>: <span class="cv">"z6Mk..."</span>}'

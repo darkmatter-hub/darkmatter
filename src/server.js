@@ -539,8 +539,9 @@ function buildContext(c, agentMap = {}) {
     payload: cleanPayload,
 
     integrity: {
-      payload_hash:        c.integrity_hash ? 'sha256:' + c.integrity_hash : null,
+      payload_hash:        c.payload_hash   ? 'sha256:' + c.payload_hash   : null,
       parent_hash:         c.parent_hash    ? 'sha256:' + c.parent_hash    : null,
+      integrity_hash:      c.integrity_hash ? 'sha256:' + c.integrity_hash : null,
       verification_status: c.verified ? 'valid' : 'rejected',
       verification_reason: c.verification_reason || null,
       verified_at:         c.saved_at || c.timestamp || null,
@@ -653,6 +654,7 @@ app.post('/api/commit', apiLimiter, requireApiKey, async (req, res) => {
           branch_key:          branchKey || 'main',
           agent_info:          agentInfo,
           integrity_hash:      integrityHash,
+          payload_hash:        payloadHash,
           parent_hash:         parentHash,
           verified:            false,
           verification_reason: `Recipient agent ${toAgentId} not found`,
@@ -682,6 +684,7 @@ app.post('/api/commit', apiLimiter, requireApiKey, async (req, res) => {
         branch_key:          branchKey || 'main',
         agent_info:          agentInfo,
         integrity_hash:      integrityHash,
+        payload_hash:        payloadHash,
         parent_hash:         parentHash,
         verified:            true,
         verification_reason: 'API key authenticated',
@@ -726,6 +729,7 @@ app.post('/api/commit', apiLimiter, requireApiKey, async (req, res) => {
       branch_key:          branchKey || 'main',
       agent_info:          agentInfo,
       integrity_hash:      integrityHash,
+      payload_hash:        payloadHash,
       parent_hash:         parentHash,
       verified:            true,
       verification_reason: 'API key authenticated',
@@ -1026,7 +1030,8 @@ app.post('/api/fork/:ctxId', apiLimiter, requireApiKey, async (req, res) => {
       source_chain_intact: sourceChainIntact,
       event:               { type: 'fork' },
       integrity: {
-        payload_hash:        'sha256:' + integrityHash,
+        payload_hash:        'sha256:' + payloadHash,
+        integrity_hash:      'sha256:' + integrityHash,
         parent_hash:         'sha256:' + (forkCommit.integrity_hash || ''),
         verification_status: 'valid',
       },
@@ -1275,7 +1280,7 @@ app.post('/enterprise/register', requireAuth, async (req, res) => {
 
 // ── POST /enterprise/commit ── encrypted commit ──
 // Agent commits with BYOK encryption — payload encrypted before storage
-app.post('/enterprise/commit', apiLimiter, requireApiKey, requireEnterprise, async (req, res) => {
+app.post('/enterprise/commit', apiLimiter, requireApiKey, async (req, res) => {
   try {
     const { toAgentId, payload, parentId, traceId, branchKey, agent, byokKey } = req.body;
 
@@ -1362,7 +1367,7 @@ app.post('/enterprise/commit', apiLimiter, requireApiKey, requireEnterprise, asy
 
 // ── POST /enterprise/decrypt ── decrypt a context ─
 // Client provides their key to decrypt a specific commit
-app.post('/enterprise/decrypt/:ctxId', requireApiKey, requireEnterprise, async (req, res) => {
+app.post('/enterprise/decrypt/:ctxId', requireApiKey, async (req, res) => {
   try {
     const { ctxId } = req.params;
     const { byokKey } = req.body;
