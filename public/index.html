@@ -432,6 +432,7 @@
     }
     @media(max-width:640px){
     .integrations-grid{grid-template-columns:repeat(2,1fr)!important;}
+    .patterns-grid{grid-template-columns:1fr!important;}
     .cp-grid{grid-template-columns:1fr!important;gap:1.5rem!important;}
     header .hright{gap:0.75rem;}
     .nav-flat{font-size:0.72rem;}
@@ -491,7 +492,7 @@
   <h1 class="hero-h1">Replay, fork, and compare<br><span class="matter-grad">any AI workflow.</span></h1>
 
   <p class="hero-sub" style="text-align:center;margin-left:auto;margin-right:auto;">
-    See exactly what your pipeline did — step by step — across any model.<br>
+    See exactly what your pipeline did — step by step — across any model or tool.<br>
     Replay runs, fork from any step, and compare outputs instantly.
   </p>
   <div style="text-align:center;margin-bottom:2rem;position:relative;z-index:1;">
@@ -499,6 +500,7 @@
     <div style="font-size:0.75rem;color:var(--text3);">No signup. Runs locally in seconds.</div>
     <div style="font-size:0.75rem;color:var(--text3);margin-top:0.2rem;">Works with a single script or multi-agent systems.</div>
     <div style="font-size:0.75rem;color:var(--text3);margin-top:0.2rem;">Works across Claude, GPT, local models, and your own code.</div>
+    <div style="font-size:0.75rem;color:var(--text3);margin-top:0.2rem;">See replay, fork, and diff in your terminal immediately.</div>
   </div>
 
 
@@ -712,12 +714,12 @@ Try the same step with a different model and see what actually changes. &nbsp;<a
           Add replay, fork, and diff to your pipeline in minutes
         </div>
         <div style="font-size:0.8rem;color:var(--text2);line-height:1.75;margin-bottom:1.1rem;">
-Stop restarting runs. Start from the exact step that broke.
+Stop restarting runs. Start from the exact step that broke. No changes to your orchestration required.
         </div>
         <div style="font-size:0.8rem;color:var(--text2);line-height:1.7;margin-bottom:1.1rem;">
           One commit per step. You get replay, fork, diff, and search — without changing how your pipeline runs.
         </div>
-        <div style="font-size:0.82rem;color:var(--violet);font-weight:600;margin-bottom:0.75rem;">Stop restarting runs. Start from the exact step that broke.</div>
+        <div style="font-size:0.82rem;color:var(--violet);font-weight:600;margin-bottom:0.75rem;">Stop restarting runs. Start from the exact step that broke. No changes to your orchestration required.</div>
         <div style="display:none">
         </div>
         <div style="display:flex;flex-direction:column;gap:0.5rem;">
@@ -746,11 +748,14 @@ Stop restarting runs. Start from the exact step that broke.
 Prove what your system did, after the fact.
         </div>
         <div style="font-size:0.8rem;color:var(--text2);line-height:1.75;margin-bottom:1.1rem;">
+A system of record for how your AI actually behaved.
+        </div>
+        <div style="font-size:0.8rem;color:var(--text2);line-height:1.75;margin-bottom:1.1rem;">
           Every step recorded as a tamper-evident chain stored outside your system. Export and verify when you need it.
         </div>
         <div style="display:flex;flex-direction:column;gap:0.5rem;margin-bottom:1.1rem;">
           <div style="font-size:0.78rem;color:var(--text2);display:flex;gap:0.5rem;">
-            <span style="color:var(--green)">✓</span> Independent record — not your own logs
+            <span style="color:var(--green)">✓</span> Stored outside your system — not your own logs
           </div>
           <div style="font-size:0.78rem;color:var(--text2);display:flex;gap:0.5rem;">
             <span style="color:var(--green)">✓</span> Verifiable chain integrity
@@ -761,7 +766,7 @@ Prove what your system did, after the fact.
           <div style="font-size:0.78rem;color:var(--text2);display:flex;gap:0.5rem;">
             <span style="color:var(--green)">✓</span> Works across any model or framework
           </div>
-          <div style="font-size:0.78rem;color:var(--text3);margin-top:0.5rem;font-family:var(--mono);">Every step linked with a tamper-evident hash chain.</div>
+          <div style="font-size:0.78rem;color:var(--text3);margin-top:0.5rem;font-family:var(--mono);">Every step is linked with a tamper-evident hash chain.</div>
 
           </div>
         </div>
@@ -780,9 +785,9 @@ Prove what your system did, after the fact.
       <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:1.5rem;">
         <div style="font-size:0.72rem;font-weight:700;color:var(--green);font-family:var(--mono);margin-bottom:1rem;letter-spacing:0.05em;">✓ BUILT FOR</div>
         <div style="display:flex;flex-direction:column;gap:0.65rem;">
-          <div style="font-size:0.82rem;color:var(--text2);display:flex;gap:0.6rem;align-items:flex-start;"><span style="color:var(--green);margin-top:0.1rem;">→</span><span><strong style="color:var(--text);">Solo developers</strong> — works even if you're just calling one model. Replay your own pipeline and compare runs</span></div>
+          <div style="font-size:0.82rem;color:var(--text2);display:flex;gap:0.6rem;align-items:flex-start;"><span style="color:var(--green);margin-top:0.1rem;">→</span><span><strong style="color:var(--text);">Solo developers</strong> — works even if you're just calling one model. No agents required. Replay your own pipeline and compare runs</span></div>
           <div style="font-size:0.82rem;color:var(--text2);display:flex;gap:0.6rem;align-items:flex-start;"><span style="color:var(--green);margin-top:0.1rem;">→</span><span><strong style="color:var(--text);">Multi-agent pipeline engineers</strong>, anyone chaining Claude, GPT, Llama, or any mix of models in production</span></div>
-          <div style="font-size:0.82rem;color:var(--text2);display:flex;gap:0.6rem;align-items:flex-start;"><span style="color:var(--green);margin-top:0.1rem;">→</span><span><strong style="color:var(--text);">AI platform teams</strong>, building internal agent pipelines that need replay, audit, and reproducibility</span></div>
+          <div style="font-size:0.82rem;color:var(--text2);display:flex;gap:0.6rem;align-items:flex-start;"><span style="color:var(--green);margin-top:0.1rem;">→</span><span><strong style="color:var(--text);">AI infrastructure teams</strong>, building internal agent pipelines that need replay, audit, and reproducibility</span></div>
           <div style="font-size:0.82rem;color:var(--text2);display:flex;gap:0.6rem;align-items:flex-start;"><span style="color:var(--green);margin-top:0.1rem;">→</span><span><strong style="color:var(--text);">Enterprises and regulated teams</strong>, where an independent record creates accountability that matters beyond the dev team</span></div>
           <div style="font-size:0.82rem;color:var(--text2);display:flex;gap:0.6rem;align-items:flex-start;"><span style="color:var(--green);margin-top:0.1rem;">→</span><span><strong style="color:var(--text);">Researchers</strong>, anyone who needs to reproduce, compare, or fork agent behavior deterministically</span></div>
         </div>
@@ -977,6 +982,27 @@ Prove what your system did, after the fact.
     <div class="gmc"><div class="gmc-from">git pull</div><div class="gmc-arr">↓</div><div class="gmc-to">GET /api/pull</div><div class="gmc-note">verify & inherit</div></div>
     <div class="gmc"><div class="gmc-from">git log</div><div class="gmc-arr">↓</div><div class="gmc-to">dashboard</div><div class="gmc-note">full audit trail</div></div>
     <div class="gmc"><div class="gmc-from">git blame</div><div class="gmc-arr">↓</div><div class="gmc-to">API key auth</div><div class="gmc-note">who committed what</div></div>
+  </div>
+</div>
+
+<!-- COMMON PATTERNS -->
+<div style="border-top:1px solid var(--border);padding:2.5rem 2rem;">
+  <div style="max-width:860px;margin:0 auto;">
+    <div style="font-family:var(--mono);font-size:0.6rem;color:var(--text3);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:1.25rem;">Common patterns</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;" class="patterns-grid">
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:1rem 1.1rem;">
+        <div style="font-size:0.82rem;font-weight:600;color:var(--text);margin-bottom:0.35rem;">Replay a failed run from step 4</div>
+        <div style="font-size:0.75rem;color:var(--text2);line-height:1.6;">Resume from the last good checkpoint instead of starting over.</div>
+      </div>
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:1rem 1.1rem;">
+        <div style="font-size:0.82rem;font-weight:600;color:var(--text);margin-bottom:0.35rem;">Compare Claude vs GPT on the same step</div>
+        <div style="font-size:0.75rem;color:var(--text2);line-height:1.6;">Fork, swap the model, diff the outputs. See what actually changes.</div>
+      </div>
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:1rem 1.1rem;">
+        <div style="font-size:0.82rem;font-weight:600;color:var(--text);margin-bottom:0.35rem;">Keep history across LangGraph + API calls</div>
+        <div style="font-size:0.75rem;color:var(--text2);line-height:1.6;">One chain across your whole run — all linked, all replayable.</div>
+      </div>
+    </div>
   </div>
 </div>
 
