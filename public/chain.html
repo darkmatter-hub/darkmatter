@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>DarkMatter Chain</title>
+<meta name="description" content="Shared execution chain — replay, verify, and inspect AI agent execution history."/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#ffffff; --bg2:#f8f9fa; --bg3:#f1f3f5;
+  --border:#e5e7eb; --text:#111827; --text2:#4b5563; --text3:#9ca3af;
+  --violet:#7C3AED; --blue:#2563EB; --cyan:#0891b2; --green:#059669; --red:#dc2626; --amber:#d97706;
+  --gradient:linear-gradient(90deg,#7C3AED 0%,#2563EB 55%,#0891b2 100%);
+  --mono:'IBM Plex Mono',monospace; --sans:'Inter',sans-serif; --display:'Space Grotesk',sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased;}
+a{color:var(--blue);text-decoration:none;}
+a:hover{text-decoration:underline;}
+
+/* NAV */
+nav{display:flex;align-items:center;gap:1rem;padding:0.85rem 2rem;border-bottom:1px solid var(--border);background:rgba(255,255,255,0.97);backdrop-filter:blur(8px);position:sticky;top:0;z-index:50;}
+.nav-logo{display:flex;align-items:center;gap:0.6rem;text-decoration:none;margin-right:auto;}
+.nav-logo-mark{width:26px;height:26px;}
+.nav-logo-name{font-family:var(--display);font-weight:700;font-size:0.95rem;color:var(--text);letter-spacing:-0.02em;}
+.matter-grad{background:var(--gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.nav-badge{font-family:var(--mono);font-size:0.6rem;color:var(--text3);border:1px solid var(--border);border-radius:4px;padding:0.15rem 0.5rem;letter-spacing:0.06em;}
+.nav-cta{font-size:0.78rem;background:var(--gradient);color:#fff;padding:0.3rem 0.85rem;border-radius:6px;text-decoration:none;font-weight:500;}
+
+/* HERO */
+.chain-hero{padding:2rem 2rem 0;max-width:860px;margin:0 auto;}
+.chain-label{font-family:var(--mono);font-size:0.6rem;color:var(--text3);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:0.5rem;}
+.chain-title{font-family:var(--display);font-size:1.4rem;font-weight:700;color:var(--text);letter-spacing:-0.02em;margin-bottom:1rem;}
+.chain-meta{display:flex;flex-wrap:wrap;gap:0.75rem;margin-bottom:1.5rem;}
+.meta-pill{font-family:var(--mono);font-size:0.68rem;background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:0.25rem 0.75rem;color:var(--text2);}
+.meta-pill.intact{border-color:var(--green);color:var(--green);background:#f0fdf4;}
+.meta-pill.broken{border-color:var(--red);color:var(--red);background:#fef2f2;}
+
+/* TOOLBAR */
+.chain-toolbar{max-width:860px;margin:0 auto;padding:0 2rem 1rem;display:flex;gap:0.75rem;flex-wrap:wrap;align-items:center;}
+.btn{font-size:0.78rem;font-weight:500;padding:0.4rem 0.9rem;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text2);cursor:pointer;transition:all 0.15s;font-family:var(--sans);}
+.btn:hover{border-color:var(--text3);color:var(--text);}
+.btn-copy{background:var(--bg2);}
+.btn-primary{background:var(--gradient);color:#fff;border:none;}
+.btn-primary:hover{opacity:0.9;}
+.copied{color:var(--green)!important;border-color:var(--green)!important;}
+
+/* STEPS */
+.steps-wrap{max-width:860px;margin:0 auto;padding:0 2rem 4rem;}
+.step-card{border:1px solid var(--border);border-radius:10px;margin-bottom:0.75rem;overflow:hidden;transition:box-shadow 0.15s;}
+.step-card:hover{box-shadow:0 2px 12px rgba(0,0,0,0.06);}
+.step-header{display:flex;align-items:center;gap:0.75rem;padding:0.85rem 1.1rem;cursor:pointer;user-select:none;}
+.step-num{font-family:var(--mono);font-size:0.65rem;color:var(--text3);min-width:1.5rem;}
+.step-badge{font-family:var(--mono);font-size:0.62rem;padding:0.15rem 0.5rem;border-radius:4px;border:1px solid;white-space:nowrap;}
+.badge-commit{color:#2563EB;border-color:#bfdbfe;background:#eff6ff;}
+.badge-checkpoint{color:#059669;border-color:#a7f3d0;background:#f0fdf4;}
+.badge-fork{color:#d97706;border-color:#fde68a;background:#fffbeb;}
+.badge-error{color:#dc2626;border-color:#fecaca;background:#fef2f2;}
+.step-role{font-size:0.82rem;font-weight:600;color:var(--text);}
+.step-model{font-size:0.72rem;color:var(--text3);font-family:var(--mono);}
+.step-time{font-size:0.68rem;color:var(--text3);margin-left:auto;white-space:nowrap;}
+.step-integrity{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.step-integrity.valid{background:var(--green);}
+.step-integrity.broken{background:var(--red);}
+.step-body{padding:0 1.1rem 1rem;display:none;}
+.step-body.open{display:block;}
+.step-id{font-family:var(--mono);font-size:0.62rem;color:var(--text3);margin-bottom:0.75rem;}
+.payload-label{font-family:var(--mono);font-size:0.6rem;color:var(--text3);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:0.35rem;}
+.payload-wrap{background:#1e1e2e;border-radius:6px;padding:0.85rem 1rem;overflow-x:auto;margin-bottom:0.75rem;}
+.payload-wrap pre{font-family:var(--mono);font-size:0.72rem;color:#cdd6f4;white-space:pre-wrap;word-break:break-word;}
+.hash-row{display:flex;gap:0.5rem;align-items:flex-start;margin-bottom:0.3rem;}
+.hash-key{font-family:var(--mono);font-size:0.6rem;color:var(--text3);min-width:9rem;}
+.hash-val{font-family:var(--mono);font-size:0.6rem;color:var(--text2);word-break:break-all;}
+.fork-badge{display:inline-flex;align-items:center;gap:0.35rem;font-family:var(--mono);font-size:0.65rem;color:var(--amber);background:#fffbeb;border:1px solid #fde68a;border-radius:4px;padding:0.2rem 0.5rem;margin-bottom:0.5rem;}
+
+/* MARKDOWN MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:200;display:none;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:#fff;border-radius:10px;padding:1.5rem;max-width:540px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.15);}
+.modal h3{font-family:var(--display);font-size:1rem;margin-bottom:1rem;}
+.modal textarea{width:100%;font-family:var(--mono);font-size:0.75rem;background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:0.75rem;line-height:1.7;resize:vertical;height:180px;color:var(--text);}
+.modal-actions{display:flex;gap:0.5rem;margin-top:0.75rem;justify-content:flex-end;}
+
+/* EMPTY / LOADING */
+.loading{padding:4rem 2rem;text-align:center;color:var(--text3);font-family:var(--mono);font-size:0.8rem;}
+.error-state{padding:3rem 2rem;text-align:center;}
+
+/* FOOTER */
+footer{border-top:1px solid var(--border);padding:1.5rem 2rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;background:var(--bg);}
+.footer-logo{display:flex;align-items:center;gap:0.6rem;text-decoration:none;}
+.footer-logo-mark{width:20px;height:20px;}
+.footer-logo-name{font-family:var(--display);font-weight:700;font-size:0.85rem;color:var(--text);letter-spacing:-0.02em;}
+.footer-links{display:flex;gap:1.25rem;flex-wrap:wrap;}
+.footer-link{font-size:0.72rem;color:var(--text3);text-decoration:none;}
+.footer-link:hover{color:var(--violet);}
+
+@media(max-width:640px){
+  nav{padding:0.75rem 1rem;}
+  .chain-hero,.chain-toolbar,.steps-wrap{padding-left:1rem;padding-right:1rem;}
+  .step-time{display:none;}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="/">
+    <svg class="nav-logo-mark" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs><linearGradient id="nlg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#7C3AED"/><stop offset="55%" stop-color="#2563EB"/><stop offset="100%" stop-color="#0891b2"/></linearGradient></defs>
+      <circle cx="20" cy="20" r="17" stroke="#e5e7eb" stroke-width="0.8" stroke-dasharray="2 3"/>
+      <circle cx="20" cy="20" r="12" stroke="#d1d5db" stroke-width="0.5" opacity="0.6"/>
+      <circle cx="20" cy="5" r="3.2" fill="#7C3AED" opacity="0.95"/>
+      <circle cx="33" cy="28" r="2.6" fill="#2563EB" opacity="0.95"/>
+      <circle cx="7" cy="28" r="2.2" fill="#0891b2" opacity="0.9"/>
+      <line x1="20" y1="8" x2="31" y2="26" stroke="url(#nlg)" stroke-width="0.6" opacity="0.5"/>
+      <line x1="20" y1="8" x2="9" y2="26" stroke="#7C3AED" stroke-width="0.6" opacity="0.4"/>
+      <line x1="30" y1="27" x2="10" y2="27" stroke="#0891b2" stroke-width="0.6" opacity="0.4"/>
+      <circle cx="20" cy="20" r="2.5" fill="url(#nlg)" opacity="0.6"/>
+    </svg>
+    <span class="nav-logo-name">Dark<span class="matter-grad">Matter</span></span>
+  </a>
+  <span class="nav-badge" id="share-badge">Shared chain</span>
+  <a class="nav-cta" href="/signup">Get API Key →</a>
+</nav>
+
+<!-- Loading state -->
+<div class="loading" id="loading-state">Loading chain...</div>
+
+<!-- Error state -->
+<div class="error-state" id="error-state" style="display:none;">
+  <div style="font-size:1.1rem;font-weight:600;color:var(--text);margin-bottom:0.5rem;">Chain not found</div>
+  <div style="font-size:0.85rem;color:var(--text2);">This link may have expired or been removed.</div>
+  <a href="/" style="display:inline-block;margin-top:1rem;font-size:0.82rem;color:var(--blue);">← Back to DarkMatter</a>
+</div>
+
+<!-- Main content (hidden until loaded) -->
+<div id="main-content" style="display:none;">
+
+  <div class="chain-hero">
+    <div class="chain-label">Shared execution chain</div>
+    <div class="chain-title" id="chain-title">Loading...</div>
+    <div class="chain-meta" id="chain-meta"></div>
+  </div>
+
+  <div class="chain-toolbar">
+    <button class="btn btn-copy" id="copy-link-btn" onclick="copyLink()">Copy link</button>
+    <button class="btn btn-copy" id="copy-md-btn" onclick="showMarkdown()">Copy markdown</button>
+    <a class="btn btn-primary" href="/signup">Fork this chain →</a>
+  </div>
+
+  <div class="steps-wrap" id="steps-wrap"></div>
+
+</div>
+
+<!-- Markdown modal -->
+<div class="modal-overlay" id="md-modal">
+  <div class="modal">
+    <h3>Markdown summary</h3>
+    <textarea id="md-text" readonly></textarea>
+    <div class="modal-actions">
+      <button class="btn" onclick="copyMarkdown()">Copy</button>
+      <button class="btn" onclick="document.getElementById('md-modal').classList.remove('open')">Close</button>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <a class="footer-logo" href="/">
+    <svg class="footer-logo-mark" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs><linearGradient id="flg3" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#7C3AED"/><stop offset="55%" stop-color="#2563EB"/><stop offset="100%" stop-color="#0891b2"/></linearGradient></defs>
+      <circle cx="20" cy="20" r="17" stroke="#e5e7eb" stroke-width="0.8" stroke-dasharray="2 3"/>
+      <circle cx="20" cy="20" r="12" stroke="#d1d5db" stroke-width="0.5" opacity="0.6"/>
+      <circle cx="20" cy="5" r="3.2" fill="#7C3AED" opacity="0.95"/>
+      <circle cx="33" cy="28" r="2.6" fill="#2563EB" opacity="0.95"/>
+      <circle cx="7" cy="28" r="2.2" fill="#0891b2" opacity="0.9"/>
+      <line x1="20" y1="8" x2="31" y2="26" stroke="url(#flg3)" stroke-width="0.6" opacity="0.5"/>
+      <line x1="20" y1="8" x2="9" y2="26" stroke="#7C3AED" stroke-width="0.6" opacity="0.4"/>
+      <line x1="30" y1="27" x2="10" y2="27" stroke="#0891b2" stroke-width="0.6" opacity="0.4"/>
+      <circle cx="20" cy="20" r="2.5" fill="url(#flg3)" opacity="0.6"/>
+    </svg>
+    <span class="footer-logo-name">Dark<span class="matter-grad">Matter</span></span>
+  </a>
+  <div class="footer-links">
+    <a class="footer-link" href="/demo">Demo</a>
+    <a class="footer-link" href="/docs">Docs</a>
+    <a class="footer-link" href="/pricing">Pricing</a>
+    <a class="footer-link" href="https://contextpassport.com" target="_blank">Context Passport</a>
+    <a class="footer-link" href="/signup">Get API Key</a>
+  </div>
+</footer>
+
+<script>
+const shareId = window.location.pathname.split('/').pop();
+let chainData = null;
+
+async function loadChain() {
+  try {
+    const res = await fetch(`/api/chain/${shareId}`);
+    if (!res.ok) {
+      document.getElementById('loading-state').style.display = 'none';
+      document.getElementById('error-state').style.display = 'block';
+      return;
+    }
+    chainData = await res.json();
+    renderChain(chainData);
+  } catch (e) {
+    document.getElementById('loading-state').style.display = 'none';
+    document.getElementById('error-state').style.display = 'block';
+  }
+}
+
+function renderChain(data) {
+  document.getElementById('loading-state').style.display = 'none';
+  document.getElementById('main-content').style.display = 'block';
+
+  // Title
+  const label = data.label || `Chain ${data.ctxId.slice(-12)}`;
+  document.getElementById('chain-title').textContent = label;
+  document.title = `DarkMatter — ${label}`;
+
+  // Meta pills
+  const meta = document.getElementById('chain-meta');
+  meta.innerHTML = `
+    <span class="meta-pill ${data.chainIntact ? 'intact' : 'broken'}">
+      ${data.chainIntact ? '✓ Chain intact' : '✗ Chain broken'}
+    </span>
+    <span class="meta-pill">${data.totalSteps} step${data.totalSteps !== 1 ? 's' : ''}</span>
+    ${data.models.map(m => `<span class="meta-pill">${m}</span>`).join('')}
+    ${data.forkPoints ? `<span class="meta-pill">${data.forkPoints} fork${data.forkPoints !== 1 ? 's' : ''}</span>` : ''}
+    <span class="meta-pill">${new Date(data.createdAt).toLocaleDateString()}</span>
+  `;
+
+  // Steps
+  const wrap = document.getElementById('steps-wrap');
+  wrap.innerHTML = data.replay.map((step, i) => {
+    const eventClass = {
+      commit: 'badge-commit',
+      checkpoint: 'badge-checkpoint',
+      fork: 'badge-fork',
+      error: 'badge-error',
+    }[step.eventType] || 'badge-commit';
+
+    const payload = step.payload
+      ? JSON.stringify(step.payload, null, 2)
+      : '(no payload)';
+
+    const ts = step.timestamp
+      ? new Date(step.timestamp).toLocaleString()
+      : '';
+
+    return `
+    <div class="step-card" id="step-${i}">
+      <div class="step-header" onclick="toggleStep(${i})">
+        <span class="step-num">${step.step}</span>
+        <span class="step-integrity ${step.integrity.chainValid ? 'valid' : 'broken'}" title="${step.integrity.chainValid ? 'Chain intact' : 'Chain broken here'}"></span>
+        <span class="step-badge ${eventClass}">${step.eventType}</span>
+        <span class="step-role">${step.role || step.agentName || 'agent'}</span>
+        ${step.model ? `<span class="step-model">${step.model}</span>` : ''}
+        <span class="step-time">${ts}</span>
+      </div>
+      <div class="step-body" id="step-body-${i}">
+        ${step.isFork ? `<div class="fork-badge">⑂ Fork from ${step.forkOf?.slice(-8)}</div>` : ''}
+        <div class="step-id">${step.id}</div>
+        <div class="payload-label">Payload</div>
+        <div class="payload-wrap"><pre>${escHtml(payload)}</pre></div>
+        <div class="hash-row"><span class="hash-key">payload_hash</span><span class="hash-val">${step.integrity.payload_hash || '—'}</span></div>
+        <div class="hash-row"><span class="hash-key">integrity_hash</span><span class="hash-val">${step.integrity.integrity_hash || '—'}</span></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleStep(i) {
+  const body = document.getElementById(`step-body-${i}`);
+  body.classList.toggle('open');
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function copyLink() {
+  navigator.clipboard.writeText(window.location.href).then(() => {
+    const btn = document.getElementById('copy-link-btn');
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy link'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+function buildMarkdown() {
+  if (!chainData) return '';
+  return [
+    `**DarkMatter chain**`,
+    `- ${chainData.totalSteps} step${chainData.totalSteps !== 1 ? 's' : ''}`,
+    chainData.models.length ? `- Models: ${chainData.models.join(', ')}` : null,
+    chainData.agents.length ? `- Agents: ${chainData.agents.join(', ')}` : null,
+    `- Chain intact: ${chainData.chainIntact ? 'true ✓' : 'false ✗'}`,
+    chainData.forkPoints ? `- Fork points: ${chainData.forkPoints}` : null,
+    `- [View chain](${window.location.href})`,
+    `- Root: \`${chainData.replay[0]?.id}\``,
+    `- Tip:  \`${chainData.ctxId}\``,
+  ].filter(Boolean).join('\n');
+}
+
+function showMarkdown() {
+  document.getElementById('md-text').value = buildMarkdown();
+  document.getElementById('md-modal').classList.add('open');
+}
+
+function copyMarkdown() {
+  const text = document.getElementById('md-text').value;
+  navigator.clipboard.writeText(text).then(() => {
+    document.getElementById('md-modal').classList.remove('open');
+    const btn = document.getElementById('copy-md-btn');
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy markdown'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+// Close modal on overlay click
+document.getElementById('md-modal').addEventListener('click', function(e) {
+  if (e.target === this) this.classList.remove('open');
+});
+
+loadChain();
+</script>
+</body>
+</html>

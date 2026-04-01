@@ -706,6 +706,11 @@ app.post('/api/commit', apiLimiter, requireApiKey, async (req, res) => {
       .eq('agent_id', toAgentId)
       .single();
 
+    // Fire event hooks (post-commit)
+    fireEventHooks(req.agent.agent_id, 'commit', {
+      ctxId: commitId, toAgentId, traceId, eventType: resolvedType,
+    }).catch(() => {});
+
     if (recipientAgent?.webhook_url) {
       deliverWebhook(recipientAgent, {
         id:         commitId,
@@ -1762,6 +1767,515 @@ app.get('/api/diff/:ctxIdA/:ctxIdB', requireApiKey, async (req, res) => {
   }
 });
 
+
+// ═══════════════════════════════════════════════════
+// WEEK 1: SHARED READ-ONLY CHAIN LINKS
+// ═══════════════════════════════════════════════════
+
+// POST /api/share/:ctxId — create a shareable read-only link
+app.post('/api/share/:ctxId', apiLimiter, requireApiKey, async (req, res) => {
+  try {
+    const { ctxId } = req.params;
+    const { label, expiresInDays } = req.body;
+
+    // Verify the context belongs to this user's agents
+    const { data: userAgents } = await supabaseService
+      .from('agents').select('agent_id').eq('user_id', req.agent.user_id);
+    const agentIds = (userAgents || []).map(a => a.agent_id);
+
+    const { data: commit } = await supabaseService
+      .from('commits').select('id, from_agent, to_agent').eq('id', ctxId).single();
+    if (!commit) return res.status(404).json({ error: 'Context not found' });
+
+    const shareId = 'share_' + crypto.randomBytes(8).toString('hex');
+    const expiresAt = expiresInDays
+      ? new Date(Date.now() + expiresInDays * 86400000).toISOString()
+      : null;
+
+    const { error } = await supabaseService.from('shared_chains').insert({
+      id:         shareId,
+      ctx_id:     ctxId,
+      created_by: req.agent.agent_id,
+      label:      label ? sanitizeText(label, 200) : null,
+      expires_at: expiresAt,
+    });
+    if (error) throw error;
+
+    const shareUrl = `${process.env.BASE_URL || 'https://darkmatterhub.ai'}/chain/${shareId}`;
+
+    res.json({
+      shareId,
+      shareUrl,
+      ctxId,
+      label:      label || null,
+      expiresAt:  expiresAt || null,
+      markdown:   null, // populated below after replay
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/share/:ctxId/markdown — generate markdown summary for a chain
+app.get('/api/share/:ctxId/markdown', requireApiKey, async (req, res) => {
+  try {
+    const { ctxId } = req.params;
+
+    // Walk the chain
+    const steps = [];
+    let currentId = ctxId;
+    while (currentId && steps.length < 50) {
+      const { data } = await supabaseService
+        .from('commits').select('*').eq('id', currentId).single();
+      if (!data) break;
+      steps.push(data);
+      currentId = data.parent_id;
+    }
+    steps.reverse();
+
+    if (!steps.length) return res.status(404).json({ error: 'Context not found' });
+
+    const models   = [...new Set(steps.map(s => s.agent_info?.model).filter(Boolean))];
+    const agents   = [...new Set(steps.map(s => s.agent_info?.name || s.from_agent).filter(Boolean))];
+    const forks    = steps.filter(s => s.fork_of).map((s, i) => steps.indexOf(s) + 1);
+    const intact   = steps.every((s, i) => {
+      if (i === 0) return true;
+      return s.parent_hash === steps[i - 1].integrity_hash;
+    });
+
+    // Check for share link
+    const { data: share } = await supabaseService
+      .from('shared_chains').select('id').eq('ctx_id', ctxId).order('created_at', { ascending: false }).limit(1).single();
+    const shareUrl = share
+      ? `${process.env.BASE_URL || 'https://darkmatterhub.ai'}/chain/${share.id}`
+      : null;
+
+    const md = [
+      `**DarkMatter chain**`,
+      `- ${steps.length} step${steps.length !== 1 ? 's' : ''}`,
+      models.length ? `- Models: ${models.join(', ')}` : null,
+      agents.length ? `- Agents: ${agents.join(', ')}` : null,
+      `- Chain intact: ${intact ? 'true ✓' : 'false ✗'}`,
+      forks.length ? `- Forked at step${forks.length > 1 ? 's' : ''}: ${forks.join(', ')}` : null,
+      shareUrl ? `- [View chain](${shareUrl})` : null,
+      `- Root: \`${steps[0].id}\``,
+      `- Tip:  \`${ctxId}\``,
+    ].filter(Boolean).join('\n');
+
+    res.json({ markdown: md, shareUrl, steps: steps.length, models, agents, intact });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /chain/:shareId — PUBLIC read-only chain viewer page (no auth)
+app.get('/chain/:shareId', async (req, res) => {
+  try {
+    const { shareId } = req.params;
+    const { data: share } = await supabaseService
+      .from('shared_chains').select('*').eq('id', shareId).single();
+
+    if (!share) return res.status(404).send('<h2>Chain not found or link expired.</h2>');
+    if (share.expires_at && new Date(share.expires_at) < new Date()) {
+      return res.status(410).send('<h2>This shared chain link has expired.</h2>');
+    }
+
+    // Increment view count
+    await supabaseService.from('shared_chains')
+      .update({ view_count: (share.view_count || 0) + 1 })
+      .eq('id', shareId);
+
+    res.sendFile(path.join(__dirname, '../public/chain.html'));
+  } catch (err) {
+    res.status(500).send('<h2>Error loading chain.</h2>');
+  }
+});
+
+// GET /api/chain/:shareId — PUBLIC chain data for the viewer page
+app.get('/api/chain/:shareId', async (req, res) => {
+  try {
+    const { shareId } = req.params;
+    const { data: share } = await supabaseService
+      .from('shared_chains').select('*').eq('id', shareId).single();
+
+    if (!share) return res.status(404).json({ error: 'Share not found' });
+    if (share.expires_at && new Date(share.expires_at) < new Date()) {
+      return res.status(410).json({ error: 'Link expired' });
+    }
+
+    // Walk the chain from tip to root
+    const steps = [];
+    let currentId = share.ctx_id;
+    while (currentId && steps.length < 50) {
+      const { data } = await supabaseService
+        .from('commits').select('*').eq('id', currentId).single();
+      if (!data) break;
+      steps.push(data);
+      currentId = data.parent_id;
+    }
+    steps.reverse();
+
+    // Verify chain
+    let chainIntact = true;
+    for (let i = 1; i < steps.length; i++) {
+      if (steps[i].parent_hash && steps[i - 1].integrity_hash &&
+          steps[i].parent_hash !== steps[i - 1].integrity_hash) {
+        chainIntact = false;
+        steps[i]._chainBroken = true;
+      }
+    }
+
+    const models = [...new Set(steps.map(s => s.agent_info?.model).filter(Boolean))];
+    const agents = [...new Set(steps.map(s => s.agent_info?.name || s.from_agent).filter(Boolean))];
+    const forks  = steps.filter(s => s.fork_of).length;
+
+    res.json({
+      shareId,
+      label:      share.label,
+      ctxId:      share.ctx_id,
+      viewCount:  share.view_count,
+      createdAt:  share.created_at,
+      expiresAt:  share.expires_at,
+      chainIntact,
+      totalSteps: steps.length,
+      models,
+      agents,
+      forkPoints: forks,
+      replay: steps.map((c, i) => ({
+        step:      i + 1,
+        id:        c.id,
+        eventType: c.event_type || 'commit',
+        role:      c.agent_info?.role,
+        model:     c.agent_info?.model,
+        provider:  c.agent_info?.provider,
+        agentName: c.agent_info?.name || c.from_agent,
+        payload:   c.payload || c.context,
+        integrity: {
+          payload_hash:   c.payload_hash  ? 'sha256:' + c.payload_hash  : null,
+          integrity_hash: c.integrity_hash ? 'sha256:' + c.integrity_hash : null,
+          chainValid:     !c._chainBroken,
+        },
+        timestamp:  c.timestamp,
+        isFork:     !!c.fork_of,
+        forkOf:     c.fork_of || null,
+      })),
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ═══════════════════════════════════════════════════
+// WEEK 2: RETENTION VISIBILITY
+// ═══════════════════════════════════════════════════
+
+// GET /api/retention/:ctxId — expiry info for a specific chain
+app.get('/api/retention/:ctxId', requireApiKey, async (req, res) => {
+  try {
+    const { ctxId } = req.params;
+
+    const { data: commit } = await supabaseService
+      .from('commits').select('timestamp, from_agent, to_agent').eq('id', ctxId).single();
+    if (!commit) return res.status(404).json({ error: 'Context not found' });
+
+    // Get agent's retention policy
+    const agentId = commit.from_agent || commit.to_agent;
+    const { data: agent } = await supabaseService
+      .from('agents').select('retention_days').eq('agent_id', agentId).single();
+
+    const retentionDays = agent?.retention_days || 30; // free default
+    const createdAt = new Date(commit.timestamp);
+    const expiresAt = new Date(createdAt.getTime() + retentionDays * 86400000);
+    const now = new Date();
+    const daysRemaining = Math.max(0, Math.ceil((expiresAt - now) / 86400000));
+    const isExpired = expiresAt < now;
+
+    const plan = retentionDays <= 30 ? 'free' : retentionDays <= 90 ? 'pro' : 'enterprise';
+
+    res.json({
+      ctxId,
+      retentionDays,
+      createdAt:    createdAt.toISOString(),
+      expiresAt:    expiresAt.toISOString(),
+      daysRemaining,
+      isExpired,
+      plan,
+      upgradeMessage: plan === 'free' && daysRemaining <= 14
+        ? `This chain expires in ${daysRemaining} day${daysRemaining !== 1 ? 's' : ''} on Free. Upgrade to Pro to keep it for 90 days.`
+        : null,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ═══════════════════════════════════════════════════
+// WEEK 3: EVENT HOOKS (post-commit, post-fork, verify-fail)
+// ═══════════════════════════════════════════════════
+
+// POST /api/hooks — register an event hook
+app.post('/api/hooks', apiLimiter, requireApiKey, async (req, res) => {
+  try {
+    const { url, events, secret } = req.body;
+
+    if (!url || !events?.length) {
+      return res.status(400).json({ error: 'url and events[] required' });
+    }
+
+    const validEvents = ['commit', 'fork', 'verify_fail', 'checkpoint', 'error'];
+    const invalidEvents = events.filter(e => !validEvents.includes(e));
+    if (invalidEvents.length) {
+      return res.status(400).json({ error: `Invalid events: ${invalidEvents.join(', ')}. Valid: ${validEvents.join(', ')}` });
+    }
+
+    if (!isValidWebhookUrl(url)) {
+      return res.status(400).json({ error: 'URL is not allowed (private/internal addresses blocked)' });
+    }
+
+    const hookId = 'hook_' + crypto.randomBytes(8).toString('hex');
+    const { error } = await supabaseService.from('event_hooks').insert({
+      id:       hookId,
+      agent_id: req.agent.agent_id,
+      url:      sanitizeText(url, 500),
+      events,
+      secret:   secret ? sanitizeText(secret, 200) : null,
+      enabled:  true,
+    });
+    if (error) throw error;
+
+    res.status(201).json({
+      hookId,
+      agentId:  req.agent.agent_id,
+      url,
+      events,
+      enabled:  true,
+      message:  `Hook registered. Will fire on: ${events.join(', ')}`,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/hooks — list hooks for this agent
+app.get('/api/hooks', requireApiKey, async (req, res) => {
+  try {
+    const { data: hooks, error } = await supabaseService
+      .from('event_hooks')
+      .select('id, url, events, enabled, created_at, last_fired, failure_count')
+      .eq('agent_id', req.agent.agent_id)
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    res.json({ hooks: hooks || [], count: (hooks || []).length });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// DELETE /api/hooks/:hookId — remove a hook
+app.delete('/api/hooks/:hookId', requireApiKey, async (req, res) => {
+  try {
+    const { hookId } = req.params;
+    const { error } = await supabaseService
+      .from('event_hooks')
+      .delete()
+      .eq('id', hookId)
+      .eq('agent_id', req.agent.agent_id); // only delete own hooks
+    if (error) throw error;
+    res.json({ deleted: hookId });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// PATCH /api/hooks/:hookId — enable/disable a hook
+app.patch('/api/hooks/:hookId', requireApiKey, async (req, res) => {
+  try {
+    const { hookId } = req.params;
+    const { enabled } = req.body;
+    const { error } = await supabaseService
+      .from('event_hooks')
+      .update({ enabled: !!enabled })
+      .eq('id', hookId)
+      .eq('agent_id', req.agent.agent_id);
+    if (error) throw error;
+    res.json({ hookId, enabled: !!enabled });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/hooks/:hookId/deliveries — recent delivery log
+app.get('/api/hooks/:hookId/deliveries', requireApiKey, async (req, res) => {
+  try {
+    const { hookId } = req.params;
+    // Verify ownership
+    const { data: hook } = await supabaseService
+      .from('event_hooks').select('id').eq('id', hookId).eq('agent_id', req.agent.agent_id).single();
+    if (!hook) return res.status(404).json({ error: 'Hook not found' });
+
+    const { data: deliveries } = await supabaseService
+      .from('hook_deliveries')
+      .select('*')
+      .eq('hook_id', hookId)
+      .order('attempted_at', { ascending: false })
+      .limit(50);
+
+    res.json({ hookId, deliveries: deliveries || [] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ═══════════════════════════════════════════════════
+// EXPORT PROOF BUNDLE
+// GET /api/bundle/:ctxId — structured export package
+// ═══════════════════════════════════════════════════
+app.get('/api/bundle/:ctxId', requireApiKey, async (req, res) => {
+  try {
+    const { ctxId } = req.params;
+
+    // Walk the full chain
+    const steps = [];
+    let currentId = ctxId;
+    while (currentId && steps.length < 50) {
+      const { data } = await supabaseService
+        .from('commits').select('*').eq('id', currentId).single();
+      if (!data) break;
+      steps.push(data);
+      currentId = data.parent_id;
+    }
+    steps.reverse();
+
+    if (!steps.length) return res.status(404).json({ error: 'Context not found' });
+
+    // Verify chain
+    let chainIntact = true;
+    for (let i = 1; i < steps.length; i++) {
+      if (steps[i].parent_hash && steps[i - 1].integrity_hash &&
+          steps[i].parent_hash !== steps[i - 1].integrity_hash) {
+        chainIntact = false;
+      }
+    }
+
+    const root = steps[0];
+    const tip  = steps[steps.length - 1];
+    const models   = [...new Set(steps.map(s => s.agent_info?.model).filter(Boolean))];
+    const agents   = [...new Set(steps.map(s => s.agent_info?.name || s.from_agent).filter(Boolean))];
+    const forks    = steps.filter(s => s.fork_of).length;
+    const exportId = 'bundle_' + Date.now() + '_' + crypto.randomBytes(4).toString('hex');
+    const exportedAt = new Date().toISOString();
+
+    // Compute chain hash
+    const chainHash = crypto.createHash('sha256')
+      .update(steps.map(s => s.integrity_hash || '').join(''))
+      .digest('hex');
+
+    const bundle = {
+      // ── README ──────────────────────────────────────
+      readme: [
+        'DarkMatter Export Bundle',
+        '========================',
+        '',
+        `Export ID:    ${exportId}`,
+        `Exported at:  ${exportedAt}`,
+        `Context tip:  ${ctxId}`,
+        `Context root: ${root.id}`,
+        '',
+        'Chain summary',
+        '─────────────',
+        `Steps:        ${steps.length}`,
+        `Models:       ${models.join(', ') || 'none recorded'}`,
+        `Agents:       ${agents.join(', ') || 'none recorded'}`,
+        `Fork points:  ${forks}`,
+        `Chain intact: ${chainIntact}`,
+        `Chain hash:   sha256:${chainHash}`,
+        '',
+        'Verification',
+        '────────────',
+        'This bundle contains the full execution chain with cryptographic',
+        'integrity hashes. Anyone can verify the chain is unmodified by',
+        'recomputing the hashes from the chain data.',
+        '',
+        'Algorithm: sha256(payload_hash + parent_hash)',
+        'Root parent_hash input: "root"',
+        '',
+        'Files in this bundle',
+        '────────────────────',
+        '  chain.json        — Full chain with all commits and payloads',
+        '  verification.json — Integrity summary and hash chain',
+        '  metadata.json     — Export metadata',
+        '  README.txt        — This file',
+      ].join('\n'),
+
+      // ── METADATA ─────────────────────────────────────
+      metadata: {
+        exportId,
+        exportedAt,
+        exportedBy: req.agent.agent_id,
+        ctxId,
+        rootId:     root.id,
+        chainLength: steps.length,
+        models,
+        agents,
+        forkPoints: forks,
+        dateRange: {
+          from: root.timestamp,
+          to:   tip.timestamp,
+        },
+      },
+
+      // ── VERIFICATION ─────────────────────────────────
+      verification: {
+        chainIntact,
+        chainHash: 'sha256:' + chainHash,
+        rootHash:  root.integrity_hash ? 'sha256:' + root.integrity_hash : null,
+        tipHash:   tip.integrity_hash  ? 'sha256:' + tip.integrity_hash  : null,
+        steps: steps.map((s, i) => ({
+          step:           i + 1,
+          id:             s.id,
+          payload_hash:   s.payload_hash   ? 'sha256:' + s.payload_hash   : null,
+          integrity_hash: s.integrity_hash ? 'sha256:' + s.integrity_hash : null,
+          parent_hash:    s.parent_hash    ? 'sha256:' + s.parent_hash    : null,
+          chainValid:     i === 0 || !s._chainBroken,
+        })),
+      },
+
+      // ── FULL CHAIN ────────────────────────────────────
+      chain: steps.map((c, i) => ({
+        step:      i + 1,
+        id:        c.id,
+        parent_id: c.parent_id,
+        trace_id:  c.trace_id,
+        branch_key: c.branch_key || 'main',
+        created_by: {
+          agent_id:   c.from_agent,
+          agent_name: c.agent_info?.name || c.from_agent,
+          role:       c.agent_info?.role,
+          provider:   c.agent_info?.provider,
+          model:      c.agent_info?.model,
+        },
+        event: {
+          type:      c.event_type || 'commit',
+          timestamp: c.timestamp,
+        },
+        payload:   c.payload || c.context,
+        integrity: {
+          payload_hash:        c.payload_hash   ? 'sha256:' + c.payload_hash   : null,
+          integrity_hash:      c.integrity_hash ? 'sha256:' + c.integrity_hash : null,
+          parent_hash:         c.parent_hash    ? 'sha256:' + c.parent_hash    : null,
+          verification_status: c.verified ? 'valid' : 'rejected',
+        },
+        is_fork:   !!c.fork_of,
+        fork_of:   c.fork_of || null,
+      })),
+    };
+
+    res.json(bundle);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ═══════════════════════════════════════════════════
 // PUBLIC NETWORK STATS (no auth — for homepage)
 // ═══════════════════════════════════════════════════
@@ -1927,6 +2441,75 @@ app.get('/api/stats', async (req, res) => {
 // ═══════════════════════════════════════════════════
 // WEBHOOK DELIVERY
 // ═══════════════════════════════════════════════════
+
+
+// ── Fire event hooks for an agent ────────────────────
+async function fireEventHooks(agentId, event, payload) {
+  try {
+    const { data: hooks } = await supabaseService
+      .from('event_hooks')
+      .select('*')
+      .eq('agent_id', agentId)
+      .eq('enabled', true)
+      .contains('events', [event]);
+
+    if (!hooks?.length) return;
+
+    for (const hook of hooks) {
+      const body = JSON.stringify({
+        event,
+        hook_id:    hook.id,
+        agent_id:   agentId,
+        timestamp:  new Date().toISOString(),
+        ...payload,
+      });
+
+      const headers = { 'Content-Type': 'application/json' };
+      if (hook.secret) {
+        const sig = require('crypto')
+          .createHmac('sha256', hook.secret)
+          .update(body).digest('hex');
+        headers['X-DarkMatter-Signature'] = `sha256=${sig}`;
+        headers['X-DarkMatter-Event'] = event;
+      }
+
+      const start = Date.now();
+      let status = 'failed', httpStatus = null;
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 5000);
+        const res = await fetch(hook.url, { method: 'POST', headers, body, signal: controller.signal });
+        clearTimeout(timeout);
+        httpStatus = res.status;
+        status = res.ok ? 'delivered' : 'failed';
+      } catch (e) {
+        status = 'failed';
+      }
+
+      const duration = Date.now() - start;
+
+      // Log delivery + update last_fired
+      await Promise.all([
+        supabaseService.from('hook_deliveries').insert({
+          id:           'hd_' + Date.now() + '_' + require('crypto').randomBytes(4).toString('hex'),
+          hook_id:      hook.id,
+          event,
+          ctx_id:       payload.ctxId || null,
+          status,
+          http_status:  httpStatus,
+          duration_ms:  duration,
+          attempted_at: new Date().toISOString(),
+        }),
+        supabaseService.from('event_hooks').update({
+          last_fired:    new Date().toISOString(),
+          failure_count: status === 'failed' ? (hook.failure_count + 1) : 0,
+        }).eq('id', hook.id),
+      ]).catch(() => {});
+    }
+  } catch (err) {
+    console.error('fireEventHooks error:', err.message);
+  }
+}
 
 async function deliverWebhook(agent, commit) {
   if (!agent.webhook_url) return;
