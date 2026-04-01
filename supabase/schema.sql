@@ -251,3 +251,59 @@ create index if not exists commits_payload_hash_idx on commits(payload_hash);
 -- Note: existing commits will have payload_hash = null
 -- They remain valid — payload_hash is optional in buildContext
 -- New commits from this version onward will have it populated
+
+-- ═══════════════════════════════════════════════════
+-- Schema v8: Shared chain links + event hooks
+-- Run in Supabase SQL Editor
+-- ═══════════════════════════════════════════════════
+
+-- Shared read-only chain links
+create table if not exists shared_chains (
+  id           text primary key,          -- share_xxxxxxxxxxxxx
+  ctx_id       text not null,             -- tip context ID
+  created_by   text references agents(agent_id),
+  label        text,                      -- optional human label
+  expires_at   timestamptz,               -- null = never
+  view_count   integer default 0,
+  created_at   timestamptz default now()
+);
+create index if not exists shared_chains_ctx_idx on shared_chains(ctx_id);
+create index if not exists shared_chains_agent_idx on shared_chains(created_by);
+
+-- Event hooks (post-commit, post-fork, verify-fail)
+create table if not exists event_hooks (
+  id           text primary key,          -- hook_xxxxxxxxxxxxx
+  agent_id     text references agents(agent_id) on delete cascade,
+  url          text not null,
+  secret       text,
+  events       text[] not null,           -- ['commit','fork','verify_fail']
+  enabled      boolean default true,
+  created_at   timestamptz default now(),
+  last_fired   timestamptz,
+  failure_count integer default 0
+);
+create index if not exists event_hooks_agent_idx on event_hooks(agent_id, enabled);
+
+-- Hook delivery log
+create table if not exists hook_deliveries (
+  id           text primary key,
+  hook_id      text references event_hooks(id) on delete cascade,
+  event        text not null,
+  ctx_id       text,
+  status       text,                      -- delivered | failed | skipped
+  http_status  integer,
+  response     text,
+  duration_ms  integer,
+  attempted_at timestamptz default now()
+);
+create index if not exists hook_deliveries_hook_idx on hook_deliveries(hook_id, attempted_at desc);
+
+-- Activation events (track the funnel)
+create table if not exists activation_events (
+  id           text primary key,
+  user_id      uuid references auth.users(id) on delete cascade,
+  event        text not null,             -- demo_run|key_created|first_commit|first_replay|first_fork|first_diff|day2_return
+  metadata     jsonb,
+  occurred_at  timestamptz default now()
+);
+create index if not exists activation_events_user_idx on activation_events(user_id, event);
