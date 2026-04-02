@@ -364,106 +364,116 @@
 
     <!-- TABS -->
     <div class="qs-tabs">
-      <button class="qs-tab active" onclick="switchTab('curl')">curl</button>
-      <button class="qs-tab" onclick="switchTab('python')">Python</button>
-      <button class="qs-tab" onclick="switchTab('node')">Node.js</button>
+      <button class="qs-tab active" onclick="switchTab('curl')">darkmatter init</button>
+      <button class="qs-tab" onclick="switchTab('python')">Python SDK</button>
+      <button class="qs-tab" onclick="switchTab('node')">Node.js SDK</button>
     </div>
 
-    <!-- CURL TAB -->
+    <!-- INIT / CLI TAB -->
     <div class="qs-panel active" id="tab-curl">
       <div class="qs-code">
         <div class="qs-code-head">
-          <div class="qs-code-label">// replace YOUR_KEY and AGENT IDs</div>
+          <div class="qs-code-label">// fastest path — no browser required</div>
           <button class="qs-copy-btn" onclick="copyTab('curl')">Copy</button>
         </div>
         <div class="qs-pre">
-<span class="c"># 1. Commit context (Agent X → Agent Y)</span>
-<span class="cm">curl -X POST \</span>
-<span class="cm">  https://darkmatterhub.ai/api/commit \</span>
-<span class="cm">  -H <span class="st">"Authorization: Bearer <span class="key-placeholder">YOUR_KEY</span>"</span> \</span>
-<span class="cm">  -H <span class="st">"Content-Type: application/json"</span> \</span>
-<span class="cm">  -d <span class="st">'{"toAgentId":"dm_AGENT_Y_ID",</span></span>
-<span class="cm">     <span class="st">"eventType":"commit",</span></span>
-<span class="cm">     <span class="st">"context":{"task":"done","result":"..."}}'</span></span>
+<span class="c"># 1. Install and set up (one time)</span>
+<span class="cm">pip install darkmatter-sdk</span>
+<span class="cm">darkmatter demo    <span class="c"># see replay, fork, diff locally — no signup</span></span>
+<span class="cm">darkmatter init    <span class="c"># creates agent + writes .env — no browser</span></span>
 <span class="sp"></span>
-<span class="ok"># → {"verified":true,"commitId":"commit_..."}</span>
+<span class="c"># 2. Generate a runnable example</span>
+<span class="cm">darkmatter quickstart single</span>
+<span class="cm">python darkmatter_example.py</span>
 <span class="sp"></span>
-<span class="c"># 2. Pull verified context (Agent Y pulls)</span>
-<span class="cm">curl \</span>
-<span class="cm">  https://darkmatterhub.ai/api/pull \</span>
-<span class="cm">  -H <span class="st">"Authorization: Bearer <span class="key-placeholder">AGENT_Y_KEY</span>"</span></span>
+<span class="c"># 3. Open the chain in browser</span>
+<span class="cm">darkmatter open</span>
 <span class="sp"></span>
-<span class="ok"># → {"commits":[{"context":{...},"verified":true}]}</span>
+<span class="c"># 4. Replay, fork, diff from CLI</span>
+<span class="cm">darkmatter replay &lt;ctx_id&gt;</span>
+<span class="cm">darkmatter fork   &lt;ctx_id&gt; --from 2 --model gpt-4o-mini</span>
+<span class="cm">darkmatter diff   &lt;ctx_id_a&gt; &lt;ctx_id_b&gt;</span>
 <span class="sp"></span>
-<span class="c"># 3. Check your agent identity</span>
-<span class="cm">curl \</span>
-<span class="cm">  https://darkmatterhub.ai/api/me \</span>
-<span class="cm">  -H <span class="st">"Authorization: Bearer <span class="key-placeholder">YOUR_KEY</span>"</span></span>
-<span class="sp"></span>
-<span class="ok"># → {"agentId":"dm_...","agentName":"..."}</span>
+<span class="c"># 5. Check setup anytime</span>
+<span class="cm">darkmatter doctor</span>
         </div>
       </div>
     </div>
 
-    <!-- PYTHON TAB -->
+    <!-- PYTHON SDK TAB -->
     <div class="qs-panel" id="tab-python">
       <div class="qs-code">
         <div class="qs-code-head">
-          <div class="qs-code-label">// pip install requests</div>
+          <div class="qs-code-label">// pip install darkmatter-sdk</div>
           <button class="qs-copy-btn" onclick="copyTab('python')">Copy</button>
         </div>
         <div class="qs-pre">
-<span class="cm">import requests</span>
+<span class="c"># darkmatter init writes .env — loaded automatically</span>
+<span class="cm">import darkmatter as dm</span>
 <span class="sp"></span>
-<span class="cm">URL = <span class="st">"https://darkmatterhub.ai"</span></span>
-<span class="cm">X = {<span class="st">"Authorization"</span>: <span class="st">"Bearer <span class="key-placeholder">AGENT_X_KEY</span>"</span>}</span>
-<span class="cm">Y = {<span class="st">"Authorization"</span>: <span class="st">"Bearer <span class="key-placeholder">AGENT_Y_KEY</span>"</span>}</span>
+<span class="c"># Commit a step</span>
+<span class="cm">ctx = dm.commit(</span>
+<span class="cm">    to_agent_id=<span class="st">"YOUR_AGENT_ID"</span>,</span>
+<span class="cm">    payload={<span class="st">"output"</span>: result},</span>
+<span class="cm">    event_type=<span class="st">"commit"</span>,  <span class="c"># commit | checkpoint | fork | error</span></span>
+<span class="cm">)</span>
+<span class="ok"># → {"id": "ctx_...", "integrity": {"verification_status": "valid"}}</span>
 <span class="sp"></span>
-<span class="c"># Agent X commits context for Agent Y</span>
-<span class="cm">requests.post(<span class="fl">f</span><span class="st">"{URL}/api/commit"</span>, headers=X, json={</span>
-<span class="cm">    <span class="st">"toAgentId"</span>: <span class="st">"dm_AGENT_Y_ID"</span>,</span>
-<span class="cm">    <span class="st">"eventType"</span>: <span class="st">"commit"</span>,  <span class="c"># commit | revert | override | branch | merge | error</span></span>
-<span class="cm">    <span class="st">"context"</span>:   {<span class="st">"task"</span>: <span class="st">"done"</span>, <span class="st">"result"</span>: <span class="st">"..."</span>},</span>
-<span class="cm">})</span>
-<span class="ok"># → verified: true ✓</span>
+<span class="c"># Replay the chain</span>
+<span class="cm">replay = dm.replay(ctx[<span class="st">"id"</span>])</span>
+<span class="ok"># → {"chainIntact": true, "totalSteps": 3, "replay": [...]}</span>
 <span class="sp"></span>
-<span class="c"># Agent Y pulls and inherits context</span>
-<span class="cm">data    = requests.get(<span class="fl">f</span><span class="st">"{URL}/api/pull"</span>, headers=Y).json()</span>
-<span class="cm">context = data[<span class="st">"commits"</span>][0][<span class="st">"context"</span>]</span>
-<span class="ok"># → context inherited ✓</span>
+<span class="c"># Fork from a checkpoint</span>
+<span class="cm">fork = dm.fork(ctx[<span class="st">"id"</span>], to_agent_id=<span class="st">"YOUR_AGENT_ID"</span>)</span>
+<span class="sp"></span>
+<span class="c"># Diff two chains</span>
+<span class="cm">diff = dm.diff(ctx[<span class="st">"id"</span>], fork[<span class="st">"id"</span>])</span>
+<span class="ok"># → {"changedSteps": 1, "summary": {"modelsA": [...], "modelsB": [...]}}</span>
+<span class="sp"></span>
+<span class="c"># Share a chain link</span>
+<span class="cm">share = dm.share(ctx[<span class="st">"id"</span>], label=<span class="st">"my first chain"</span>)</span>
+<span class="ok"># → {"shareUrl": "https://darkmatterhub.ai/chain/share_..."}</span>
+<span class="sp"></span>
+<span class="c"># Spawn a child agent</span>
+<span class="cm">child = dm.spawn_client(<span class="st">"fact-checker"</span>, role=<span class="st">"validator"</span>)</span>
+<span class="cm">child.commit(to_agent_id=child.agent_id, payload={...})</span>
         </div>
       </div>
     </div>
 
-    <!-- NODE TAB -->
+    <!-- NODE.JS SDK TAB -->
     <div class="qs-panel" id="tab-node">
       <div class="qs-code">
         <div class="qs-code-head">
-          <div class="qs-code-label">// Node 18+ built-in fetch</div>
+          <div class="qs-code-label">// npm install darkmatter-js</div>
           <button class="qs-copy-btn" onclick="copyTab('node')">Copy</button>
         </div>
         <div class="qs-pre">
-<span class="cm">const URL  = <span class="st">"https://darkmatterhub.ai"</span>;</span>
-<span class="cm">const hdrs = (key) => ({</span>
-<span class="cm">  <span class="st">"Authorization"</span>: <span class="fl">`Bearer ${key}`</span>,</span>
-<span class="cm">  <span class="st">"Content-Type"</span>: <span class="st">"application/json"</span>,</span>
-<span class="cm">});</span>
+<span class="c">// npm install darkmatter-js</span>
+<span class="cm">const dm = require(<span class="st">'darkmatter-js'</span>);</span>
 <span class="sp"></span>
-<span class="c">// Agent X commits context for Agent Y</span>
-<span class="cm">await fetch(<span class="fl">`${URL}/api/commit`</span>, {</span>
-<span class="cm">  method: <span class="st">"POST"</span>, headers: hdrs(<span class="st">"<span class="key-placeholder">AGENT_X_KEY</span>"</span>),</span>
-<span class="cm">  body: JSON.stringify({</span>
-<span class="cm">    toAgentId: <span class="st">"dm_AGENT_Y_ID"</span>,</span>
-<span class="cm">    context:   { task: <span class="st">"done"</span>, result: <span class="st">"..."</span> },</span>
-<span class="cm">  }),</span>
+<span class="c">// Commit a step</span>
+<span class="cm">const ctx = await dm.commit({</span>
+<span class="cm">  toAgentId: <span class="st">"YOUR_AGENT_ID"</span>,</span>
+<span class="cm">  payload:   { output: result },</span>
+<span class="cm">  eventType: <span class="st">"commit"</span>,</span>
 <span class="cm">});</span>
-<span class="ok">// → { verified: true, commitId: "commit_..." }</span>
+<span class="ok">// → { id: "ctx_...", integrity: { verification_status: "valid" } }</span>
 <span class="sp"></span>
-<span class="c">// Agent Y pulls and inherits context</span>
-<span class="cm">const res     = await fetch(<span class="fl">`${URL}/api/pull`</span>,</span>
-<span class="cm">  { headers: hdrs(<span class="st">"<span class="key-placeholder">AGENT_Y_KEY</span>"</span>) });</span>
-<span class="cm">const context = (await res.json()).commits[0].context;</span>
-<span class="ok">// → context inherited ✓</span>
+<span class="c">// Replay the chain</span>
+<span class="cm">const replay = await dm.replay(ctx.id);</span>
+<span class="ok">// → { chainIntact: true, totalSteps: 3 }</span>
+<span class="sp"></span>
+<span class="c">// Fork from a checkpoint</span>
+<span class="cm">const fork = await dm.fork(ctx.id, { toAgentId: <span class="st">"YOUR_AGENT_ID"</span> });</span>
+<span class="sp"></span>
+<span class="c">// Diff two chains</span>
+<span class="cm">const diff = await dm.diff(ctx.id, fork.id);</span>
+<span class="ok">// → { changedSteps: 1 }</span>
+<span class="sp"></span>
+<span class="c">// Share a chain link</span>
+<span class="cm">const share = await dm.share(ctx.id, { label: <span class="st">"my chain"</span> });</span>
+<span class="ok">// → { shareUrl: "https://darkmatterhub.ai/chain/share_..." }</span>
         </div>
       </div>
     </div>
@@ -672,32 +682,31 @@
     document.querySelectorAll('.qs-panel').forEach(p => p.classList.remove('active'));
     document.getElementById('tab-' + name).classList.add('active');
     const tabs = ['curl','python','node'];
-    document.querySelectorAll('.qs-tab')[tabs.indexOf(name)].classList.add('active');
+    const tabIdx = tabs.indexOf(name);
+    if (tabIdx >= 0) document.querySelectorAll('.qs-tab')[tabIdx].classList.add('active');
   }
 
   // ── Copy per tab ──────────────────────────────────────
   const tabCode = {
-    curl: `# Install and set up (one time)
+    curl: `# 1. Install and set up
 pip install darkmatter-sdk
+darkmatter demo    # see it locally — no signup
 darkmatter init    # creates agent + writes .env
 
-# Commit a step
-curl -X POST https://darkmatterhub.ai/api/commit \
-  -H "Authorization: Bearer YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"toAgentId":"YOUR_AGENT_ID","payload":{"output":"result here"},"eventType":"commit"}'
+# 2. Generate runnable example
+darkmatter quickstart single
+python darkmatter_example.py
 
-# Replay the chain
-curl https://darkmatterhub.ai/api/replay/CTX_ID \
-  -H "Authorization: Bearer YOUR_API_KEY"
+# 3. Open chain in browser
+darkmatter open
 
-# Fork from a checkpoint
-curl -X POST https://darkmatterhub.ai/api/fork/CTX_ID \
-  -H "Authorization: Bearer YOUR_API_KEY"
+# 4. Replay, fork, diff
+darkmatter replay <ctx_id>
+darkmatter fork   <ctx_id> --from 2 --model gpt-4o-mini
+darkmatter diff   <ctx_id_a> <ctx_id_b>
 
-# Diff two chains
-curl https://darkmatterhub.ai/api/diff/CTX_ID_A/CTX_ID_B \
-  -H "Authorization: Bearer YOUR_API_KEY"`,
+# 5. Check setup
+darkmatter doctor`,
 
     python: `# Install (one time)
 # pip install darkmatter-sdk
