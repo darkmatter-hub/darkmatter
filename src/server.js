@@ -2517,7 +2517,8 @@ app.get('/api/og/:shareId', async (req, res) => {
   <text x="80" y="340" font-family="'IBM Plex Mono',monospace" font-size="16" fill="#4b5563">${modelStr.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</text>
 
   <!-- Bottom features -->
-  <text x="80" y="430" font-family="system-ui,sans-serif" font-size="15" fill="#9ca3af">Replay any step  ·  Fork from any checkpoint  ·  Compare model outputs</text>
+  <text x="80" y="410" font-family="system-ui,sans-serif" font-size="15" fill="#9ca3af">Replay any step  ·  Fork from any checkpoint  ·  Compare model outputs</text>
+  <text x="80" y="440" font-family="'Space Grotesk',system-ui,sans-serif" font-weight="700" font-size="16" fill="url(#brand)" letter-spacing="1">Replay  ·  Fork  ·  Compare</text>
 
   <!-- URL bar -->
   <rect x="80" y="460" width="800" height="38" rx="6" fill="#f1f3f5" stroke="#e5e7eb" stroke-width="1"/>
