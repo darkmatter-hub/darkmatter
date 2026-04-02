@@ -237,14 +237,16 @@ app.post('/api/provision', authLimiter, async (req, res) => {
       console.log(`  📧 Magic link for ${email}: ${data?.properties?.action_link || 'generated'}`);
     }).catch(() => {});
 
-    // Track activation
-    supabaseService.from('activation_events').insert({
-      id:          'ae_' + Date.now() + '_' + crypto.randomBytes(4).toString('hex'),
-      user_id:     userId,
-      event:       'key_created',
-      metadata:    { source: source || 'cli_provision', agent_name: name },
-      occurred_at: new Date().toISOString(),
-    }).catch(() => {});
+    // Track activation (fire and forget — table may not exist yet)
+    try {
+      supabaseService.from('activation_events').insert({
+        id:          'ae_' + Date.now() + '_' + crypto.randomBytes(4).toString('hex'),
+        user_id:     userId,
+        event:       'key_created',
+        metadata:    { source: source || 'cli_provision', agent_name: name },
+        occurred_at: new Date().toISOString(),
+      }).then(() => {}).catch(() => {});
+    } catch (_) {}
 
     res.status(201).json({
       agentId:   agentData.agent_id,
