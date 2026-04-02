@@ -909,6 +909,97 @@ const context = (await res.json()).commits[0].context;`,
   }
 
   // ── Copy agent ID ────────────────────────────────────
+  // ── Share a commit chain ────────────────────────────────────
+  async function shareCommit(ctxId, btn) {
+    const orig = btn.textContent;
+    btn.textContent = '...';
+    try {
+      const res = await fetch(`/api/share/${ctxId}`, {
+        method: 'POST',
+        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ label: 'Shared from dashboard' }),
+      });
+      const data = await res.json();
+      if (data.shareUrl) {
+        // Copy to clipboard
+        await navigator.clipboard.writeText(data.shareUrl);
+        btn.textContent = '✓ copied';
+        btn.style.color = 'var(--green)';
+
+        // Show share popup
+        showSharePopup(data.shareUrl, ctxId);
+        setTimeout(() => { btn.textContent = orig; btn.style.color = ''; }, 2500);
+      } else {
+        btn.textContent = orig;
+        toast('Could not create share link');
+      }
+    } catch(e) {
+      btn.textContent = orig;
+      toast('Share failed');
+    }
+  }
+
+  function showSharePopup(shareUrl, ctxId) {
+    // Remove existing popup
+    const existing = document.getElementById('share-popup');
+    if (existing) existing.remove();
+
+    const popup = document.createElement('div');
+    popup.id = 'share-popup';
+    popup.style.cssText = `
+      position:fixed;bottom:1.5rem;right:1.5rem;
+      background:#fff;border:1px solid var(--border);border-radius:10px;
+      padding:1.1rem 1.25rem;box-shadow:0 8px 32px rgba(0,0,0,0.12);
+      z-index:9999;max-width:320px;font-family:var(--sans);
+    `;
+
+    const shortUrl = shareUrl.replace('https://darkmatterhub.ai','').slice(0,32) + '...';
+    const xText    = encodeURIComponent('Shared a DarkMatter chain — replayable AI workflow\n\n' + shareUrl);
+    const liUrl    = encodeURIComponent(shareUrl);
+
+    popup.innerHTML = `
+      <div style="font-size:0.82rem;font-weight:600;color:var(--text);margin-bottom:0.5rem;">Chain link created</div>
+      <div style="font-family:var(--mono);font-size:0.65rem;color:var(--text2);background:var(--bg2);padding:0.4rem 0.6rem;border-radius:5px;margin-bottom:0.75rem;word-break:break-all;">${shareUrl}</div>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.5rem;">
+        <button onclick="navigator.clipboard.writeText('${shareUrl}');this.textContent='✓ Copied';setTimeout(()=>this.textContent='Copy link',1500);"
+          style="font-size:0.72rem;padding:0.3rem 0.65rem;border-radius:5px;border:1px solid var(--border);background:var(--bg2);cursor:pointer;font-family:var(--sans);">Copy link</button>
+        <button onclick="copySummaryFromDash('${ctxId}',this)"
+          style="font-size:0.72rem;padding:0.3rem 0.65rem;border-radius:5px;border:1px solid var(--border);background:var(--bg2);cursor:pointer;font-family:var(--sans);">Copy summary</button>
+        <a href="https://twitter.com/intent/tweet?text=${xText}" target="_blank"
+          style="font-size:0.72rem;padding:0.3rem 0.65rem;border-radius:5px;border:1px solid var(--border);background:#000;color:#fff;text-decoration:none;font-family:var(--sans);">X</a>
+        <a href="https://www.linkedin.com/sharing/share-offsite/?url=${liUrl}" target="_blank"
+          style="font-size:0.72rem;padding:0.3rem 0.65rem;border-radius:5px;border:1px solid var(--border);background:#0a66c2;color:#fff;text-decoration:none;font-family:var(--sans);">LinkedIn</a>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <a href="${shareUrl}" target="_blank" style="font-size:0.68rem;color:var(--accent);">Open chain page →</a>
+        <button onclick="document.getElementById('share-popup').remove()"
+          style="font-size:0.68rem;color:var(--text3);background:none;border:none;cursor:pointer;">Dismiss</button>
+      </div>
+    `;
+
+    document.body.appendChild(popup);
+    // Auto-dismiss after 12 seconds
+    setTimeout(() => { if (document.getElementById('share-popup')) popup.remove(); }, 12000);
+  }
+
+  async function copySummaryFromDash(ctxId, btn) {
+    const orig = btn.textContent;
+    btn.textContent = '...';
+    try {
+      const res = await fetch(`/api/share/${ctxId}/markdown`, {
+        headers: authHeaders(),
+      });
+      const data = await res.json();
+      if (data.markdown) {
+        await navigator.clipboard.writeText(data.markdown);
+        btn.textContent = '✓ Copied';
+        setTimeout(() => btn.textContent = orig, 1500);
+      }
+    } catch(e) {
+      btn.textContent = orig;
+    }
+  }
+
   function copyAgentId(agentId) {
     navigator.clipboard.writeText(agentId);
     toast('Agent ID copied to clipboard');
@@ -1327,6 +1418,9 @@ const context = (await res.json()).commits[0].context;`,
               ${c.id ? `<button onclick="event.stopPropagation();document.getElementById('chain-ctx-input').value='${c.id}';switchLogTab('chain');loadChainView();"
                 style="font-family:var(--mono);font-size:0.58rem;color:var(--text3);background:none;border:none;cursor:pointer;padding:0;user-select:none;transition:color 0.12s;"
                 title="View chain" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text3)'">⑂ chain</button>` : ''}
+              ${c.id ? `<button onclick="event.stopPropagation();shareCommit('${c.id}',this)"
+                style="font-family:var(--mono);font-size:0.58rem;color:var(--text3);background:none;border:none;cursor:pointer;padding:0;user-select:none;transition:color 0.12s;"
+                title="Share chain link" onmouseover="this.style.color='var(--violet)'" onmouseout="this.style.color='var(--text3)'">↗ share</button>` : ''}
             </div>
           </div>
           <div class="tme">${ago(c.timestamp)}</div>

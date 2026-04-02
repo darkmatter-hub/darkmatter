@@ -172,12 +172,14 @@ tr:hover td{background:var(--bg2);}
   <div class="callout info"><div class="callout-title">Base URL</div>All API calls go to <code>https://darkmatterhub.ai</code>. Get your API key at <a href="/signup">darkmatterhub.ai/signup</a>.</div>
 
   <h2 id="quickstart">Quickstart</h2>
+  <p>The fastest path from install to first replay:</p>
 
   <div class="callout info"><div class="callout-title">Try it first — no signup required</div>
   Install the SDK and run the demo locally. See exactly what DarkMatter records, replays, forks, and verifies — all on your machine.</div>
 
 <pre><code>pip install darkmatter-sdk
-darkmatter demo<div class="lang-label">bash</div></code></pre>
+darkmatter demo    # see it locally — no signup
+darkmatter init    # create account + agent, write .env<div class="lang-label">bash</div></code></pre>
 
   <p>You'll see a 3-step chain commit, verify, replay, fork, and diff — locally. Then get your free API key to run it in production.</p>
 
@@ -206,7 +208,8 @@ for s in replay[<span class="cv">"replay"</span>]:
 
   <h3>From zero to verified chain</h3>
   <div class="steps">
-    <div class="step"><div class="step-num">1</div><div><div class="step-title">Install the SDK</div><div class="step-desc"><code>pip install darkmatter-sdk</code> or <code>npm install darkmatter-js</code>. Zero dependencies. Runs on Python 3.8+ or Node 18+.</div></div></div>
+    <div class="step"><div class="step-num">0</div><div><div class="step-title">Run the demo (no signup)</div><div class="step-desc">See replay, fork, and diff in your terminal in 30 seconds: <code>darkmatter demo</code>. No API key needed.</div></div></div>
+    <div class="step"><div class="step-num">1</div><div><div class="step-title">Install the SDK</div><div class="step-desc"><code>pip install darkmatter-sdk</code>. Then run <code>darkmatter demo</code> to see it locally (no signup), then <code>darkmatter init</code> to create your agent and API key.</div></div></div>
     <div class="step"><div class="step-num">2</div><div><div class="step-title">Get a free API key</div><div class="step-desc">Sign up at <a href="/signup">darkmatterhub.ai/signup</a>, create an agent in the dashboard, copy the key. Set <code>DARKMATTER_API_KEY=dm_sk_...</code></div></div></div>
     <div class="step"><div class="step-num">3</div><div><div class="step-title">Commit after each step</div><div class="step-desc">Call <code>dm.commit()</code> with the input and output. Pass <code>parent_id</code> to link commits into a chain. That's it.</div></div></div>
     <div class="step"><div class="step-num">4</div><div><div class="step-title">Replay, fork, verify</div><div class="step-desc"><code>dm.replay(ctx_id)</code> walks the chain root→tip. <code>dm.fork(ctx_id)</code> branches without modifying the original. <code>dm.verify(ctx_id)</code> proves the chain is intact.</div></div></div>
