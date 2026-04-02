@@ -2397,6 +2397,147 @@ app.get('/api/bundle/:ctxId', requireApiKey, async (req, res) => {
   }
 });
 
+
+// ═══════════════════════════════════════════════════
+// DYNAMIC OG IMAGE — GET /api/og/:shareId
+// Returns an SVG social card for a shared chain.
+// Used as og:image for X, LinkedIn, Slack previews.
+// ═══════════════════════════════════════════════════
+app.get('/api/og/:shareId', async (req, res) => {
+  try {
+    const { shareId } = req.params;
+    const { data: share } = await supabaseService
+      .from('shared_chains').select('*').eq('id', shareId).single();
+
+    let steps = 0, models = [], intact = true, forkAt = null, label = '';
+
+    if (share) {
+      label = share.label || '';
+      // Quick chain summary fetch
+      let currentId = share.ctx_id;
+      const visited = [];
+      while (currentId && visited.length < 20) {
+        const { data } = await supabaseService
+          .from('commits').select('id,parent_id,agent_info,integrity_hash,parent_hash')
+          .eq('id', currentId).single();
+        if (!data) break;
+        visited.push(data);
+        const model = data.agent_info?.model || '';
+        const shortModel = model.replace('claude-opus-4-6','Claude').replace('claude-sonnet-4-6','Claude')
+          .replace('gpt-4o-mini','GPT-4o-mini').replace('gpt-4o','GPT-4o').replace('gpt-4.1','GPT-4.1');
+        if (shortModel && !models.includes(shortModel)) models.push(shortModel);
+        if (data.fork_of) forkAt = visited.length;
+        currentId = data.parent_id;
+      }
+      steps = visited.length;
+      // Simple integrity check
+      for (let i = 1; i < visited.length; i++) {
+        if (visited[i].parent_hash && visited[i-1].integrity_hash &&
+            visited[i].parent_hash !== visited[i-1].integrity_hash) {
+          intact = false; break;
+        }
+      }
+    }
+
+    const intactColor  = intact ? '#059669' : '#dc2626';
+    const intactLabel  = intact ? '✓  chain intact' : '✗  chain broken';
+    const modelStr     = models.slice(0,3).join('  →  ') || 'unknown model';
+    const forkStr      = forkAt ? `  ·  forked at step ${forkAt}` : '';
+    const chainLabel   = label || `${steps} step${steps!==1?'s':''}`;
+    const stepsLabel   = `${steps} step${steps!==1?'s':''}`;
+
+    // Build node circles for chain visual
+    const nodeCount = Math.min(steps, 5);
+    const nodeSpacing = 52;
+    const nodesStart = 200 - (nodeCount * nodeSpacing / 2);
+    let nodesSvg = '';
+    for (let i = 0; i < nodeCount; i++) {
+      const x = nodesStart + i * nodeSpacing;
+      const color = i === (forkAt ? forkAt - 1 : -1) ? '#d97706' : '#7C3AED';
+      nodesSvg += `<circle cx="${x}" cy="120" r="8" fill="${color}" opacity="0.9"/>`;
+      if (i < nodeCount - 1) {
+        nodesSvg += `<line x1="${x+8}" y1="120" x2="${x+nodeSpacing-8}" y2="120" stroke="#e5e7eb" stroke-width="1.5"/>`;
+      }
+      if (forkAt && i === forkAt - 1) {
+        nodesSvg += `<circle cx="${x+nodeSpacing/2}" cy="148" r="7" fill="#d97706" opacity="0.85"/>`;
+        nodesSvg += `<line x1="${x+4}" y1="124" x2="${x+nodeSpacing/2-4}" y2="144" stroke="#d97706" stroke-width="1.2" opacity="0.6"/>`;
+      }
+    }
+    if (steps > 5) {
+      nodesSvg += `<text x="${nodesStart + 5*nodeSpacing - 4}" y="125" font-family="monospace" font-size="12" fill="#9ca3af">+${steps-5}</text>`;
+    }
+
+    const svg = `<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#7C3AED" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#0891b2" stop-opacity="0.04"/>
+    </linearGradient>
+    <linearGradient id="brand" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#7C3AED"/>
+      <stop offset="55%" stop-color="#2563EB"/>
+      <stop offset="100%" stop-color="#0891b2"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="#ffffff"/>
+  <rect width="1200" height="630" fill="url(#grad)"/>
+
+  <!-- Top accent bar -->
+  <rect width="1200" height="4" fill="url(#brand)"/>
+
+  <!-- Logo area -->
+  <circle cx="72" cy="72" r="18" fill="none" stroke="#e5e7eb" stroke-width="1"/>
+  <circle cx="72" cy="58" r="4" fill="#7C3AED" opacity="0.9"/>
+  <circle cx="84" cy="80" r="3.5" fill="#2563EB" opacity="0.9"/>
+  <circle cx="60" cy="80" r="3" fill="#0891b2" opacity="0.9"/>
+  <line x1="72" y1="62" x2="82" y2="77" stroke="#7C3AED" stroke-width="0.8" opacity="0.5"/>
+  <line x1="72" y1="62" x2="62" y2="77" stroke="#7C3AED" stroke-width="0.8" opacity="0.4"/>
+  <line x1="82" y1="78" x2="62" y2="78" stroke="#0891b2" stroke-width="0.8" opacity="0.4"/>
+
+  <text x="102" y="66" font-family="'Space Grotesk',system-ui,sans-serif" font-weight="700" font-size="22" fill="#111827" letter-spacing="-0.5">Dark</text>
+  <text x="144" y="66" font-family="'Space Grotesk',system-ui,sans-serif" font-weight="700" font-size="22" fill="url(#brand)" letter-spacing="-0.5">Matter</text>
+
+  <!-- Chain visual -->
+  <rect x="80" y="90" width="1040" height="90" rx="10" fill="#f8f9fa" stroke="#e5e7eb" stroke-width="1"/>
+  ${nodesSvg.replace(/cx="/g, 'cx="').split('cx="').map((s,i) => i===0 ? s : 'cx="' + s).join('').replace(/(\d+)" cy="120"/g, (m,n) => `${+n+520}" cy="120"`)}
+
+  <!-- Chain label -->
+  <text x="600" y="96" font-family="monospace" font-size="9" fill="#9ca3af" text-anchor="middle" letter-spacing="2" text-transform="uppercase">CHAIN</text>
+
+  <!-- Main content -->
+  <text x="80" y="230" font-family="'Space Grotesk',system-ui,sans-serif" font-weight="700" font-size="42" fill="#111827" letter-spacing="-1">${chainLabel.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</text>
+
+  <!-- Meta row -->
+  <text x="80" y="290" font-family="'IBM Plex Mono',monospace" font-size="18" fill="${intactColor}">${intactLabel}${forkStr}</text>
+
+  <!-- Models -->
+  <text x="80" y="340" font-family="'IBM Plex Mono',monospace" font-size="16" fill="#4b5563">${modelStr.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</text>
+
+  <!-- Bottom features -->
+  <text x="80" y="430" font-family="system-ui,sans-serif" font-size="15" fill="#9ca3af">Replay any step  ·  Fork from any checkpoint  ·  Compare model outputs</text>
+
+  <!-- URL bar -->
+  <rect x="80" y="460" width="800" height="38" rx="6" fill="#f1f3f5" stroke="#e5e7eb" stroke-width="1"/>
+  <text x="100" y="484" font-family="monospace" font-size="13" fill="#6b7280">darkmatterhub.ai/chain/${shareId}</text>
+
+  <!-- CTA -->
+  <rect x="920" y="460" width="200" height="38" rx="6" fill="url(#brand)"/>
+  <text x="1020" y="484" font-family="system-ui,sans-serif" font-weight="600" font-size="14" fill="#ffffff" text-anchor="middle">Fork this chain →</text>
+</svg>`;
+
+    res.setHeader('Content-Type', 'image/svg+xml');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.send(svg);
+  } catch (err) {
+    // Return minimal fallback SVG
+    res.setHeader('Content-Type', 'image/svg+xml');
+    res.send('<svg width="1200" height="630" xmlns="http://www.w3.org/2000/svg"><rect width="1200" height="630" fill="#111827"/><text x="600" y="315" font-family="sans-serif" font-size="48" fill="white" text-anchor="middle">DarkMatter</text></svg>');
+  }
+});
+
 // ═══════════════════════════════════════════════════
 // PUBLIC NETWORK STATS (no auth — for homepage)
 // ═══════════════════════════════════════════════════

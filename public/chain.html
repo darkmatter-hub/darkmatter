@@ -192,7 +192,12 @@ footer{border-top:1px solid var(--border);padding:1.5rem 2rem;display:flex;align
       </a>
       <button class="share-btn" id="copy-link-btn" onclick="copyLink()">Copy link</button>
       <button class="share-btn" id="copy-summary-btn" onclick="copySummary()">Copy summary</button>
-      <a class="btn btn-primary" href="/signup" style="margin-left:auto;font-size:0.75rem;padding:0.3rem 0.85rem;">Fork this chain →</a>
+      <button class="share-btn" id="copy-short-btn" onclick="copyShort()" style="color:var(--text3);">Copy short</button>
+      <a class="share-btn" id="raw-json-btn" href="#" onclick="viewRaw(event)" style="color:var(--text3);">Raw JSON</a>
+      <span id="workspace-cta" style="margin-left:auto;display:none;">
+        <a class="btn btn-primary" id="open-workspace-btn" href="/dashboard" style="font-size:0.75rem;padding:0.3rem 0.85rem;">Open in workspace →</a>
+      </span>
+      <a class="btn btn-primary" id="signup-cta" href="/signup" style="margin-left:auto;font-size:0.75rem;padding:0.3rem 0.85rem;">Fork this chain →</a>
     </div>
   </div>
 
@@ -248,36 +253,46 @@ function updateMeta(title, desc) {
     const el = document.getElementById(id);
     if (el) el.setAttribute('content', val);
   };
+  const ogImage = `https://darkmatterhub.ai/api/og/${shareId}`;
   setMeta('og-title', title);
   setMeta('og-desc', desc);
   setMeta('og-url', window.location.href);
+  setMeta('og-image', ogImage);
   setMeta('tw-title', title);
   setMeta('tw-desc', desc);
+  setMeta('tw-image', ogImage);
 }
 
 // ── Build plain-text summary ────────────────────────────────────
 function buildSummary() {
   if (!chainData) return '';
-  const lines = [
-    'DarkMatter chain summary',
-    `- ${chainData.totalSteps} step${chainData.totalSteps !== 1 ? 's' : ''}`,
-  ];
-  if (chainData.models?.length)  lines.push(`- models: ${chainData.models.join(', ')}`);
-  if (chainData.agents?.length)  lines.push(`- agents: ${chainData.agents.join(', ')}`);
-  lines.push(`- chain intact: ${chainData.chainIntact ? 'true ✓' : 'false ✗'}`);
-  if (chainData.forkPoints)      lines.push(`- forked at step ${chainData.forkPoints}`);
-  lines.push(`- replay link: ${window.location.href}`);
+  const lines = ['DarkMatter chain'];
+  lines.push(`• ${chainData.totalSteps} step${chainData.totalSteps !== 1 ? 's' : ''}`);
+  lines.push(`• ${chainData.chainIntact ? 'chain intact' : 'chain broken'}`);
+  if (chainData.models?.length)  lines.push(`• models: ${chainData.models.join(', ')}`);
+  if (chainData.forkPoints)      lines.push(`• forked at step ${chainData.forkPoints}`);
+  lines.push('');
+  lines.push('Replay:');
+  lines.push(window.location.href);
   return lines.join('\n');
+}
+
+function buildShortSummary() {
+  if (!chainData) return '';
+  const models = chainData.models?.join('+') || '';
+  const fork   = chainData.forkPoints ? ` • fork@${chainData.forkPoints}` : '';
+  const intact = chainData.chainIntact ? 'intact' : 'broken';
+  return `DarkMatter chain • ${chainData.totalSteps} steps • ${intact}${models ? ` • ${models}` : ''}${fork}\n${window.location.href}`;
 }
 
 // ── X share text ───────────────────────────────────────────────
 function buildXText() {
   if (!chainData) return window.location.href;
-  const steps = chainData.totalSteps;
-  const models = chainData.models?.join(' + ') || '';
+  const steps  = chainData.totalSteps;
+  const fork   = chainData.forkPoints ? ` • forked at step ${chainData.forkPoints}` : '';
   const intact = chainData.chainIntact ? 'chain intact' : 'chain broken';
-  const fork   = chainData.forkPoints ? `, forked at step ${chainData.forkPoints}` : '';
-  return `Replayable AI workflow via @darkmatterhub\n${steps} steps • ${intact}${fork}${models ? ` • ${models}` : ''}\n\n${window.location.href}`;
+  const models = chainData.models?.length ? `\n${chainData.models.join(' → ')}` : '';
+  return `Replayable AI workflow — ${steps} steps • ${intact}${fork}${models}\n\nCompare models, fork from any step, see what changed.\n\n${window.location.href}`;
 }
 
 // ── LinkedIn share text ────────────────────────────────────────
@@ -320,6 +335,25 @@ function copySummary() {
     btn.classList.add('copied');
     setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 2000);
   });
+}
+
+function copyShort() {
+  const text = buildShortSummary();
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copy-short-btn');
+    const orig = btn.textContent;
+    btn.textContent = '✓ Copied';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+function viewRaw(e) {
+  e.preventDefault();
+  const raw = JSON.stringify(chainData, null, 2);
+  const blob = new Blob([raw], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  window.open(url, '_blank');
 }
 
 async function loadChain() {
@@ -368,16 +402,24 @@ function renderChain(data) {
   // Summary card
   const card = document.getElementById('summary-card');
   card.style.display = 'block';
-  const rows = [
-    ['steps',   `${data.totalSteps}`],
-    ['status',  data.chainIntact ? '✓ chain intact' : '✗ chain broken'],
-    data.models?.length ? ['models',  data.models.join(', ')] : null,
-    data.forkPoints     ? ['forked',  `at step ${data.forkPoints}`] : null,
-    ['created', new Date(data.createdAt).toLocaleDateString()],
-  ].filter(Boolean);
-  card.innerHTML = rows.map(([k,v]) =>
-    `<div class="cs-row"><span class="cs-key">${k}</span><span class="cs-val">${v}</span></div>`
-  ).join('');
+  // Ultra-scannable summary card
+  const intactBadge = data.chainIntact
+    ? '<span style="color:var(--green)">✓ chain intact</span>'
+    : '<span style="color:var(--red)">✗ chain broken</span>';
+  const forkBadge = data.forkPoints
+    ? ` &nbsp;·&nbsp; <span style="color:var(--amber)">⑂ forked at step ${data.forkPoints}</span>` : '';
+  const diffBadge = data.forkPoints
+    ? ' &nbsp;<span style="font-size:0.62rem;background:#fffbeb;border:1px solid #fde68a;color:var(--amber);padding:0.1rem 0.4rem;border-radius:4px;font-family:var(--mono);">diff available</span>' : '';
+
+  const line1 = `${data.totalSteps} step${data.totalSteps !== 1?'s':''} &nbsp;·&nbsp; ${intactBadge}${forkBadge}${diffBadge}`;
+  const line2 = data.models?.length ? data.models.join(', ') : '';
+  const line3 = `<span style="color:var(--text3)">${new Date(data.createdAt).toLocaleDateString()}</span>`;
+
+  card.innerHTML = [
+    `<div style="margin-bottom:0.25rem;">${line1}</div>`,
+    line2 ? `<div style="color:var(--text2);margin-bottom:0.25rem;">${line2}</div>` : '',
+    `<div>${line3}</div>`,
+  ].filter(Boolean).join('');
 
   // Steps
   const wrap = document.getElementById('steps-wrap');
@@ -409,7 +451,10 @@ function renderChain(data) {
       </div>
       <div class="step-body" id="step-body-${i}">
         ${step.isFork ? `<div class="fork-badge">⑂ Fork from ${step.forkOf?.slice(-8)}</div>` : ''}
-        <div class="step-id">${step.id}</div>
+        <div class="step-id" style="display:flex;align-items:center;gap:0.5rem;">
+          <span>${step.id}</span>
+          <button onclick="copyCtxId(event,'${step.id}')" style="font-size:0.6rem;padding:0.1rem 0.4rem;border-radius:3px;border:1px solid var(--border);background:var(--bg2);color:var(--text3);cursor:pointer;font-family:var(--mono);">copy</button>
+        </div>
         <div class="payload-label">Payload</div>
         <div class="payload-wrap"><pre>${escHtml(payload)}</pre></div>
         <div class="hash-row"><span class="hash-key">payload_hash</span><span class="hash-val">${step.integrity.payload_hash || '—'}</span></div>
@@ -450,7 +495,38 @@ document.getElementById('md-modal').addEventListener('click', function(e) {
   if (e.target === this) this.classList.remove('open');
 });
 
+function copyCtxId(e, id) {
+  e.stopPropagation();
+  navigator.clipboard.writeText(id).then(() => {
+    const btn = e.target;
+    const orig = btn.textContent;
+    btn.textContent = '✓';
+    btn.style.color = 'var(--green)';
+    btn.style.borderColor = 'var(--green)';
+    setTimeout(() => {
+      btn.textContent = orig;
+      btn.style.color = '';
+      btn.style.borderColor = '';
+    }, 1500);
+  });
+}
+
+// Check if user has a DM session (logged in) — show workspace CTA
+async function checkSession() {
+  try {
+    const res = await fetch('/api/me', { headers: { 'Authorization': 'Bearer ' + (localStorage.getItem('dm_key') || '') } });
+    if (res.ok) {
+      document.getElementById('workspace-cta').style.display = 'inline';
+      document.getElementById('signup-cta').style.display = 'none';
+      const data = await res.json();
+      const btn = document.getElementById('open-workspace-btn');
+      if (btn && chainData?.ctxId) btn.href = `/dashboard#chain=${chainData.ctxId}`;
+    }
+  } catch (e) {}
+}
+
 loadChain();
+checkSession();
 </script>
 </body>
 </html>
