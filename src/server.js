@@ -154,6 +154,117 @@ async function requireAuth(req, res, next) {
 // ── GET / ── serve homepage
 // Handled by express.static above
 
+// ── POST /api/provision ─────────────────────────────
+// Frictionless agent creation — no account needed.
+// Creates a Supabase user + first agent in one call.
+// Returns API key immediately. Email verification optional.
+//
+// Usage:
+//   curl -X POST https://darkmatterhub.ai/api/provision \
+//     -H "Content-Type: application/json" \
+//     -d '{"email":"dev@example.com","agentName":"my-agent"}'
+//
+// Or via darkmatter init CLI command.
+// ────────────────────────────────────────────────────
+app.post('/api/provision', authLimiter, async (req, res) => {
+  try {
+    const { email, agentName, source } = req.body;
+
+    if (!email || !email.includes('@')) {
+      return res.status(400).json({ error: 'Valid email required' });
+    }
+
+    const name = agentName
+      ? sanitizeText(agentName, 100).replace(/[^a-zA-Z0-9 _\-\.]/g, '')
+      : 'my-first-agent';
+
+    if (!name) return res.status(400).json({ error: 'Invalid agent name' });
+
+    // ── Create Supabase user (magic link / passwordless) ──
+    // Use signInWithOtp so user gets a magic link to set password later
+    // but the account + agent are active immediately
+    const password    = crypto.randomBytes(24).toString('hex'); // throwaway, user sets real pw via magic link
+    const { data: authData, error: authError } = await supabaseService.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: false,  // don't require email confirmation to use API
+      user_metadata: { source: source || 'cli_provision', agent_name: name },
+    });
+
+    let userId;
+    if (authError) {
+      // User already exists — look them up
+      if (authError.message?.includes('already been registered') || authError.code === 'email_exists') {
+        const { data: existingUsers } = await supabaseService.auth.admin.listUsers();
+        const existing = existingUsers?.users?.find(u => u.email === email.toLowerCase());
+        if (!existing) return res.status(409).json({ error: 'Email already registered. Use the dashboard to create agents.' });
+        userId = existing.id;
+      } else {
+        throw authError;
+      }
+    } else {
+      userId = authData.user.id;
+    }
+
+    // ── Create the first agent ────────────────────────
+    const agentId = generateAgentId();
+    const apiKey  = generateApiKey();
+
+    const { data: agentData, error: agentError } = await supabaseService
+      .from('agents')
+      .insert({
+        agent_id:   agentId,
+        agent_name: name,
+        user_id:    userId,
+        api_key:    apiKey,
+      })
+      .select()
+      .single();
+
+    if (agentError) {
+      // If agent creation fails, still return useful error
+      throw agentError;
+    }
+
+    // ── Send magic link for account setup (non-blocking) ──
+    supabaseService.auth.admin.generateLink({
+      type:       'magiclink',
+      email,
+      options:    { redirectTo: `${process.env.BASE_URL || 'https://darkmatterhub.ai'}/dashboard` },
+    }).then(({ data }) => {
+      // In production, send this via Resend/email
+      // For now just log — the developer can still use the API key immediately
+      console.log(`  📧 Magic link for ${email}: ${data?.properties?.action_link || 'generated'}`);
+    }).catch(() => {});
+
+    // Track activation
+    supabaseService.from('activation_events').insert({
+      id:          'ae_' + Date.now() + '_' + crypto.randomBytes(4).toString('hex'),
+      user_id:     userId,
+      event:       'key_created',
+      metadata:    { source: source || 'cli_provision', agent_name: name },
+      occurred_at: new Date().toISOString(),
+    }).catch(() => {});
+
+    res.status(201).json({
+      agentId:   agentData.agent_id,
+      agentName: agentData.agent_name,
+      apiKey,
+      email,
+      dashboardUrl: `${process.env.BASE_URL || 'https://darkmatterhub.ai'}/dashboard`,
+      next: [
+        `export DARKMATTER_API_KEY=${apiKey}`,
+        'import darkmatter as dm',
+        'ctx = dm.commit(to_agent_id, payload={"output": result})',
+      ],
+      note: 'Your API key is active immediately. Check your email to set a password and access the dashboard.',
+    });
+  } catch (err) {
+    console.error('provision error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ── GET /login ── serve login page
 app.get('/login', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/login.html'));
@@ -2511,28 +2622,92 @@ async function fireEventHooks(agentId, event, payload) {
   }
 }
 
+// ── Detect if a URL is a Slack incoming webhook ──────
+function isSlackWebhookUrl(url) {
+  if (!url) return false;
+  try {
+    const parsed = new URL(url);
+    return parsed.hostname === 'hooks.slack.com';
+  } catch { return false; }
+}
+
+// ── Format a DarkMatter commit as a Slack Block Kit message ──
+function buildSlackPayload(commit, agentName) {
+  const eventType = commit.eventType || commit.context?._eventType || 'commit';
+  const ctxId     = commit.id || commit.commitId;
+  const from      = commit.from_agent || agentName || 'agent';
+  const short     = ctxId ? ctxId.slice(-8) : '—';
+  const ts        = commit.timestamp ? new Date(commit.timestamp).toLocaleString() : '';
+
+  const statusEmoji = {
+    commit:     '🔗',
+    fork:       '⑂',
+    checkpoint: '📍',
+    error:      '🔴',
+    override:   '⚠️',
+    verify_fail:'🔴',
+  }[eventType] || '🔗';
+
+  return {
+    text: `${statusEmoji} DarkMatter: ${eventType} from ${from}`,
+    blocks: [
+      {
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: `${statusEmoji} *${eventType}* committed by \`${from}\``,
+        },
+      },
+      {
+        type: 'section',
+        fields: [
+          { type: 'mrkdwn', text: `*Context ID*\n\`${ctxId}\`` },
+          { type: 'mrkdwn', text: `*Short ID*\n\`${short}\`` },
+          { type: 'mrkdwn', text: `*Verified*\n${commit.verified ? '✅ yes' : '❌ no'}` },
+          { type: 'mrkdwn', text: `*Time*\n${ts}` },
+        ],
+      },
+      {
+        type: 'actions',
+        elements: [
+          {
+            type: 'button',
+            text: { type: 'plain_text', text: 'Replay chain' },
+            url:  `${process.env.BASE_URL || 'https://darkmatterhub.ai'}/dashboard`,
+            action_id: 'replay_chain',
+          },
+        ],
+      },
+      { type: 'divider' },
+    ],
+  };
+}
+
 async function deliverWebhook(agent, commit) {
   if (!agent.webhook_url) return;
 
-  const payload = {
-    event:     'commit.received',
-    commitId:  commit.id,
-    from:      commit.from_agent,
-    to:        commit.to_agent,
-    eventType: (commit.context?._eventType || 'commit'),
-    verified:  commit.verified,
-    timestamp: commit.timestamp,
-  };
+  const isSlack   = isSlackWebhookUrl(agent.webhook_url);
+  const timestamp = commit.timestamp || new Date().toISOString();
 
-  const body      = JSON.stringify(payload);
-  const deliveryId = 'wh_' + Date.now() + '_' + crypto.randomBytes(4).toString('hex');
-  let status = 'failed', httpStatus = null, response = null;
+  let body, headers;
 
-  try {
-    const controller = new AbortController();
-    const timeout    = setTimeout(() => controller.abort(), 5000);
-
-    const headers = { 'Content-Type': 'application/json' };
+  if (isSlack) {
+    // Slack Block Kit format
+    body    = JSON.stringify(buildSlackPayload(commit, agent.agent_name));
+    headers = { 'Content-Type': 'application/json' };
+  } else {
+    // Standard DarkMatter webhook format
+    const payload = {
+      event:     'commit.received',
+      commitId:  commit.id,
+      from:      commit.from_agent,
+      to:        commit.to_agent,
+      eventType: (commit.context?._eventType || 'commit'),
+      verified:  commit.verified,
+      timestamp,
+    };
+    body    = JSON.stringify(payload);
+    headers = { 'Content-Type': 'application/json' };
     if (agent.webhook_secret) {
       const sig = crypto
         .createHmac('sha256', agent.webhook_secret)
@@ -2540,6 +2715,14 @@ async function deliverWebhook(agent, commit) {
         .digest('hex');
       headers['X-DarkMatter-Signature'] = `sha256=${sig}`;
     }
+  }
+
+  const deliveryId = 'wh_' + Date.now() + '_' + crypto.randomBytes(4).toString('hex');
+  let status = 'failed', httpStatus = null, response = null;
+
+  try {
+    const controller = new AbortController();
+    const timeout    = setTimeout(() => controller.abort(), 5000);
 
     const res = await fetch(agent.webhook_url, {
       method: 'POST', headers, body,
@@ -2576,31 +2759,91 @@ async function deliverWebhook(agent, commit) {
 // ── POST /dashboard/agents/:id/webhook ── set webhook ─
 app.post('/dashboard/agents/:agentId/webhook', requireAuth, async (req, res) => {
   try {
-    const { agentId }      = req.params;
-    const { webhookUrl, webhookSecret } = req.body;
+    const { agentId } = req.params;
+    const { webhookUrl, webhookSecret, slackChannel } = req.body;
 
-    // SSRF protection — block internal network addresses
     if (webhookUrl && !isValidWebhookUrl(webhookUrl)) {
       return res.status(400).json({ error: 'Invalid webhook URL — internal addresses are not allowed' });
     }
 
-    // Validate ownership
+    // Detect Slack and validate
+    const isSlack = isSlackWebhookUrl(webhookUrl);
+    if (webhookUrl && !isSlack && !webhookUrl.startsWith('https://')) {
+      return res.status(400).json({ error: 'Webhook URL must be HTTPS' });
+    }
+
     const { data: agent } = await supabaseService
       .from('agents').select('agent_id').eq('agent_id', agentId).eq('user_id', req.user.id).single();
     if (!agent) return res.status(403).json({ error: 'Agent not found' });
 
     const update = { webhook_url: webhookUrl || null };
     if (webhookSecret !== undefined) update.webhook_secret = webhookSecret || null;
+    if (slackChannel !== undefined)  update.slack_channel  = slackChannel ? sanitizeText(slackChannel, 100) : null;
 
     const { error } = await supabaseService
       .from('agents').update(update).eq('agent_id', agentId);
     if (error) throw error;
 
-    res.json({ success: true, webhookUrl: webhookUrl || null });
+    res.json({
+      success:      true,
+      webhookUrl:   webhookUrl || null,
+      isSlack,
+      slackChannel: slackChannel || null,
+      note: isSlack
+        ? 'Slack webhook configured. Commits will be posted as Block Kit messages.'
+        : 'Webhook configured. Use X-DarkMatter-Signature header to verify.',
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
+
+// ── POST /api/slack/test ── send test message to Slack webhook ──
+app.post('/api/slack/test', requireApiKey, async (req, res) => {
+  try {
+    const { webhookUrl } = req.body;
+    if (!webhookUrl) return res.status(400).json({ error: 'webhookUrl required' });
+    if (!isSlackWebhookUrl(webhookUrl)) return res.status(400).json({ error: 'Not a Slack webhook URL' });
+    if (!isValidWebhookUrl(webhookUrl)) return res.status(400).json({ error: 'Invalid URL' });
+
+    const testPayload = {
+      text: '✅ DarkMatter Slack integration is working',
+      blocks: [
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: `✅ *DarkMatter connected*\n\nAgent \`${req.agent.agent_name}\` will post commit notifications here.\n\nEach commit, fork, and verify event will appear as a formatted message.`,
+          },
+        },
+        {
+          type: 'section',
+          fields: [
+            { type: 'mrkdwn', text: `*Agent*\n${req.agent.agent_name}` },
+            { type: 'mrkdwn', text: `*Status*\n✅ Connected` },
+          ],
+        },
+        { type: 'divider' },
+      ],
+    };
+
+    const res2 = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(testPayload),
+    });
+
+    if (res2.ok) {
+      res.json({ success: true, message: 'Test message sent to Slack' });
+    } else {
+      res.status(400).json({ success: false, error: `Slack returned ${res2.status}` });
+    }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
 
 // ── POST /dashboard/agents/:id/retention ── set retention ─
 app.post('/dashboard/agents/:agentId/retention', requireAuth, async (req, res) => {

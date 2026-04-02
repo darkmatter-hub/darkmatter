@@ -307,3 +307,16 @@ create table if not exists activation_events (
   occurred_at  timestamptz default now()
 );
 create index if not exists activation_events_user_idx on activation_events(user_id, event);
+
+-- ═══════════════════════════════════════════════════
+-- Schema v9: Slack webhook support + provision
+-- Run in Supabase SQL Editor
+-- ═══════════════════════════════════════════════════
+
+-- Add slack_channel column to agents (optional label for Slack notifications)
+alter table agents
+  add column if not exists slack_channel text;
+
+-- Index for provision lookups (email → user already handled by auth.users)
+-- No additional tables needed — provision uses auth.admin API + agents table
+
