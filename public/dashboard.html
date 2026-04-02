@@ -654,6 +654,16 @@
   const token = session?.access_token;
   if (!token) { window.location.href = '/login'; }
 
+  // API key for DM API endpoints (requireApiKey middleware)
+  // Stored when user first creates/views an agent
+  let dmApiKey = session?.dm_api_key || localStorage.getItem('dm_api_key') || '';
+
+  const apiKeyHeaders = () => ({
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${dmApiKey}`,
+    'User-Agent': 'darkmatter-dashboard/1.0',
+  });
+
   document.getElementById('user-email').textContent = session?.user?.email || '';
 
   // ── Tab switching ────────────────────────────────────
@@ -785,6 +795,14 @@ const context = (await res.json()).commits[0].context;`,
       if (data.error) { toast('Error: ' + data.error); return; }
       input.value = '';
       toast('✓ Agent created — copy your API key');
+      // Cache the new key for API calls
+      if (data.apiKey) {
+        dmApiKey = data.apiKey;
+        localStorage.setItem('dm_api_key', data.apiKey);
+        // Also update session
+        session.dm_api_key = data.apiKey;
+        localStorage.setItem('dm_session', JSON.stringify(session));
+      }
       await loadAgents();
     } finally {
       btn.disabled = false;
@@ -811,6 +829,12 @@ const context = (await res.json()).commits[0].context;`,
         a.webhookUrl    = a.webhookUrl    || a.webhook_url    || null;
         a.retentionDays = a.retentionDays ?? a.retention_days ?? null;
       });
+
+      // Check if API key is available, prompt user if not
+      if (!dmApiKey) {
+        const stored = localStorage.getItem('dm_api_key');
+        if (stored) dmApiKey = stored;
+      }
 
       if (!data.length) {
         grid.innerHTML = `<div class="agents-empty">
@@ -914,9 +938,18 @@ const context = (await res.json()).commits[0].context;`,
     const orig = btn.textContent;
     btn.textContent = '...';
     try {
+      if (!dmApiKey) {
+        const stored = localStorage.getItem('dm_api_key');
+        if (stored) dmApiKey = stored;
+      }
+      if (!dmApiKey) {
+        toast('Copy your API key first — needed to create share links');
+        btn.textContent = orig;
+        return;
+      }
       const res = await fetch(`/api/share/${ctxId}`, {
         method: 'POST',
-        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        headers: { ...apiKeyHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify({ label: 'Shared from dashboard' }),
       });
       const data = await res.json();
@@ -987,7 +1020,7 @@ const context = (await res.json()).commits[0].context;`,
     btn.textContent = '...';
     try {
       const res = await fetch(`/api/share/${ctxId}/markdown`, {
-        headers: authHeaders(),
+        headers: dmApiKey ? apiKeyHeaders() : authHeaders(),
       });
       const data = await res.json();
       if (data.markdown) {
@@ -1085,6 +1118,13 @@ const context = (await res.json()).commits[0].context;`,
 
   // ── Copy API key ─────────────────────────────────────
   function copyKey(agentId, key) {
+    // Also cache for API calls (chain view, share)
+    if (key && !key.includes('···')) {
+      dmApiKey = key;
+      localStorage.setItem('dm_api_key', key);
+      session.dm_api_key = key;
+      localStorage.setItem('dm_session', JSON.stringify(session));
+    }
     navigator.clipboard.writeText(key);
     const btn = document.getElementById('copy-' + agentId);
     btn.textContent = 'Copied!';
@@ -1160,7 +1200,7 @@ const context = (await res.json()).commits[0].context;`,
 
     try {
       // Use summary mode first for fast load, then can expand nodes
-      const res  = await fetch(`/api/replay/${ctxId}?mode=summary`, { headers: authHeaders() });
+      const res  = await fetch(`/api/replay/${ctxId}?mode=summary`, { headers: dmApiKey ? apiKeyHeaders() : authHeaders() });
       if (!res.ok) throw new Error((await res.json()).error || 'Not found');
       const data = await res.json();
 
@@ -1272,7 +1312,7 @@ const context = (await res.json()).commits[0].context;`,
     el.innerHTML = '<div style="font-size:0.7rem;color:var(--text3);">Loading…</div>';
     el.style.display = '';
     try {
-      const res  = await fetch(`/api/replay/${ctxId}?mode=full`, { headers: authHeaders() });
+      const res  = await fetch(`/api/replay/${ctxId}?mode=full`, { headers: dmApiKey ? apiKeyHeaders() : authHeaders() });
       const data = await res.json();
       const step = data.replay?.[data.replay.length - 1];
       if (!step?.payload) { el.innerHTML = '<div style="font-size:0.7rem;color:var(--text3);">No payload</div>'; return; }
@@ -1320,7 +1360,7 @@ const context = (await res.json()).commits[0].context;`,
 
   async function verifyChain(ctxId) {
     try {
-      const res  = await fetch(`/api/verify/${ctxId}`, { headers: authHeaders() });
+      const res  = await fetch(`/api/verify/${ctxId}`, { headers: dmApiKey ? apiKeyHeaders() : authHeaders() });
       const data = await res.json();
       if (data.chain_intact) {
         toast(`✓ Chain verified — ${data.length} steps, integrity intact`);
@@ -1332,7 +1372,7 @@ const context = (await res.json()).commits[0].context;`,
 
   async function copyVerifySummary(ctxId) {
     try {
-      const res  = await fetch(`/api/verify/${ctxId}`, { headers: authHeaders() });
+      const res  = await fetch(`/api/verify/${ctxId}`, { headers: dmApiKey ? apiKeyHeaders() : authHeaders() });
       const data = await res.json();
       const summary = [
         `DarkMatter Verification Summary`,
@@ -1404,26 +1444,28 @@ const context = (await res.json()).commits[0].context;`,
         const shortid = c.id ? c.id.slice(-8) : '';
         return `
         <div class="cr" style="cursor:pointer" onclick="openCtxModal(window._commits[${i}])" title="Click to inspect full context">
-          <div style="min-width:0">
+          <div style="min-width:0;flex:1;">
             <div class="cmsg">
               <span class="cbadge ${(c.verified || c.integrity?.verification_status==='valid') ? 'v' : 'r'}">${(c.verified || c.integrity?.verification_status==='valid') ? '✓' : '✗'}</span>
               <span class="cbadge ${evType}">${evLabel}</span>
               <span class="ctxt">${escHtml(trimmed)}</span>
             </div>
-            <div class="cby" style="display:flex;align-items:center;gap:0.5rem;">
+            <div class="cby">
               <span>${escHtml(c.from)} ──▶ ${escHtml(c.to)}</span>
               ${shortid ? `<button onclick="event.stopPropagation();navigator.clipboard.writeText('${c.id}');this.textContent='✓';setTimeout(()=>this.textContent='${shortid} ⎘',1200);"
                 style="font-family:var(--mono);font-size:0.58rem;color:var(--text3);background:none;border:none;cursor:pointer;padding:0;user-select:none;"
-                title="Copy full context ID">${shortid} ⎘</button>` : ''}
-              ${c.id ? `<button onclick="event.stopPropagation();document.getElementById('chain-ctx-input').value='${c.id}';switchLogTab('chain');loadChainView();"
-                style="font-family:var(--mono);font-size:0.58rem;color:var(--text3);background:none;border:none;cursor:pointer;padding:0;user-select:none;transition:color 0.12s;"
-                title="View chain" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text3)'">⑂ chain</button>` : ''}
-              ${c.id ? `<button onclick="event.stopPropagation();shareCommit('${c.id}',this)"
-                style="font-family:var(--mono);font-size:0.58rem;color:var(--text3);background:none;border:none;cursor:pointer;padding:0;user-select:none;transition:color 0.12s;"
-                title="Share chain link" onmouseover="this.style.color='var(--violet)'" onmouseout="this.style.color='var(--text3)'">↗ share</button>` : ''}
+                title="Copy context ID">${shortid} ⎘</button>` : ''}
             </div>
           </div>
-          <div class="tme">${ago(c.timestamp)}</div>
+          <div style="display:flex;align-items:center;gap:0.75rem;margin-left:0.75rem;flex-shrink:0;">
+            <div class="tme">${ago(c.timestamp)}</div>
+            ${c.id ? `<button onclick="event.stopPropagation();document.getElementById('chain-ctx-input').value='${c.id}';switchLogTab('chain');loadChainView();"
+              style="font-family:var(--mono);font-size:0.62rem;color:var(--text3);background:var(--bg2);border:1px solid var(--border);border-radius:4px;cursor:pointer;padding:0.15rem 0.45rem;white-space:nowrap;transition:all 0.12s;"
+              title="View chain" onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'" onmouseout="this.style.color='var(--text3)';this.style.borderColor='var(--border)'">⑂ chain</button>` : ''}
+            ${c.id ? `<button onclick="event.stopPropagation();shareCommit('${c.id}',this)"
+              style="font-family:var(--mono);font-size:0.62rem;color:var(--text3);background:var(--bg2);border:1px solid var(--border);border-radius:4px;cursor:pointer;padding:0.15rem 0.45rem;white-space:nowrap;transition:all 0.12s;"
+              title="Share chain link" onmouseover="this.style.color='var(--violet)';this.style.borderColor='var(--violet)'" onmouseout="this.style.color='var(--text3)';this.style.borderColor='var(--border)'">↗ share</button>` : ''}
+          </div>
         </div>`;
       }).join('');
     } catch(e) { console.error(e); }
