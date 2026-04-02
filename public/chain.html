@@ -187,6 +187,20 @@ footer{border-top:1px solid var(--border);padding:1.5rem 2rem;display:flex;align
     <div class="chain-summary-card" id="summary-card" style="display:none;"></div>
 
     <!-- Share row -->
+
+  <div class="steps-wrap" id="steps-wrap"></div>
+
+  <!-- CLI hint (subtle, bottom of steps) -->
+  <div id="cli-hint" style="display:none;max-width:860px;margin:0 auto;padding:0 2rem 1.5rem;">
+    <div style="font-family:var(--mono);font-size:0.68rem;color:var(--text3);border-top:1px solid var(--border);padding-top:0.75rem;">
+      View in CLI: &nbsp;<span style="color:var(--text2);" id="cli-hint-cmd">darkmatter open ...</span>
+    </div>
+  </div>
+
+
+<!-- SHARE SECTION — between chain results and try-strip -->
+<div style="border-top:1px solid var(--border);padding:2rem 2rem 1.5rem;">
+  <div style="max-width:860px;margin:0 auto;">
     <div style="font-size:0.72rem;color:var(--text3);margin-bottom:0.4rem;">Share this chain</div>
     <div class="share-row">
       <span class="share-label">Share</span>
@@ -219,16 +233,8 @@ footer{border-top:1px solid var(--border);padding:1.5rem 2rem;display:flex;align
       <button onclick="document.getElementById('fork-cta-block').style.display='none'" style="margin-top:0.5rem;font-size:0.72rem;color:var(--text3);background:none;border:none;cursor:pointer;">Dismiss</button>
     </div>
   </div>
-
-  <div class="steps-wrap" id="steps-wrap"></div>
-
-  <!-- CLI hint (subtle, bottom of steps) -->
-  <div id="cli-hint" style="display:none;max-width:860px;margin:0 auto;padding:0 2rem 1.5rem;">
-    <div style="font-family:var(--mono);font-size:0.68rem;color:var(--text3);border-top:1px solid var(--border);padding-top:0.75rem;">
-      View in CLI: &nbsp;<span style="color:var(--text2);" id="cli-hint-cmd">darkmatter open ...</span>
-    </div>
   </div>
-
+</div>
 </div>
 
 <!-- TRY THIS YOURSELF — bottom conversion block -->
