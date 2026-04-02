@@ -316,7 +316,13 @@ app.post('/auth/signup', authLimiter, async (req, res) => {
     if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
     if (password.length < 8) return res.status(400).json({ error: 'Password must be at least 8 characters' });
 
-    const { data, error } = await supabaseAnon.auth.signUp({ email, password });
+    const { data, error } = await supabaseAnon.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: `${process.env.BASE_URL || 'https://darkmatterhub.ai'}/dashboard`,
+      },
+    });
     if (error) return res.status(400).json({ error: error.message });
 
     res.json({ user: data.user, session: data.session });
@@ -2536,6 +2542,242 @@ app.get('/api/og/:shareId', async (req, res) => {
     // Return minimal fallback SVG
     res.setHeader('Content-Type', 'image/svg+xml');
     res.send('<svg width="1200" height="630" xmlns="http://www.w3.org/2000/svg"><rect width="1200" height="630" fill="#111827"/><text x="600" y="315" font-family="sans-serif" font-size="48" fill="white" text-anchor="middle">DarkMatter</text></svg>');
+  }
+});
+
+
+// ═══════════════════════════════════════════════════
+// SUPERUSER ANALYTICS DASHBOARD
+// Only accessible to the account defined in SUPERUSER_EMAIL env var
+// ═══════════════════════════════════════════════════
+
+function requireSuperuser(req, res, next) {
+  const superEmail = process.env.SUPERUSER_EMAIL;
+  if (!superEmail) return res.status(403).json({ error: 'Not configured' });
+  const userEmail = req.user?.email || '';
+  if (userEmail.toLowerCase() !== superEmail.toLowerCase()) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+  next();
+}
+
+// ── GET /admin ── serve admin dashboard page ──────────────────────────────────
+app.get('/admin', requireAuth, requireSuperuser, (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/admin.html'));
+});
+
+// ── GET /admin/stats ── KPI overview ─────────────────────────────────────────
+app.get('/admin/stats', requireAuth, requireSuperuser, async (req, res) => {
+  try {
+    const now     = new Date();
+    const day1    = new Date(now - 86400000).toISOString();
+    const day7    = new Date(now - 7*86400000).toISOString();
+    const day30   = new Date(now - 30*86400000).toISOString();
+
+    const [
+      totalAgents, totalCommits, activeDay, activeWeek, activeMonth,
+      totalUsers, sharedChains, activationEvents
+    ] = await Promise.all([
+      supabaseService.from('agents').select('agent_id', { count: 'exact', head: true }),
+      supabaseService.from('commits').select('id', { count: 'exact', head: true }),
+      supabaseService.from('commits').select('id', { count: 'exact', head: true }).gte('saved_at', day1),
+      supabaseService.from('commits').select('id', { count: 'exact', head: true }).gte('saved_at', day7),
+      supabaseService.from('commits').select('id', { count: 'exact', head: true }).gte('saved_at', day30),
+      supabaseService.auth.admin.listUsers({ perPage: 1 }),
+      supabaseService.from('shared_chains').select('id', { count: 'exact', head: true }),
+      supabaseService.from('activation_events').select('event, user_id').gte('occurred_at', day30),
+    ]);
+
+    const events    = activationEvents.data || [];
+    const byEvent   = {};
+    const byUser    = new Set();
+    events.forEach(e => {
+      byEvent[e.event] = (byEvent[e.event] || 0) + 1;
+      byUser.add(e.user_id);
+    });
+
+    res.json({
+      kpis: {
+        totalUsers:    totalUsers.data?.total || 0,
+        totalAgents:   totalAgents.count || 0,
+        totalCommits:  totalCommits.count || 0,
+        commitsToday:  activeDay.count   || 0,
+        commits7d:     activeWeek.count  || 0,
+        commits30d:    activeMonth.count || 0,
+        sharedChains:  sharedChains.count || 0,
+        activeUsers30d: byUser.size,
+      },
+      activation: byEvent,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── GET /admin/funnel ── activation funnel ────────────────────────────────────
+app.get('/admin/funnel', requireAuth, requireSuperuser, async (req, res) => {
+  try {
+    const { data: events } = await supabaseService
+      .from('activation_events')
+      .select('event, user_id, occurred_at')
+      .order('occurred_at', { ascending: false });
+
+    const funnel = [
+      'key_created', 'first_commit', 'first_replay',
+      'first_fork', 'first_diff', 'day2_return',
+    ];
+
+    const counts = {};
+    const usersByEvent = {};
+    (events || []).forEach(e => {
+      if (!usersByEvent[e.event]) usersByEvent[e.event] = new Set();
+      usersByEvent[e.event].add(e.user_id);
+      counts[e.event] = (counts[e.event] || 0) + 1;
+    });
+
+    const funnelData = funnel.map((evt, i) => {
+      const users = usersByEvent[evt]?.size || 0;
+      const prev  = i > 0 ? (usersByEvent[funnel[i-1]]?.size || 0) : users;
+      return { event: evt, users, conversionFromPrev: prev > 0 ? Math.round(users/prev*100) : 0 };
+    });
+
+    res.json({ funnel: funnelData, rawCounts: counts });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── GET /admin/commands ── CLI command analytics ──────────────────────────────
+app.get('/admin/commands', requireAuth, requireSuperuser, async (req, res) => {
+  try {
+    const { data: events } = await supabaseService
+      .from('activation_events')
+      .select('event, user_id, metadata, occurred_at')
+      .like('event', 'cli_%')
+      .order('occurred_at', { ascending: false })
+      .limit(5000);
+
+    const commands = {};
+    (events || []).forEach(e => {
+      const cmd = e.metadata?.command || e.event;
+      if (!commands[cmd]) commands[cmd] = { total: 0, users: new Set(), lastSeen: null };
+      commands[cmd].total++;
+      commands[cmd].users.add(e.user_id);
+      if (!commands[cmd].lastSeen || e.occurred_at > commands[cmd].lastSeen) {
+        commands[cmd].lastSeen = e.occurred_at;
+      }
+    });
+
+    const result = Object.entries(commands).map(([cmd, d]) => ({
+      command:  cmd,
+      total:    d.total,
+      uniqueUsers: d.users.size,
+      lastSeen: d.lastSeen,
+    })).sort((a,b) => b.total - a.total);
+
+    res.json({ commands: result });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── GET /admin/users ── user table ────────────────────────────────────────────
+app.get('/admin/users', requireAuth, requireSuperuser, async (req, res) => {
+  try {
+    const limit  = Math.min(parseInt(req.query.limit) || 100, 500);
+    const offset = parseInt(req.query.offset) || 0;
+
+    const [usersRes, agentsRes, eventsRes] = await Promise.all([
+      supabaseService.auth.admin.listUsers({ perPage: limit, page: Math.floor(offset/limit)+1 }),
+      supabaseService.from('agents').select('agent_id, user_id, created_at, last_active'),
+      supabaseService.from('activation_events').select('user_id, event, occurred_at'),
+    ]);
+
+    const users   = usersRes.data?.users || [];
+    const agents  = agentsRes.data || [];
+    const events  = eventsRes.data || [];
+
+    const agentsByUser  = {};
+    agents.forEach(a => {
+      if (!agentsByUser[a.user_id]) agentsByUser[a.user_id] = [];
+      agentsByUser[a.user_id].push(a);
+    });
+
+    const eventsByUser = {};
+    events.forEach(e => {
+      if (!eventsByUser[e.user_id]) eventsByUser[e.user_id] = {};
+      eventsByUser[e.user_id][e.event] = e.occurred_at;
+    });
+
+    const result = users.map(u => {
+      const ue      = eventsByUser[u.id] || {};
+      const ua      = agentsByUser[u.id] || [];
+      const hasCommit  = !!ue.first_commit;
+      const hasReplay  = !!ue.first_replay;
+      const hasFork    = !!ue.first_fork;
+      const hasDiff    = !!ue.first_diff;
+      const hasDay2    = !!ue.day2_return;
+      const score = [hasCommit,hasReplay,hasFork,hasDiff,hasDay2].filter(Boolean).length;
+      const status = score === 0 ? 'curious' : score <= 1 ? 'activated' : score <= 3 ? 'growing' : 'power_user';
+
+      return {
+        id:        u.id,
+        email:     u.email,
+        signupAt:  u.created_at,
+        lastSignIn: u.last_sign_in_at,
+        agents:    ua.length,
+        events:    ue,
+        status,
+        score,
+      };
+    });
+
+    res.json({ users: result, total: usersRes.data?.total || 0 });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── GET /admin/trends ── time-series usage ────────────────────────────────────
+app.get('/admin/trends', requireAuth, requireSuperuser, async (req, res) => {
+  try {
+    const days = parseInt(req.query.days) || 30;
+    const from = new Date(Date.now() - days * 86400000).toISOString();
+
+    const { data: commits } = await supabaseService
+      .from('commits')
+      .select('saved_at, id')
+      .gte('saved_at', from)
+      .order('saved_at', { ascending: true });
+
+    const { data: shares } = await supabaseService
+      .from('shared_chains')
+      .select('created_at')
+      .gte('created_at', from);
+
+    // Group by day
+    const byDay = {};
+    (commits || []).forEach(c => {
+      const day = c.saved_at?.slice(0,10);
+      if (day) byDay[day] = (byDay[day] || 0) + 1;
+    });
+
+    const sharesByDay = {};
+    (shares || []).forEach(s => {
+      const day = s.created_at?.slice(0,10);
+      if (day) sharesByDay[day] = (sharesByDay[day] || 0) + 1;
+    });
+
+    // Fill in missing days
+    const result = [];
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date(Date.now() - i * 86400000).toISOString().slice(0,10);
+      result.push({ date: d, commits: byDay[d] || 0, shares: sharesByDay[d] || 0 });
+    }
+
+    res.json({ trends: result });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 

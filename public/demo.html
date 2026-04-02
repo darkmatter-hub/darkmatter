@@ -265,49 +265,43 @@
 
   <div style="border-top:1px solid var(--border);padding-top:2.5rem;margin-top:1rem;">
     <div class="qs-title">Try it yourself in 2 minutes</div>
-    <div class="qs-sub">Three curl commands. No SDK. Any language.</div>
+    <div class="qs-sub">No signup required. Runs locally.</div>
 
     <div class="qs-block">
       <div class="qs-block-head">
-        <span class="qs-block-label">1, Commit context</span>
+        <span class="qs-block-label">1. Install and run the demo</span>
         <button class="copy-btn" onclick="copyCode('cmd1')">Copy</button>
       </div>
-      <div class="qs-code" id="cmd1"><span class="qs-comment"># Agent A commits state to Agent B</span>
-curl -X POST https://darkmatterhub.ai/api/commit \
-  -H <span class="qs-val">"Authorization: Bearer YOUR_AGENT_KEY"</span> \
-  -H <span class="qs-val">"Content-Type: application/json"</span> \
-  -d <span class="qs-val">'{
-    "toAgentId": "AGENT_B_ID",
-    "payload": {
-      "input":  "Analyze Q1 results",
-      "output": "Revenue up 34%, margin compressed"
-    },
-    "agent": { "role": "researcher", "model": "claude-opus-4-6" }
-  }'</span></div>
+      <div class="qs-code" id="cmd1"><span class="qs-comment"># See replay, fork, and diff locally — no API key needed</span>
+pip install darkmatter-sdk
+darkmatter demo</div>
     </div>
 
     <div class="qs-block">
       <div class="qs-block-head">
-        <span class="qs-block-label">2, Pull &amp; inherit context</span>
+        <span class="qs-block-label">2. Create your agent</span>
         <button class="copy-btn" onclick="copyCode('cmd2')">Copy</button>
       </div>
-      <div class="qs-code" id="cmd2"><span class="qs-comment"># Agent B pulls verified context, includes integrity proof</span>
-curl https://darkmatterhub.ai/api/pull \
-  -H <span class="qs-val">"Authorization: Bearer AGENT_B_KEY"</span></div>
+      <div class="qs-code" id="cmd2"><span class="qs-comment"># Provisions account + agent, writes .env — no browser required</span>
+darkmatter init</div>
     </div>
 
     <div class="qs-block">
       <div class="qs-block-head">
-        <span class="qs-block-label">3, Replay the full chain</span>
+        <span class="qs-block-label">3. Commit, replay, fork, diff</span>
         <button class="copy-btn" onclick="copyCode('cmd3')">Copy</button>
       </div>
-      <div class="qs-code" id="cmd3"><span class="qs-comment"># Replay every decision, root → tip, with integrity verified</span>
-curl https://darkmatterhub.ai/api/replay/CTX_ID \
-  -H <span class="qs-val">"Authorization: Bearer YOUR_KEY"</span></div>
+      <div class="qs-code" id="cmd3"><span class="qs-comment"># Wrap one model call and replay it</span>
+<span class="qs-val">import</span> darkmatter <span class="qs-val">as</span> dm
+
+ctx    = dm.commit(to_agent_id, payload={"output": result})
+replay = dm.replay(ctx["id"])
+fork   = dm.fork(ctx["id"])
+diff   = dm.diff(ctx["id"], fork["id"])</div>
     </div>
 
     <div style="font-size:0.78rem;color:var(--text3);margin-top:1rem;font-family:var(--mono);">
-      // parentId links commits into a chain. fork creates a branch. verify proves integrity. export downloads a portable audit artifact.
+      Works across Claude, GPT, local models, and your own code. No agents required.
     </div>
   </div>
 </div>
@@ -315,7 +309,7 @@ curl https://darkmatterhub.ai/api/replay/CTX_ID \
 <!-- BOTTOM CTA -->
 <div class="demo-cta">
   <div class="demo-cta-title">Ready to add lineage to your agents?</div>
-  <div class="demo-cta-sub">Free to start. No SDK required. Works with any model.</div>
+  <div class="demo-cta-sub">Free to start. Works with any model or framework.</div>
   <div class="cta-row">
     <a class="cta-primary" href="/signup">Get API Key →</a>
     <a class="cta-secondary" href="/blog">Read the announcement</a>

@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>DarkMatter Admin</title>
+<meta name="robots" content="noindex,nofollow"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#0f1117; --bg2:#161b22; --bg3:#1c2128;
+  --border:#30363d; --text:#e6edf3; --text2:#8b949e; --text3:#484f58;
+  --violet:#7C3AED; --blue:#2563EB; --cyan:#0891b2;
+  --green:#3fb950; --red:#f85149; --amber:#d29922;
+  --gradient:linear-gradient(90deg,#7C3AED,#2563EB,#0891b2);
+  --mono:'IBM Plex Mono',monospace; --sans:'Inter',sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.6;}
+a{color:var(--blue);text-decoration:none;}
+
+/* NAV */
+nav{display:flex;align-items:center;gap:1rem;padding:0.75rem 1.5rem;border-bottom:1px solid var(--border);background:var(--bg2);}
+.nav-logo{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:1rem;color:var(--text);letter-spacing:-0.02em;}
+.nav-badge{font-family:var(--mono);font-size:0.6rem;background:#7C3AED22;border:1px solid var(--violet);color:var(--violet);padding:0.15rem 0.5rem;border-radius:4px;letter-spacing:0.06em;}
+.nav-right{margin-left:auto;display:flex;gap:1rem;align-items:center;}
+.nav-link{font-size:0.78rem;color:var(--text2);cursor:pointer;background:none;border:none;}
+.nav-link:hover{color:var(--text);}
+#nav-email{font-size:0.72rem;color:var(--text3);font-family:var(--mono);}
+
+/* LAYOUT */
+.page{max-width:1400px;margin:0 auto;padding:1.5rem;}
+.section{margin-bottom:2rem;}
+.section-title{font-size:0.6rem;font-family:var(--mono);color:var(--text3);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:1rem;}
+
+/* KPI CARDS */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:0.75rem;}
+.kpi{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:1rem;}
+.kpi-label{font-size:0.65rem;color:var(--text3);font-family:var(--mono);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:0.35rem;}
+.kpi-value{font-size:1.6rem;font-weight:700;color:var(--text);font-family:'Space Grotesk',sans-serif;letter-spacing:-0.02em;}
+.kpi-sub{font-size:0.65rem;color:var(--text3);margin-top:0.2rem;}
+.kpi-up{color:var(--green);}
+.kpi-down{color:var(--red);}
+
+/* FUNNEL */
+.funnel{display:flex;flex-direction:column;gap:0.4rem;}
+.funnel-row{display:flex;align-items:center;gap:0.75rem;}
+.funnel-label{font-family:var(--mono);font-size:0.72rem;color:var(--text2);min-width:160px;}
+.funnel-bar-wrap{flex:1;background:var(--bg3);border-radius:4px;height:22px;overflow:hidden;}
+.funnel-bar{height:100%;background:var(--gradient);border-radius:4px;transition:width 0.6s ease;min-width:2px;}
+.funnel-count{font-family:var(--mono);font-size:0.72rem;color:var(--text);min-width:40px;text-align:right;}
+.funnel-conv{font-family:var(--mono);font-size:0.65rem;color:var(--text3);min-width:48px;text-align:right;}
+
+/* TREND CHART */
+.trend-chart{height:120px;position:relative;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:0.75rem;}
+.trend-bars{display:flex;align-items:flex-end;gap:2px;height:100%;}
+.trend-bar{flex:1;background:var(--violet);border-radius:2px 2px 0 0;opacity:0.8;transition:opacity 0.15s;cursor:default;min-height:1px;}
+.trend-bar:hover{opacity:1;}
+.trend-label{font-size:0.6rem;color:var(--text3);font-family:var(--mono);text-align:center;margin-top:0.35rem;}
+
+/* COMMAND TABLE */
+.data-table{width:100%;border-collapse:collapse;}
+.data-table th{font-size:0.6rem;font-family:var(--mono);color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;padding:0.5rem 0.75rem;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap;}
+.data-table td{padding:0.5rem 0.75rem;border-bottom:1px solid var(--border);font-size:0.78rem;color:var(--text2);}
+.data-table tr:hover td{background:var(--bg2);color:var(--text);}
+.data-table .mono{font-family:var(--mono);}
+.data-table .num{text-align:right;font-family:var(--mono);color:var(--text);}
+
+/* STATUS BADGES */
+.badge{font-family:var(--mono);font-size:0.6rem;padding:0.1rem 0.4rem;border-radius:3px;border:1px solid;}
+.badge.curious{color:var(--text3);border-color:var(--border);}
+.badge.activated{color:var(--amber);border-color:var(--amber);background:#d2992215;}
+.badge.growing{color:var(--cyan);border-color:var(--cyan);background:#0891b215;}
+.badge.power_user{color:var(--green);border-color:var(--green);background:#3fb95015;}
+
+/* GRID */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:1.25rem;}
+.card-title{font-size:0.7rem;font-family:var(--mono);color:var(--text3);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:0.75rem;}
+
+/* LOADING */
+.loading{color:var(--text3);font-family:var(--mono);font-size:0.78rem;padding:1rem 0;}
+#access-denied{display:none;padding:4rem 2rem;text-align:center;}
+
+@media(max-width:900px){.two-col{grid-template-columns:1fr;}.kpi-grid{grid-template-columns:repeat(2,1fr);}}
+</style>
+</head>
+<body>
+
+<nav>
+  <span class="nav-logo">Dark<span style="background:var(--gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Matter</span></span>
+  <span class="nav-badge">SUPERUSER</span>
+  <div class="nav-right">
+    <span id="nav-email"></span>
+    <button class="nav-link" onclick="reload()">↻ Refresh</button>
+    <button class="nav-link" onclick="logout()">Sign out</button>
+  </div>
+</nav>
+
+<div id="access-denied">
+  <div style="font-size:1rem;font-weight:600;color:var(--red);margin-bottom:0.5rem;">Access denied</div>
+  <div style="font-size:0.85rem;color:var(--text2);">This page requires superuser privileges.</div>
+  <a href="/dashboard" style="display:inline-block;margin-top:1rem;font-size:0.82rem;">← Back to dashboard</a>
+</div>
+
+<div class="page" id="admin-page" style="display:none;">
+
+  <!-- KPIs -->
+  <div class="section">
+    <div class="section-title">Overview</div>
+    <div class="kpi-grid" id="kpi-grid">
+      <div class="loading">Loading...</div>
+    </div>
+  </div>
+
+  <!-- Activation Funnel -->
+  <div class="section">
+    <div class="section-title">Activation Funnel (30 days)</div>
+    <div class="card">
+      <div class="funnel" id="funnel-wrap">
+        <div class="loading">Loading...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Trends -->
+  <div class="section">
+    <div class="section-title">Commits per day (30 days)</div>
+    <div class="card">
+      <div class="trend-bars" id="trend-bars"></div>
+      <div class="trend-label" id="trend-label"></div>
+    </div>
+  </div>
+
+  <!-- Two columns: Commands + Users -->
+  <div class="two-col">
+
+    <!-- Command analytics -->
+    <div class="section">
+      <div class="section-title">CLI / SDK Events</div>
+      <div class="card" style="padding:0;overflow:hidden;">
+        <table class="data-table" id="commands-table">
+          <thead><tr>
+            <th>Event</th>
+            <th class="num">Total</th>
+            <th class="num">Users</th>
+            <th>Last seen</th>
+          </tr></thead>
+          <tbody id="commands-body">
+            <tr><td colspan="4" class="loading" style="padding:1rem;">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Activation event counts -->
+    <div class="section">
+      <div class="section-title">Activation Events (30 days)</div>
+      <div class="card" style="padding:0;overflow:hidden;">
+        <table class="data-table" id="activation-table">
+          <thead><tr>
+            <th>Event</th>
+            <th class="num">Count</th>
+          </tr></thead>
+          <tbody id="activation-body">
+            <tr><td colspan="2" class="loading" style="padding:1rem;">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- User table -->
+  <div class="section">
+    <div class="section-title">Users</div>
+    <div class="card" style="padding:0;overflow-x:auto;">
+      <table class="data-table" id="users-table">
+        <thead><tr>
+          <th>Email</th>
+          <th>Signed up</th>
+          <th>Last active</th>
+          <th class="num">Agents</th>
+          <th>Status</th>
+          <th>Milestones</th>
+        </tr></thead>
+        <tbody id="users-body">
+          <tr><td colspan="6" class="loading" style="padding:1rem;">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── Auth ──────────────────────────────────────────────────────────────────────
+const raw = localStorage.getItem('dm_session');
+if (!raw) { window.location.href = '/login'; }
+let session;
+try { session = JSON.parse(raw); } catch(e) { window.location.href = '/login'; }
+const token = session?.access_token;
+if (!token) { window.location.href = '/login'; }
+
+document.getElementById('nav-email').textContent = session?.user?.email || '';
+
+const authH = () => ({
+  'Content-Type': 'application/json',
+  'Authorization': `Bearer ${token}`,
+});
+
+function logout() {
+  localStorage.removeItem('dm_session');
+  window.location.href = '/login';
+}
+
+function reload() { loadAll(); }
+
+function ago(ts) {
+  if (!ts) return '—';
+  const sec = Math.floor((Date.now() - new Date(ts)) / 1000);
+  if (sec < 60) return sec + 's ago';
+  if (sec < 3600) return Math.floor(sec/60) + 'm ago';
+  if (sec < 86400) return Math.floor(sec/3600) + 'h ago';
+  return Math.floor(sec/86400) + 'd ago';
+}
+
+function fmt(n) { return n?.toLocaleString() || '0'; }
+
+// ── Load all sections ─────────────────────────────────────────────────────────
+async function loadAll() {
+  const r = await fetch('/admin/stats', { headers: authH() });
+  if (r.status === 403) {
+    document.getElementById('access-denied').style.display = 'block';
+    return;
+  }
+  document.getElementById('admin-page').style.display = 'block';
+
+  const statsData    = await r.json();
+  const funnelData   = await fetch('/admin/funnel',   { headers: authH() }).then(r=>r.json());
+  const commandsData = await fetch('/admin/commands', { headers: authH() }).then(r=>r.json());
+  const trendsData   = await fetch('/admin/trends?days=30', { headers: authH() }).then(r=>r.json());
+  const usersData    = await fetch('/admin/users?limit=100', { headers: authH() }).then(r=>r.json());
+
+  renderKPIs(statsData);
+  renderFunnel(funnelData);
+  renderTrends(trendsData);
+  renderCommands(commandsData);
+  renderActivation(statsData);
+  renderUsers(usersData);
+}
+
+// ── KPIs ─────────────────────────────────────────────────────────────────────
+function renderKPIs(data) {
+  const k = data.kpis || {};
+  const kpis = [
+    { label: 'Total users',      value: fmt(k.totalUsers),    sub: '' },
+    { label: 'Total agents',     value: fmt(k.totalAgents),   sub: '' },
+    { label: 'Total commits',    value: fmt(k.totalCommits),  sub: '' },
+    { label: 'Commits today',    value: fmt(k.commitsToday),  sub: '' },
+    { label: 'Commits 7d',       value: fmt(k.commits7d),     sub: '' },
+    { label: 'Commits 30d',      value: fmt(k.commits30d),    sub: '' },
+    { label: 'Active users 30d', value: fmt(k.activeUsers30d),sub: '' },
+    { label: 'Shared chains',    value: fmt(k.sharedChains),  sub: '' },
+  ];
+  document.getElementById('kpi-grid').innerHTML = kpis.map(k =>
+    `<div class="kpi"><div class="kpi-label">${k.label}</div><div class="kpi-value">${k.value}</div>${k.sub ? `<div class="kpi-sub">${k.sub}</div>` : ''}</div>`
+  ).join('');
+}
+
+// ── Funnel ────────────────────────────────────────────────────────────────────
+function renderFunnel(data) {
+  const funnel = data.funnel || [];
+  if (!funnel.length) { document.getElementById('funnel-wrap').innerHTML = '<div class="loading">No data yet</div>'; return; }
+  const max = funnel[0].users || 1;
+  const labels = {
+    key_created:   'API key created',
+    first_commit:  'First real commit',
+    first_replay:  'First replay',
+    first_fork:    'First fork',
+    first_diff:    'First diff',
+    day2_return:   'Returned day 2',
+  };
+  document.getElementById('funnel-wrap').innerHTML = funnel.map(f => `
+    <div class="funnel-row">
+      <div class="funnel-label">${labels[f.event] || f.event}</div>
+      <div class="funnel-bar-wrap">
+        <div class="funnel-bar" style="width:${Math.max(1, Math.round(f.users/max*100))}%"></div>
+      </div>
+      <div class="funnel-count">${fmt(f.users)}</div>
+      <div class="funnel-conv">${f.conversionFromPrev}%</div>
+    </div>
+  `).join('');
+}
+
+// ── Trends ────────────────────────────────────────────────────────────────────
+function renderTrends(data) {
+  const trends = data.trends || [];
+  if (!trends.length) return;
+  const max = Math.max(...trends.map(t => t.commits), 1);
+  document.getElementById('trend-bars').innerHTML = trends.map(t =>
+    `<div class="trend-bar" style="height:${Math.max(2, Math.round(t.commits/max*100))}%" title="${t.date}: ${t.commits} commits"></div>`
+  ).join('');
+  // Show first and last date labels
+  const first = trends[0]?.date?.slice(5) || '';
+  const last  = trends[trends.length-1]?.date?.slice(5) || '';
+  document.getElementById('trend-label').textContent = `${first} → ${last}`;
+}
+
+// ── Commands ──────────────────────────────────────────────────────────────────
+function renderCommands(data) {
+  const cmds = data.commands || [];
+  if (!cmds.length) {
+    document.getElementById('commands-body').innerHTML = '<tr><td colspan="4" style="padding:1rem;color:var(--text3);">No CLI events tracked yet</td></tr>';
+    return;
+  }
+  document.getElementById('commands-body').innerHTML = cmds.slice(0,20).map(c => `
+    <tr>
+      <td class="mono" style="color:var(--cyan);">${c.command}</td>
+      <td class="num">${fmt(c.total)}</td>
+      <td class="num">${fmt(c.uniqueUsers)}</td>
+      <td style="color:var(--text3);">${ago(c.lastSeen)}</td>
+    </tr>
+  `).join('');
+}
+
+// ── Activation events ─────────────────────────────────────────────────────────
+function renderActivation(data) {
+  const events = data.activation || {};
+  const rows = Object.entries(events).sort((a,b) => b[1]-a[1]);
+  if (!rows.length) {
+    document.getElementById('activation-body').innerHTML = '<tr><td colspan="2" style="padding:1rem;color:var(--text3);">No activation events yet</td></tr>';
+    return;
+  }
+  document.getElementById('activation-body').innerHTML = rows.map(([evt, count]) => `
+    <tr>
+      <td class="mono" style="color:var(--text2);">${evt}</td>
+      <td class="num">${fmt(count)}</td>
+    </tr>
+  `).join('');
+}
+
+// ── Users ─────────────────────────────────────────────────────────────────────
+function renderUsers(data) {
+  const users = data.users || [];
+  if (!users.length) {
+    document.getElementById('users-body').innerHTML = '<tr><td colspan="6" style="padding:1rem;color:var(--text3);">No users yet</td></tr>';
+    return;
+  }
+
+  const milestoneIcons = {
+    key_created:  '🔑',
+    first_commit: '💾',
+    first_replay: '▶',
+    first_fork:   '⑂',
+    first_diff:   '±',
+    day2_return:  '↩',
+  };
+
+  document.getElementById('users-body').innerHTML = users.map(u => {
+    const milestones = Object.entries(u.events || {})
+      .map(([evt]) => `<span title="${evt}">${milestoneIcons[evt] || '·'}</span>`)
+      .join(' ');
+    return `<tr>
+      <td class="mono" style="color:var(--text);font-size:0.72rem;">${u.email || '—'}</td>
+      <td style="color:var(--text3);">${ago(u.signupAt)}</td>
+      <td style="color:var(--text3);">${ago(u.lastSignIn)}</td>
+      <td class="num">${u.agents}</td>
+      <td><span class="badge ${u.status}">${u.status}</span></td>
+      <td style="letter-spacing:0.1em;">${milestones || '—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+loadAll();
+</script>
+</body>
+</html>
