@@ -630,6 +630,7 @@
     <button onclick="openModal('feature-modal')" style="background:none;border:none;font-size:0.7rem;color:var(--text3);cursor:pointer;padding:0;font-family:var(--sans);transition:color 0.15s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text3)'">Request a feature</button>
     <button onclick="openModal('support-modal')" style="background:none;border:none;font-size:0.7rem;color:var(--text3);cursor:pointer;padding:0;font-family:var(--sans);transition:color 0.15s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text3)'">Report a bug</button>
     <a href="https://github.com/darkmatter-hub/darkmatter" target="_blank" style="font-size:0.7rem;color:var(--text3);text-decoration:none;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text3)'">GitHub</a>
+    <a href="/admin" id="admin-link" style="display:none;font-size:0.7rem;color:var(--violet);text-decoration:none;font-weight:500;" title="Superuser dashboard">Admin ↗</a>
     <a href="https://github.com/darkmatter-hub/darkmatter/blob/main/PRODUCTION.md" target="_blank" style="font-size:0.7rem;color:var(--text3);text-decoration:none;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text3)'">Self-host</a>
   </div>
 </footer>
@@ -1745,6 +1746,18 @@ console.log("Share URL:", share.shareUrl);`,
 
   loadAgents();
   loadCommits();
+
+  // Show admin link if user has admin access (detected server-side on click)
+  // We check by pinging /admin/stats — if 200, show the link
+  (async () => {
+    try {
+      const r = await fetch('/admin/stats', { headers: authHeaders() });
+      if (r.ok) {
+        const link = document.getElementById('admin-link');
+        if (link) link.style.display = 'inline';
+      }
+    } catch(e) {}
+  })();
 </script>
 </body>
 </html>

@@ -2554,15 +2554,16 @@ app.get('/api/og/:shareId', async (req, res) => {
 function requireSuperuser(req, res, next) {
   const superEmail = process.env.SUPERUSER_EMAIL;
   if (!superEmail) return res.status(403).json({ error: 'Not configured' });
-  const userEmail = req.user?.email || '';
-  if (userEmail.toLowerCase() !== superEmail.toLowerCase()) {
+  // req.user is set by requireAuth from the JWT
+  const userEmail = req.user?.email || req.user?.user_metadata?.email || '';
+  if (!userEmail || userEmail.toLowerCase() !== superEmail.toLowerCase()) {
     return res.status(403).json({ error: 'Forbidden' });
   }
   next();
 }
 
 // ── GET /admin ── serve admin dashboard page ──────────────────────────────────
-app.get('/admin', requireAuth, requireSuperuser, (req, res) => {
+app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/admin.html'));
 });
 
