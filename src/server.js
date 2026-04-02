@@ -31,6 +31,14 @@ const apiLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+const provisionLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 10,                   // 10 provisions per IP per hour
+  message: { error: 'Too many provision requests — try again in an hour' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 const feedbackLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
   max: 5,
@@ -166,7 +174,7 @@ async function requireAuth(req, res, next) {
 //
 // Or via darkmatter init CLI command.
 // ────────────────────────────────────────────────────
-app.post('/api/provision', authLimiter, async (req, res) => {
+app.post('/api/provision', provisionLimiter, async (req, res) => {
   try {
     const { email, agentName, source } = req.body;
 
