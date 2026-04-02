@@ -5,6 +5,19 @@
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>DarkMatter Chain</title>
 <meta name="description" content="Shared execution chain — replay, verify, and inspect AI agent execution history."/>
+
+<!-- OG / Social preview — updated dynamically by JS after chain loads -->
+<meta property="og:type"        content="website"/>
+<meta property="og:site_name"   content="DarkMatter"/>
+<meta property="og:title"       id="og-title"       content="DarkMatter chain"/>
+<meta property="og:description" id="og-desc"        content="Replayable AI workflow with step-by-step history, verification, and shared lineage."/>
+<meta property="og:url"         id="og-url"         content=""/>
+<meta property="og:image"       id="og-image"       content="https://darkmatterhub.ai/og-chain.png"/>
+<meta name="twitter:card"       content="summary_large_image"/>
+<meta name="twitter:site"       content="@darkmatterhub"/>
+<meta name="twitter:title"      id="tw-title"       content="DarkMatter chain"/>
+<meta name="twitter:description" id="tw-desc"       content="Replayable AI workflow with step-by-step history, verification, and shared lineage."/>
+<meta name="twitter:image"      id="tw-image"       content="https://darkmatterhub.ai/og-chain.png"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet"/>
 <style>
@@ -96,10 +109,28 @@ footer{border-top:1px solid var(--border);padding:1.5rem 2rem;display:flex;align
 .footer-link{font-size:0.72rem;color:var(--text3);text-decoration:none;}
 .footer-link:hover{color:var(--violet);}
 
+/* SHARE ROW */
+.share-row{display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;margin-bottom:1.25rem;}
+.share-label{font-family:var(--mono);font-size:0.6rem;color:var(--text3);letter-spacing:0.12em;text-transform:uppercase;margin-right:0.25rem;}
+.share-btn{display:inline-flex;align-items:center;gap:0.35rem;font-size:0.72rem;font-weight:500;padding:0.3rem 0.7rem;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text2);cursor:pointer;transition:all 0.15s;text-decoration:none;font-family:var(--sans);}
+.share-btn:hover{border-color:var(--text3);color:var(--text);text-decoration:none;}
+.share-btn.x-btn{border-color:#e5e7eb;}
+.share-btn.x-btn:hover{background:#000;color:#fff;border-color:#000;}
+.share-btn.li-btn:hover{background:#0a66c2;color:#fff;border-color:#0a66c2;}
+.share-btn.copied{color:var(--green)!important;border-color:var(--green)!important;background:#f0fdf4!important;}
+
+/* SUMMARY CARD */
+.chain-summary-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:1rem 1.25rem;margin-bottom:1.25rem;font-family:var(--mono);font-size:0.72rem;color:var(--text2);line-height:1.8;}
+.chain-summary-card .cs-row{display:flex;gap:0.75rem;}
+.chain-summary-card .cs-key{color:var(--text3);min-width:5rem;}
+.chain-summary-card .cs-val{color:var(--text);}
+
 @media(max-width:640px){
   nav{padding:0.75rem 1rem;}
   .chain-hero,.chain-toolbar,.steps-wrap{padding-left:1rem;padding-right:1rem;}
   .step-time{display:none;}
+  .share-row{gap:0.35rem;}
+  .share-btn{font-size:0.68rem;padding:0.25rem 0.55rem;}
 }
 </style>
 </head>
@@ -144,10 +175,25 @@ footer{border-top:1px solid var(--border);padding:1.5rem 2rem;display:flex;align
     <div class="chain-meta" id="chain-meta"></div>
   </div>
 
-  <div class="chain-toolbar">
-    <button class="btn btn-copy" id="copy-link-btn" onclick="copyLink()">Copy link</button>
-    <button class="btn btn-copy" id="copy-md-btn" onclick="showMarkdown()">Copy markdown</button>
-    <a class="btn btn-primary" href="/signup">Fork this chain →</a>
+  <!-- Summary card (populated by JS) -->
+  <div class="chain-hero" style="padding-top:0;">
+    <div class="chain-summary-card" id="summary-card" style="display:none;"></div>
+
+    <!-- Share row -->
+    <div class="share-row">
+      <span class="share-label">Share</span>
+      <a class="share-btn x-btn" id="share-x-btn" href="#" target="_blank" rel="noopener" onclick="shareX(event)">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L2.212 2.25h6.962l4.265 5.638L18.244 2.25zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77z"/></svg>
+        X
+      </a>
+      <a class="share-btn li-btn" id="share-li-btn" href="#" target="_blank" rel="noopener" onclick="shareLinkedIn(event)">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+        LinkedIn
+      </a>
+      <button class="share-btn" id="copy-link-btn" onclick="copyLink()">Copy link</button>
+      <button class="share-btn" id="copy-summary-btn" onclick="copySummary()">Copy summary</button>
+      <a class="btn btn-primary" href="/signup" style="margin-left:auto;font-size:0.75rem;padding:0.3rem 0.85rem;">Fork this chain →</a>
+    </div>
   </div>
 
   <div class="steps-wrap" id="steps-wrap"></div>
@@ -195,6 +241,87 @@ footer{border-top:1px solid var(--border);padding:1.5rem 2rem;display:flex;align
 const shareId = window.location.pathname.split('/').pop();
 let chainData = null;
 
+// ── Update OG meta tags dynamically ────────────────────────────
+function updateMeta(title, desc) {
+  document.title = title;
+  const setMeta = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.setAttribute('content', val);
+  };
+  setMeta('og-title', title);
+  setMeta('og-desc', desc);
+  setMeta('og-url', window.location.href);
+  setMeta('tw-title', title);
+  setMeta('tw-desc', desc);
+}
+
+// ── Build plain-text summary ────────────────────────────────────
+function buildSummary() {
+  if (!chainData) return '';
+  const lines = [
+    'DarkMatter chain summary',
+    `- ${chainData.totalSteps} step${chainData.totalSteps !== 1 ? 's' : ''}`,
+  ];
+  if (chainData.models?.length)  lines.push(`- models: ${chainData.models.join(', ')}`);
+  if (chainData.agents?.length)  lines.push(`- agents: ${chainData.agents.join(', ')}`);
+  lines.push(`- chain intact: ${chainData.chainIntact ? 'true ✓' : 'false ✗'}`);
+  if (chainData.forkPoints)      lines.push(`- forked at step ${chainData.forkPoints}`);
+  lines.push(`- replay link: ${window.location.href}`);
+  return lines.join('\n');
+}
+
+// ── X share text ───────────────────────────────────────────────
+function buildXText() {
+  if (!chainData) return window.location.href;
+  const steps = chainData.totalSteps;
+  const models = chainData.models?.join(' + ') || '';
+  const intact = chainData.chainIntact ? 'chain intact' : 'chain broken';
+  const fork   = chainData.forkPoints ? `, forked at step ${chainData.forkPoints}` : '';
+  return `Replayable AI workflow via @darkmatterhub\n${steps} steps • ${intact}${fork}${models ? ` • ${models}` : ''}\n\n${window.location.href}`;
+}
+
+// ── LinkedIn share text ────────────────────────────────────────
+function buildLinkedInText() {
+  const steps  = chainData?.totalSteps || '';
+  const models = chainData?.models?.join(', ') || '';
+  return `Sharing a DarkMatter execution chain: ${steps} steps, replayable AI workflow with tamper-evident history and full lineage.${models ? ` Models: ${models}.` : ''}`;
+}
+
+// ── Share actions ──────────────────────────────────────────────
+function shareX(e) {
+  e.preventDefault();
+  const text = encodeURIComponent(buildXText());
+  window.open(`https://twitter.com/intent/tweet?text=${text}`, '_blank', 'width=550,height=420');
+}
+
+function shareLinkedIn(e) {
+  e.preventDefault();
+  const url  = encodeURIComponent(window.location.href);
+  const text = encodeURIComponent(buildLinkedInText());
+  window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${url}`, '_blank', 'width=600,height=500');
+}
+
+function copyLink() {
+  navigator.clipboard.writeText(window.location.href).then(() => {
+    const btn = document.getElementById('copy-link-btn');
+    const orig = btn.textContent;
+    btn.textContent = '✓ Copied link';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+function copySummary() {
+  const text = buildSummary();
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copy-summary-btn');
+    const orig = btn.textContent;
+    btn.textContent = '✓ Copied';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
 async function loadChain() {
   try {
     const res = await fetch(`/api/chain/${shareId}`);
@@ -218,7 +345,13 @@ function renderChain(data) {
   // Title
   const label = data.label || `Chain ${data.ctxId.slice(-12)}`;
   document.getElementById('chain-title').textContent = label;
-  document.title = `DarkMatter — ${label}`;
+
+  // Update OG meta
+  const intactLabel = data.chainIntact ? 'chain intact' : 'chain broken';
+  const forkLabel   = data.forkPoints  ? `, forked at step ${data.forkPoints}` : '';
+  const ogTitle     = `DarkMatter chain • ${data.totalSteps} steps • ${intactLabel}${forkLabel}`;
+  const ogDesc      = `Replayable AI workflow with step-by-step history, verification, and shared lineage.${data.models?.length ? ` Models: ${data.models.join(', ')}.` : ''}`;
+  updateMeta(ogTitle, ogDesc);
 
   // Meta pills
   const meta = document.getElementById('chain-meta');
@@ -231,6 +364,20 @@ function renderChain(data) {
     ${data.forkPoints ? `<span class="meta-pill">${data.forkPoints} fork${data.forkPoints !== 1 ? 's' : ''}</span>` : ''}
     <span class="meta-pill">${new Date(data.createdAt).toLocaleDateString()}</span>
   `;
+
+  // Summary card
+  const card = document.getElementById('summary-card');
+  card.style.display = 'block';
+  const rows = [
+    ['steps',   `${data.totalSteps}`],
+    ['status',  data.chainIntact ? '✓ chain intact' : '✗ chain broken'],
+    data.models?.length ? ['models',  data.models.join(', ')] : null,
+    data.forkPoints     ? ['forked',  `at step ${data.forkPoints}`] : null,
+    ['created', new Date(data.createdAt).toLocaleDateString()],
+  ].filter(Boolean);
+  card.innerHTML = rows.map(([k,v]) =>
+    `<div class="cs-row"><span class="cs-key">${k}</span><span class="cs-val">${v}</span></div>`
+  ).join('');
 
   // Steps
   const wrap = document.getElementById('steps-wrap');
@@ -281,43 +428,20 @@ function escHtml(s) {
   return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
-function copyLink() {
-  navigator.clipboard.writeText(window.location.href).then(() => {
-    const btn = document.getElementById('copy-link-btn');
-    btn.textContent = 'Copied!';
-    btn.classList.add('copied');
-    setTimeout(() => { btn.textContent = 'Copy link'; btn.classList.remove('copied'); }, 2000);
-  });
-}
+// copyLink handled in share section above
 
+// Markdown modal functions
 function buildMarkdown() {
-  if (!chainData) return '';
-  return [
-    `**DarkMatter chain**`,
-    `- ${chainData.totalSteps} step${chainData.totalSteps !== 1 ? 's' : ''}`,
-    chainData.models.length ? `- Models: ${chainData.models.join(', ')}` : null,
-    chainData.agents.length ? `- Agents: ${chainData.agents.join(', ')}` : null,
-    `- Chain intact: ${chainData.chainIntact ? 'true ✓' : 'false ✗'}`,
-    chainData.forkPoints ? `- Fork points: ${chainData.forkPoints}` : null,
-    `- [View chain](${window.location.href})`,
-    `- Root: \`${chainData.replay[0]?.id}\``,
-    `- Tip:  \`${chainData.ctxId}\``,
-  ].filter(Boolean).join('\n');
+  return buildSummary().replace('DarkMatter chain summary', '**DarkMatter chain**')
+    .split('\n').map(l => l.startsWith('-') ? l : l).join('\n');
 }
-
 function showMarkdown() {
   document.getElementById('md-text').value = buildMarkdown();
   document.getElementById('md-modal').classList.add('open');
 }
-
 function copyMarkdown() {
-  const text = document.getElementById('md-text').value;
-  navigator.clipboard.writeText(text).then(() => {
+  navigator.clipboard.writeText(buildMarkdown()).then(() => {
     document.getElementById('md-modal').classList.remove('open');
-    const btn = document.getElementById('copy-md-btn');
-    btn.textContent = 'Copied!';
-    btn.classList.add('copied');
-    setTimeout(() => { btn.textContent = 'Copy markdown'; btn.classList.remove('copied'); }, 2000);
   });
 }
 
