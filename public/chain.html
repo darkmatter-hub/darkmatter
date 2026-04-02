@@ -12,12 +12,12 @@
 <meta property="og:title"       id="og-title"       content="DarkMatter chain"/>
 <meta property="og:description" id="og-desc"        content="Replayable AI workflow with step-by-step history, verification, and shared lineage."/>
 <meta property="og:url"         id="og-url"         content=""/>
-<meta property="og:image"       id="og-image"       content="https://darkmatterhub.ai/og-chain.png"/>
+<meta property="og:image"       id="og-image"       content="https://darkmatterhub.ai/og-chain.png" onerror="this.content='https://darkmatterhub.ai/og-default.png'"/>
 <meta name="twitter:card"       content="summary_large_image"/>
 <meta name="twitter:site"       content="@darkmatterhub"/>
 <meta name="twitter:title"      id="tw-title"       content="DarkMatter chain"/>
 <meta name="twitter:description" id="tw-desc"       content="Replayable AI workflow with step-by-step history, verification, and shared lineage."/>
-<meta name="twitter:image"      id="tw-image"       content="https://darkmatterhub.ai/og-chain.png"/>
+<meta name="twitter:image"      id="tw-image"       content="https://darkmatterhub.ai/og-chain.png" onerror="this.content='https://darkmatterhub.ai/og-default.png'"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet"/>
 <style>
@@ -328,14 +328,21 @@ function updateMeta(title, desc) {
     const el = document.getElementById(id);
     if (el) el.setAttribute('content', val);
   };
+  // Dynamic OG with fallback to static
   const ogImage = `https://darkmatterhub.ai/api/og/${shareId}`;
+  const ogFallback = 'https://darkmatterhub.ai/og-chain.png';
   setMeta('og-title', title);
   setMeta('og-desc', desc);
   setMeta('og-url', window.location.href);
-  setMeta('og-image', ogImage);
+  // Test if dynamic OG loads, fallback to static on error
+  const testImg = new Image();
+  testImg.onload = () => { setMeta('og-image', ogImage); setMeta('tw-image', ogImage); };
+  testImg.onerror = () => { setMeta('og-image', ogFallback); setMeta('tw-image', ogFallback); };
+  testImg.src = ogImage;
+  setMeta('og-image', ogImage); // set immediately, will be corrected if fails
   setMeta('tw-title', title);
   setMeta('tw-desc', desc);
-  setMeta('tw-image', ogImage);
+  // tw-image set by preload test above
 }
 
 // ── Build plain-text summary ────────────────────────────────────
@@ -509,6 +516,15 @@ function renderChain(data) {
   }
 
   // Inject replay + template CTAs into summary area
+  // "What changed" one-liner (if fork exists)
+  if (data.forkPoints && data.models?.length > 1) {
+    const lastModel = data.models[data.models.length - 1];
+    const whatChanged = document.createElement('div');
+    whatChanged.style.cssText = 'margin-top:0.5rem;font-size:0.78rem;color:var(--text2);padding:0.5rem 0.75rem;background:var(--bg3);border-radius:6px;border-left:3px solid var(--amber);';
+    whatChanged.innerHTML = `<span style="color:var(--text3);font-family:var(--mono);font-size:0.65rem;">what changed</span><br>Final output diverged after step ${data.forkPoints} using <strong>${lastModel}</strong>`;
+    document.getElementById('summary-card').appendChild(whatChanged);
+  }
+
   const summaryActions = document.createElement('div');
   summaryActions.style.cssText = 'display:flex;gap:0.5rem;margin-top:0.75rem;flex-wrap:wrap;';
   summaryActions.innerHTML = `
@@ -674,8 +690,12 @@ function copyTemplate() {
 // Keyboard shortcuts
 document.addEventListener('keydown', (e) => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-  if (e.key === 'c') copySummary();
-  if (e.key === 'l') copyLink();
+  if (e.key === 'c') { copySummary(); }
+  if (e.key === 'l') { copyLink(); }
+  if (e.key === 'r') { scrollToReplay(); }
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
+  }
 });
 
 function copyCtxId(e, id) {
