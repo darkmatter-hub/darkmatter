@@ -677,57 +677,82 @@
 
   // ── Copy per tab ──────────────────────────────────────
   const tabCode = {
-    curl: `# 1. Commit context (Agent X → Agent Y)
-curl -X POST \
-  https://darkmatterhub.ai/api/commit \
-  -H "Authorization: Bearer YOUR_KEY" \
+    curl: `# Install and set up (one time)
+pip install darkmatter-sdk
+darkmatter init    # creates agent + writes .env
+
+# Commit a step
+curl -X POST https://darkmatterhub.ai/api/commit \
+  -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"toAgentId":"dm_AGENT_Y_ID","context":{"task":"done","result":"..."}}'
+  -d '{"toAgentId":"YOUR_AGENT_ID","payload":{"output":"result here"},"eventType":"commit"}'
 
-# 2. Pull verified context (Agent Y pulls)
-curl \
-  https://darkmatterhub.ai/api/pull \
-  -H "Authorization: Bearer AGENT_Y_KEY"
+# Replay the chain
+curl https://darkmatterhub.ai/api/replay/CTX_ID \
+  -H "Authorization: Bearer YOUR_API_KEY"
 
-# 3. Check your agent identity
-curl \
-  https://darkmatterhub.ai/api/me \
-  -H "Authorization: Bearer YOUR_KEY"`,
+# Fork from a checkpoint
+curl -X POST https://darkmatterhub.ai/api/fork/CTX_ID \
+  -H "Authorization: Bearer YOUR_API_KEY"
 
-    python: `import requests
+# Diff two chains
+curl https://darkmatterhub.ai/api/diff/CTX_ID_A/CTX_ID_B \
+  -H "Authorization: Bearer YOUR_API_KEY"`,
 
-URL = "https://darkmatterhub.ai"
-X = {"Authorization": "Bearer AGENT_X_KEY"}
-Y = {"Authorization": "Bearer AGENT_Y_KEY"}
+    python: `# Install (one time)
+# pip install darkmatter-sdk
+# darkmatter init
 
-# Agent X commits context for Agent Y
-requests.post(f"{URL}/api/commit", headers=X, json={
-    "toAgentId": "dm_AGENT_Y_ID",
-    "context":   {"task": "done", "result": "..."},
-})
+import darkmatter as dm   # auto-loads .env
 
-# Agent Y pulls and inherits context
-data    = requests.get(f"{URL}/api/pull", headers=Y).json()
-context = data["commits"][0]["context"]`,
+# Commit a step
+ctx = dm.commit(
+    to_agent_id="YOUR_AGENT_ID",
+    payload={"output": "result here"},
+    event_type="commit",
+)
+print(f"Context: {ctx['id']}")
 
-    node: `const URL  = "https://darkmatterhub.ai";
-const hdrs = (key) => ({
-  "Authorization": \`Bearer \${key}\`,
-  "Content-Type": "application/json",
+# Replay the chain
+replay = dm.replay(ctx["id"])
+print(f"Steps: {replay.get('totalSteps')}, intact: {replay.get('chainIntact')}")
+
+# Fork from a checkpoint
+fork = dm.fork(ctx["id"], to_agent_id="YOUR_AGENT_ID")
+
+# Diff two chains
+diff = dm.diff(ctx["id"], fork["id"])
+print(f"Changed steps: {diff.get('changedSteps')}")
+
+# Share a chain link
+share = dm.share(ctx["id"], label="my first chain")
+print(f"Share URL: {share['shareUrl']}")`,
+
+    node: `// npm install darkmatter-js
+const dm = require('darkmatter-js');
+
+// Commit a step
+const ctx = await dm.commit({
+  toAgentId: "YOUR_AGENT_ID",
+  payload:   { output: "result here" },
+  eventType: "commit",
 });
+console.log("Context:", ctx.id);
 
-// Agent X commits context for Agent Y
-await fetch(\`\${URL}/api/commit\`, {
-  method: "POST", headers: hdrs("AGENT_X_KEY"),
-  body: JSON.stringify({
-    toAgentId: "dm_AGENT_Y_ID",
-    context:   { task: "done", result: "..." },
-  }),
-});
+// Replay the chain
+const replay = await dm.replay(ctx.id);
+console.log("Steps:", replay.totalSteps, "Intact:", replay.chainIntact);
 
-// Agent Y pulls and inherits context
-const res     = await fetch(\`\${URL}/api/pull\`, { headers: hdrs("AGENT_Y_KEY") });
-const context = (await res.json()).commits[0].context;`,
+// Fork from a checkpoint
+const fork = await dm.fork(ctx.id, { toAgentId: "YOUR_AGENT_ID" });
+
+// Diff two chains
+const diff = await dm.diff(ctx.id, fork.id);
+console.log("Changed steps:", diff.changedSteps);
+
+// Share a chain link
+const share = await dm.share(ctx.id, { label: "my first chain" });
+console.log("Share URL:", share.shareUrl);`,
   };
 
   function copyTab(name) {
@@ -843,6 +868,17 @@ const context = (await res.json()).commits[0].context;`,
           <div class="agents-empty-sub">Create your first agent above to get an API key</div>
         </div>`;
         return;
+      }
+
+      // Auto-populate dmApiKey from first visible agent key (for chain/share)
+      if (!dmApiKey) {
+        const stored = localStorage.getItem('dm_api_key');
+        if (stored) {
+          dmApiKey = stored;
+        } else if (data[0]?.apiKey && !data[0].apiKey.includes('···')) {
+          dmApiKey = data[0].apiKey;
+          localStorage.setItem('dm_api_key', data[0].apiKey);
+        }
       }
 
       grid.innerHTML = data.map(a => `
