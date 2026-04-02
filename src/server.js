@@ -436,7 +436,7 @@ app.post('/api/agents/register', apiLimiter, requireApiKey, async (req, res) => 
       .eq('user_id', userId)
       .gte('created_at', dayStart.toISOString());
 
-    const DAILY_CAP = 10;
+    const DAILY_CAP = 200;
     if (count >= DAILY_CAP) {
       return res.status(429).json({
         error: `Daily agent registration limit reached (${DAILY_CAP} per day). ` +
