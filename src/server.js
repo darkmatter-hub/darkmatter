@@ -442,11 +442,13 @@ app.post('/api/agents/register', apiLimiter, requireApiKey, async (req, res) => 
       .eq('user_id', userId)
       .gte('created_at', dayStart.toISOString());
 
-    const DAILY_CAP = 200;
+    // Capture agents (from browser extension) get a higher cap
+    // since each new conversation auto-creates one
+    const isCaptureAgent = (role === 'capture');
+    const DAILY_CAP = isCaptureAgent ? 2000 : 200;
     if (count >= DAILY_CAP) {
       return res.status(429).json({
-        error: `Daily agent registration limit reached (${DAILY_CAP} per day). ` +
-               'This cap prevents runaway agent spawning. Resets at midnight UTC.',
+        error: `Daily agent registration limit reached (${DAILY_CAP} per day). Resets at midnight UTC.`,
         limit:     DAILY_CAP,
         resets_at: new Date(dayStart.getTime() + 86400000).toISOString(),
       });
@@ -2545,6 +2547,310 @@ app.get('/api/og/:shareId', async (req, res) => {
   }
 });
 
+
+
+// ═══════════════════════════════════════════════════
+// RICH CONTENT COMMIT — POST /api/commit/rich
+// Handles large text, HTML, images, code blocks
+// Stores content separately from chain metadata
+// ═══════════════════════════════════════════════════
+app.post('/api/commit/rich', apiLimiter, requireApiKey, async (req, res) => {
+  try {
+    const {
+      toAgentId, parentId, traceId, branchKey, eventType,
+      agent, tags, metadata,
+      // Rich content fields
+      content,        // { format, text, html, attachments[] }
+      thread,         // { platform, platformUrl, title, turnCount }
+    } = req.body;
+
+    if (!toAgentId) return res.status(400).json({ error: 'toAgentId required' });
+    if (!content?.text && !content?.html) {
+      return res.status(400).json({ error: 'content.text or content.html required' });
+    }
+
+    // ── Build compact payload summary for chain metadata ──────────────────────
+    const textContent = content.text || '';
+    const summary = textContent.slice(0, 500) + (textContent.length > 500 ? '...' : '');
+    const charCount  = textContent.length;
+    const hasImages  = (content.attachments || []).some(a => a.type === 'image');
+    const hasCode    = (content.attachments || []).some(a => a.type === 'code');
+
+    const payload = {
+      summary,
+      charCount,
+      hasImages,
+      hasCode,
+      format:   content.format || 'text',
+      platform: thread?.platform || null,
+      model:    agent?.model || null,
+    };
+
+    // ── Standard commit to chain ──────────────────────────────────────────────
+    const agentRecord = req.agent;
+    const userId      = agentRecord.user_id;
+    const ctxId       = 'ctx_' + Date.now() + '_' + crypto.randomBytes(4).toString('hex');
+
+    // Compute hashes
+    const payloadHash = 'sha256:' + crypto.createHash('sha256')
+      .update(JSON.stringify(payload)).digest('hex');
+
+    let parentHash = null;
+    if (parentId) {
+      const { data: parent } = await supabaseService
+        .from('commits').select('integrity_hash').eq('id', parentId).single();
+      parentHash = parent?.integrity_hash || null;
+    }
+
+    const integrityHash = 'sha256:' + crypto.createHash('sha256')
+      .update(payloadHash + (parentHash || '') + ctxId).digest('hex');
+
+    // Insert base commit
+    const { data: commitData, error: commitError } = await supabaseService
+      .from('commits').insert({
+        id:             ctxId,
+        agent_id:       agentRecord.agent_id,
+        payload:        payload,
+        payload_hash:   payloadHash,
+        parent_id:      parentId || null,
+        parent_hash:    parentHash,
+        integrity_hash: integrityHash,
+        verification_status: 'valid',
+        trace_id:       traceId || null,
+        branch_key:     branchKey || 'main',
+        event_type:     eventType || 'commit',
+        agent_info:     agent || null,
+        tags:           tags || null,
+        to_agent_id:    toAgentId,
+      }).select().single();
+
+    if (commitError) throw commitError;
+
+    // ── Store rich content separately ─────────────────────────────────────────
+    await supabaseService.from('commit_content').insert({
+      id:           ctxId,
+      format:       content.format || 'text',
+      text_content: textContent,
+      html_content: content.html || null,
+      token_count:  Math.ceil(charCount / 4), // rough estimate
+      char_count:   charCount,
+      has_images:   hasImages,
+      has_code:     hasCode,
+      has_tables:   (content.attachments || []).some(a => a.type === 'table'),
+    });
+
+    // ── Store attachments (inline only for now — S3 later) ───────────────────
+    const attachments = content.attachments || [];
+    if (attachments.length > 0) {
+      const attRows = attachments.map((att, i) => ({
+        id:             'att_' + ctxId + '_' + i,
+        commit_id:      ctxId,
+        type:           att.type,
+        storage_provider: 'inline',
+        mime_type:      att.mimeType || null,
+        filename:       att.filename || null,
+        language:       att.language || null,
+        inline_content: att.content?.slice(0, 50000) || null, // 50KB max inline
+        size_bytes:     att.content?.length || 0,
+        position:       i,
+        metadata:       att.metadata || {},
+      }));
+
+      await supabaseService.from('commit_attachments').insert(attRows);
+    }
+
+    // ── Update or create conversation thread ──────────────────────────────────
+    if (thread?.platform) {
+      const threadId = traceId || `conv_${toAgentId}_${Date.now()}`;
+      const { data: existing } = await supabaseService
+        .from('conversation_threads').select('id, turn_count, root_ctx_id')
+        .eq('id', threadId).single();
+
+      if (existing) {
+        await supabaseService.from('conversation_threads').update({
+          tip_ctx_id:  ctxId,
+          turn_count:  (existing.turn_count || 0) + 1,
+          updated_at:  new Date().toISOString(),
+        }).eq('id', threadId);
+      } else {
+        await supabaseService.from('conversation_threads').insert({
+          id:           threadId,
+          platform:     thread.platform,
+          platform_url: thread.platformUrl || null,
+          title:        thread.title || `${thread.platform} conversation`,
+          user_id:      userId,
+          root_ctx_id:  ctxId,
+          tip_ctx_id:   ctxId,
+          turn_count:   1,
+          models_used:  agent?.model ? [agent.model] : [],
+        }).catch(() => {}); // non-blocking
+      }
+    }
+
+    res.status(201).json({
+      id:             ctxId,
+      integrityHash,
+      verified:       true,
+      charCount,
+      hasImages,
+      hasCode,
+      attachmentCount: attachments.length,
+    });
+
+  } catch (err) {
+    console.error('rich commit error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── GET /api/content/:ctxId ── retrieve full rich content ───────────────────
+app.get('/api/content/:ctxId', apiLimiter, requireApiKey, async (req, res) => {
+  try {
+    const { ctxId } = req.params;
+    const format    = req.query.format || 'json'; // json | html | text | markdown
+
+    const [contentRes, attachmentsRes] = await Promise.all([
+      supabaseService.from('commit_content').select('*').eq('id', ctxId).single(),
+      supabaseService.from('commit_attachments').select('*').eq('commit_id', ctxId)
+        .order('position'),
+    ]);
+
+    if (!contentRes.data) return res.status(404).json({ error: 'Content not found' });
+
+    const content     = contentRes.data;
+    const attachments = attachmentsRes.data || [];
+
+    // Return as HTML standalone document
+    if (format === 'html') {
+      const html = buildStandaloneHtml(ctxId, content, attachments);
+      res.setHeader('Content-Type', 'text/html');
+      res.setHeader('Content-Disposition', `attachment; filename="${ctxId}.html"`);
+      return res.send(html);
+    }
+
+    // Return as plain text
+    if (format === 'text') {
+      res.setHeader('Content-Type', 'text/plain');
+      return res.send(content.text_content || '');
+    }
+
+    res.json({ content, attachments });
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── GET /api/threads ── list conversation threads ─────────────────────────────
+app.get('/api/threads', apiLimiter, requireApiKey, async (req, res) => {
+  try {
+    const userId = req.agent.user_id;
+    const limit  = Math.min(parseInt(req.query.limit) || 20, 100);
+    const platform = req.query.platform;
+
+    let query = supabaseService
+      .from('conversation_threads')
+      .select('*')
+      .eq('user_id', userId)
+      .order('updated_at', { ascending: false })
+      .limit(limit);
+
+    if (platform) query = query.eq('platform', platform);
+
+    const { data, error } = await query;
+    if (error) throw error;
+
+    res.json({ threads: data || [] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── Build standalone HTML for a commit ───────────────────────────────────────
+function buildStandaloneHtml(ctxId, content, attachments) {
+  const codeBlocks = attachments.filter(a => a.type === 'code');
+  const images     = attachments.filter(a => a.type === 'image');
+
+  // Convert markdown-ish text to HTML if no html_content stored
+  let bodyHtml = content.html_content || '';
+  if (!bodyHtml && content.text_content) {
+    bodyHtml = content.text_content
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/\n\n/g, '</p><p>')
+      .replace(/\n/g, '<br>');
+    bodyHtml = `<p>${bodyHtml}</p>`;
+  }
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>DarkMatter Context ${ctxId}</title>
+<style>
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:800px;margin:2rem auto;padding:0 1rem;color:#1a1a1a;line-height:1.7;}
+  h1,h2,h3{line-height:1.3;}
+  pre{background:#f4f4f4;border:1px solid #e0e0e0;border-radius:6px;padding:1rem;overflow-x:auto;font-size:0.85rem;}
+  code{font-family:'IBM Plex Mono','Menlo',monospace;}
+  img{max-width:100%;border-radius:6px;}
+  .meta{font-size:0.75rem;color:#666;font-family:monospace;margin-bottom:2rem;padding:0.75rem;background:#f9f9f9;border-radius:6px;}
+  .dm-badge{font-size:0.7rem;background:#7C3AED;color:#fff;padding:0.2rem 0.5rem;border-radius:3px;text-decoration:none;}
+  blockquote{border-left:3px solid #7C3AED;margin:0;padding:0.5rem 1rem;background:#f9f7ff;}
+</style>
+</head>
+<body>
+<div class="meta">
+  <strong>DarkMatter Context</strong> &nbsp;·&nbsp; ${ctxId}<br>
+  Format: ${content.format} &nbsp;·&nbsp; ${(content.char_count||0).toLocaleString()} chars
+  &nbsp;·&nbsp; <a class="dm-badge" href="https://darkmatterhub.ai">darkmatterhub.ai</a>
+</div>
+${bodyHtml}
+${codeBlocks.map(cb => `<pre><code class="language-${cb.language||''}">${(cb.inline_content||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</code></pre>`).join('')}
+${images.map(img => img.public_url ? `<img src="${img.public_url}" alt="${img.filename||''}"/>` : '').join('')}
+</body>
+</html>`;
+}
+
+
+// ═══════════════════════════════════════════════════
+// EXTENSION AUTH — GET /ext/callback
+// After login with ?ext=1, redirect here to send
+// session to the Chrome extension via postMessage
+// ═══════════════════════════════════════════════════
+app.get('/ext/callback', (req, res) => {
+  res.send(`<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><title>DarkMatter — Connecting extension...</title>
+<style>body{font-family:system-ui,sans-serif;background:#0f1117;color:#e6edf3;display:flex;align-items:center;justify-content:center;min-height:100vh;flex-direction:column;gap:1rem;text-align:center;}</style>
+</head>
+<body>
+<div style="font-size:1.2rem;font-weight:700;">Connecting to DarkMatter Capture...</div>
+<div style="font-size:0.85rem;color:#8b949e;">You can close this tab after connecting.</div>
+<script>
+// Read session from localStorage (set by login page)
+const raw = localStorage.getItem('dm_session');
+if (raw) {
+  try {
+    const session = JSON.parse(raw);
+    // Send to extension via chrome.runtime.sendMessage
+    // The extension ID is passed as a URL param or hardcoded
+    const extId = new URLSearchParams(location.search).get('ext_id') || '';
+    if (extId && window.chrome?.runtime) {
+      chrome.runtime.sendMessage(extId, { type: 'DM_SESSION', session }, r => {
+        if (r?.ok) {
+          document.querySelector('div').textContent = '✓ Connected! You can close this tab.';
+        }
+      });
+    } else {
+      // Fallback: just show success, user configures manually
+      document.querySelector('div').textContent = '✓ Signed in! Open the DarkMatter extension to continue.';
+    }
+  } catch(e) {}
+}
+</script>
+</body>
+</html>`);
+});
 
 // ═══════════════════════════════════════════════════
 // SUPERUSER ANALYTICS DASHBOARD
