@@ -501,8 +501,8 @@ app.post('/dashboard/agents', requireAuth, async (req, res) => {
   try {
     const agentName = sanitizeText(req.body.agentName, 100);
     if (!agentName) return res.status(400).json({ error: 'agentName required' });
-    if (!/^[a-zA-Z0-9 _\-\.]+$/.test(agentName)) {
-      return res.status(400).json({ error: 'Agent name can only contain letters, numbers, spaces, hyphens, underscores, and periods' });
+    if (!/^[a-zA-Z0-9 _\-\.·:]+$/.test(agentName)) {
+      return res.status(400).json({ error: 'Agent name contains invalid characters' });
     }
 
     const agentId = generateAgentId();
