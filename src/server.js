@@ -47,7 +47,34 @@ const feedbackLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-app.use(express.json({ limit: '100kb' })); // prevent oversized payloads
+// ── CORS ─────────────────────────────────────────────
+// Allow browser extension and API clients to call from any origin.
+// Auth is enforced via Bearer token — CORS is safe to open.
+app.use((req, res, next) => {
+  const allowed = [
+    'https://darkmatterhub.ai',
+    'https://claude.ai',
+    'https://chatgpt.com',
+    'https://chat.openai.com',
+    'https://grok.com',
+    'https://gemini.google.com',
+    'https://www.perplexity.ai',
+  ];
+  const origin = req.headers.origin;
+  if (origin && allowed.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  } else if (!origin) {
+    // Non-browser clients (SDK, CLI, Postman) — allow
+    res.setHeader('Access-Control-Allow-Origin', '*');
+  }
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,User-Agent');
+  res.setHeader('Access-Control-Max-Age', '86400');
+  if (req.method === 'OPTIONS') return res.sendStatus(204);
+  next();
+});
+
+app.use(express.json({ limit: '10mb' })); // increased for rich content from extension
 app.use(express.static(path.join(__dirname, '../public')));
 
 // ── Input sanitization helpers ───────────────────────
