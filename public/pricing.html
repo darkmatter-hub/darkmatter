@@ -1,329 +1,350 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Pricing — DarkMatter</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <style>
-  :root{--bg:#ffffff;--bg2:#f8f9fa;--bg3:#f1f3f5;--border:#e5e7eb;--border2:#d1d5db;--text:#111827;--text2:#4b5563;--text3:#9ca3af;--violet:#7C3AED;--blue:#2563EB;--cyan:#22D3EE;--green:#10B981;--amber:#F59E0B;--gradient:linear-gradient(90deg,#7C3AED 0%,#2563EB 55%,#22D3EE 100%);--display:'Space Grotesk',sans-serif;--sans:'Inter',sans-serif;--mono:'IBM Plex Mono',monospace;}
-  footer{border-top:1px solid var(--border);padding:2rem 2.5rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;background:var(--bg);}
-  .footer-logo{display:flex;align-items:center;gap:0.6rem;text-decoration:none;}
-  .footer-logo-mark{width:22px;height:22px;}
-  .footer-logo-name{font-family:var(--display);font-weight:700;font-size:0.88rem;color:var(--text);}
-  .footer-links{display:flex;gap:1.5rem;flex-wrap:wrap;align-items:center;}
-  .footer-link{font-size:0.75rem;color:var(--text3);text-decoration:none;transition:color 0.15s;}
-  .footer-link:hover{color:var(--violet);}
-  @media(max-width:640px){.footer-links{gap:1rem;}footer{padding:1.5rem 1rem;}}
-  
-  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-  body{background:#ffffff;color:#111827;font-family:var(--sans);-webkit-font-smoothing:antialiased;}
-  .page{max-width:1020px;margin:0 auto;padding:4rem 2rem 5rem;}
-  h1{font-family:var(--display);font-size:clamp(1.8rem,4vw,2.4rem);font-weight:700;letter-spacing:-0.03em;text-align:center;margin-bottom:0.5rem;}
-  .sub{font-size:0.9rem;color:var(--text2);text-align:center;margin-bottom:0.5rem;}
-  .sub2{font-family:var(--mono);font-size:0.72rem;color:var(--text3);text-align:center;margin-bottom:3rem;letter-spacing:0.02em;}
-  .plans{display:grid;grid-template-columns:repeat(3,1fr);gap:1.25rem;margin-bottom:2.5rem;}
-  @media(max-width:720px){.plans{grid-template-columns:1fr;}}
-  .plan{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:1.75rem;display:flex;flex-direction:column;}
-  .plan.featured{border-color:var(--violet);background:linear-gradient(135deg,rgba(124,58,237,0.07),rgba(37,99,235,0.03));}
-  .plan-badge{font-family:var(--mono);font-size:0.58rem;color:var(--violet);letter-spacing:0.12em;text-transform:uppercase;background:rgba(124,58,237,0.12);border:1px solid rgba(124,58,237,0.25);border-radius:100px;padding:0.2rem 0.6rem;display:inline-block;margin-bottom:1rem;width:fit-content;}
-  .plan-name{font-family:var(--display);font-size:1.1rem;font-weight:700;margin-bottom:0.3rem;}
-  .plan-price{font-family:var(--display);font-size:2.4rem;font-weight:800;letter-spacing:-0.04em;margin-bottom:0.2rem;line-height:1;}
-  .plan-price span{font-size:0.9rem;font-weight:500;color:var(--text2);}
-  .plan-desc{font-size:0.78rem;color:var(--text2);margin-bottom:1.5rem;line-height:1.6;min-height:2.4rem;}
-  .plan-cta{display:block;text-align:center;padding:0.65rem 1rem;border-radius:7px;font-size:0.85rem;font-weight:600;text-decoration:none;margin-bottom:1.5rem;transition:all 0.15s;}
-  .plan-cta.primary{background:var(--gradient);color:#fff;}
-  .plan-cta.secondary{border:1px solid var(--border);color:var(--text2);}
-  .plan-cta.secondary:hover{border-color:var(--text2);color:var(--text);}
-  hr.plan-div{border:none;border-top:1px solid var(--border);margin-bottom:1.25rem;}
-  .plan-features{display:flex;flex-direction:column;gap:0.55rem;flex:1;}
-  .pf{font-size:0.78rem;color:var(--text2);display:flex;gap:0.5rem;align-items:flex-start;line-height:1.5;}
-  .pf .ck{color:var(--green);flex-shrink:0;margin-top:0.05rem;}
-  .pf.highlight{color:var(--text);font-weight:500;}
-  .pf-section{font-family:var(--mono);font-size:0.58rem;color:var(--text3);letter-spacing:0.1em;text-transform:uppercase;margin-top:0.75rem;margin-bottom:0.1rem;}
-  /* Compare table */
-  .compare{margin-bottom:3.5rem;overflow-x:auto;}
-  .compare-title{font-family:var(--display);font-size:1.05rem;font-weight:700;text-align:center;margin-bottom:1.25rem;}
-  table{width:100%;border-collapse:collapse;font-size:0.78rem;}
-  th{font-family:var(--mono);font-size:0.58rem;color:var(--text3);letter-spacing:0.1em;text-transform:uppercase;padding:0.65rem 1rem;text-align:left;border-bottom:1px solid var(--border);}
-  th:not(:first-child){text-align:center;}
-  td{padding:0.65rem 1rem;border-bottom:1px solid var(--bg3);color:var(--text2);}
-  td:not(:first-child){text-align:center;}
-  td:first-child{color:var(--text);font-weight:500;}
-  tr:hover td{background:var(--bg2);}
-  .tick{color:var(--green);}
-  .cross{color:var(--text3);}
-  .tgroup td{background:var(--bg3);font-family:var(--mono);font-size:0.6rem;color:var(--text3);letter-spacing:0.08em;text-transform:uppercase;padding:0.4rem 1rem;}
-  /* FAQ */
-  .faq{max-width:620px;margin:0 auto;}
-  .faq-title{font-family:var(--display);font-size:1.05rem;font-weight:700;text-align:center;margin-bottom:1.5rem;}
-  .faq-item{border-bottom:1px solid var(--border);padding:1.1rem 0;}
-  .faq-q{font-size:0.88rem;font-weight:600;margin-bottom:0.4rem;}
-  .faq-a{font-size:0.8rem;color:var(--text2);line-height:1.7;}
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap');
 
-  @media(max-width:640px){
-    .page, section{padding-left:1.25rem;padding-right:1.25rem;}
-    h1{font-size:1.5rem!important;}
-    h2{font-size:1.1rem!important;}
-    .plans{grid-template-columns:1fr!important;}
-    .problem-grid,.audience-grid,.downloads,.impl-grid{grid-template-columns:1fr!important;}
-    .analogy-grid{grid-template-columns:1fr!important;}
-    table{font-size:0.72rem;}
-    th,td{padding:0.4rem 0.5rem;}
-    pre{padding:0.85rem;overflow-x:auto;}
-    .layout{grid-template-columns:1fr!important;}
-    .page{grid-template-columns:1fr!important;}
-  }
-  :root{
-    --violet:#7C3AED;--blue:#2563EB;--cyan:#22D3EE;
-    --gradient:linear-gradient(90deg,#7C3AED 0%,#2563EB 55%,#22D3EE 100%);
-    --bg:#ffffff;--bg2:#f8f9fa;--bg3:#f1f3f5;
-    --border:#e8e8e4;--border2:#d1d5db;
-    --text:#111827;--text2:#4b5563;--text3:#9ca3af;
-    --green:#059669;--amber:#d97706;--red:#dc2626;
-    --display:'Space Grotesk',sans-serif;
-    --sans:'Inter',sans-serif;
-    --mono:'IBM Plex Mono',monospace;
-  }
-  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-  body{background:#ffffff;color:#111827;font-family:var(--sans);-webkit-font-smoothing:antialiased;}
-  /* ── Nav ── */
-  .site-nav{
-    display:flex;align-items:center;gap:1.5rem;
-    padding:0.85rem 2rem;
-    border-bottom:1px solid var(--border);
-    position:sticky;top:0;z-index:50;
-    background:rgba(255,255,255,0.96);backdrop-filter:blur(8px);
-  }
-  .nav-logo{display:flex;align-items:center;gap:0.65rem;text-decoration:none;margin-right:auto;}
-  .nav-logo-mark{width:28px;height:28px;}
-  .nav-logo-name{font-family:var(--display);font-weight:700;font-size:1rem;color:var(--text);letter-spacing:-0.02em;}
-  .matter-grad{background:var(--gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
-  .nav-link{font-size:0.78rem;color:var(--text2);text-decoration:none;transition:color 0.15s;white-space:nowrap;}
-  .nav-link:hover{color:var(--violet);}
-  .nav-icon{
-    display:flex;align-items:center;color:var(--text2);text-decoration:none;
-    border:1px solid var(--border);border-radius:6px;padding:0.25rem 0.5rem;
-    transition:all 0.15s;
-  }
-  .nav-icon:hover{border-color:var(--text2);color:var(--text);}
-  /* ── Footer ── */
-  .site-footer{
-    border-top:1px solid var(--border);
-    padding:2.5rem;
-    display:flex;align-items:center;justify-content:space-between;
-    flex-wrap:wrap;gap:1rem;
-    background:var(--bg2);
-    margin-top:4rem;
-  }
-  .footer-logo{display:flex;align-items:center;gap:0.6rem;text-decoration:none;}
-  .footer-logo-mark{width:22px;height:22px;}
-  .footer-copy{font-size:0.75rem;color:var(--text3);}
-  .footer-links{display:flex;gap:1.5rem;flex-wrap:wrap;}
-  .footer-links a{font-size:0.75rem;color:var(--text3);text-decoration:none;transition:color 0.15s;}
-  .footer-links a:hover{color:var(--violet);}
-  @media(max-width:640px){
-    .site-nav{padding:0.75rem 1rem;gap:0.75rem;flex-wrap:wrap;}
-    .nav-link{font-size:0.72rem;}
-    .site-footer{padding:1.5rem;flex-direction:column;}
-    .footer-links{gap:1rem;}
-  }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg-canvas:  #ffffff;
+  --bg-elev-0:  #f8f8f7;
+  --bg-elev-1:  #f2f2f0;
+  --bg-elev-2:  #eaeae8;
+  --border-subtle:  #e8e8e4;
+  --border-default: #d8d8d2;
+  --border-strong:  #b8b8b0;
+  --text-primary:   #0a0a09;
+  --text-secondary: #3a3a35;
+  --text-muted:     #6a6a62;
+  --text-faint:     #9a9a90;
+  --trust:        #0f7b4d;
+  --trust-bg:     rgba(15,123,77,0.07);
+  --trust-border: rgba(15,123,77,0.18);
+  --warn:        #b45309;
+  --warn-bg:     rgba(180,83,9,0.07);
+  --warn-border: rgba(180,83,9,0.18);
+  --mono: 'IBM Plex Mono', monospace;
+  --sans: 'IBM Plex Sans', sans-serif;
+}
+
+body { font-family: var(--sans); background: var(--bg-canvas); color: var(--text-primary); font-size: 15px; line-height: 1.6; }
+
+nav {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(255,255,255,0.95); backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 40px; height: 56px;
+}
+.nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+.nav-logo-text { font-family: var(--mono); font-size: 15px; font-weight: 600; color: var(--text-primary); letter-spacing: -0.02em; }
+.nav-links { display: flex; align-items: center; gap: 28px; list-style: none; }
+.nav-links a { font-size: 13.5px; font-weight: 500; color: var(--text-muted); text-decoration: none; transition: color .15s; }
+.nav-links a:hover { color: var(--text-primary); }
+.nav-cta { font-family: var(--mono); font-size: 12.5px; font-weight: 600; background: var(--text-primary); color: var(--bg-canvas); padding: 7px 16px; border-radius: 5px; text-decoration: none; transition: opacity .15s; }
+.nav-cta:hover { opacity: .82; }
+.body-icon { display: flex; flex-direction: column; gap: 4px; cursor: pointer; padding: 6px; border-radius: 4px; transition: background .15s; }
+.body-icon:hover { background: var(--bg-elev-1); }
+.body-icon span { display: block; height: 1.5px; background: var(--text-primary); border-radius: 2px; }
+.body-icon span:nth-child(1) { width: 20px; } .body-icon span:nth-child(2) { width: 14px; } .body-icon span:nth-child(3) { width: 17px; }
+
+.page { max-width: 920px; margin: 0 auto; padding: 72px 40px 96px; }
+.page-eyebrow { font-family: var(--mono); font-size: 10.5px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 12px; }
+.page-title { font-family: var(--mono); font-size: clamp(26px, 3.8vw, 42px); font-weight: 600; letter-spacing: -.04em; color: var(--text-primary); line-height: 1.1; margin-bottom: 14px; }
+.page-sub { font-size: 16px; color: var(--text-muted); line-height: 1.65; max-width: 540px; margin-bottom: 44px; }
+
+.principle-bar { background: var(--bg-elev-0); border: 1px solid var(--border-subtle); border-radius: 7px; padding: 14px 20px; margin-bottom: 44px; font-size: 13.5px; color: var(--text-secondary); line-height: 1.6; }
+.principle-bar strong { color: var(--text-primary); }
+
+/* Context explainer — answers "what does 5,000 contexts mean?" */
+.context-note { background: var(--trust-bg); border: 1px solid var(--trust-border); border-radius: 6px; padding: 12px 18px; margin-bottom: 36px; font-size: 13px; color: var(--text-secondary); line-height: 1.6; }
+.context-note strong { color: var(--trust); }
+
+/* PLAN GRID */
+.plan-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; margin-bottom: 52px; background: var(--border-subtle); }
+.plan { background: var(--bg-canvas); padding: 28px; position: relative; }
+.plan.featured { background: var(--bg-elev-0); }
+.plan-badge { position: absolute; top: -11px; left: 50%; transform: translateX(-50%); font-family: var(--mono); font-size: 9.5px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; background: var(--trust); color: #fff; padding: 3px 12px; border-radius: 100px; }
+.plan-name { font-family: var(--mono); font-size: 10.5px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 10px; }
+.plan-price { font-family: var(--mono); font-size: 38px; font-weight: 600; letter-spacing: -.06em; color: var(--text-primary); line-height: 1; margin-bottom: 4px; }
+.plan-price span { font-size: 15px; font-weight: 400; color: var(--text-faint); letter-spacing: 0; }
+.plan-price.custom { font-size: 26px; margin-bottom: 6px; }
+.plan-desc { font-family: var(--sans); font-size: 12.5px; color: var(--text-muted); margin-bottom: 22px; line-height: 1.55; }
+.plan-cta { display: block; text-align: center; font-family: var(--mono); font-size: 12.5px; font-weight: 600; padding: 10px 18px; border-radius: 6px; text-decoration: none; transition: opacity .15s, transform .12s; margin-bottom: 22px; }
+.plan-cta.primary { background: var(--text-primary); color: var(--bg-canvas); border: 1px solid transparent; }
+.plan-cta.primary:hover { opacity: .85; transform: translateY(-1px); }
+.plan-cta.secondary { background: transparent; color: var(--text-secondary); border: 1px solid var(--border-default); }
+.plan-cta.secondary:hover { border-color: var(--border-strong); color: var(--text-primary); }
+.plan-divider { border: none; border-top: 1px solid var(--border-subtle); margin-bottom: 16px; }
+.plan-items { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.plan-items li { font-size: 13px; color: var(--text-secondary); display: flex; align-items: flex-start; gap: 9px; line-height: 1.4; }
+.plan-items li .chk { color: var(--trust); flex-shrink: 0; font-size: 12px; margin-top: 1px; font-family: var(--mono); }
+.plan-items li.key { color: var(--text-primary); font-weight: 500; }
+.plan-items li.note { color: var(--text-faint); font-size: 12px; }
+.plan-items li .tip { font-family: var(--mono); font-size: 10px; color: var(--text-faint); background: var(--bg-elev-1); border: 1px solid var(--border-subtle); padding: 1px 5px; border-radius: 3px; margin-left: 3px; vertical-align: middle; }
+
+/* WHY UPGRADE */
+.upgrade-title { font-family: var(--mono); font-size: 18px; font-weight: 600; letter-spacing: -.03em; color: var(--text-primary); margin-bottom: 16px; margin-top: 52px; }
+.upgrade-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1px; background: var(--border-subtle); }
+.upgrade-card { background: var(--bg-elev-0); padding: 22px 24px; }
+.upgrade-card-num { font-family: var(--mono); font-size: 26px; font-weight: 600; color: var(--trust); letter-spacing: -.04em; margin-bottom: 3px; }
+.upgrade-card-title { font-family: var(--sans); font-size: 13.5px; font-weight: 600; color: var(--text-primary); margin-bottom: 7px; }
+.upgrade-card-body { font-size: 13px; color: var(--text-muted); line-height: 1.6; }
+
+/* COMPARE TABLE */
+.compare-title { font-family: var(--mono); font-size: 18px; font-weight: 600; letter-spacing: -.03em; color: var(--text-primary); margin-bottom: 16px; margin-top: 52px; }
+.cmp-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.cmp-table th { font-family: var(--mono); font-size: 10px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--text-faint); padding: 9px 16px; text-align: left; border-bottom: 1px solid var(--border-default); background: var(--bg-elev-0); }
+.cmp-table th:not(:first-child) { text-align: center; }
+.cmp-table td { padding: 10px 16px; border-bottom: 1px solid var(--border-subtle); color: var(--text-secondary); }
+.cmp-table td:not(:first-child) { text-align: center; font-family: var(--mono); font-size: 12.5px; }
+.cmp-table tr:hover td { background: var(--bg-elev-0); }
+.cmp-table .section-row td { background: var(--bg-elev-1); font-family: var(--mono); font-size: 9.5px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--text-faint); padding: 7px 16px; }
+.chk { color: var(--trust); } .dash { color: var(--text-faint); }
+
+/* FAQ */
+.faq-title { font-family: var(--mono); font-size: 18px; font-weight: 600; letter-spacing: -.03em; color: var(--text-primary); margin-bottom: 16px; margin-top: 52px; }
+.faq-item { padding: 18px 0; border-bottom: 1px solid var(--border-subtle); }
+.faq-item:first-of-type { border-top: 1px solid var(--border-subtle); }
+.faq-q { font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 7px; }
+.faq-a { font-size: 13.5px; color: var(--text-muted); line-height: 1.65; }
+.faq-a code { font-family: var(--mono); font-size: 11.5px; background: var(--bg-elev-1); padding: 1px 4px; border-radius: 3px; color: var(--text-secondary); }
+.faq-a a { color: var(--trust); text-decoration: none; }
+
+footer { border-top: 1px solid var(--border-subtle); padding: 28px 40px; }
+.footer-inner { max-width: 920px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; }
+.footer-links { display: flex; gap: 24px; flex-wrap: wrap; }
+.footer-links a { font-size: 12.5px; color: var(--text-faint); text-decoration: none; }
+.footer-links a:hover { color: var(--text-secondary); }
+.footer-copy { font-family: var(--mono); font-size: 11px; color: var(--text-faint); }
+
+@media (max-width: 760px) {
+  .plan-grid { grid-template-columns: 1fr; }
+  .upgrade-grid { grid-template-columns: 1fr; }
+  nav { padding: 0 20px; }
+  .page { padding: 52px 24px 72px; }
+}
 </style>
 </head>
 <body>
-<nav class="site-nav">
-  <a class="nav-logo" href="/">
-    <svg class="nav-logo-mark" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <defs><linearGradient id="nlg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#7C3AED"/><stop offset="55%" stop-color="#2563EB"/><stop offset="100%" stop-color="#0891b2"/></linearGradient></defs>
-      <circle cx="20" cy="20" r="17" stroke="#e5e7eb" stroke-width="0.8" stroke-dasharray="2 3"/>
-      <circle cx="20" cy="20" r="12" stroke="#d1d5db" stroke-width="0.5" opacity="0.6"/>
-      <circle cx="20" cy="5" r="3.2" fill="#7C3AED" opacity="0.95"/>
-      <circle cx="33" cy="28" r="2.6" fill="#2563EB" opacity="0.95"/>
-      <circle cx="7" cy="28" r="2.2" fill="#0891b2" opacity="0.9"/>
-      <line x1="20" y1="8" x2="31" y2="26" stroke="url(#nlg)" stroke-width="0.6" opacity="0.5"/>
-      <line x1="20" y1="8" x2="9" y2="26" stroke="#7C3AED" stroke-width="0.6" opacity="0.4"/>
-      <line x1="30" y1="27" x2="10" y2="27" stroke="#22D3EE" stroke-width="0.6" opacity="0.4"/>
-      <circle cx="20" cy="20" r="2.5" fill="url(#nlg)" opacity="0.6"/>
+<nav>
+  <a href="/" class="nav-logo">
+    <svg width="28" height="28" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="20" cy="20" r="17" stroke="#d0d0c8" stroke-width="0.8" stroke-dasharray="2 3"/>
+      <circle cx="20" cy="20" r="12" stroke="#e0e0d8" stroke-width="0.5" opacity="0.6"/>
+      <circle cx="20" cy="5"  r="3.2" fill="#0f7b4d" opacity="0.95"/>
+      <circle cx="20" cy="5"  r="5.5" stroke="#0f7b4d" stroke-width="0.4" opacity="0.18"/>
+      <circle cx="33" cy="28" r="2.6" fill="#3a3a35" opacity="0.8"/>
+      <circle cx="33" cy="28" r="4.5" stroke="#3a3a35" stroke-width="0.4" opacity="0.15"/>
+      <circle cx="7"  cy="28" r="2.2" fill="#6a6a62" opacity="0.7"/>
+      <circle cx="7"  cy="28" r="3.8" stroke="#6a6a62" stroke-width="0.4" opacity="0.15"/>
+      <line x1="20" y1="8"  x2="31" y2="26" stroke="#0f7b4d" stroke-width="0.6" opacity="0.4"/>
+      <line x1="20" y1="8"  x2="9"  y2="26" stroke="#3a3a35" stroke-width="0.6" opacity="0.3"/>
+      <line x1="30" y1="27" x2="10" y2="27" stroke="#6a6a62" stroke-width="0.6" opacity="0.3"/>
+      <circle cx="20" cy="20" r="2" fill="#0f7b4d" opacity="0.4"/>
     </svg>
-    <span class="nav-logo-name">Dark<span class="matter-grad">Matter</span></span>
+    <span class="nav-logo-text">darkmatter</span>
   </a>
-  <a class="nav-link" href="/demo">Demo</a>
-  <a class="nav-link" href="/docs">Docs</a>
-  <a class="nav-link" href="/pricing">Pricing</a>
-  <a class="nav-link" href="/why">Why</a>
-  <a class="nav-link" href="/blog">Blog</a>
-  <a class="nav-icon" href="/login" title="Sign in">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-  </a>
+  <ul class="nav-links">
+    <li><a href="/demo">Demo</a></li><li><a href="/docs">Docs</a></li><li><a href="/compare">Compare</a></li>
+    <li><a href="/pricing">Pricing</a></li><li><a href="/security">Security</a><a href="/compliance">Compliance</a><a href="/threat-model">Threat model</a></li><li><a href="/enterprise">Enterprise</a></li>
+  </ul>
+  <div style="display:flex;align-items:center;gap:16px;">
+    <a href="/signup" class="nav-cta">Start free</a>
+    <div class="body-icon"><span></span><span></span><span></span></div>
+  </div>
 </nav>
 
 <div class="page">
-  <h1>Simple, honest pricing</h1>
-  <p class="sub">Start free. Scale when you need to.</p>
-  <p class="sub2">Developers adopt for free. Teams upgrade for scale and retention. No feature gating — query, search, BYOK, and verify are free on every plan.</p>
+  <div class="page-eyebrow">Pricing</div>
+  <h1 class="page-title">Simple, honest pricing</h1>
+  <p class="page-sub">Start free with unlimited agents. Scale when commit volume or retention grows. Replay, fork, verify, and export are on every plan - no feature gating.</p>
 
-  <div class="plans">
+  <div class="principle-bar">
+    <strong>Why unlimited agents on free?</strong> Multi-agent systems often have 8-15 distinct agents. Capping agents at the point of entry punishes exactly the use cases that benefit most from DarkMatter. The right gates are commit volume (how much you record) and retention (how long you keep it).
+  </div>
 
-    <!-- Free -->
+  <div class="context-note">
+    <strong>What is a "context stored"?</strong> A context is one stored commit record - one execution step in your chain. Think of it as the size of your retained audit trail. The free tier stores up to 5,000 commit records at any time. Older records beyond your retention window are pruned automatically. Read operations (replay, verify, export) never count against this limit.
+  </div>
+
+  <div class="plan-grid">
+    <!-- FREE -->
     <div class="plan">
       <div class="plan-name">Free</div>
       <div class="plan-price">$0<span>/month</span></div>
-      <div class="plan-desc">Full product, no feature limits. Start building immediately.</div>
-      <a class="plan-cta secondary" href="/signup">Get started free</a>
-      <hr class="plan-div"/>
-      <div class="plan-features">
-        <div class="pf-section">Usage</div>
-        <div class="pf"><span class="ck">✓</span><span>50,000 commits per month</span></div>
-        <div class="pf"><span class="ck">✓</span><span>Up to 5 agents</span></div>
-        <div class="pf"><span class="ck">✓</span><span>Up to 5,000 contexts</span></div>
-        <div class="pf"><span class="ck">✓</span><span>30-day retention</span></div>
-        <div class="pf-section">Full product — no feature limits</div>
-        <div class="pf"><span class="ck">✓</span><span>Full replay and fork</span></div>
-        <div class="pf"><span class="ck">✓</span><span>Verify and export</span></div>
-        <div class="pf"><span class="ck">✓</span><span>BYOK encryption</span></div>
-        <div class="pf"><span class="ck">✓</span><span>W3C DID agent identity</span></div>
-        <div class="pf"><span class="ck">✓</span><span>Compliance reports</span></div>
-        <div class="pf"><span class="ck">✓</span><span>Agent self-registration</span></div>
-        <div class="pf"><span class="ck">✓</span><span>Context Passport schema</span></div>
-        <div class="pf"><span class="ck">✓</span><span>Chain viewer and hooks</span></div>
-        <div class="pf"><span class="ck">✓</span><span>Query and search — free on all plans</span></div>
-      </div>
+      <div class="plan-desc">Core product, no feature gating on replay, verify, export, or fork. Unlimited agents. No credit card.</div>
+      <a href="/signup" class="plan-cta secondary">Get started free</a>
+      <hr class="plan-divider">
+      <ul class="plan-items">
+        <li class="key"><span class="chk">✓</span> 50,000 commits per month</li>
+        <li class="key"><span class="chk">✓</span> Unlimited agents</li>
+        <li class="key"><span class="chk">✓</span> 5,000 contexts stored</li>
+        <li><span class="chk">✓</span> 30-day retention</li>
+        <li><span class="chk">✓</span> Full replay and fork</li>
+        <li><span class="chk">✓</span> Verify chain integrity</li>
+        <li><span class="chk">✓</span> Export proof artifact</li>
+        <li><span class="chk">✓</span> Offline verification</li>
+        <li><span class="chk">✓</span> BYOK encryption</li>
+        <li><span class="chk">✓</span> Execution audit reports</li>
+        <li><span class="chk">✓</span> Query and search</li>
+        <li><span class="chk">✓</span> Hooks and policies</li>
+        <li><span class="chk">✓</span> Context Passport schema</li>
+        <li><span class="chk">✓</span> Agent self-registration</li>
+        <li><span class="chk">✓</span> Self-host (MIT license)</li>
+        <li><span class="chk">✓</span> Python + TypeScript SDKs</li>
+      </ul>
     </div>
 
-    <!-- Pro -->
+    <!-- PRO -->
     <div class="plan featured">
       <div class="plan-badge">Most popular</div>
       <div class="plan-name">Pro</div>
       <div class="plan-price">$39<span>/month</span></div>
-      <div class="plan-desc">Same full product. More commits, more agents, longer retention.</div>
-      <a class="plan-cta primary" href="/signup">Start Pro</a>
-      <hr class="plan-div"/>
-      <div class="plan-features">
-        <div class="pf-section">More scale, same full product</div>
-        <div class="pf highlight"><span class="ck">✓</span><span>500,000 commits per month</span></div>
-        <div class="pf highlight"><span class="ck">✓</span><span>Up to 20 agents</span></div>
-        <div class="pf highlight"><span class="ck">✓</span><span>Up to 50,000 contexts</span></div>
-        <div class="pf highlight"><span class="ck">✓</span><span>90-day retention</span></div>
-        <div class="pf"><span class="ck">✓</span><span>Everything in Free</span></div>
-
-      </div>
+      <div class="plan-desc">Same core product. Higher commit volume, more stored contexts, longer retention for production workloads.</div>
+      <a href="/signup" class="plan-cta primary">Start Pro</a>
+      <hr class="plan-divider">
+      <ul class="plan-items">
+        <li class="key"><span class="chk">✓</span> 500,000 commits per month</li>
+        <li class="key"><span class="chk">✓</span> Unlimited agents</li>
+        <li class="key"><span class="chk">✓</span> 50,000 contexts stored</li>
+        <li class="key"><span class="chk">✓</span> 90-day retention</li>
+        <li><span class="chk">✓</span> Everything in Free</li>
+      </ul>
     </div>
 
-    <!-- Enterprise -->
+    <!-- ENTERPRISE -->
     <div class="plan">
       <div class="plan-name">Enterprise</div>
-      <div class="plan-price" style="font-size:1.6rem;padding-top:0.3rem;">Custom<span style="font-size:0.85rem;"> pricing</span></div>
-      <div class="plan-desc">Unlimited scale, long-term audit trails, organizational governance.</div>
-      <a class="plan-cta secondary" href="/enterprise">Start Enterprise trial</a>
-      <hr class="plan-div"/>
-      <div class="plan-features">
-        <div class="pf-section">Organizational scale</div>
-        <div class="pf highlight"><span class="ck">✓</span><span>Custom commits, pooled or unlimited</span></div>
-        <div class="pf highlight"><span class="ck">✓</span><span>Unlimited agents</span></div>
-        <div class="pf highlight"><span class="ck">✓</span><span>Unlimited contexts</span></div>
-        <div class="pf highlight"><span class="ck">✓</span><span>Custom retention, up to 1 year and beyond</span></div>
-        <div class="pf"><span class="ck">✓</span><span>Everything in Pro</span></div>
-        <div class="pf highlight"><span class="ck">✓</span><span>Advanced analytics across all agents</span></div>
-      </div>
+      <div class="plan-price custom">Custom</div>
+      <div class="plan-desc">Unlimited scale, long-term retention, organizational governance, and dedicated support.</div>
+      <a href="/enterprise" class="plan-cta secondary">Contact us</a>
+      <hr class="plan-divider">
+      <ul class="plan-items">
+        <li class="key"><span class="chk">✓</span> Custom commit volume</li>
+        <li class="key"><span class="chk">✓</span> Unlimited agents</li>
+        <li class="key"><span class="chk">✓</span> Unlimited contexts</li>
+        <li class="key"><span class="chk">✓</span> Custom retention (1 year+)</li>
+        <li><span class="chk">✓</span> Dedicated support</li>
+        <li><span class="chk">✓</span> Custom onboarding</li>
+        <li><span class="chk">✓</span> Volume pricing</li>
+        <li><span class="chk">✓</span> Everything in Pro</li>
+        <li class="note"><span style="color:var(--text-faint)">·</span> Compliance documentation, SLA, and security review available on request - timelines depend on scope</li>
+      </ul>
     </div>
   </div>
 
-  <!-- Compare table -->
-  <div class="compare">
-    <div class="compare-title">Full comparison</div>
-    <table>
-      <thead>
-        <tr><th>Feature</th><th>Free</th><th>Pro</th><th>Enterprise</th></tr>
-      </thead>
-      <tbody>
-        <tr class="tgroup"><td colspan="4">Usage</td></tr>
-        <tr><td>Monthly commits</td><td>50,000</td><td>500,000</td><td>Custom</td></tr>
-        <tr><td>Agents</td><td>5</td><td>20</td><td>Unlimited</td></tr>
-        <tr><td>Contexts stored</td><td>5,000</td><td>50,000</td><td>Unlimited</td></tr>
-        <tr><td>Retention</td><td>30 days</td><td>90 days</td><td>Custom</td></tr>
-        <tr class="tgroup"><td colspan="4">Core functionality</td></tr>
-        <tr><td>Replay endpoint</td><td class="tick">✓</td><td class="tick">✓</td><td class="tick">✓</td></tr>
-        <tr><td>Fork from checkpoint</td><td class="tick">✓</td><td class="tick">✓</td><td class="tick">✓</td></tr>
-        <tr><td>Verify endpoint</td><td class="tick">✓</td><td class="tick">✓</td><td class="tick">✓</td></tr>
-        <tr><td>Chain viewer</td><td class="tick">✓</td><td class="tick">✓</td><td class="tick">✓</td></tr>
-        <tr><td>Export audit artifact</td><td class="tick">✓</td><td class="tick">✓</td><td class="tick">✓</td></tr>
-        <tr><td>Hooks and policies</td><td class="tick">✓</td><td class="tick">✓</td><td class="tick">✓</td></tr>
-        <tr><td>Context Passport schema</td><td class="tick">✓</td><td class="tick">✓</td><td class="tick">✓</td></tr>
-        <tr><td>Agent self-registration API</td><td class="tick">✓</td><td class="tick">✓</td><td class="tick">✓</td></tr>
-        <tr class="tgroup"><td colspan="4">Scale and organization</td></tr>
-        <tr><td>Query and search</td><td class="tick">✓</td><td class="tick">✓</td><td class="tick">✓</td></tr>
-        <tr><td>Compliance reports</td><td class="tick">✓</td><td class="tick">✓</td><td class="tick">✓</td></tr>
-        <tr><td>Advanced analytics</td><td class="cross">—</td><td class="cross">—</td><td class="tick">✓</td></tr>
-        <tr class="tgroup"><td colspan="4">Organizational scale</td></tr>
-        <tr><td>BYOK encryption</td><td class="tick">✓</td><td class="tick">✓</td><td class="tick">✓</td></tr>
-        <tr><td>W3C DID agent identity</td><td class="tick">✓</td><td class="tick">✓</td><td class="tick">✓</td></tr>
-        <tr><td>Self-host (MIT license)</td><td class="tick">✓</td><td class="tick">✓</td><td class="tick">✓</td></tr>
-      </tbody>
-    </table>
+  <!-- WHY UPGRADE -->
+  <div class="upgrade-title">Why would you upgrade?</div>
+  <div class="upgrade-grid">
+    <div class="upgrade-card">
+      <div class="upgrade-card-num">10x</div>
+      <div class="upgrade-card-title">More commit volume</div>
+      <div class="upgrade-card-body">Free gives 50k commits/month. A single production multi-agent pipeline running hourly can exceed that in days. Pro gives 500k. Enterprise is custom with no ceiling.</div>
+    </div>
+    <div class="upgrade-card">
+      <div class="upgrade-card-num">3x</div>
+      <div class="upgrade-card-title">Longer retention</div>
+      <div class="upgrade-card-body">Free keeps records for 30 days. Production audit use cases typically need 90 days minimum. Regulated teams often need 1 year or beyond. Retention is the correct pricing axis.</div>
+    </div>
   </div>
+
+  <!-- COMPARISON TABLE -->
+  <div class="compare-title">Full feature comparison</div>
+  <table class="cmp-table">
+    <thead>
+      <tr><th>Feature</th><th>Free</th><th>Pro</th><th>Enterprise</th></tr>
+    </thead>
+    <tbody>
+      <tr class="section-row"><td colspan="4">Usage</td></tr>
+      <tr><td>Monthly commits</td><td>50,000</td><td>500,000</td><td>Custom</td></tr>
+      <tr><td>Agents</td><td><span class="chk">Unlimited</span></td><td><span class="chk">Unlimited</span></td><td><span class="chk">Unlimited</span></td></tr>
+      <tr><td>Contexts stored</td><td>5,000</td><td>50,000</td><td>Unlimited</td></tr>
+      <tr><td>Retention</td><td>30 days</td><td>90 days</td><td>Custom (1y+)</td></tr>
+
+      <tr class="section-row"><td colspan="4">Core functionality</td></tr>
+      <tr><td>Replay from checkpoint</td><td><span class="chk">Yes</span></td><td><span class="chk">Yes</span></td><td><span class="chk">Yes</span></td></tr>
+      <tr><td>Fork from any step</td><td><span class="chk">Yes</span></td><td><span class="chk">Yes</span></td><td><span class="chk">Yes</span></td></tr>
+      <tr><td>Diff two chains</td><td><span class="chk">Yes</span></td><td><span class="chk">Yes</span></td><td><span class="chk">Yes</span></td></tr>
+      <tr><td>Verify chain integrity</td><td><span class="chk">Yes</span></td><td><span class="chk">Yes</span></td><td><span class="chk">Yes</span></td></tr>
+      <tr><td>Export proof artifact</td><td><span class="chk">Yes</span></td><td><span class="chk">Yes</span></td><td><span class="chk">Yes</span></td></tr>
+      <tr><td>Offline verification</td><td><span class="chk">Yes</span></td><td><span class="chk">Yes</span></td><td><span class="chk">Yes</span></td></tr>
+      <tr><td>Query and search</td><td><span class="chk">Yes</span></td><td><span class="chk">Yes</span></td><td><span class="chk">Yes</span></td></tr>
+      <tr><td>Hooks and policies</td><td><span class="chk">Yes</span></td><td><span class="chk">Yes</span></td><td><span class="chk">Yes</span></td></tr>
+      <tr><td>Execution audit reports</td><td><span class="chk">Yes</span></td><td><span class="chk">Yes</span></td><td><span class="chk">Yes</span></td></tr>
+      <tr><td>Context Passport schema</td><td><span class="chk">Yes</span></td><td><span class="chk">Yes</span></td><td><span class="chk">Yes</span></td></tr>
+
+      <tr class="section-row"><td colspan="4">Security and privacy</td></tr>
+      <tr><td>BYOK encryption</td><td><span class="chk">Yes</span></td><td><span class="chk">Yes</span></td><td><span class="chk">Yes</span></td></tr>
+      <tr><td>W3C DID agent identity</td><td><span class="chk">Yes</span></td><td><span class="chk">Yes</span></td><td><span class="chk">Yes</span></td></tr>
+      <tr><td>Self-host (MIT license)</td><td><span class="chk">Yes</span></td><td><span class="chk">Yes</span></td><td><span class="chk">Yes</span></td></tr>
+
+      <tr class="section-row"><td colspan="4">SDKs and integrations</td></tr>
+      <tr><td>Python SDK</td><td><span class="chk">Yes</span></td><td><span class="chk">Yes</span></td><td><span class="chk">Yes</span></td></tr>
+      <tr><td>TypeScript SDK</td><td><span class="chk">Yes</span></td><td><span class="chk">Yes</span></td><td><span class="chk">Yes</span></td></tr>
+      <tr><td>REST API (any language)</td><td><span class="chk">Yes</span></td><td><span class="chk">Yes</span></td><td><span class="chk">Yes</span></td></tr>
+
+      <tr class="section-row"><td colspan="4">Enterprise</td></tr>
+      <tr><td>Unlimited contexts</td><td><span class="dash">-</span></td><td><span class="dash">-</span></td><td><span class="chk">Yes</span></td></tr>
+      <tr><td>Custom retention (1 year+)</td><td><span class="dash">-</span></td><td><span class="dash">-</span></td><td><span class="chk">Yes</span></td></tr>
+      <tr><td>Dedicated support and onboarding</td><td><span class="dash">-</span></td><td><span class="dash">-</span></td><td><span class="chk">Yes</span></td></tr>
+      <tr><td>Volume pricing</td><td><span class="dash">-</span></td><td><span class="dash">-</span></td><td><span class="chk">Yes</span></td></tr>
+      <tr><td>Compliance documentation on request</td><td><span class="dash">-</span></td><td><span class="dash">-</span></td><td><span class="chk">Available</span></td></tr>
+    </tbody>
+  </table>
 
   <!-- FAQ -->
-  <div class="faq">
-    <div class="faq-title">Common questions</div>
-    <div class="faq-item">
-      <div class="faq-q">Why is full functionality available on every plan?</div>
-      <div class="faq-a">We believe replay, fork, verify, and export should be available to every developer. Gating core features by plan creates friction that slows adoption and rewards the wrong behavior. Scale, retention, and organizational controls are where pricing makes sense.</div>
-    </div>
-    <div class="faq-item">
-      <div class="faq-q">What counts as a commit?</div>
-      <div class="faq-a">Every call to POST /api/commit counts as one commit, regardless of payload size. Read operations (replay, verify, pull, export) and fork operations do not count toward your commit limit.</div>
-    </div>
-    <div class="faq-item">
-      <div class="faq-q">What is a context?</div>
-      <div class="faq-a">A context is a stored commit record. The contexts limit is the maximum number of commit records retained in your account at any time. Older contexts beyond the retention period are pruned automatically.</div>
-    </div>
-    <div class="faq-item">
-      <div class="faq-q">What happens when I hit a limit?</div>
-      <div class="faq-a">We notify you at 80% usage. Commits over the monthly limit return a 429 response. We do not silently drop data. Upgrade anytime to restore access immediately.</div>
-    </div>
-    <div class="faq-item">
-      <div class="faq-q">Can I self-host DarkMatter?</div>
-      <div class="faq-a">Yes. DarkMatter is fully open source under the MIT license. Deploy it inside your own infrastructure with Node.js and Postgres. The self-hosted version includes all features. Note that self-hosted deployments do not carry the independent audit trail guarantee since you control the infrastructure.</div>
-    </div>
-    <div class="faq-item">
-      <div class="faq-q">What is the Context Passport?</div>
-      <div class="faq-a">The Context Passport is DarkMatter's canonical schema for AI agent context handoffs. It is a structured, model-agnostic format any LLM or framework can produce and consume, with built-in cryptographic integrity, agent attribution, and lineage tracking. The goal is for it to become a standard across multi-agent systems the way JSON:API or OpenAPI are standards in web development.</div>
-    </div>
+  <div class="faq-title">Common pricing questions</div>
+
+  <div class="faq-item">
+    <div class="faq-q">Why are agents unlimited on the free tier?</div>
+    <div class="faq-a">The 5-agent limit was the wrong gate. Multi-agent pipelines often have 8-15 distinct agents, and capping agents at the entry point punishes the most valuable use case before the developer has seen any value. The correct axes are commit volume and retention - not agent count. Agents are unlimited on every plan.</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q">What exactly is a "context stored"?</div>
+    <div class="faq-a">A context is one stored commit record - one execution step in your audit chain. The contexts limit is the maximum number of commit records your account holds at any time. When records age past your retention window (30 days on Free, 90 days on Pro), they are pruned automatically, freeing up context slots. Read operations like replay, verify, and export never count against this limit.</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q">What counts as a commit?</div>
+    <div class="faq-a">Every call to <code>POST /api/commit</code> counts as one commit, regardless of payload size. Read operations - replay, verify, pull, export, fork - do not count. You only pay for what you record, not how often you inspect it.</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q">What are "hooks and policies"?</div>
+    <div class="faq-a">Policies are rules that run on incoming commits before they are stored. Examples: reject commits where payload exceeds a size threshold, require certain metadata fields, flag commits where model output matches a pattern. Think of them like branch protection rules in Git, but for agent commit behavior. Full documentation at <a href="/docs#policies">Hooks and Policies</a>.</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q">What does "Execution audit reports" include?</div>
+    <div class="faq-a">DarkMatter-generated reports on execution history, chain integrity, and verification status - useful for internal review and developer audit workflows. These are distinct from formal compliance certifications (SOC 2, HIPAA, etc.), which involve third-party audits and legal agreements. If you need formal compliance documentation, contact us for Enterprise to discuss what's available and realistic timelines.</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q">What does self-hosting give me vs the cloud product?</div>
+    <div class="faq-a">Self-hosting gives full infrastructure control: data stays in your environment, no usage limits, MIT license. It does not provide DarkMatter's independent audit guarantee - because you control the infrastructure, the record is no longer stored outside your system. For true third-party independence, the cloud product with BYOK is the correct path. Both are legitimate choices with different trust models.</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q">What happens when I hit a limit?</div>
+    <div class="faq-a">You receive an email at 80% of your monthly commit limit. Commits over the limit return a 429 response. We do not silently drop data. Upgrade anytime to restore access immediately.</div>
   </div>
 </div>
 
-
 <footer>
-  <a class="footer-logo" href="/">
-    <svg class="footer-logo-mark" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <defs><linearGradient id="prg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#7C3AED"/><stop offset="55%" stop-color="#2563EB"/><stop offset="100%" stop-color="#0891b2"/></linearGradient></defs>
-      <circle cx="20" cy="20" r="17" stroke="#e5e7eb" stroke-width="0.8" stroke-dasharray="2 3"/>
-      <circle cx="20" cy="20" r="12" stroke="#d1d5db" stroke-width="0.5" opacity="0.6"/>
-      <circle cx="20" cy="5"  r="3.2" fill="#7C3AED" opacity="0.95"/>
-      <circle cx="20" cy="5"  r="5.5" stroke="#7C3AED" stroke-width="0.4" opacity="0.2"/>
-      <circle cx="33" cy="28" r="2.6" fill="#2563EB" opacity="0.95"/>
-      <circle cx="33" cy="28" r="4.5" stroke="#2563EB" stroke-width="0.4" opacity="0.2"/>
-      <circle cx="7"  cy="28" r="2.2" fill="#0891b2" opacity="0.9"/>
-      <circle cx="7"  cy="28" r="3.8" stroke="#22D3EE" stroke-width="0.4" opacity="0.2"/>
-      <line x1="20" y1="8"  x2="31" y2="26" stroke="url(#prg)" stroke-width="0.6" opacity="0.5"/>
-      <line x1="20" y1="8"  x2="9"  y2="26" stroke="#7C3AED" stroke-width="0.6" opacity="0.4"/>
-      <line x1="30" y1="27" x2="10" y2="27" stroke="#22D3EE" stroke-width="0.6" opacity="0.4"/>
-      <circle cx="20" cy="20" r="2.5" fill="url(#prg)" opacity="0.6"/>
-    </svg>
-    <span class="footer-logo-name">Dark<span class="matter-grad">Matter</span></span>
-  </a>
-  <div class="footer-links">
-    <a class="footer-link" href="/demo">Demo</a>
-    <a class="footer-link" href="/docs">Docs</a>
-    <a class="footer-link" href="/pricing">Pricing</a>
-    <a class="footer-link" href="/why">Why</a>
-    <a class="footer-link" href="/blog">Blog</a>
-    <a class="footer-link" href="/enterprise">Enterprise</a>
-    <a class="footer-link" href="/security">Security</a>
-    <a class="footer-link" href="https://contextpassport.com" target="_blank">Context Passport</a>
-    <a class="footer-link" href="https://github.com/bengunvl/darkmatter" target="_blank">GitHub</a>
-    <span style="color:var(--text3);font-size:0.7rem;">&#169; 2026 DarkMatter</span>
+  <div class="footer-inner">
+    <div class="footer-links">
+      <a href="/demo">Demo</a><a href="/docs">Docs</a><a href="/compare">Compare</a>
+      <a href="/pricing">Pricing</a><a href="/security">Security</a><a href="/compliance">Compliance</a><a href="/threat-model">Threat model</a><a href="/enterprise">Enterprise</a>
+      <a href="/blog">Blog</a><a href="https://contextpassport.com" target="_blank">Context Passport</a>
+      <a href="https://github.com/bengunvl/darkmatter" target="_blank">GitHub</a>
+    </div>
+    <div class="footer-copy">© 2026 DarkMatter</div>
   </div>
 </footer>
 </body>

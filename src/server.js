@@ -472,7 +472,7 @@ app.post('/api/agents/register', apiLimiter, requireApiKey, async (req, res) => 
     // Capture agents (from browser extension) get a higher cap
     // since each new conversation auto-creates one
     const isCaptureAgent = (role === 'capture');
-    const DAILY_CAP = isCaptureAgent ? 2000 : 200;
+    const DAILY_CAP = isCaptureAgent ? 5000 : 1000; // effectively unlimited for normal use
     if (count >= DAILY_CAP) {
       return res.status(429).json({
         error: `Daily agent registration limit reached (${DAILY_CAP} per day). Resets at midnight UTC.`,
@@ -2878,6 +2878,107 @@ if (raw) {
 </body>
 </html>`);
 });
+
+
+
+// ═══════════════════════════════════════════════════
+// POLICIES API
+// GET  /api/policies        — list policies for authenticated agent
+// POST /api/policies        — register a new policy
+// DELETE /api/policies/:id  — delete a policy
+// Policies evaluate incoming commits before storage.
+// Full policy engine is an Enterprise feature.
+// ═══════════════════════════════════════════════════
+app.get('/api/policies', apiLimiter, requireApiKey, async (req, res) => {
+  try {
+    const agentId = req.agent.agent_id;
+    const { data, error } = await supabaseService
+      .from('agent_policies')
+      .select('*')
+      .eq('agent_id', agentId)
+      .order('created_at', { ascending: false });
+
+    // Table may not exist yet — return empty with docs link
+    if (error && error.code === '42P01') {
+      return res.json({ policies: [], note: 'Policy engine available — see /docs#policies for setup.' });
+    }
+    if (error) throw error;
+
+    res.json({ policies: data || [] });
+  } catch(err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/policies', apiLimiter, requireApiKey, async (req, res) => {
+  try {
+    const { name, description, condition, action, message } = req.body;
+    if (!name || !condition || !action) {
+      return res.status(400).json({ error: 'name, condition, and action are required' });
+    }
+    if (!['reject','flag','allow'].includes(action)) {
+      return res.status(400).json({ error: 'action must be reject, flag, or allow' });
+    }
+
+    const agentId = req.agent.agent_id;
+    const policyId = 'pol_' + Date.now() + '_' + crypto.randomBytes(4).toString('hex');
+
+    const { data, error } = await supabaseService
+      .from('agent_policies')
+      .insert({
+        id:          policyId,
+        agent_id:    agentId,
+        name,
+        description: description || null,
+        condition,
+        action,
+        message:     message || null,
+        enabled:     true,
+      })
+      .select().single();
+
+    if (error && error.code === '42P01') {
+      // Table doesn't exist — return helpful message
+      return res.status(501).json({
+        error: 'Policy storage not yet enabled on this instance.',
+        note:  'Run the v12 schema migration to enable policies. See /docs#policies.',
+        policy_would_be: { id: policyId, name, condition, action }
+      });
+    }
+    if (error) throw error;
+
+    res.status(201).json({ policy: data, note: 'Policy registered. All future commits to this agent will be evaluated.' });
+  } catch(err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/policies/:policyId', apiLimiter, requireApiKey, async (req, res) => {
+  try {
+    const { policyId } = req.params;
+    const agentId = req.agent.agent_id;
+
+    const { error } = await supabaseService
+      .from('agent_policies')
+      .delete()
+      .eq('id', policyId)
+      .eq('agent_id', agentId); // ensure ownership
+
+    if (error && error.code === '42P01') {
+      return res.status(404).json({ error: 'Policy not found' });
+    }
+    if (error) throw error;
+
+    res.json({ deleted: policyId });
+  } catch(err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── Static page routes ────────────────────────────────────────────────────────
+app.get('/compare',      (req, res) => res.sendFile(path.join(__dirname, '../public/compare.html')));
+app.get('/compliance',   (req, res) => res.sendFile(path.join(__dirname, '../public/compliance.html')));
+app.get('/threat-model', (req, res) => res.sendFile(path.join(__dirname, '../public/threat-model.html')));
 
 // ═══════════════════════════════════════════════════
 // SUPERUSER ANALYTICS DASHBOARD

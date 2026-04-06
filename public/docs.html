@@ -106,7 +106,9 @@ tr:hover td{background:var(--bg2);}
   <div class="sb-group">
     <span class="sb-group-label">Getting Started</span>
     <a class="sb-link active" href="#overview">Overview</a>
-    <a class="sb-link" href="#quickstart">Quickstart</a>
+    <a class="sb-link" href="#quickstart">Quickstart — CLI</a>
+    <a class="sb-link" href="#jupyter-quickstart">Quickstart — Jupyter</a>
+    <a class="sb-link" href="#typescript-sdk">TypeScript / Node.js SDK</a>
     <a class="sb-link" href="#authentication">Authentication</a>
     <a class="sb-link" href="#concepts">Core concepts</a>
   </div>
@@ -146,10 +148,14 @@ tr:hover td{background:var(--bg2);}
     <a class="sb-link" href="#byok">BYOK encryption</a>
     <a class="sb-link" href="#did">W3C DID identity</a>
     <a class="sb-link" href="#compliance">Compliance reports</a>
+    <a class="sb-link" href="#policies">Hooks and policies</a>
     <a class="sb-link" href="#self-host">Self-hosting</a>
   </div>
   <div class="sb-group">
     <span class="sb-group-label">Guides</span>
+    <a class="sb-link" href="/compare">→ vs LangSmith / MLflow</a>
+    <a class="sb-link" href="/compliance">→ Compliance posture</a>
+    <a class="sb-link" href="/threat-model">→ Threat model</a>
     <a class="sb-link" href="#three-agent-demo">Three-agent demo</a>
     <a class="sb-link" href="#fork-guide">Forking workflows</a>
     <a class="sb-link" href="#audit-guide">Audit trail guide</a>
@@ -251,7 +257,96 @@ curl https://darkmatterhub.ai/api/replay/ctx_... -H <span class="cv">"Authorizat
   <h3>Fork</h3>
   <p>Creates a new branch from any existing checkpoint without modifying the original chain. The fork node carries <code>fork_of</code>, <code>fork_point</code>, and <code>lineage_root</code>. Continue by committing with <code>parentId</code> set to the fork ID.</p>
 
-  <h2 id="langgraph">Integration: LangGraph</h2>
+  
+  <section id="jupyter-quickstart">
+    <h2>Quickstart — Jupyter Notebook</h2>
+    <p>Install directly in a notebook cell. No CLI setup required. Works in JupyterLab, Jupyter Notebook, Google Colab, and VS Code notebooks.</p>
+    <pre><code><span class="c"># Cell 1 — install</span>
+<span class="cv">%pip install darkmatter-sdk -q</span></code></pre>
+
+    <pre><code><span class="c"># Cell 2 — your first commit</span>
+<span class="k">import</span> darkmatter <span class="k">as</span> dm
+<span class="c"># API key read from DARKMATTER_API_KEY env var, or .env file</span>
+<span class="c"># Run `darkmatter init` once in terminal to get both key and agent ID</span>
+
+<span class="k">import</span> os
+AGENT_ID = os.getenv(<span class="cv">"DARKMATTER_AGENT_ID"</span>)
+
+result = your_model_call(prompt)
+
+ctx = dm.commit(
+    to_agent_id = AGENT_ID,
+    payload = {
+        <span class="cv">"prompt"</span>:      prompt,
+        <span class="cv">"output"</span>:      result,
+        <span class="cv">"model"</span>:       <span class="cv">"claude-opus-4-6"</span>,
+        <span class="cv">"temperature"</span>: 0.7,
+    }
+)
+<span class="k">print</span>(<span class="cv">f"Committed: {ctx['id']}"</span>)</code></pre>
+
+    <pre><code><span class="c"># Cell 3 — fork and compare two runs</span>
+fork = dm.fork(ctx[<span class="cv">"id"</span>])
+
+result_b = your_model_call(prompt, temperature=1.0)
+ctx_b = dm.commit(
+    to_agent_id = AGENT_ID,
+    parent_id   = fork[<span class="cv">"id"</span>],
+    payload     = {<span class="cv">"output"</span>: result_b, <span class="cv">"temperature"</span>: 1.0}
+)
+
+diff = dm.diff(ctx[<span class="cv">"id"</span>], ctx_b[<span class="cv">"id"</span>])
+<span class="k">print</span>(diff)</code></pre>
+
+    <pre><code><span class="c"># Cell 4 — export verifiable proof bundle</span>
+bundle = dm.bundle(ctx[<span class="cv">"id"</span>])
+<span class="c"># → Download proof_bundle.zip — verifiable offline with no DarkMatter dependency</span>
+<span class="c"># → python verifier.py proof_bundle.zip</span></code></pre>
+
+    <div class="callout info">
+      <div class="callout-title">Tip for Google Colab</div>
+      Set your API key as a Colab secret (key icon in sidebar) named <code>DARKMATTER_API_KEY</code>, then access it with <code>from google.colab import userdata; os.environ["DARKMATTER_API_KEY"] = userdata.get("DARKMATTER_API_KEY")</code>
+    </div>
+  </section>
+
+  <section id="typescript-sdk">
+    <h2>TypeScript / Node.js SDK</h2>
+    <p>Full TypeScript SDK with type definitions. Requires Node.js 18+ (uses native <code>fetch</code>).</p>
+
+    <pre><code>npm install darkmatter-js</code></pre>
+
+    <pre><code><span class="c">// ES module / TypeScript</span>
+<span class="k">import</span> { commit, replay, fork, diff, verify } <span class="k">from</span> <span class="cv">'darkmatter-js'</span>;
+<span class="c">// or: import DarkMatter from 'darkmatter-js';</span>
+
+<span class="c">// DARKMATTER_API_KEY read from process.env automatically</span>
+
+<span class="k">const</span> ctx = <span class="k">await</span> commit({
+  toAgentId: process.env.DARKMATTER_AGENT_ID!,
+  payload:   { task: <span class="cv">"summarise"</span>, output: result, model: <span class="cv">"gpt-4o"</span> },
+});
+
+<span class="k">const</span> chain  = <span class="k">await</span> replay(ctx.id);
+<span class="k">const</span> forked = <span class="k">await</span> fork(ctx.id);
+<span class="k">const</span> delta  = <span class="k">await</span> diff(ctx.id, forked.id);
+<span class="k">const</span> proof  = <span class="k">await</span> verify(ctx.id);</code></pre>
+
+    <pre><code><span class="c">// Class-style interface</span>
+<span class="k">import</span> DarkMatter <span class="k">from</span> <span class="cv">'darkmatter-js'</span>;
+
+<span class="k">const</span> dm = <span class="k">new</span> DarkMatter();  <span class="c">// reads DARKMATTER_API_KEY from env</span>
+
+<span class="k">const</span> ctx    = <span class="k">await</span> dm.commit({ toAgentId, payload });
+<span class="k">const</span> child  = <span class="k">await</span> dm.spawn(<span class="cv">"summariser-agent"</span>);
+<span class="k">const</span> ctx2   = <span class="k">await</span> child.commit({ toAgentId: child.agentId!, payload: next });</code></pre>
+
+    <div class="callout info">
+      <div class="callout-title">Same primitives as Python</div>
+      <code>commit</code>, <code>replay</code>, <code>fork</code>, <code>diff</code>, <code>verify</code>, <code>share</code>, <code>bundle</code>, <code>me</code>, <code>spawn</code> — all identical to the Python SDK. Source on <a href="https://github.com/bengunvl/darkmatter" target="_blank">GitHub</a>.
+    </div>
+  </section>
+
+<h2 id="langgraph">Integration: LangGraph</h2>
   <p>LangGraph handles internal graph checkpointing. DarkMatter adds cross-framework lineage and an independent record that lives outside your infrastructure. They're complementary.</p>
 
   <h3>One-line wrapper (recommended)</h3>
@@ -1036,7 +1131,57 @@ curl https://darkmatterhub.ai/enterprise/did/AGENT_ID
 <div class="lang-label">bash</div></code></pre>
   <p>The report includes: agent registry, full audit trail with per-step integrity verification, timestamp range, chain intact status, and a regulatory note covering regulations such as EU AI Act Art. 12 and 19.</p>
 
-  <h2 id="self-host">Self-hosting</h2>
+  
+  <section id="policies">
+    <h2>Hooks and policies</h2>
+    <p>Policies are rules that evaluate incoming commits before they are stored. Think of them like branch protection rules in Git — except for agent execution behavior rather than code.</p>
+
+    <h3>What policies can do</h3>
+    <ul style="margin:12px 0 16px 20px;display:flex;flex-direction:column;gap:6px;">
+      <li style="font-size:14px;color:var(--text2);">Reject commits where payload exceeds a size threshold</li>
+      <li style="font-size:14px;color:var(--text2);">Require specific metadata fields to be present</li>
+      <li style="font-size:14px;color:var(--text2);">Flag commits where model output matches a pattern (e.g. PII detection)</li>
+      <li style="font-size:14px;color:var(--text2);">Block commits with a specific event type during a maintenance window</li>
+      <li style="font-size:14px;color:var(--text2);">Trigger a webhook when a tamper event is detected</li>
+    </ul>
+
+    <h3>Register a policy via API</h3>
+    <pre><code>curl -X POST https://darkmatterhub.ai/api/policies \
+  -H <span class="cv">"Authorization: Bearer YOUR_API_KEY"</span> \
+  -H <span class="cv">"Content-Type: application/json"</span> \
+  -d <span class="cv">'{
+    "name":        "require-model-field",
+    "description": "Reject commits missing model field in payload",
+    "condition":   "!payload.model",
+    "action":      "reject",
+    "message":     "payload.model is required"
+  }'</span></code></pre>
+
+    <h3>Register a policy via Python SDK</h3>
+    <pre><code>ctx = dm.commit(
+    to_agent_id = agent_id,
+    payload     = {<span class="cv">"output"</span>: result},  <span class="c"># ← will be rejected: missing model</span>
+)
+<span class="c"># → raises DarkMatterPolicyError: payload.model is required</span></code></pre>
+
+    <h3>Hooks — outbound webhooks on events</h3>
+    <p>Hooks fire outbound HTTP requests when specific events occur on your agent's chain. Configure via dashboard or API.</p>
+    <pre><code><span class="c"># Example: notify Slack when a tamper event is detected</span>
+curl -X POST https://darkmatterhub.ai/api/hooks \
+  -H <span class="cv">"Authorization: Bearer YOUR_API_KEY"</span> \
+  -d <span class="cv">'{
+    "event":   "tamper_detected",
+    "url":     "https://hooks.slack.com/services/...",
+    "payload": {{ "text": "Chain tamper detected on agent {{agent_id}}" }}
+  }'</span></code></pre>
+
+    <div class="callout warning">
+      <div class="callout-title">Policy availability</div>
+      Policies are available on all plans. Complex custom policy logic (regex patterns, multi-field conditions) is an Enterprise feature. See <a href="/pricing">pricing</a> for details.
+    </div>
+  </section>
+
+<h2 id="self-host">Self-hosting</h2>
   <div class="callout warning"><div class="callout-title">Important</div>Self-hosted deployments do not carry the independent audit guarantee. For external audit credibility, use the hosted Enterprise plan with BYOK encryption.</div>
   <div class="steps">
     <div class="step"><div class="step-num">1</div><div><div class="step-title">Clone the repo</div><div class="step-desc"><code>git clone https://github.com/darkmatter-hub/darkmatter</code> then <code>npm install</code></div></div></div>

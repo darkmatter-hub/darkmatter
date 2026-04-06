@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>DarkMatter vs LangSmith vs MLflow — Comparison</title>
+<meta name="description" content="Honest comparison of DarkMatter, LangSmith, and MLflow. Different tools solving different problems — understand which fits your use case."/>
+<style>
+
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --ink:#0a0a09;--ink-2:#3a3a35;--ink-3:#6a6a62;--ink-4:#9a9a90;
+  --paper:#fafaf8;--paper-1:#f2f2f0;--paper-2:#eaeae8;
+  --rule:#e0e0da;--rule-mid:#c8c8c0;
+  --trust:#0f7b4d;--trust-bg:rgba(15,123,77,0.06);--trust-rule:rgba(15,123,77,0.16);
+  --warn:#b45309;--warn-bg:rgba(180,83,9,0.06);--warn-rule:rgba(180,83,9,0.16);
+  --red:#c8102e;--red-bg:rgba(200,16,46,0.06);
+  --mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;
+}
+html{scroll-behavior:smooth;}
+body{font-family:var(--sans);background:var(--paper);color:var(--ink);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased;}
+a{color:inherit;text-decoration:none;}
+nav{position:sticky;top:0;z-index:200;background:rgba(250,250,248,0.96);backdrop-filter:blur(12px);border-bottom:1px solid var(--rule);display:flex;align-items:center;padding:0 48px;height:58px;gap:24px;}
+.dm-logo-svg{width:26px;height:26px;flex-shrink:0;}
+.nav-brand{display:flex;align-items:center;gap:9px;}
+.nav-wordmark{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--ink);letter-spacing:-.02em;}
+.nav-links{display:flex;align-items:center;gap:22px;list-style:none;}
+.nav-links a{font-size:13px;font-weight:500;color:var(--ink-3);}
+.nav-links a:hover{color:var(--ink);}
+.nav-right{margin-left:auto;display:flex;align-items:center;gap:12px;}
+.nav-cta{font-family:var(--mono);font-size:12px;font-weight:600;background:var(--ink);color:var(--paper);padding:6px 14px;border-radius:4px;}
+.nav-cta:hover{opacity:.82;}
+.page{max-width:920px;margin:0 auto;padding:72px 48px 96px;}
+@media(max-width:640px){nav{padding:0 20px;}.page{padding:48px 20px 72px;}}
+.eye{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-4);margin-bottom:12px;}
+.h1{font-family:var(--mono);font-size:clamp(24px,3.4vw,40px);font-weight:600;letter-spacing:-.04em;color:var(--ink);line-height:1.1;margin-bottom:14px;}
+.h2{font-family:var(--mono);font-size:20px;font-weight:600;letter-spacing:-.03em;color:var(--ink);margin-bottom:12px;margin-top:52px;}
+.h3{font-family:var(--mono);font-size:15px;font-weight:600;letter-spacing:-.02em;color:var(--ink);margin-bottom:8px;}
+.lead{font-size:16px;color:var(--ink-2);line-height:1.7;max-width:560px;margin-bottom:36px;}
+p{font-size:14px;color:var(--ink-3);line-height:1.7;margin-bottom:12px;}
+code{font-family:var(--mono);font-size:11.5px;background:var(--paper-1);border:1px solid var(--rule);padding:1px 5px;border-radius:3px;color:var(--ink-2);}
+footer{border-top:1px solid var(--rule);padding:28px 48px;}
+.foot{max-width:920px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;}
+.foot-links{display:flex;gap:20px;flex-wrap:wrap;}
+.foot-links a{font-size:12px;color:var(--ink-4);}
+.foot-links a:hover{color:var(--ink-2);}
+.foot-copy{font-family:var(--mono);font-size:11px;color:var(--ink-4);}
+.note{background:var(--paper-1);border:1px solid var(--rule);border-radius:5px;padding:12px 18px;font-size:13px;color:var(--ink-2);line-height:1.65;margin:16px 0;}
+.trust-note{background:var(--trust-bg);border:1px solid var(--trust-rule);border-radius:5px;padding:12px 18px;font-size:13px;color:var(--ink-2);line-height:1.65;margin:16px 0;}
+.warn-note{background:var(--warn-bg);border:1px solid var(--warn-rule);border-radius:5px;padding:12px 18px;font-size:13px;color:var(--ink-2);line-height:1.65;margin:16px 0;}
+.rule{border:none;border-top:1px solid var(--rule);margin:40px 0;}
+
+.cmp-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--rule);border:1px solid var(--rule);margin:24px 0;}
+.cmp-cell{background:var(--paper);padding:13px 15px;font-size:13px;color:var(--ink-3);}
+.cmp-cell.head{background:var(--paper-1);font-family:var(--mono);font-size:10.5px;font-weight:600;color:var(--ink);letter-spacing:.04em;}
+.cmp-cell.row-label{font-size:12.5px;color:var(--ink-2);font-weight:500;}
+.cmp-cell.section{background:var(--paper-2);font-family:var(--mono);font-size:9.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-4);padding:8px 15px;}
+.yes{color:var(--trust);font-family:var(--mono);font-size:12px;}
+.no{color:var(--ink-4);font-family:var(--mono);font-size:12px;}
+.partial{color:var(--warn);font-family:var(--mono);font-size:12px;}
+.dm-col{background:var(--trust-bg)!important;}
+.toc{display:flex;flex-direction:column;gap:6px;margin:16px 0 32px;}
+.toc a{font-size:13px;color:var(--trust);display:flex;align-items:center;gap:6px;}
+.toc a::before{content:'→';font-family:var(--mono);font-size:11px;}
+</style>
+</head>
+<body>
+<nav>
+  <a href="/" class="nav-brand">
+    <svg class="dm-logo-svg" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="20" cy="20" r="17" stroke="#d0d0c8" stroke-width="0.8" stroke-dasharray="2 3"/>
+      <circle cx="20" cy="20" r="12" stroke="#e0e0d8" stroke-width="0.5" opacity="0.6"/>
+      <circle cx="20" cy="5"  r="3.2" fill="#0f7b4d" opacity="0.95"/>
+      <circle cx="20" cy="5"  r="5.5" stroke="#0f7b4d" stroke-width="0.4" opacity="0.18"/>
+      <circle cx="33" cy="28" r="2.6" fill="#3a3a35" opacity="0.8"/>
+      <circle cx="7"  cy="28" r="2.2" fill="#6a6a62" opacity="0.7"/>
+      <line x1="20" y1="8"  x2="31" y2="26" stroke="#0f7b4d" stroke-width="0.6" opacity="0.4"/>
+      <line x1="20" y1="8"  x2="9"  y2="26" stroke="#3a3a35" stroke-width="0.6" opacity="0.3"/>
+      <line x1="30" y1="27" x2="10" y2="27" stroke="#6a6a62" stroke-width="0.6" opacity="0.3"/>
+      <circle cx="20" cy="20" r="2" fill="#0f7b4d" opacity="0.4"/>
+    </svg>
+    <span class="nav-wordmark">darkmatter</span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="/demo">Demo</a></li>
+    <li><a href="/docs">Docs</a></li>
+    <li><a href="/compare">Compare</a></li>
+    <li><a href="/pricing">Pricing</a></li>
+    <li><a href="/security">Security</a></li>
+    <li><a href="/enterprise">Enterprise</a></li>
+  </ul>
+  <div class="nav-right">
+    <a href="/login" style="font-size:13px;color:var(--ink-3);">Sign in</a>
+    <a href="/signup" class="nav-cta">Start free</a>
+  </div>
+</nav>
+<div class="page">
+  <div class="eye">Comparison</div>
+  <h1 class="h1">DarkMatter vs LangSmith vs MLflow</h1>
+  <p class="lead">These are different tools solving different problems. The honest answer is: you might use more than one. This page explains what each tool is actually for, where each excels, and where DarkMatter is the wrong choice.</p>
+
+  <div class="note">
+    <strong>Disclosure:</strong> This comparison is written by DarkMatter. We've tried to be accurate, but you should verify claims against each tool's own documentation. If you find something incorrect, email us and we'll fix it.
+  </div>
+
+  <div class="toc">
+    <a href="#summary">One-paragraph summary of each tool</a>
+    <a href="#table">Feature comparison table</a>
+    <a href="#langsmith">DarkMatter vs LangSmith — in depth</a>
+    <a href="#mlflow">DarkMatter vs MLflow — in depth</a>
+    <a href="#when-dm">When DarkMatter is the right choice</a>
+    <a href="#when-not">When DarkMatter is the wrong choice</a>
+  </div>
+
+  <hr class="rule"/>
+  <h2 class="h2" id="summary">What each tool actually does</h2>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:var(--rule);border:1px solid var(--rule);margin:20px 0 32px;">
+    <div style="background:var(--trust-bg);padding:22px 20px;">
+      <div style="font-family:var(--mono);font-size:11px;font-weight:600;color:var(--trust);margin-bottom:8px;letter-spacing:.06em;">DARKMATTER</div>
+      <div style="font-size:13.5px;color:var(--ink-2);line-height:1.65;">An <strong style="color:var(--ink)">independent execution record</strong>. Commits every agent step as a cryptographically chained, tamper-evident record stored outside your system. Designed for replay, verification, and proof — not real-time monitoring.</div>
+    </div>
+    <div style="background:var(--paper-1);padding:22px 20px;">
+      <div style="font-family:var(--mono);font-size:11px;font-weight:600;color:var(--ink-3);margin-bottom:8px;letter-spacing:.06em;">LANGSMITH</div>
+      <div style="font-size:13.5px;color:var(--ink-2);line-height:1.65;">A <strong style="color:var(--ink)">tracing and observability platform</strong> for LLM applications. Designed for real-time monitoring, debugging, prompt management, and evaluation datasets. Deep LangChain/LangGraph integration.</div>
+    </div>
+    <div style="background:var(--paper-1);padding:22px 20px;">
+      <div style="font-family:var(--mono);font-size:11px;font-weight:600;color:var(--ink-3);margin-bottom:8px;letter-spacing:.06em;">MLFLOW</div>
+      <div style="font-size:13.5px;color:var(--ink-2);line-height:1.65;">An <strong style="color:var(--ink)">ML experiment tracking and model registry</strong>. Designed for data scientists tracking training runs, parameters, and metrics. Strong model lifecycle management. Not primarily for agent pipelines.</div>
+    </div>
+  </div>
+
+  <hr class="rule"/>
+  <h2 class="h2" id="table">Feature comparison</h2>
+
+  <div class="cmp-grid">
+    <div class="cmp-cell head">Feature</div>
+    <div class="cmp-cell head dm-col">DarkMatter</div>
+    <div class="cmp-cell head">LangSmith</div>
+    <div class="cmp-cell head">MLflow</div>
+
+    <div class="cmp-cell section" colspan="4" style="grid-column:1/-1;">Core purpose</div>
+    <div class="cmp-cell row-label">Independent execution record</div>
+    <div class="cmp-cell dm-col"><span class="yes">✓ Primary use case</span></div>
+    <div class="cmp-cell"><span class="no">✗ Stored in LangSmith infra</span></div>
+    <div class="cmp-cell"><span class="no">✗ Not designed for this</span></div>
+
+    <div class="cmp-cell row-label">Real-time trace monitoring</div>
+    <div class="cmp-cell dm-col"><span class="no">✗ Not the goal</span></div>
+    <div class="cmp-cell"><span class="yes">✓ Primary use case</span></div>
+    <div class="cmp-cell"><span class="partial">~ Metrics only</span></div>
+
+    <div class="cmp-cell row-label">ML experiment tracking</div>
+    <div class="cmp-cell dm-col"><span class="partial">~ Via commits + fork</span></div>
+    <div class="cmp-cell"><span class="partial">~ Limited</span></div>
+    <div class="cmp-cell"><span class="yes">✓ Primary use case</span></div>
+
+    <div class="cmp-cell row-label">Prompt management / datasets</div>
+    <div class="cmp-cell dm-col"><span class="no">✗ Not built for this</span></div>
+    <div class="cmp-cell"><span class="yes">✓ Strong</span></div>
+    <div class="cmp-cell"><span class="no">✗</span></div>
+
+    <div class="cmp-cell section" style="grid-column:1/-1;">Verification and proof</div>
+    <div class="cmp-cell row-label">Cryptographic chain integrity</div>
+    <div class="cmp-cell dm-col"><span class="yes">✓ SHA-256 per commit</span></div>
+    <div class="cmp-cell"><span class="no">✗</span></div>
+    <div class="cmp-cell"><span class="no">✗</span></div>
+
+    <div class="cmp-cell row-label">Offline verification (no account)</div>
+    <div class="cmp-cell dm-col"><span class="yes">✓ Standalone verifier</span></div>
+    <div class="cmp-cell"><span class="no">✗</span></div>
+    <div class="cmp-cell"><span class="no">✗</span></div>
+
+    <div class="cmp-cell row-label">Tamper detection</div>
+    <div class="cmp-cell dm-col"><span class="yes">✓ Broken chain flagged</span></div>
+    <div class="cmp-cell"><span class="no">✗</span></div>
+    <div class="cmp-cell"><span class="no">✗</span></div>
+
+    <div class="cmp-cell row-label">Export proof bundle</div>
+    <div class="cmp-cell dm-col"><span class="yes">✓ Self-contained zip</span></div>
+    <div class="cmp-cell"><span class="partial">~ JSON export only</span></div>
+    <div class="cmp-cell"><span class="partial">~ Artifact export</span></div>
+
+    <div class="cmp-cell section" style="grid-column:1/-1;">Execution primitives</div>
+    <div class="cmp-cell row-label">Replay from checkpoint</div>
+    <div class="cmp-cell dm-col"><span class="yes">✓ First-class primitive</span></div>
+    <div class="cmp-cell"><span class="partial">~ View only</span></div>
+    <div class="cmp-cell"><span class="partial">~ Re-run experiments</span></div>
+
+    <div class="cmp-cell row-label">Fork from any step</div>
+    <div class="cmp-cell dm-col"><span class="yes">✓ First-class primitive</span></div>
+    <div class="cmp-cell"><span class="no">✗</span></div>
+    <div class="cmp-cell"><span class="partial">~ Variant tracking</span></div>
+
+    <div class="cmp-cell row-label">Diff two runs</div>
+    <div class="cmp-cell dm-col"><span class="yes">✓ dm.diff()</span></div>
+    <div class="cmp-cell"><span class="partial">~ Dataset comparison</span></div>
+    <div class="cmp-cell"><span class="partial">~ Metric comparison</span></div>
+
+    <div class="cmp-cell section" style="grid-column:1/-1;">Infrastructure and trust</div>
+    <div class="cmp-cell row-label">Stored outside your system</div>
+    <div class="cmp-cell dm-col"><span class="yes">✓ Independent record</span></div>
+    <div class="cmp-cell"><span class="no">✗ Langchain company infra</span></div>
+    <div class="cmp-cell"><span class="partial">~ Self-host available</span></div>
+
+    <div class="cmp-cell row-label">Self-host</div>
+    <div class="cmp-cell dm-col"><span class="yes">✓ MIT license</span></div>
+    <div class="cmp-cell"><span class="partial">~ Paid tier</span></div>
+    <div class="cmp-cell"><span class="yes">✓ Apache 2.0</span></div>
+
+    <div class="cmp-cell row-label">BYOK encryption</div>
+    <div class="cmp-cell dm-col"><span class="yes">✓ All plans</span></div>
+    <div class="cmp-cell"><span class="partial">~ Enterprise</span></div>
+    <div class="cmp-cell"><span class="partial">~ Self-host only</span></div>
+
+    <div class="cmp-cell row-label">Framework agnostic</div>
+    <div class="cmp-cell dm-col"><span class="yes">✓ Any model/framework</span></div>
+    <div class="cmp-cell"><span class="partial">~ Best with LangChain</span></div>
+    <div class="cmp-cell"><span class="yes">✓ Broadly supported</span></div>
+
+    <div class="cmp-cell section" style="grid-column:1/-1;">Pricing</div>
+    <div class="cmp-cell row-label">Free tier</div>
+    <div class="cmp-cell dm-col"><span class="yes">✓ 50k commits/mo</span></div>
+    <div class="cmp-cell"><span class="yes">✓ Usage-based free</span></div>
+    <div class="cmp-cell"><span class="yes">✓ Open source</span></div>
+  </div>
+
+  <hr class="rule"/>
+  <h2 class="h2" id="langsmith">DarkMatter vs LangSmith — in depth</h2>
+
+  <p>LangSmith and DarkMatter solve adjacent but distinct problems. Using both is reasonable.</p>
+
+  <div class="trust-note"><strong>Where LangSmith is better than DarkMatter:</strong> Real-time trace visualization, prompt versioning, dataset management, LLM evaluation workflows, LangChain/LangGraph native integration, user feedback collection on outputs. If you're building a LangChain app and want to debug it interactively, LangSmith is the right tool.</div>
+
+  <div class="warn-note"><strong>Where DarkMatter is different from LangSmith:</strong> DarkMatter stores records <em>outside your system</em> with cryptographic proof. LangSmith stores traces in Langchain's infrastructure — your engineers and Langchain can modify or delete them. DarkMatter's records are tamper-evident. LangSmith's are not designed to be. If you need to prove to an auditor, regulator, or customer what your system did — and prove it wasn't modified — DarkMatter provides that. LangSmith does not.</div>
+
+  <p>The mental model: LangSmith is your debugger. DarkMatter is your notary. Use both if you have both problems.</p>
+
+  <hr class="rule"/>
+  <h2 class="h2" id="mlflow">DarkMatter vs MLflow — in depth</h2>
+
+  <p>MLflow is primarily a training-time tool. DarkMatter is primarily an inference-time tool.</p>
+
+  <div class="trust-note"><strong>Where MLflow is better than DarkMatter:</strong> Tracking training runs, hyperparameter optimization, model registry and versioning, artifact storage for model weights, integration with training frameworks (PyTorch, TensorFlow, scikit-learn). If you're training models, MLflow is the right choice.</div>
+
+  <div class="warn-note"><strong>Where DarkMatter addresses a different problem:</strong> MLflow tracks experiments. DarkMatter records deployed agent behavior. Once your model is trained and running in a pipeline, MLflow doesn't tell you what the pipeline did with it — what inputs went in, what outputs came out, in what order, across which agents. DarkMatter does.</div>
+
+  <p>For researchers: if you're running inference experiments in Jupyter notebooks, DarkMatter and MLflow can coexist. Use MLflow for parameter tracking; use DarkMatter for recording and verifying the inference chain.</p>
+
+  <hr class="rule"/>
+  <h2 class="h2" id="when-dm">When DarkMatter is the right choice</h2>
+  <div style="display:flex;flex-direction:column;gap:8px;margin:16px 0;">
+    <div style="font-size:13.5px;color:var(--ink-2);display:flex;gap:10px;"><span style="color:var(--trust);font-family:var(--mono);flex-shrink:0;">→</span>You need to prove to someone outside your team what your system did.</div>
+    <div style="font-size:13.5px;color:var(--ink-2);display:flex;gap:10px;"><span style="color:var(--trust);font-family:var(--mono);flex-shrink:0;">→</span>You need records that even your own engineers cannot modify without detection.</div>
+    <div style="font-size:13.5px;color:var(--ink-2);display:flex;gap:10px;"><span style="color:var(--trust);font-family:var(--mono);flex-shrink:0;">→</span>You need to replay and debug production failures without re-running them.</div>
+    <div style="font-size:13.5px;color:var(--ink-2);display:flex;gap:10px;"><span style="color:var(--trust);font-family:var(--mono);flex-shrink:0;">→</span>You need reproducible research results that reviewers can verify independently.</div>
+    <div style="font-size:13.5px;color:var(--ink-2);display:flex;gap:10px;"><span style="color:var(--trust);font-family:var(--mono);flex-shrink:0;">→</span>You're in a regulated industry and need defensible records of AI decisions.</div>
+    <div style="font-size:13.5px;color:var(--ink-2);display:flex;gap:10px;"><span style="color:var(--trust);font-family:var(--mono);flex-shrink:0;">→</span>You want to fork from a production checkpoint without re-running the full pipeline.</div>
+  </div>
+
+  <h2 class="h2" id="when-not">When DarkMatter is the wrong choice</h2>
+  <div style="display:flex;flex-direction:column;gap:8px;margin:16px 0;">
+    <div style="font-size:13.5px;color:var(--ink-2);display:flex;gap:10px;"><span style="color:var(--warn);font-family:var(--mono);flex-shrink:0;">✗</span>You want real-time trace visualization or a debugger UI. Use LangSmith.</div>
+    <div style="font-size:13.5px;color:var(--ink-2);display:flex;gap:10px;"><span style="color:var(--warn);font-family:var(--mono);flex-shrink:0;">✗</span>You're primarily tracking training runs and model parameters. Use MLflow.</div>
+    <div style="font-size:13.5px;color:var(--ink-2);display:flex;gap:10px;"><span style="color:var(--warn);font-family:var(--mono);flex-shrink:0;">✗</span>You need prompt management or evaluation datasets. Use LangSmith.</div>
+    <div style="font-size:13.5px;color:var(--ink-2);display:flex;gap:10px;"><span style="color:var(--warn);font-family:var(--mono);flex-shrink:0;">✗</span>You self-host and need the independence guarantee — self-hosting removes it. Use the cloud product for that guarantee.</div>
+  </div>
+
+</div>
+<footer>
+  <div class="foot">
+    <div class="foot-links">
+      <a href="/demo">Demo</a><a href="/docs">Docs</a>
+      <a href="/compare">Compare</a><a href="/pricing">Pricing</a>
+      <a href="/security">Security</a><a href="/enterprise">Enterprise</a>
+      <a href="/compliance">Compliance</a><a href="/threat-model">Threat model</a>
+      <a href="/blog">Blog</a>
+      <a href="https://contextpassport.com" target="_blank">Context Passport</a>
+      <a href="https://github.com/bengunvl/darkmatter" target="_blank">GitHub</a>
+    </div>
+    <div class="foot-copy">&copy; 2026 DarkMatter</div>
+  </div>
+</footer>
+</body>
+</html>

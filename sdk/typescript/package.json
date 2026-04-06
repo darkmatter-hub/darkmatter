@@ -1,0 +1,18 @@
+{
+  "name": "darkmatter-js",
+  "version": "0.1.0",
+  "description": "TypeScript/Node.js SDK for DarkMatter — execution records for AI agents",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": ["darkmatter","ai","agents","execution","lineage","replay","fork","verify"],
+  "author": "DarkMatter <hello@darkmatterhub.ai>",
+  "license": "MIT",
+  "homepage": "https://darkmatterhub.ai",
+  "repository": { "type": "git", "url": "https://github.com/bengunvl/darkmatter" },
+  "devDependencies": { "typescript": "^5.0.0" },
+  "engines": { "node": ">=18.0.0" }
+}

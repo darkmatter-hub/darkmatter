@@ -1,1238 +1,687 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>DarkMatter, Git for AI Agents</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    :root {
-      /* Brand palette, DarkMatter — light mode */
-      --bg:      #ffffff;
-      --bg2:     #f8f9fa;
-      --bg3:     #f1f3f5;
-      --border:  #e5e7eb;
-      --border2: #d1d5db;
-      --text:    #111827;
-      --text2:   #4b5563;
-      --text3:   #9ca3af;
-      --accent:  #2563EB;
-      --violet:  #7C3AED;
-      --cyan:    #0891b2;
-      --green:   #059669;
-      --red:     #dc2626;
-      --amber:   #d97706;
-      --purple:  #7C3AED;
-      --mono:    'IBM Plex Mono', monospace;
-      --sans:    'Inter', sans-serif;
-      --display: 'Space Grotesk', 'Inter', sans-serif;
-      --gradient: linear-gradient(90deg, #7C3AED 0%, #2563EB 55%, #0891b2 100%);
-    }
-
-    body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: var(--sans);
-      font-size: 16px;
-      line-height: 1.6;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-      overflow-x: hidden;
-    }
-
-    /* ── HEADER ── */
-    header {
-      position: sticky; top: 0; z-index: 100;
-      background: rgba(255,255,255,0.96);
-      backdrop-filter: blur(16px);
-      border-bottom: 1px solid var(--border);
-      height: 66px;
-      display: flex; align-items: center;
-      padding: 0 2rem; gap: 1rem;
-    }
-
-    .logo {
-      display: flex; align-items: center; gap: 0.75rem;
-      text-decoration: none;
-    }
-
-    .logo-mark { width: 46px; height: 46px; flex-shrink: 0; }
-
-    .logo-words { display: flex; flex-direction: column; line-height: 1.15; }
-
-    .logo-name {
-      font-weight: 700; font-size: 1.25rem;
-      color: var(--text); letter-spacing: -0.02em;
-      font-family: var(--display);
-    }
-
-    .matter-grad {
-      background: var(--gradient);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-    .logo-name .matter-grad { /* inherits .matter-grad */ }
-
-    .logo-sub {
-      font-family: var(--mono);
-      font-size: 0.56rem; color: var(--text3); display:none;
-      letter-spacing: 0.08em;
-    }
-
-    .hright {
-      margin-left: auto;
-      display: flex; align-items: center; gap: 0.6rem;
-      position: relative;
-    }
-
-    .nav-flat { font-size:0.78rem; color:var(--text2); text-decoration:none; transition:color 0.15s; padding:0.2rem 0; }
-    .nav-flat:hover { color:var(--text); }
-    .cta-nav { font-size:0.78rem; background:var(--gradient); color:#fff; padding:0.3rem 0.85rem; border-radius:6px; text-decoration:none; font-weight:500; white-space:nowrap; }
-    .btn-signin {
-      background: none; border: 1px solid var(--border);
-      color: var(--text2); padding: 0.32rem 0.85rem;
-      border-radius: 6px; font-size: 0.82rem; font-weight: 500;
-      text-decoration: none; font-family: var(--sans);
-      transition: all 0.15s;
-    }
-    .btn-signin:hover { border-color: var(--text2); color: var(--text); }
-
-    .btn-signup {
-      background: var(--accent); border: none;
-      color: #ffffff; padding: 0.38rem 0.95rem;
-      border-radius: 6px; font-size: 0.82rem; font-weight: 700;
-      text-decoration: none; font-family: var(--sans);
-      transition: filter 0.15s;
-    }
-    .btn-signup:hover { filter: brightness(1.1); } }
-
-    /* ══════════════════════════════════════
-       HERO
-    ══════════════════════════════════════ */
-    .hero {
-      display: flex; flex-direction: column;
-      align-items: center; text-align: center;
-      padding: 4rem 2rem 3rem;
-      position: relative;
-    }
-
-    .hero::before {
-      content: '';
-      position: absolute; top: 0; left: 50%;
-      transform: translateX(-50%);
-      width: 700px; height: 380px;
-      background: radial-gradient(ellipse at top, rgba(124,58,237,0.08) 0%, rgba(37,99,235,0.05) 50%, transparent 70%);
-      pointer-events: none;
-    }
-
-    .hero-h1 {
-      font-size: clamp(2.8rem, 6vw, 4.2rem);
-      font-weight: 700; line-height: 1.06;
-      color: var(--text); margin-bottom: 0.85rem;
-      letter-spacing: -0.03em;
-      font-family: var(--display);
-      position: relative; z-index: 1;
-      text-align: center; width: 100%;
-    }
-
-    .hero-h1 .matter-grad {
-      background: var(--gradient);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-
-    .hero-sub {
-      font-size: 1.15rem; color: var(--text2);
-      max-width: 520px; line-height: 1.75;
-      margin-bottom: 0.5rem; font-weight: 400;
-      position: relative; z-index: 1;
-      text-align: center; width: 100%;
-      letter-spacing: 0.01em;
-    }
-
-    .hero-tagline {
-      font-family: var(--mono); font-size: 0.73rem;
-      color: var(--text3); margin-bottom: 2rem;
-      position: relative; z-index: 1;
-    }
-
-    .hero-cta {
-      display: flex; align-items: center; gap: 0.75rem;
-      flex-wrap: wrap; justify-content: center;
-      position: relative; z-index: 1;
-      margin-bottom: 3.5rem;
-    }
-
-    .cta-primary {
-      display: inline-flex; align-items: center; gap: 0.45rem;
-      background: var(--gradient); color: #fff;
-      font-weight: 600; font-size: 0.95rem;
-      padding: 0.75rem 1.6rem; border-radius: 8px;
-      text-decoration: none; transition: opacity 0.15s;
-      letter-spacing: -0.01em;
-    }
-    .cta-primary:hover { opacity: 0.88; }
-
-    .cta-secondary {
-      display: inline-flex; align-items: center; gap: 0.45rem;
-      background: none; color: var(--text2);
-      font-weight: 500; font-size: 0.95rem;
-      padding: 0.72rem 1.25rem; border-radius: 8px;
-      text-decoration: none; border: 1px solid var(--border);
-      transition: all 0.15s;
-    }
-    .cta-secondary:hover { border-color: var(--text2); color: var(--text); }
-
-    /* ── STATS ── */
-    .stat-num.c { color: var(--accent); }
-    .stat-num.g { color: var(--green); }
-    .stat-num.r { color: var(--red); }
-
-    /* ══════════════════════════════════════
-       USE CASE SECTION
-    ══════════════════════════════════════ */
-    .usecase-section {
-      background: var(--bg2);
-      border-top: 1px solid var(--border);
-      border-bottom: 1px solid var(--border);
-      padding: 2.5rem 2rem;
-    }
-
-    .usecase-inner {
-      max-width: 860px; margin: 0 auto;
-    }
-
-    .usecase-title {
-      text-align: center; font-size: 1.3rem; font-weight: 700;
-      color: var(--text); margin-bottom: 0.4rem; letter-spacing: -0.02em;
-      font-family: var(--display);
-    }
-
-    .usecase-sub {
-      text-align: center; font-size: 0.85rem; color: var(--text2);
-      margin-bottom: 2rem;
-    }
-
-    .usecase-grid {
-      display: grid; grid-template-columns: repeat(3,1fr); gap: 1rem;
-    }
-
-    .uc-card {
-      background: var(--bg);
-      border: 1px solid var(--border); border-radius: 8px;
-      padding: 1.25rem;
-    }
-
-    .uc-icon { font-size: 1.4rem; margin-bottom: 0.6rem; }
-
-    .uc-title {
-      font-size: 0.88rem; font-weight: 700; color: var(--text);
-      margin-bottom: 0.35rem;
-    }
-
-    .uc-desc {
-      font-size: 0.78rem; color: var(--text2); line-height: 1.65;
-    }
-
-    /* ══════════════════════════════════════
-       HOW IT WORKS
-    ══════════════════════════════════════ */
-    .section { max-width: 860px; margin: 0 auto; padding: 3rem 2rem; }
-
-    .section-title {
-      text-align: center; font-size: 1.4rem; font-weight: 700;
-      color: var(--text); margin-bottom: 0.4rem; letter-spacing: -0.02em;
-      font-family: var(--display);
-    }
-
-    .section-sub {
-      text-align: center; font-size: 0.85rem; color: var(--text2);
-      margin-bottom: 2.5rem;
-    }
-
-    .steps {
-      display: grid; grid-template-columns: 1fr auto 1fr auto 1fr;
-      gap: 0; align-items: start; margin-bottom: 2.5rem;
-    }
-
-    .step {
-      background: var(--bg2); border: 1px solid var(--border);
-      border-radius: 10px; padding: 1.4rem 1.1rem;
-      display: flex; flex-direction: column;
-      align-items: center; text-align: center; gap: 0.65rem;
-    }
-
-    .step-emoji { font-size: 1.8rem; line-height: 1; }
-    .step-title { font-size: 0.88rem; font-weight: 700; color: var(--text); }
-    .step-desc  { font-size: 0.76rem; color: var(--text2); line-height: 1.6; }
-
-    .step-tag {
-      font-family: var(--mono); font-size: 0.57rem;
-      padding: 0.1rem 0.45rem; border-radius: 100px; border: 1px solid;
-    }
-    .tg { color:var(--green); border-color:rgba(63,185,80,0.3); background:rgba(63,185,80,0.08); }
-    .ta { color:var(--accent);border-color:rgba(88,166,255,0.3);background:rgba(88,166,255,0.08); }
-    .tv { color:var(--purple);border-color:rgba(188,140,255,0.3);background:rgba(188,140,255,0.08); }
-
-    .step-arrow {
-      display:flex; flex-direction:column; align-items:center;
-      justify-content:center; padding:0 0.4rem; padding-top:2.25rem;
-      color:var(--text3); font-size:1.1rem;
-    }
-    .arrow-label { font-family:var(--mono); font-size:0.54rem; color:var(--text3); margin-top:0.25rem; white-space:nowrap; }
-
-    /* ── CODE BLOCK ── */
-    .code-wrap { background:var(--bg2); border:1px solid var(--border); border-radius:10px; overflow:hidden; }
-
-    .code-header {
-      background:var(--bg3); border-bottom:1px solid var(--border);
-      padding:0.6rem 1rem;
-      display:flex; align-items:center; gap:0.5rem;
-    }
-
-    .code-dots { display:flex; gap:5px; }
-    .cd { width:10px; height:10px; border-radius:50%; }
-    .cd.r { background:#ff5f57; } .cd.y { background:#ffbd2e; } .cd.g { background:#28c840; }
-
-    .code-filename { font-family:var(--mono); font-size:0.62rem; color:var(--text3); margin-left:0.5rem; flex:1; }
-
-    .copy-code-btn {
-      background:var(--bg2); border:1px solid var(--border);
-      color:var(--text2); padding:0.22rem 0.6rem;
-      border-radius:5px; font-family:var(--mono); font-size:0.6rem;
-      cursor:pointer; transition:all 0.15s; flex-shrink:0;
-    }
-    .copy-code-btn:hover { border-color:var(--accent); color:var(--accent); }
-    .copy-code-btn.copied { border-color:var(--green); color:var(--green); }
-
-    .code-body { color: #cdd6f4;
-      padding:1.25rem 1.5rem; font-family:var(--mono);
-      font-size:0.71rem; line-height:1.9; overflow-x:auto;
-    }
-
-    .cc { color:var(--text3); }
-    .cm { color:var(--text); }
-    .fl { color:var(--accent); }
-    .st { color:#a5d6ff; }
-    .ok { color:var(--green); }
-    .er { color:var(--red); }
-    .sp { display:block; height:0.4rem; }
-
-    /* ── GIT MAP ── */
-    .git-map {
-      display:grid; grid-template-columns:repeat(5,1fr);
-      border:1px solid var(--border); border-radius:10px; overflow:hidden;
-    }
-
-    .gmc {
-      padding:1rem 0.85rem; border-right:1px solid var(--border);
-      display:flex; flex-direction:column; gap:0.22rem; transition:background 0.1s;
-    }
-    .gmc:last-child { border-right:none; }
-    .gmc:hover { background:var(--bg2); }
-
-    .gmc-from { font-family:var(--mono); font-size:0.64rem; color:var(--text3); }
-    .gmc-arr  { font-size:0.58rem; color:var(--text3); }
-    .gmc-to   { font-family:var(--mono); font-size:0.67rem; color:var(--accent); font-weight:500; }
-    .gmc-note { font-size:0.67rem; color:var(--text3); font-weight:300; }
-
-    /* ══════════════════════════════════════
-       COMMIT LOG
-    ══════════════════════════════════════ */
-    .log-section { max-width:860px; margin:0 auto; padding:0 2rem 3rem; }
-
-    .log-bar { display:flex; align-items:center; gap:0.75rem; margin-bottom:0.85rem; }
-    .log-bar-title { font-size:0.95rem; font-weight:600; color:var(--text); }
-
-    .btag {
-      font-family:var(--mono); font-size:0.6rem; color:var(--purple);
-      background:rgba(188,140,255,0.1); border:1px solid rgba(188,140,255,0.25);
-      border-radius:100px; padding:0.14rem 0.55rem;
-    }
-
-    .rfbtn {
-      margin-left:auto; background:var(--bg3); border:1px solid var(--border);
-      color:var(--text2); padding:0.28rem 0.7rem; border-radius:6px;
-      font-family:var(--sans); font-size:0.72rem; font-weight:500;
-      cursor:pointer; transition:background 0.12s;
-    }
-    .rfbtn:hover { background:var(--border); color:var(--text); }
-
-    .log-wrap { background:var(--bg2); border:1px solid var(--border); border-radius:10px; overflow:hidden; }
-
-    .log-cols {
-      display:grid; grid-template-columns:1fr 180px 80px 90px;
-      gap:1rem; padding:0.55rem 1.25rem;
-      background:var(--bg3); border-bottom:1px solid var(--border);
-      font-family:var(--mono); font-size:0.57rem;
-      color:var(--text3); letter-spacing:0.1em; text-transform:uppercase;
-    }
-
-    .cr {
-      display:grid; grid-template-columns:1fr 180px 80px 90px;
-      gap:1rem; padding:0.85rem 1.25rem;
-      border-bottom:1px solid var(--bg3);
-      align-items:center; transition:background 0.1s;
-      animation:rowIn 0.18s ease;
-    }
-    @keyframes rowIn { from{opacity:0;transform:translateX(-3px)} to{opacity:1;transform:translateX(0)} }
-    .cr:last-child { border-bottom:none; }
-    .cr:hover { background:var(--bg3); }
-
-    .cbadge {
-      display:inline-flex; align-items:center; gap:0.25rem;
-      font-family:var(--mono); font-size:0.58rem;
-      padding:0.1rem 0.4rem; border-radius:100px; border:1px solid; flex-shrink:0;
-    }
-    .cbadge.v { color:var(--green); border-color:rgba(63,185,80,0.3); background:rgba(63,185,80,0.08); }
-    .cbadge.r { color:var(--red);   border-color:rgba(248,81,73,0.3); background:rgba(248,81,73,0.08); }
-
-    .cmsg { display:flex; align-items:center; gap:0.5rem; margin-bottom:0.15rem; min-width:0; }
-    .ctxt { font-size:0.8rem; font-weight:500; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .cby  { font-family:var(--mono); font-size:0.6rem; color:var(--text3); }
-    .choff { font-family:var(--mono); font-size:0.62rem; color:var(--amber); overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
-    .tme  { font-family:var(--mono); font-size:0.6rem; color:var(--text3); text-align:right; }
-    .log-empty { padding:3rem; text-align:center; font-size:0.82rem; color:var(--text3); }
-
-    /* ══════════════════════════════════════
-       FOOTER
-    ══════════════════════════════════════ */
-    footer {
-      border-top:1px solid var(--border); background:var(--bg2);
-      padding:1.75rem 2rem; text-align:center;
-    }
-
-    .footer-logo {
-      display:flex; align-items:center; justify-content:center;
-      gap:0.6rem; text-decoration:none; margin-bottom:0.85rem;
-    }
-    .footer-logo-mark { width:22px; height:22px; }
-    .footer-logo-name { font-weight:700; font-size:0.88rem; color:var(--text); font-family:var(--display); }
-
-    .footer-tagline { font-family:var(--mono); font-size:0.6rem; color:var(--text3); margin-bottom:1rem; }
-
-    .footer-links { display:flex; align-items:center; justify-content:center; gap:1.5rem; flex-wrap:wrap; }
-
-    .footer-link { font-size:0.75rem; color:var(--text3); text-decoration:none; transition:color 0.15s; }
-    .footer-link:hover { color:var(--accent); }
-
-    @media (max-width:700px) {
-      .steps { grid-template-columns:1fr; gap:1rem; }
-      .step-arrow { padding:0; margin:0 auto; transform:rotate(90deg); }
-      .usecase-grid { grid-template-columns:1fr; }
-      .git-map { grid-template-columns:repeat(2,1fr); }
-      .log-cols { display:none; }
-      .cr { grid-template-columns:1fr auto; }
-      .choff, .cr>:nth-child(3) { display:none; }
-    }
-    @media(max-width:640px){
-    .integrations-grid{grid-template-columns:repeat(2,1fr)!important;}
-    .patterns-grid{grid-template-columns:1fr!important;}
-    .cp-grid{grid-template-columns:1fr!important;gap:1.5rem!important;}
-    header .hright{gap:0.75rem;}
-    .nav-flat{font-size:0.72rem;}
-  }
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>DarkMatter — Execution Records for AI Systems</title>
+<meta name="description" content="Commit, replay, fork, and verify every AI agent run. Cryptographic execution records for teams that need to prove what their systems did."/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --ink:#0a0a09;
+  --ink-2:#3a3a35;
+  --ink-3:#6a6a62;
+  --ink-4:#9a9a90;
+  --paper:#fafaf8;
+  --paper-1:#f2f2f0;
+  --paper-2:#eaeae8;
+  --rule:#e0e0da;
+  --rule-mid:#c8c8c0;
+  --trust:#0f7b4d;
+  --trust-bg:rgba(15,123,77,0.06);
+  --trust-rule:rgba(15,123,77,0.16);
+  --warn:#b45309;
+  --mono:'IBM Plex Mono',monospace;
+  --sans:'IBM Plex Sans',sans-serif;
+}
+html{scroll-behavior:smooth;}
+body{font-family:var(--sans);background:var(--paper);color:var(--ink);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden;}
+a{color:inherit;text-decoration:none;}
+
+/* ── LOGO SVG (3-body icon, reused everywhere) ── */
+.dm-logo-svg{display:block;width:32px;height:32px;flex-shrink:0;}
+
+/* ── NAV ── */
+nav{
+  position:sticky;top:0;z-index:200;
+  background:rgba(250,250,248,0.96);
+  backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--rule);
+  display:flex;align-items:center;
+  padding:0 48px;height:58px;gap:32px;
+}
+.nav-brand{display:flex;align-items:center;gap:10px;text-decoration:none;}
+.nav-wordmark{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--ink);letter-spacing:-0.02em;}
+.nav-links{display:flex;align-items:center;gap:24px;list-style:none;margin-left:8px;}
+.nav-links a{font-size:13px;font-weight:500;color:var(--ink-3);transition:color .15s;}
+.nav-links a:hover{color:var(--ink);}
+.nav-right{margin-left:auto;display:flex;align-items:center;gap:12px;}
+.nav-cta{font-family:var(--mono);font-size:12px;font-weight:600;background:var(--ink);color:var(--paper);padding:7px 16px;border-radius:4px;letter-spacing:.01em;transition:opacity .15s;}
+.nav-cta:hover{opacity:.82;}
+
+/* ── HERO ── Blackstone-style: left-aligned authority, wide margins ── */
+.hero{
+  max-width:1120px;margin:0 auto;
+  padding:96px 48px 80px;
+  display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:start;
+}
+@media(max-width:800px){.hero{grid-template-columns:1fr;padding:64px 24px 48px;}}
+.hero-left{}
+.hero-eyebrow{
+  font-family:var(--mono);font-size:10px;font-weight:600;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--ink-4);
+  margin-bottom:20px;display:flex;align-items:center;gap:8px;
+}
+.hero-eyebrow::before{content:'';display:block;width:20px;height:1px;background:var(--rule-mid);}
+.hero-h1{
+  font-family:var(--mono);
+  font-size:clamp(28px,3.6vw,46px);
+  font-weight:600;line-height:1.08;
+  letter-spacing:-.04em;
+  color:var(--ink);
+  margin-bottom:24px;
+}
+.hero-sub{
+  font-size:16px;color:var(--ink-2);line-height:1.7;
+  max-width:420px;margin-bottom:36px;
+}
+.hero-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.btn-primary{
+  font-family:var(--mono);font-size:12.5px;font-weight:600;
+  background:var(--ink);color:var(--paper);
+  padding:11px 24px;border-radius:4px;
+  letter-spacing:.02em;display:inline-block;
+  transition:opacity .15s,transform .12s;
+}
+.btn-primary:hover{opacity:.85;transform:translateY(-1px);}
+.btn-secondary{
+  font-family:var(--mono);font-size:12.5px;font-weight:500;
+  background:transparent;color:var(--ink-2);
+  padding:10px 22px;border-radius:4px;
+  border:1px solid var(--rule-mid);
+  letter-spacing:.02em;display:inline-block;
+  transition:border-color .15s,color .15s;
+}
+.btn-secondary:hover{border-color:var(--ink-3);color:var(--ink);}
+.hero-note{margin-top:20px;font-size:12.5px;color:var(--ink-4);}
+
+/* ── HERO RIGHT: chain demo ── */
+.hero-right{padding-top:4px;}
+.chain-frame{
+  border:1px solid var(--rule);border-radius:6px;
+  overflow:hidden;background:var(--paper);
+  font-family:var(--mono);
+}
+.chain-titlebar{
+  background:var(--paper-1);border-bottom:1px solid var(--rule);
+  padding:9px 14px;display:flex;align-items:center;gap:7px;
+}
+.win-dot{width:9px;height:9px;border-radius:50%;}
+.win-dot.r{background:#ff5f57;}.win-dot.y{background:#ffbd2e;}.win-dot.g{background:#28c840;}
+.chain-label{font-size:10px;color:var(--ink-4);margin-left:4px;letter-spacing:.06em;text-transform:uppercase;}
+.chain-row{
+  display:flex;align-items:stretch;
+  border-bottom:1px solid var(--rule);
+}
+.chain-row:last-child{border-bottom:none;}
+.chain-spine{width:40px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;}
+.c-dot{width:9px;height:9px;border-radius:50%;border:2px solid var(--trust);background:var(--trust-bg);margin-top:14px;flex-shrink:0;}
+.c-dot.err{border-color:var(--warn);background:rgba(180,83,9,0.06);}
+.c-line{width:1.5px;flex:1;background:var(--rule);margin:0 auto;}
+.chain-cell{flex:1;padding:11px 14px 11px 0;display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.c-name{font-size:11.5px;color:var(--ink-2);}
+.c-name.err{color:var(--warn);}
+.c-badges{display:flex;align-items:center;gap:7px;flex-shrink:0;}
+.c-badge{font-size:9px;font-weight:600;padding:2px 7px;border-radius:3px;letter-spacing:.05em;text-transform:uppercase;}
+.ok{background:var(--trust-bg);color:var(--trust);border:1px solid var(--trust-rule);}
+.er{background:rgba(180,83,9,0.06);color:var(--warn);border:1px solid rgba(180,83,9,0.16);}
+.c-hash{font-size:9.5px;color:var(--ink-4);}
+
+/* ── DIVIDER RULE ── */
+.section-rule{border:none;border-top:1px solid var(--rule);max-width:1120px;margin:0 auto;}
+
+/* ── TRUST BAR ── */
+.trust-bar{
+  max-width:1120px;margin:0 auto;
+  padding:20px 48px;
+  display:flex;align-items:center;gap:32px;flex-wrap:wrap;
+}
+.trust-item{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink-3);}
+.trust-icon{color:var(--trust);flex-shrink:0;}
+.trust-sep{width:1px;height:14px;background:var(--rule);flex-shrink:0;}
+
+/* ── SECTION ── */
+.section{max-width:1120px;margin:0 auto;padding:72px 48px;}
+.section.tight{padding-top:52px;padding-bottom:52px;}
+.section-eye{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-4);margin-bottom:14px;}
+.section-h2{font-family:var(--mono);font-size:clamp(20px,2.8vw,32px);font-weight:600;letter-spacing:-.04em;color:var(--ink);line-height:1.12;margin-bottom:16px;}
+.section-lead{font-size:15.5px;color:var(--ink-2);line-height:1.68;max-width:580px;margin-bottom:40px;}
+
+/* ── PRIMITIVES GRID ── */
+.primitives{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--rule);border:1px solid var(--rule);}
+@media(max-width:700px){.primitives{grid-template-columns:1fr;}}
+.prim{background:var(--paper);padding:28px 26px 32px;}
+.prim-cmd{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--trust);background:var(--trust-bg);border:1px solid var(--trust-rule);padding:3px 9px;border-radius:3px;display:inline-block;margin-bottom:14px;}
+.prim-title{font-family:var(--mono);font-size:15.5px;font-weight:600;color:var(--ink);margin-bottom:10px;letter-spacing:-.02em;}
+.prim-body{font-size:13.5px;color:var(--ink-3);line-height:1.65;}
+
+/* ── AUDIENCE STRIP: devs + researchers ── */
+.audience-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--rule);border:1px solid var(--rule);}
+@media(max-width:700px){.audience-grid{grid-template-columns:1fr;}}
+.aud-card{background:var(--paper);padding:32px 28px;}
+.aud-tag{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-4);margin-bottom:14px;}
+.aud-title{font-family:var(--mono);font-size:18px;font-weight:600;color:var(--ink);margin-bottom:12px;letter-spacing:-.03em;}
+.aud-body{font-size:13.5px;color:var(--ink-3);line-height:1.68;margin-bottom:20px;}
+.aud-items{display:flex;flex-direction:column;gap:7px;}
+.aud-item{font-size:13px;color:var(--ink-2);display:flex;align-items:flex-start;gap:9px;}
+.aud-item::before{content:'→';font-family:var(--mono);color:var(--trust);font-size:11px;margin-top:2px;flex-shrink:0;}
+
+/* ── RESEARCHER SECTION ── */
+.research-grid{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:start;}
+@media(max-width:800px){.research-grid{grid-template-columns:1fr;}}
+.notebook-frame{
+  border:1px solid var(--rule);border-radius:6px;overflow:hidden;
+  background:var(--paper);font-family:var(--mono);font-size:11.5px;
+}
+.nb-bar{background:var(--paper-1);border-bottom:1px solid var(--rule);padding:8px 12px;display:flex;align-items:center;gap:8px;}
+.nb-title{font-size:10px;color:var(--ink-4);letter-spacing:.04em;}
+.nb-kernel{font-size:9px;color:var(--trust);background:var(--trust-bg);border:1px solid var(--trust-rule);padding:1px 6px;border-radius:2px;margin-left:auto;}
+.nb-cell{padding:10px 14px;border-bottom:1px solid var(--rule);}
+.nb-cell:last-child{border-bottom:none;}
+.nb-in{color:var(--ink-4);font-size:9px;letter-spacing:.04em;margin-bottom:4px;}
+.nb-code{color:var(--ink-2);line-height:1.6;}
+.nb-out{color:var(--trust);font-size:11px;}
+.nb-comment{color:var(--ink-4);}
+
+/* ── HOW IT WORKS ── */
+.how-steps{display:flex;flex-direction:column;gap:0;border:1px solid var(--rule);}
+.how-step{
+  display:grid;grid-template-columns:56px 1fr;
+  border-bottom:1px solid var(--rule);
+}
+.how-step:last-child{border-bottom:none;}
+.how-num{
+  font-family:var(--mono);font-size:11px;font-weight:600;
+  color:var(--ink-4);padding:24px 0 0 20px;
+}
+.how-body{padding:22px 24px;}
+.how-title{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--ink);margin-bottom:6px;}
+.how-desc{font-size:13.5px;color:var(--ink-3);line-height:1.65;margin-bottom:10px;}
+.how-code{
+  font-family:var(--mono);font-size:11.5px;color:var(--ink-3);
+  background:var(--paper-1);border:1px solid var(--rule);
+  border-radius:4px;padding:8px 12px;line-height:1.7;
+}
+.kw{color:var(--trust);}
+
+/* ── INTEGRATIONS ── */
+.int-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:24px;}
+.int-chip{
+  font-family:var(--mono);font-size:11.5px;
+  padding:6px 13px;border:1px solid var(--rule);
+  border-radius:4px;color:var(--ink-3);background:var(--paper);
+  display:flex;align-items:center;gap:7px;
+}
+.int-chip.active{border-color:var(--trust-rule);background:var(--trust-bg);color:var(--trust);}
+.int-dot{width:6px;height:6px;border-radius:50%;background:var(--trust);flex-shrink:0;}
+.int-dot.gray{background:var(--rule-mid);}
+
+/* ── VERIFICATION CARD ── */
+.verify-card{
+  border:1px solid var(--rule);border-radius:6px;
+  padding:28px 28px;background:var(--paper);
+  display:grid;grid-template-columns:1fr 1fr;gap:32px;
+}
+@media(max-width:700px){.verify-card{grid-template-columns:1fr;}}
+.verify-title{font-family:var(--mono);font-size:15px;font-weight:600;color:var(--ink);margin-bottom:10px;letter-spacing:-.02em;}
+.verify-body{font-size:13.5px;color:var(--ink-3);line-height:1.68;}
+.verify-body code{font-family:var(--mono);font-size:11px;background:var(--paper-1);padding:1px 5px;border-radius:3px;color:var(--ink-2);}
+.verify-note{
+  font-family:var(--mono);font-size:11px;color:var(--trust);
+  background:var(--trust-bg);border:1px solid var(--trust-rule);
+  border-radius:4px;padding:10px 14px;margin-top:14px;line-height:1.6;
+}
+
+/* ── EXTENSION SECTION ── */
+.ext-grid{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:start;}
+@media(max-width:800px){.ext-grid{grid-template-columns:1fr;}}
+.ext-platforms{display:flex;flex-wrap:wrap;gap:7px;margin:16px 0 20px;}
+.ext-plat{
+  font-family:var(--mono);font-size:11px;
+  padding:4px 11px;border:1px solid var(--rule);
+  border-radius:3px;color:var(--ink-3);
+}
+.ext-steps{display:flex;flex-direction:column;gap:0;border:1px solid var(--rule);}
+.ext-step{padding:14px 16px;border-bottom:1px solid var(--rule);font-size:13.5px;color:var(--ink-2);display:flex;align-items:flex-start;gap:12px;}
+.ext-step:last-child{border-bottom:none;}
+.ext-step-num{font-family:var(--mono);font-size:10px;color:var(--ink-4);flex-shrink:0;margin-top:2px;}
+
+/* ── FINAL CTA ── Blackstone-style: quiet authority ── */
+.cta-section{
+  border-top:1px solid var(--rule);
+  background:var(--ink);
+  padding:80px 48px;
+  text-align:center;
+}
+.cta-eyebrow{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,0.35);margin-bottom:16px;}
+.cta-h{font-family:var(--mono);font-size:clamp(22px,3vw,36px);font-weight:600;letter-spacing:-.04em;color:#fafaf8;margin-bottom:12px;line-height:1.1;}
+.cta-sub{font-size:15px;color:rgba(255,255,255,0.55);line-height:1.65;max-width:480px;margin:0 auto 32px;}
+.cta-actions{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;}
+.cta-btn-p{font-family:var(--mono);font-size:12.5px;font-weight:600;background:#fafaf8;color:var(--ink);padding:11px 24px;border-radius:4px;letter-spacing:.02em;transition:opacity .15s;}
+.cta-btn-p:hover{opacity:.88;}
+.cta-btn-o{font-family:var(--mono);font-size:12.5px;font-weight:500;background:transparent;color:rgba(255,255,255,0.6);padding:10px 22px;border-radius:4px;border:1px solid rgba(255,255,255,0.2);letter-spacing:.02em;transition:border-color .15s,color .15s;}
+.cta-btn-o:hover{border-color:rgba(255,255,255,0.5);color:#fff;}
+.cta-note{margin-top:20px;font-family:var(--mono);font-size:11px;color:rgba(255,255,255,0.3);}
+
+/* ── FOOTER ── */
+footer{border-top:1px solid var(--rule);padding:28px 48px;}
+.foot{max-width:1120px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;}
+.foot-links{display:flex;gap:24px;flex-wrap:wrap;}
+.foot-links a{font-size:12.5px;color:var(--ink-4);}
+.foot-links a:hover{color:var(--ink-2);}
+.foot-copy{font-family:var(--mono);font-size:11px;color:var(--ink-4);}
+
+@media(max-width:640px){
+  nav{padding:0 20px;}
+  .trust-bar,.section{padding-left:24px;padding-right:24px;}
+  .cta-section{padding:60px 24px;}
+  footer{padding:24px;}
+  .hero{padding:56px 24px 40px;}
+}
 </style>
 </head>
 <body>
 
-<!-- HEADER -->
-<header>
-  <a class="logo" href="/">
-    <div class="logo-mark">
-      <!-- 3-body problem logo -->
-<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <linearGradient id="lg1" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stop-color="#7C3AED"/>
-            <stop offset="55%" stop-color="#2563EB"/>
-            <stop offset="100%" stop-color="#22D3EE"/>
-          </linearGradient>
-        </defs>
-        <circle cx="20" cy="20" r="17" stroke="#e5e7eb" stroke-width="0.8" stroke-dasharray="2 3"/>
-        <circle cx="20" cy="20" r="12" stroke="#d1d5db" stroke-width="0.5" opacity="0.6"/>
-        <circle cx="20" cy="5"  r="3.2" fill="#7C3AED" opacity="0.95"/>
-        <circle cx="20" cy="5"  r="5.5" stroke="#7C3AED" stroke-width="0.4" opacity="0.2"/>
-        <circle cx="33" cy="28" r="2.6" fill="#2563EB" opacity="0.95"/>
-        <circle cx="33" cy="28" r="4.5" stroke="#2563EB" stroke-width="0.4" opacity="0.2"/>
-        <circle cx="7"  cy="28" r="2.2" fill="#22D3EE" opacity="0.9"/>
-        <circle cx="7"  cy="28" r="3.8" stroke="#22D3EE" stroke-width="0.4" opacity="0.2"/>
-        <line x1="20" y1="8"  x2="31" y2="26" stroke="url(#lg1)" stroke-width="0.6" opacity="0.5"/>
-        <line x1="20" y1="8"  x2="9"  y2="26" stroke="#7C3AED" stroke-width="0.6" opacity="0.4"/>
-        <line x1="30" y1="27" x2="10" y2="27" stroke="#22D3EE" stroke-width="0.6" opacity="0.4"/>
-        <circle cx="20" cy="20" r="2.5" fill="url(#lg1)" opacity="0.6"/>
+<!-- ── NAV ── -->
+<nav>
+  <a href="/" class="nav-brand">
+    <svg class="dm-logo-svg" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs><linearGradient id="nlg1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#0f7b4d"/><stop offset="100%" stop-color="#0a5c3a"/></linearGradient></defs>
+      <circle cx="20" cy="20" r="17" stroke="#d0d0c8" stroke-width="0.8" stroke-dasharray="2 3"/>
+      <circle cx="20" cy="20" r="12" stroke="#e0e0d8" stroke-width="0.5" opacity="0.6"/>
+      <circle cx="20" cy="5"  r="3.2" fill="#0f7b4d" opacity="0.95"/>
+      <circle cx="20" cy="5"  r="5.5" stroke="#0f7b4d" stroke-width="0.4" opacity="0.18"/>
+      <circle cx="33" cy="28" r="2.6" fill="#3a3a35" opacity="0.8"/>
+      <circle cx="33" cy="28" r="4.5" stroke="#3a3a35" stroke-width="0.4" opacity="0.15"/>
+      <circle cx="7"  cy="28" r="2.2" fill="#6a6a62" opacity="0.7"/>
+      <circle cx="7"  cy="28" r="3.8" stroke="#6a6a62" stroke-width="0.4" opacity="0.15"/>
+      <line x1="20" y1="8"  x2="31" y2="26" stroke="#0f7b4d" stroke-width="0.6" opacity="0.4"/>
+      <line x1="20" y1="8"  x2="9"  y2="26" stroke="#3a3a35" stroke-width="0.6" opacity="0.3"/>
+      <line x1="30" y1="27" x2="10" y2="27" stroke="#6a6a62" stroke-width="0.6" opacity="0.3"/>
+      <circle cx="20" cy="20" r="2" fill="#0f7b4d" opacity="0.4"/>
+    </svg>
+    <span class="nav-wordmark">darkmatter</span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="/demo">Demo</a></li>
+    <li><a href="/docs">Docs</a></li>
+    <li><a href="/pricing">Pricing</a></li>
+    <li><a href="/security">Security</a></li>
+    <li><a href="/enterprise">Enterprise</a></li>
+  </ul>
+  <div class="nav-right">
+    <a href="/login" style="font-size:13px;color:var(--ink-3);">Sign in</a>
+    <a href="/signup" class="nav-cta">Start free</a>
+  </div>
+</nav>
+
+<!-- ── HERO ── -->
+<div class="hero">
+  <div class="hero-left">
+    <div class="hero-eyebrow">Execution records for AI systems</div>
+    <h1 class="hero-h1">Replay, fork, and verify every AI run.</h1>
+    <p class="hero-sub">
+      An independent execution record your own engineers can't tamper with.
+      DarkMatter commits every agent step as a cryptographically chained record stored outside your system —
+      so you can replay, fork, and export verifiable proof without trusting us to do it.
+    </p>
+    <div style="display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11.5px;color:var(--trust);background:var(--trust-bg);border:1px solid var(--trust-rule);padding:5px 12px;border-radius:4px;margin-bottom:20px;">
+      <span>✓</span><span>Stored outside your system — verified without DarkMatter</span>
+    </div>
+    <div class="hero-actions">
+      <a href="/demo" class="btn-primary">Run demo →</a>
+      <a href="/signup" class="btn-secondary">Get API key</a>
+    </div>
+    <p class="hero-note">Free tier · no credit card · unlimited agents</p>
+  </div>
+
+  <div class="hero-right">
+    <div class="chain-frame">
+      <div class="chain-titlebar">
+        <div class="win-dot r"></div><div class="win-dot y"></div><div class="win-dot g"></div>
+        <span class="chain-label">chain · ctx_1775...</span>
+      </div>
+      <div class="chain-row">
+        <div class="chain-spine"><div class="c-dot"></div><div class="c-line"></div></div>
+        <div class="chain-cell">
+          <span class="c-name">plan_task · Claude</span>
+          <div class="c-badges"><span class="c-badge ok">✓ valid</span><span class="c-hash">a3f7c2</span></div>
+        </div>
+      </div>
+      <div class="chain-row">
+        <div class="chain-spine"><div class="c-dot"></div><div class="c-line"></div></div>
+        <div class="chain-cell">
+          <span class="c-name">research · GPT-4o</span>
+          <div class="c-badges"><span class="c-badge ok">✓ valid</span><span class="c-hash">d9b14e</span></div>
+        </div>
+      </div>
+      <div class="chain-row">
+        <div class="chain-spine"><div class="c-dot"></div><div class="c-line"></div></div>
+        <div class="chain-cell">
+          <span class="c-name">validate · Claude</span>
+          <div class="c-badges"><span class="c-badge ok">✓ valid</span><span class="c-hash">7e2a91</span></div>
+        </div>
+      </div>
+      <div class="chain-row">
+        <div class="chain-spine"><div class="c-dot"></div><div class="c-line"></div></div>
+        <div class="chain-cell">
+          <span class="c-name">draft · Grok · ⑂ fork</span>
+          <div class="c-badges"><span class="c-badge ok">✓ valid</span><span class="c-hash">c5f830</span></div>
+        </div>
+      </div>
+      <div class="chain-row">
+        <div class="chain-spine"><div class="c-dot err"></div></div>
+        <div class="chain-cell">
+          <span class="c-name err">override_detected</span>
+          <div class="c-badges"><span class="c-badge er">✗ tamper</span><span class="c-hash">—</span></div>
+        </div>
+      </div>
+    </div>
+    <p style="font-family:var(--mono);font-size:10px;color:var(--ink-4);margin-top:10px;text-align:right;">
+      SHA-256 chained · tamper-evident · verifiable offline
+    </p>
+  </div>
+</div>
+
+<!-- ── TRUST BAR ── -->
+<hr class="section-rule"/>
+<div class="trust-bar">
+  <div class="trust-item"><span class="trust-icon">✓</span>Stored outside your system</div>
+  <div class="trust-sep"></div>
+  <div class="trust-item"><span class="trust-icon">✓</span>Verify without DarkMatter</div>
+  <div class="trust-sep"></div>
+  <div class="trust-item"><span class="trust-icon">✓</span>BYOK encryption</div>
+  <div class="trust-sep"></div>
+  <div class="trust-item"><span class="trust-icon">✓</span>Self-host — MIT license</div>
+  <div class="trust-sep"></div>
+  <div class="trust-item"><span class="trust-icon">✓</span>Context Passport — open standard</div>
+</div>
+
+<!-- ── PRIMITIVES ── -->
+<hr class="section-rule"/>
+<div class="section tight">
+  <div class="section-eye">Four primitives</div>
+  <h2 class="section-h2">Everything your pipeline needs to be accountable.</h2>
+  <p class="section-lead">No new orchestration layer. Wrap one function call and the rest follows.</p>
+  <div class="primitives">
+    <div class="prim">
+      <div class="prim-cmd">dm.commit()</div>
+      <div class="prim-title">Commit</div>
+      <div class="prim-body">Record every execution step as a cryptographically chained context. SHA-256 payload hash linked to its parent. Tamper-detection built in.</div>
+    </div>
+    <div class="prim">
+      <div class="prim-cmd">dm.replay()</div>
+      <div class="prim-title">Replay</div>
+      <div class="prim-body">Walk the full decision chain from root to tip. See exactly what each agent received and produced, in sequence, with verified integrity at every step.</div>
+    </div>
+    <div class="prim">
+      <div class="prim-cmd">dm.fork()</div>
+      <div class="prim-title">Fork</div>
+      <div class="prim-body">Branch from any checkpoint. Run the same pipeline with a different model, prompt, or agent. The original chain is always intact.</div>
+    </div>
+    <div class="prim">
+      <div class="prim-cmd">dm.verify()</div>
+      <div class="prim-title">Verify</div>
+      <div class="prim-body">Export a self-contained proof bundle. Anyone can verify integrity using the included verifier script — no DarkMatter account, no internet connection.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── AUDIENCE: DEVELOPERS ── -->
+<hr class="section-rule"/>
+<div class="section tight">
+  <div class="section-eye">Built for developers and researchers</div>
+  <h2 class="section-h2">You already work this way. DarkMatter just records it.</h2>
+  <p class="section-lead">Whether you're building production pipelines or running experiments, DarkMatter wraps your existing workflow without changing it.</p>
+  <div class="audience-grid">
+    <div class="aud-card">
+      <div class="aud-tag">For developers</div>
+      <div class="aud-title">Production agent pipelines</div>
+      <div class="aud-body">Multi-agent systems that need to prove what happened. LangGraph graphs, Anthropic tools, OpenAI function calls, custom orchestration — DarkMatter is framework-agnostic and adds under 5ms per commit.</div>
+      <div class="aud-items">
+        <div class="aud-item">Stop restarting failed runs. Fork from the exact step that broke.</div>
+        <div class="aud-item">Compare GPT-4o vs Claude on the same input with diff.</div>
+        <div class="aud-item">Share a replayable chain link with your team in one command.</div>
+        <div class="aud-item">Export audit proof for compliance reviews.</div>
+        <div class="aud-item">Browser extension auto-captures Claude, ChatGPT, Grok, Gemini.</div>
+      </div>
+    </div>
+    <div class="aud-card">
+      <div class="aud-tag">For researchers</div>
+      <div class="aud-title">Reproducible AI experiments</div>
+      <div class="aud-body">Reproducibility in AI research is broken. DarkMatter makes every experiment replayable, every result verifiable, and every comparison exact — even months later.</div>
+      <div class="aud-items">
+        <div class="aud-item">Record every experiment run with full prompt and output history.</div>
+        <div class="aud-item">Fork from any checkpoint to test a new hypothesis.</div>
+        <div class="aud-item">Diff two model runs with the exact same input chain.</div>
+        <div class="aud-item">Export cryptographic proof that results were not modified.</div>
+        <div class="aud-item">Works directly from Jupyter Notebook — two lines of code.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── JUPYTER / RESEARCHER ── -->
+<hr class="section-rule"/>
+<div class="section tight">
+  <div class="section-eye">Jupyter Notebook</div>
+  <h2 class="section-h2">One import. Every experiment recorded.</h2>
+  <p class="section-lead">No pipeline setup required. DarkMatter works in any notebook environment — run experiments as you normally would, and every result is automatically chained and replayable.</p>
+  <div class="research-grid">
+    <div class="notebook-frame">
+      <div class="nb-bar">
+        <span class="nb-title">experiment_v3.ipynb</span>
+        <span class="nb-kernel">Python 3 · darkmatter-sdk</span>
+      </div>
+      <div class="nb-cell">
+        <div class="nb-in">In [1]:</div>
+        <div class="nb-code"><span style="color:#0f7b4d">import</span> darkmatter <span style="color:#0f7b4d">as</span> dm
+<span class="nb-comment"># .env loaded automatically — no setup needed</span></div>
+      </div>
+      <div class="nb-cell">
+        <div class="nb-in">In [2]:</div>
+        <div class="nb-code">result = run_model(prompt, temperature=0.7)
+ctx = dm.commit(
+    to_agent_id=agent_id,
+    payload={<span style="color:#b45309">"prompt"</span>: prompt,
+             <span style="color:#b45309">"output"</span>: result,
+             <span style="color:#b45309">"model"</span>:  <span style="color:#b45309">"claude-opus-4-6"</span>}
+)</div>
+      </div>
+      <div class="nb-cell">
+        <div class="nb-in">In [3]:</div>
+        <div class="nb-code">fork = dm.fork(ctx[<span style="color:#b45309">"id"</span>])
+result_b = run_model(prompt, temperature=1.0)
+ctx_b = dm.commit(to_agent_id=agent_id,
+    parent_id=fork[<span style="color:#b45309">"id"</span>],
+    payload={<span style="color:#b45309">"output"</span>: result_b})</div>
+      </div>
+      <div class="nb-cell">
+        <div class="nb-in">In [4]:</div>
+        <div class="nb-code">diff = dm.diff(ctx[<span style="color:#b45309">"id"</span>], ctx_b[<span style="color:#b45309">"id"</span>])</div>
+        <div class="nb-out">→ {"changedSteps": 1, "divergedAt": "step 1", "intact": true}</div>
+      </div>
+    </div>
+    <div>
+      <h3 style="font-family:var(--mono);font-size:16px;font-weight:600;color:var(--ink);margin-bottom:14px;letter-spacing:-.02em;">Why researchers use DarkMatter</h3>
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <div>
+          <div style="font-family:var(--mono);font-size:12.5px;font-weight:600;color:var(--ink);margin-bottom:4px;">Exact reproducibility</div>
+          <div style="font-size:13px;color:var(--ink-3);line-height:1.65;">Every run is a chained record with full payload, model identity, and timestamp. Re-run any experiment six months later from the exact same checkpoint.</div>
+        </div>
+        <div>
+          <div style="font-family:var(--mono);font-size:12.5px;font-weight:600;color:var(--ink);margin-bottom:4px;">Honest comparison</div>
+          <div style="font-size:13px;color:var(--ink-3);line-height:1.65;">Fork from the same input, run two models, diff the outputs. The fork relationship is recorded — you can prove the comparison was fair.</div>
+        </div>
+        <div>
+          <div style="font-family:var(--mono);font-size:12.5px;font-weight:600;color:var(--ink);margin-bottom:4px;">Verifiable results</div>
+          <div style="font-size:13px;color:var(--ink-3);line-height:1.65;">Export a proof bundle with your paper. Reviewers can verify your results were not modified — no DarkMatter account required.</div>
+        </div>
+        <div>
+          <div style="font-family:var(--mono);font-size:12.5px;font-weight:600;color:var(--ink);margin-bottom:4px;">No pipeline required</div>
+          <div style="font-size:13px;color:var(--ink-3);line-height:1.65;"><code style="font-family:var(--mono);font-size:11px;background:var(--paper-1);padding:1px 4px;border-radius:2px;">pip install darkmatter-sdk</code> — works in any notebook. Two lines to record your first result.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── HOW IT WORKS ── -->
+<hr class="section-rule"/>
+<div class="section tight">
+  <div class="section-eye">How it works</div>
+  <h2 class="section-h2">Three steps. No new infrastructure.</h2>
+  <div class="how-steps">
+    <div class="how-step">
+      <div class="how-num">01</div>
+      <div class="how-body">
+        <div class="how-title">Wrap your model call with dm.commit()</div>
+        <div class="how-desc">One function wraps any model call. DarkMatter creates a chained context record with a SHA-256 payload hash and links it to the parent step.</div>
+        <div class="how-code">ctx = dm.commit(to_agent_id, payload={"output": result})<br><span class="nb-comment"># → ctx["id"] = "ctx_1775..." — every step gets a permanent, replayable ID</span></div>
+      </div>
+    </div>
+    <div class="how-step">
+      <div class="how-num">02</div>
+      <div class="how-body">
+        <div class="how-title">Replay or fork from any checkpoint</div>
+        <div class="how-desc">Walk the full chain, branch from any step, or diff two branches. The original is always intact. No reruns unless you choose to.</div>
+        <div class="how-code">replay = dm.replay(ctx_id) &nbsp;&nbsp;fork = dm.fork(ctx_id) &nbsp;&nbsp;diff = dm.diff(a, b)</div>
+      </div>
+    </div>
+    <div class="how-step">
+      <div class="how-num">03</div>
+      <div class="how-body">
+        <div class="how-title">Export a verifiable proof bundle</div>
+        <div class="how-desc">Export a self-contained artifact with chain records, hashes, and a standalone verifier. Anyone can check it — no DarkMatter account needed. Verification works offline.</div>
+        <div class="how-code">bundle = dm.export(ctx_id) &nbsp;<span class="nb-comment"># → proof_bundle.zip + verifier.py</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── INTEGRATIONS ── -->
+<hr class="section-rule"/>
+<div class="section tight">
+  <div class="section-eye">Integrations</div>
+  <h2 class="section-h2">Works with any stack.</h2>
+  <p class="section-lead">Python, TypeScript, LangGraph, OpenAI, Anthropic, local models, Jupyter Notebooks, or plain HTTP. If it produces output, you can commit it.</p>
+  <div class="int-grid">
+    <div class="int-chip active"><div class="int-dot"></div>Python SDK</div>
+    <div class="int-chip active"><div class="int-dot"></div>TypeScript SDK</div>
+    <div class="int-chip active"><div class="int-dot"></div>LangGraph</div>
+    <div class="int-chip active"><div class="int-dot"></div>Anthropic SDK</div>
+    <div class="int-chip active"><div class="int-dot"></div>OpenAI SDK</div>
+    <div class="int-chip active"><div class="int-dot"></div>Jupyter Notebook</div>
+    <div class="int-chip"><div class="int-dot gray"></div>CrewAI</div>
+    <div class="int-chip"><div class="int-dot gray"></div>AWS Bedrock</div>
+    <div class="int-chip"><div class="int-dot gray"></div>Local models</div>
+    <div class="int-chip"><div class="int-dot gray"></div>Chrome Extension</div>
+    <div class="int-chip"><div class="int-dot gray"></div>REST API</div>
+    <div class="int-chip"><div class="int-dot gray"></div>Self-host — MIT</div>
+  </div>
+  <p style="margin-top:12px;font-family:var(--mono);font-size:10.5px;color:var(--ink-4);">Green = official SDK &nbsp;·&nbsp; Gray = plain HTTP or community</p>
+</div>
+
+<!-- ── VERIFICATION ── -->
+<hr class="section-rule"/>
+<div class="section tight">
+  <div class="section-eye">Verification</div>
+  <h2 class="section-h2">Verification does not require trusting DarkMatter.</h2>
+  <div class="verify-card">
+    <div>
+      <div class="verify-title">Export bundles are self-contained.</div>
+      <div class="verify-body">
+        Exported bundles contain all chain records, payload hashes, and a standalone verifier script.
+        The verifier checks integrity using Python stdlib only — no network calls, no account, no internet connection.
+        Works offline. Will work in five years regardless of whether DarkMatter exists.
+        <br><br>
+        Self-hosting is also supported under MIT license. Note: when you control the infrastructure, the record is no longer stored outside your system — the third-party independence guarantee only applies to the cloud product. Both are legitimate; they have different trust models.
+      </div>
+      <div class="verify-note">python verifier.py proof_bundle.zip — pass/fail per step · no dependencies beyond Python stdlib</div>
+    </div>
+    <div>
+      <div class="verify-title">Context Passport — open standard.</div>
+      <div class="verify-body">
+        DarkMatter implements the <a href="https://contextpassport.com" style="color:var(--trust);">Context Passport</a> schema — an open, CC0-licensed standard for AI agent context handoffs.
+        The schema is actor-agnostic: human-to-agent and agent-to-agent handoffs use the same format.
+        You can verify any Context Passport chain with any compatible verifier.
+        <br><br>
+        The format is documented. Each commit stores a <code>payload_hash</code> and <code>integrity_hash</code> chained to its parent via SHA-256. Build your own verifier if you prefer.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── BROWSER EXTENSION ── -->
+<hr class="section-rule"/>
+<div class="section tight">
+  <div class="section-eye">Browser extension</div>
+  <h2 class="section-h2">Capture every conversation automatically.</h2>
+  <p class="section-lead">No code required. Install DarkMatter Capture in Chrome, sign in with your account, and every conversation on Claude, ChatGPT, Grok, Gemini, and Perplexity is automatically committed as a chained record.</p>
+  <div class="ext-grid">
+    <div>
+      <div class="ext-platforms">
+        <span class="ext-plat">Claude</span>
+        <span class="ext-plat">ChatGPT</span>
+        <span class="ext-plat">Grok</span>
+        <span class="ext-plat">Gemini</span>
+        <span class="ext-plat">Perplexity</span>
+      </div>
+      <div class="aud-items" style="margin-bottom:24px;">
+        <div class="aud-item">Each new conversation creates its own agent and chain</div>
+        <div class="aud-item">User and assistant turns committed separately — full conversation lineage</div>
+        <div class="aud-item">Tamper-evident record of every exchange</div>
+        <div class="aud-item">Replay, fork, or share any captured conversation</div>
+      </div>
+      <a href="/extension" class="btn-primary">Install extension →</a>
+    </div>
+    <div class="ext-steps">
+      <div class="ext-step"><span class="ext-step-num">01</span>Install DarkMatter Capture from Chrome Web Store</div>
+      <div class="ext-step"><span class="ext-step-num">02</span>Click sign in — your DarkMatter account connects automatically</div>
+      <div class="ext-step"><span class="ext-step-num">03</span>Select which platforms to capture in the extension popup</div>
+      <div class="ext-step"><span class="ext-step-num">04</span>Browse normally. Every conversation is recorded and replayable from your dashboard</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── CTA ── -->
+<div class="cta-section">
+  <div style="max-width:600px;margin:0 auto;">
+    <div class="cta-eyebrow">Get started</div>
+    <div class="cta-h">Run the demo before writing any code.</div>
+    <div class="cta-sub">See commit, replay, fork, and verify in your terminal in under two minutes. No signup required for the demo.</div>
+    <div class="cta-actions">
+      <a href="/demo" class="cta-btn-p">Run demo →</a>
+      <a href="/signup" class="cta-btn-o">Get API key free</a>
+    </div>
+    <div class="cta-note">Free tier · 50,000 commits/month · unlimited agents · full replay, fork, verify, export</div>
+  </div>
+</div>
+
+<!-- ── FOOTER ── -->
+<footer>
+  <div class="foot">
+    <div style="display:flex;align-items:center;gap:8px;">
+      <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:20px;height:20px;">
+        <circle cx="20" cy="5"  r="3" fill="#0f7b4d" opacity="0.8"/>
+        <circle cx="33" cy="28" r="2.4" fill="#3a3a35" opacity="0.6"/>
+        <circle cx="7"  cy="28" r="2" fill="#6a6a62" opacity="0.5"/>
+        <line x1="20" y1="8" x2="31" y2="26" stroke="#9a9a90" stroke-width="0.6" opacity="0.5"/>
+        <line x1="20" y1="8" x2="9"  y2="26" stroke="#9a9a90" stroke-width="0.6" opacity="0.4"/>
+        <line x1="30" y1="27" x2="10" y2="27" stroke="#9a9a90" stroke-width="0.6" opacity="0.4"/>
       </svg>
     </div>
-    <div class="logo-words">
-      <div class="logo-name">Dark<span class="matter-grad">Matter</span></div>
-      <div class="logo-sub">agent context network</div>
+    <div class="foot-links">
+      <a href="/demo">Demo</a><a href="/docs">Docs</a><a href="/compare">Compare</a>
+      <a href="/pricing">Pricing</a><a href="/compare">Compare</a><a href="/security">Security</a><a href="/enterprise">Enterprise</a><a href="/compliance">Compliance</a><a href="/threat-model">Threat model</a>
+      <a href="/blog">Blog</a><a href="https://contextpassport.com" target="_blank">Context Passport</a>
+      <a href="https://github.com/bengunvl/darkmatter" target="_blank">GitHub</a>
     </div>
-  </a>
-
-  <div class="hright">
-    <a class="nav-flat" href="/demo">Demo</a>
-    <a class="nav-flat" href="/docs">Docs</a>
-    <a class="nav-flat" href="/pricing">Pricing</a>
-    <a class="nav-flat" href="/why">Why</a>
-    <a class="nav-flat" href="/blog">Blog</a>
-    <a class="btn-signin" href="/login" title="Sign in / Sign up" style="display:flex;align-items:center;gap:0.35rem;">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-    </a>
-  </div>
-</header>
-
-<!-- HERO -->
-<div class="hero">
-
-  <h1 class="hero-h1">Replay, fork, and compare<br><span class="matter-grad">any AI workflow.</span></h1>
-
-  <p class="hero-sub" style="text-align:center;margin-left:auto;margin-right:auto;">
-    See exactly what your pipeline did — step by step — across any model or tool.<br>
-    Replay runs, fork from any step, and compare outputs instantly.
-  </p>
-  <div style="text-align:center;margin-bottom:2rem;position:relative;z-index:1;">
-    <div style="font-family:var(--mono);font-size:0.82rem;color:var(--text3);margin-bottom:0.35rem;">pip install darkmatter-sdk &amp;&amp; darkmatter demo</div>
-    <div style="font-size:0.75rem;color:var(--text3);">No signup. Runs locally in seconds.</div>
-    <div style="font-size:0.75rem;color:var(--text3);margin-top:0.2rem;">Works with a single script or multi-agent systems.</div>
-    <div style="font-size:0.75rem;color:var(--text3);margin-top:0.2rem;">Works across Claude, GPT, local models, and your own code.</div>
-    <div style="font-size:0.75rem;color:var(--text3);margin-top:0.2rem;">See replay, fork, and diff in your terminal immediately.</div>
-  </div>
-
-
-  <div class="hero-cta">
-    <a class="cta-primary" href="/signup">Get API Key →</a>
-    <a class="cta-secondary" href="/demo">
-      Live Demo →
-    </a>
-  </div>
-</div>
-
-<!-- QUOTE STRIP -->
-<div style="border-top:1px solid var(--border);border-bottom:1px solid var(--border);background:var(--bg2);padding:1.25rem 2rem;text-align:center;">
-  <div style="font-family:var(--mono);font-size:0.78rem;color:var(--text2);letter-spacing:0.02em;">
-    <span style="color:var(--text2);">Works with LangGraph, Anthropic SDK, OpenAI, CrewAI, local models, and raw API calls.</span>
-  </div>
-</div>
-
-<!-- BULLET STRIP -->
-<div style="border-bottom:1px solid var(--border);background:var(--bg);padding:1.5rem 2rem;">
-  <div style="max-width:860px;margin:0 auto;display:flex;justify-content:center;gap:3rem;flex-wrap:wrap;">
-    <div style="display:flex;align-items:center;gap:0.6rem;font-size:0.85rem;color:var(--text2);">
-      <span style="color:var(--violet);font-weight:700;">→</span> Keep history across tools and models
-    </div>
-    <div style="display:flex;align-items:center;gap:0.6rem;font-size:0.85rem;color:var(--text2);">
-      <span style="color:var(--violet);font-weight:700;">→</span> Replay any run from any step
-    </div>
-    <div style="display:flex;align-items:center;gap:0.6rem;font-size:0.85rem;color:var(--text2);">
-      <span style="color:var(--violet);font-weight:700;">→</span> Compare outputs across models
-    </div>
-  </div>
-</div>
-
-<!-- USE CASES -->
-<div class="usecase-section">
-  <div class="usecase-inner">
-    <div class="usecase-title">What developers actually use DarkMatter for</div>
-    <div class="usecase-grid">
-      <div class="uc-card">
-        <div class="uc-icon">🔀</div>
-        <div class="uc-title">Compare Claude vs GPT on the same step</div>
-        <div class="uc-desc">Fork from any checkpoint, run the same input through a different model, diff the outputs. See what actually changes.</div>
-      </div>
-      <div class="uc-card">
-        <div class="uc-icon">⏪</div>
-        <div class="uc-title">Replay a failed run from step 4, not step 1</div>
-        <div class="uc-desc">Resume from the last committed checkpoint. No restarts, no lost work.</div>
-      </div>
-      <div class="uc-card">
-        <div class="uc-icon">🔗</div>
-        <div class="uc-title">Keep history across LangGraph and raw API calls</div>
-        <div class="uc-desc">One chain across LangGraph nodes, Anthropic calls, OpenAI completions, local models. All linked, all replayable.</div>
-      </div>
-      <div class="uc-card">
-        <div class="uc-icon">🔍</div>
-        <div class="uc-title">Search previous outputs across runs</div>
-        <div class="uc-desc">Find commits by model, event type, or content. Reuse results instead of rerunning expensive steps.</div>
-      </div>
-      <div class="uc-card">
-        <div class="uc-icon">🌿</div>
-        <div class="uc-title">Branch from any step, keep the original</div>
-        <div class="uc-desc">Fork creates a new branch without touching the original. Try a different prompt or model, then compare outcomes.</div>
-      </div>
-    </div>
-  </div>
-</div>
-
-
-<!-- HOW IT WORKS -->
-<div style="border-top:1px solid var(--border);padding:3rem 2rem;">
-  <div style="max-width:860px;margin:0 auto;">
-    <div style="font-family:var(--mono);font-size:0.6rem;color:var(--text3);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:1rem;text-align:center;">How it works</div>
-    <div style="font-size:1.35rem;font-weight:700;color:var(--text);letter-spacing:-0.02em;margin-bottom:0.5rem;font-family:var(--display);text-align:center;">Three steps.</div>
-    <div style="font-size:0.88rem;color:var(--text2);text-align:center;margin-bottom:2.5rem;">Add replay, fork, and diff to your pipeline in minutes.</div>
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem;">
-      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:1.5rem;position:relative;">
-        <div style="font-family:var(--serif,Georgia);font-size:2.5rem;color:var(--border2);font-weight:700;line-height:1;margin-bottom:0.75rem;">1</div>
-        <div style="font-size:0.9rem;font-weight:700;color:var(--text);margin-bottom:0.4rem;">Commit each step</div>
-        <div style="font-size:0.78rem;color:var(--text2);line-height:1.65;">Call <code style="font-family:var(--mono);font-size:0.75em;background:var(--bg3);padding:0.1em 0.3em;border-radius:3px;">dm.commit()</code> after each agent step. Pass <code style="font-family:var(--mono);font-size:0.75em;background:var(--bg3);padding:0.1em 0.3em;border-radius:3px;">parent_id</code> to link them into a chain.</div>
-      </div>
-      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:1.5rem;position:relative;">
-        <div style="font-family:var(--serif,Georgia);font-size:2.5rem;color:var(--border2);font-weight:700;line-height:1;margin-bottom:0.75rem;">2</div>
-        <div style="font-size:0.9rem;font-weight:700;color:var(--text);margin-bottom:0.4rem;">Replay or fork from any point</div>
-        <div style="font-size:0.78rem;color:var(--text2);line-height:1.65;">Walk the full chain step by step. Fork from any checkpoint to try a different model or prompt without losing the original.</div>
-      </div>
-      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:1.5rem;position:relative;">
-        <div style="font-family:var(--serif,Georgia);font-size:2.5rem;color:var(--border2);font-weight:700;line-height:1;margin-bottom:0.75rem;">3</div>
-        <div style="font-size:0.9rem;font-weight:700;color:var(--text);margin-bottom:0.4rem;">Compare outputs or export proof</div>
-        <div style="font-size:0.78rem;color:var(--text2);line-height:1.65;">Diff two chains to see exactly what changed. Export a cryptographic proof artifact anyone can verify — no access to DarkMatter required.</div>
-      </div>
-    </div>
-    <div style="margin-top:1.5rem;padding:1rem 1.5rem;background:var(--bg2);border:1px solid var(--border);border-radius:8px;font-size:0.82rem;color:var(--text3);text-align:center;font-family:var(--mono);">
-Try the same step with a different model and see what actually changes. &nbsp;<a href="/demo" style="color:var(--accent);text-decoration:none;font-weight:500;">Live demo →</a>
-    </div>
-  </div>
-</div>
-
-<!-- WHY EXISTING TOOLS BREAK -->
-<div style="border-top:1px solid var(--border);padding:3rem 2rem;">
-  <div style="max-width:860px;margin:0 auto;">
-    <div style="font-family:var(--mono);font-size:0.6rem;color:var(--text3);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:1rem;">Why logs and tracing aren't enough</div>
-    <div style="font-size:1.15rem;font-weight:700;color:var(--text);letter-spacing:-0.02em;margin-bottom:2rem;font-family:var(--display);">Logs and traces were built for services, not execution chains.</div>
-    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:1rem;margin-bottom:1.5rem;">
-      <div style="display:flex;gap:0.75rem;align-items:flex-start;">
-        <span style="color:var(--red);font-size:1rem;margin-top:0.1rem;">✗</span>
-        <div>
-          <div style="font-size:0.85rem;font-weight:600;color:var(--text);margin-bottom:0.2rem;">Logs don't reconstruct execution</div>
-          <div style="font-size:0.78rem;color:var(--text2);line-height:1.6;">You can see what was logged. You can't replay the exact state or branch from step 3.</div>
-        </div>
-      </div>
-      <div style="display:flex;gap:0.75rem;align-items:flex-start;">
-        <span style="color:var(--red);font-size:1rem;margin-top:0.1rem;">✗</span>
-        <div>
-          <div style="font-size:0.85rem;font-weight:600;color:var(--text);margin-bottom:0.2rem;">Traces don't let you replay</div>
-          <div style="font-size:0.78rem;color:var(--text2);line-height:1.6;">Datadog and Langfuse show what happened. Neither lets you fork from step 2 and compare.</div>
-        </div>
-      </div>
-      <div style="display:flex;gap:0.75rem;align-items:flex-start;">
-        <span style="color:var(--red);font-size:1rem;margin-top:0.1rem;">✗</span>
-        <div>
-          <div style="font-size:0.85rem;font-weight:600;color:var(--text);margin-bottom:0.2rem;">Cross-model pipelines lose context</div>
-          <div style="font-size:0.78rem;color:var(--text2);line-height:1.6;">Switch from Claude to GPT mid-pipeline and the thread breaks. No shared format, no verified handoff.</div>
-        </div>
-      </div>
-      <div style="display:flex;gap:0.75rem;align-items:flex-start;">
-        <span style="color:var(--red);font-size:1rem;margin-top:0.1rem;">✗</span>
-        <div>
-          <div style="font-size:0.85rem;font-weight:600;color:var(--text);margin-bottom:0.2rem;">Debugging means starting over</div>
-          <div style="font-size:0.78rem;color:var(--text2);line-height:1.6;">A failure at step 8 means rerunning steps 1–7. No checkpoints, no shortcuts.</div>
-        </div>
-      </div>
-    </div>
-    <div style="padding:1rem 1.5rem;background:var(--bg2);border:1px solid var(--border);border-radius:8px;font-size:0.88rem;color:var(--text2);line-height:1.7;">
-      DarkMatter records execution as a replayable chain — outside your system, across any model or framework.
-    </div>
-  </div>
-</div>
-
-<!-- SYSTEM OF RECORD CALLOUT -->
-<div style="border-top:1px solid var(--border);padding:2rem 2rem;">
-  <div style="max-width:860px;margin:0 auto;text-align:center;">
-    <div style="font-size:1.15rem;font-weight:700;color:var(--text);font-family:var(--display);letter-spacing:-0.01em;">DarkMatter is the system of record for AI execution.</div>
-  </div>
-</div>
-
-<!-- DIFFERENTIATION -->
-<div style="padding:3rem 2rem;border-top:1px solid var(--border);">
-  <div style="max-width:860px;margin:0 auto;">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:3rem;align-items:center;" class="cp-grid">
-      <div>
-        <div style="font-family:var(--mono);font-size:0.6rem;color:var(--text3);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:1rem;">Positioning</div>
-        <div style="font-size:1.35rem;font-weight:700;color:var(--text);letter-spacing:-0.02em;margin-bottom:0.5rem;font-family:var(--display);">Not another AI tool.</div>
-        <div style="font-size:0.85rem;color:var(--text3);margin-bottom:1.25rem;font-family:var(--mono);"></div>
-        <div style="display:flex;flex-direction:column;gap:0.6rem;margin-bottom:1.5rem;">
-          <div style="font-size:0.85rem;color:var(--text3);display:flex;gap:0.75rem;align-items:center;">
-            <span style="color:var(--red);font-weight:700;">✗</span> Not an agent framework
-          </div>
-          <div style="font-size:0.85rem;color:var(--text3);display:flex;gap:0.75rem;align-items:center;">
-            <span style="color:var(--red);font-weight:700;">✗</span> Not a vector database
-          </div>
-          <div style="font-size:0.85rem;color:var(--text3);display:flex;gap:0.75rem;align-items:center;">
-            <span style="color:var(--red);font-weight:700;">✗</span> Not an orchestration tool
-          </div>
-          <div style="font-size:0.85rem;color:var(--text3);display:flex;gap:0.75rem;align-items:center;">
-            <span style="color:var(--violet);font-weight:700;">→</span> Independent execution record
-          </div>
-        </div>
-        <div style="border-top:1px solid var(--border);padding-top:1.25rem;">
-          <div style="font-size:0.85rem;color:var(--text2);display:flex;gap:0.75rem;align-items:flex-start;">
-            <span style="background:var(--gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;font-weight:700;font-size:1rem;">→</span>
-            <span>DarkMatter is <strong style="color:var(--text);">the system of record for AI execution</strong> — immutable, portable, replayable. Record every step, replay any run, fork from any checkpoint.</span>
-          </div>
-        </div>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:0.75rem;">
-        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:1rem 1.25rem;">
-          <div style="font-size:0.72rem;font-weight:600;color:var(--text);margin-bottom:0.2rem;">LangChain / CrewAI</div>
-          <div style="font-size:0.72rem;color:var(--text3);">runs agents, defines workflows</div>
-        </div>
-        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:1rem 1.25rem;">
-          <div style="font-size:0.72rem;font-weight:600;color:var(--text);margin-bottom:0.2rem;">Pinecone / Weaviate</div>
-          <div style="font-size:0.72rem;color:var(--text3);">stores memory, retrieves context</div>
-        </div>
-        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:1rem 1.25rem;">
-          <div style="font-size:0.72rem;font-weight:600;color:var(--text);margin-bottom:0.2rem;">Datadog / Langfuse</div>
-          <div style="font-size:0.72rem;color:var(--text3);">monitors what agents produce</div>
-        </div>
-        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:1rem 1.25rem;position:relative;overflow:hidden;">
-          <div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(124,58,237,0.06),rgba(34,211,238,0.04));pointer-events:none;"></div>
-          <div style="font-size:0.72rem;font-weight:700;margin-bottom:0.2rem;background:var(--gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">DarkMatter</div>
-          <div style="font-size:0.72rem;color:var(--text2);position:relative;"><strong style="color:var(--text);">system of record for AI execution</strong> — replay, fork, compare</div>
-        </div>
-      </div>
-    </div>
-    <div style="margin-top:2rem;padding:1.25rem 1.5rem;background:var(--bg3);border:1px solid var(--border);border-radius:8px;font-size:0.88rem;color:var(--text2);line-height:1.7;text-align:center;">
-      <strong style="color:var(--text);">DarkMatter lets you replay, fork, and prove exactly what happened.</strong>
-    </div>
-  </div>
-</div>
-
-<!-- TWO AUDIENCES SECTION -->
-<div style="border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:3rem 2rem;">
-  <div style="max-width:860px;margin:0 auto;">
-
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
-
-      <!-- For developers -->
-      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:1.75rem;">
-        <div style="font-family:var(--mono);font-size:0.6rem;color:var(--accent);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:0.75rem;">For developers</div>
-        <div style="font-size:1rem;font-weight:700;color:var(--text);margin-bottom:0.75rem;line-height:1.3;">
-          Add replay, fork, and diff to your pipeline in minutes
-        </div>
-        <div style="font-size:0.8rem;color:var(--text2);line-height:1.75;margin-bottom:1.1rem;">
-Stop restarting runs. Start from the exact step that broke. No changes to your orchestration required.
-        </div>
-        <div style="font-size:0.8rem;color:var(--text2);line-height:1.7;margin-bottom:1.1rem;">
-          One commit per step. You get replay, fork, diff, and search — without changing how your pipeline runs.
-        </div>
-        <div style="font-size:0.82rem;color:var(--violet);font-weight:600;margin-bottom:0.75rem;">Stop restarting runs. Start from the exact step that broke. No changes to your orchestration required.</div>
-        <div style="display:none">
-        </div>
-        <div style="display:flex;flex-direction:column;gap:0.5rem;">
-          <div style="font-size:0.78rem;color:var(--text2);display:flex;gap:0.5rem;">
-            <span style="color:var(--green)">✓</span> Run a pipeline → replay it step by step
-          </div>
-          <div style="font-size:0.78rem;color:var(--text2);display:flex;gap:0.5rem;">
-            <span style="color:var(--green)">✓</span> Fork from any step → try a different model
-          </div>
-          <div style="font-size:0.78rem;color:var(--text2);display:flex;gap:0.5rem;">
-            <span style="color:var(--green)">✓</span> Compare outputs → see what actually changed
-          </div>
-          <div style="font-size:0.78rem;color:var(--text2);display:flex;gap:0.5rem;">
-            <span style="color:var(--green)">✓</span> Search past runs → reuse previous results
-          </div>
-        </div>
-      </div>
-
-      <!-- For compliance -->
-      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:1.75rem;">
-        <div style="font-family:var(--mono);font-size:0.6rem;color:var(--amber);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:0.75rem;">For teams and enterprises</div>
-        <div style="font-size:1rem;font-weight:700;color:var(--text);margin-bottom:0.75rem;line-height:1.3;">
-          Audit-ready execution history for AI systems
-        </div>
-        <div style="font-size:0.8rem;color:var(--text2);line-height:1.75;margin-bottom:1.1rem;">
-Prove what your system did, after the fact.
-        </div>
-        <div style="font-size:0.8rem;color:var(--text2);line-height:1.75;margin-bottom:1.1rem;">
-A system of record for how your AI actually behaved.
-        </div>
-        <div style="font-size:0.8rem;color:var(--text2);line-height:1.75;margin-bottom:1.1rem;">
-          Every step recorded as a tamper-evident chain stored outside your system. Export and verify when you need it.
-        </div>
-        <div style="display:flex;flex-direction:column;gap:0.5rem;margin-bottom:1.1rem;">
-          <div style="font-size:0.78rem;color:var(--text2);display:flex;gap:0.5rem;">
-            <span style="color:var(--green)">✓</span> Stored outside your system — not your own logs
-          </div>
-          <div style="font-size:0.78rem;color:var(--text2);display:flex;gap:0.5rem;">
-            <span style="color:var(--green)">✓</span> Verifiable chain integrity
-          </div>
-          <div style="font-size:0.78rem;color:var(--text2);display:flex;gap:0.5rem;">
-            <span style="color:var(--green)">✓</span> Exportable audit artifacts
-          </div>
-          <div style="font-size:0.78rem;color:var(--text2);display:flex;gap:0.5rem;">
-            <span style="color:var(--green)">✓</span> Works across any model or framework
-          </div>
-          <div style="font-size:0.78rem;color:var(--text3);margin-top:0.5rem;font-family:var(--mono);">Every step is linked with a tamper-evident hash chain.</div>
-
-          </div>
-        </div>
-      </div>
-
-    </div>
-  </div>
-</div>
-
-
-<!-- WHO THIS IS FOR -->
-<div style="border-top:1px solid var(--border);padding:3rem 2rem;">
-  <div style="max-width:860px;margin:0 auto;">
-    <div style="font-family:var(--mono);font-size:0.6rem;color:var(--text3);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:1.5rem;">Who this is for</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
-      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:1.5rem;">
-        <div style="font-size:0.72rem;font-weight:700;color:var(--green);font-family:var(--mono);margin-bottom:1rem;letter-spacing:0.05em;">✓ BUILT FOR</div>
-        <div style="display:flex;flex-direction:column;gap:0.65rem;">
-          <div style="font-size:0.82rem;color:var(--text2);display:flex;gap:0.6rem;align-items:flex-start;"><span style="color:var(--green);margin-top:0.1rem;">→</span><span><strong style="color:var(--text);">Solo developers</strong> — works even if you're just calling one model. No agents required. Replay your own pipeline and compare runs</span></div>
-          <div style="font-size:0.82rem;color:var(--text2);display:flex;gap:0.6rem;align-items:flex-start;"><span style="color:var(--green);margin-top:0.1rem;">→</span><span><strong style="color:var(--text);">Multi-agent pipeline engineers</strong>, anyone chaining Claude, GPT, Llama, or any mix of models in production</span></div>
-          <div style="font-size:0.82rem;color:var(--text2);display:flex;gap:0.6rem;align-items:flex-start;"><span style="color:var(--green);margin-top:0.1rem;">→</span><span><strong style="color:var(--text);">AI infrastructure teams</strong>, building internal agent pipelines that need replay, audit, and reproducibility</span></div>
-          <div style="font-size:0.82rem;color:var(--text2);display:flex;gap:0.6rem;align-items:flex-start;"><span style="color:var(--green);margin-top:0.1rem;">→</span><span><strong style="color:var(--text);">Enterprises and regulated teams</strong>, where an independent record creates accountability that matters beyond the dev team</span></div>
-          <div style="font-size:0.82rem;color:var(--text2);display:flex;gap:0.6rem;align-items:flex-start;"><span style="color:var(--green);margin-top:0.1rem;">→</span><span><strong style="color:var(--text);">Researchers</strong>, anyone who needs to reproduce, compare, or fork agent behavior deterministically</span></div>
-        </div>
-      </div>
-      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:1.5rem;">
-        <div style="font-size:0.72rem;font-weight:700;color:var(--red);font-family:var(--mono);margin-bottom:1rem;letter-spacing:0.05em;">✗ NOT FOR</div>
-        <div style="display:flex;flex-direction:column;gap:0.65rem;">
-          <div style="font-size:0.82rem;color:var(--text3);display:flex;gap:0.6rem;align-items:flex-start;"><span style="margin-top:0.1rem;">✗</span><span>Single-prompt chatbots with no multi-step execution to replay or compare</span></div>
-          <div style="font-size:0.82rem;color:var(--text3);display:flex;gap:0.6rem;align-items:flex-start;"><span style="margin-top:0.1rem;">✗</span><span>Orchestration frameworks, we don't run your agents, LangChain and CrewAI do that</span></div>
-          <div style="font-size:0.82rem;color:var(--text3);display:flex;gap:0.6rem;align-items:flex-start;"><span style="margin-top:0.1rem;">✗</span><span>Vector / memory stores, we don't retrieve context by similarity, Pinecone does that</span></div>
-          <div style="font-size:0.82rem;color:var(--text3);display:flex;gap:0.6rem;align-items:flex-start;"><span style="margin-top:0.1rem;">✗</span><span>General observability, we don't monitor metrics or traces, Datadog does that</span></div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- FLOW VISUAL + COMMIT GRAPH -->
-<div style="border-top:1px solid var(--border);padding:3rem 2rem;">
-  <div style="max-width:860px;margin:0 auto;text-align:center;">
-    <div style="font-family:var(--mono);font-size:0.6rem;color:var(--text3);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:1rem;">Decision lineage</div>
-    <div style="font-size:1.2rem;font-weight:700;color:var(--text);letter-spacing:-0.02em;margin-bottom:0.5rem;font-family:var(--display);">Every decision. Every handoff. Immutable.</div>
-    <div style="font-size:0.85rem;color:var(--text2);margin-bottom:2rem;"></div>
-    <div style="display:flex;align-items:center;justify-content:center;gap:0;flex-wrap:wrap;margin-bottom:1.5rem;">
-
-      <!-- Agent A -->
-      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:1rem 1.5rem;text-align:center;min-width:130px;">
-        <div style="font-family:var(--mono);font-size:0.58rem;color:var(--text3);margin-bottom:0.3rem;">AGENT A</div>
-        <div style="font-size:0.85rem;font-weight:600;color:var(--text);">Claude</div>
-        <div style="font-size:0.68rem;color:var(--text3);margin-top:0.15rem;">researcher</div>
-      </div>
-
-      <!-- Arrow + commit -->
-      <div style="display:flex;flex-direction:column;align-items:center;padding:0 0.75rem;">
-        <div style="font-family:var(--mono);font-size:0.58rem;color:var(--violet);margin-bottom:0.2rem;">POST /commit</div>
-        <div style="width:60px;height:1px;background:linear-gradient(90deg,var(--violet),var(--accent));"></div>
-        <div style="font-size:0.9rem;color:var(--text3);margin-top:0.2rem;">→</div>
-      </div>
-
-      <!-- DarkMatter -->
-      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:1rem 1.5rem;text-align:center;min-width:150px;position:relative;">
-        <div style="position:absolute;top:-8px;left:50%;transform:translateX(-50%);background:var(--bg);border:1px solid var(--border);border-radius:100px;padding:0.1rem 0.5rem;font-family:var(--mono);font-size:0.5rem;color:var(--text3);white-space:nowrap;">darkmatterhub.ai</div>
-        <div style="font-size:0.72rem;font-weight:700;color:var(--text);font-family:var(--display);">Dark<span style="background:var(--gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Matter</span></div>
-        <div style="font-size:0.62rem;color:var(--text3);margin-top:0.2rem;">✓ verified · timestamped</div>
-        <div style="font-size:0.62rem;color:var(--text3);">✓ audit logged · recoverable</div>
-      </div>
-
-      <!-- Arrow + pull -->
-      <div style="display:flex;flex-direction:column;align-items:center;padding:0 0.75rem;">
-        <div style="font-family:var(--mono);font-size:0.58rem;color:var(--cyan);margin-bottom:0.2rem;">GET /pull</div>
-        <div style="width:60px;height:1px;background:linear-gradient(90deg,var(--accent),var(--cyan));"></div>
-        <div style="font-size:0.9rem;color:var(--text3);margin-top:0.2rem;">→</div>
-      </div>
-
-      <!-- Agent B -->
-      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:1rem 1.5rem;text-align:center;min-width:130px;">
-        <div style="font-family:var(--mono);font-size:0.58rem;color:var(--text3);margin-bottom:0.3rem;">AGENT B</div>
-        <div style="font-size:0.85rem;font-weight:600;color:var(--text);">GPT-4o</div>
-        <div style="font-size:0.68rem;color:var(--text3);margin-top:0.15rem;">writer</div>
-      </div>
-
-    </div>
-    <div style="font-size:0.75rem;color:var(--text3);font-family:var(--mono);margin-top:0.5rem;">
-      // Agent A and Agent B never share infrastructure. DarkMatter is the immutable state layer between them.
-    </div>
-  </div>
-
-  <!-- COMMIT GRAPH -->
-  <div style="max-width:860px;margin:2.5rem auto 0;padding:0 2rem;">
-    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:2rem;font-family:var(--mono);font-size:0.72rem;overflow-x:auto;">
-      <div style="color:var(--text3);font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:1.25rem;">Decision graph, like git log, for agent state</div>
-      <!-- Row 1 -->
-      <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.6rem;">
-        <div style="width:10px;height:10px;border-radius:50%;background:var(--violet);flex-shrink:0;box-shadow:0 0 6px var(--violet);"></div>
-        <div style="color:var(--text2);">ctx_<span style="color:var(--accent);">a1b2c3</span></div>
-        <div style="color:var(--text3);">·</div>
-        <div style="color:var(--text3);">User input received</div>
-        <div style="margin-left:auto;color:var(--text3);font-size:0.62rem;">root</div>
-      </div>
-      <!-- Connector -->
-      <div style="margin-left:4px;width:1px;height:14px;background:linear-gradient(var(--violet),var(--accent));margin-bottom:0.6rem;"></div>
-      <!-- Row 2 -->
-      <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.6rem;">
-        <div style="width:10px;height:10px;border-radius:50%;background:var(--accent);flex-shrink:0;box-shadow:0 0 6px var(--accent);"></div>
-        <div style="color:var(--text2);">ctx_<span style="color:var(--accent);">d4e5f6</span></div>
-        <div style="color:var(--text3);">·</div>
-        <div style="color:var(--text3);">Agent A (Claude), analysis complete</div>
-        <div style="margin-left:auto;"><span style="color:var(--violet);font-size:0.62rem;">parent: a1b2c3</span></div>
-      </div>
-      <!-- Fork connector -->
-      <div style="margin-left:4px;display:flex;gap:2rem;margin-bottom:0.6rem;">
-        <div style="width:1px;height:14px;background:linear-gradient(var(--accent),var(--green));"></div>
-        <div style="width:1px;height:14px;background:linear-gradient(var(--accent),var(--cyan));margin-left:60px;"></div>
-      </div>
-      <!-- Row 3 — branch -->
-      <div style="display:flex;gap:1.5rem;margin-bottom:0.6rem;">
-        <div style="display:flex;align-items:center;gap:0.75rem;flex:1;">
-          <div style="width:10px;height:10px;border-radius:50%;background:var(--green);flex-shrink:0;box-shadow:0 0 6px var(--green);"></div>
-          <div style="color:var(--text2);">ctx_<span style="color:var(--green);">g7h8i9</span></div>
-          <div style="color:var(--text3);">·</div>
-          <div style="color:var(--text3);">Agent B (GPT), draft</div>
-        </div>
-        <div style="display:flex;align-items:center;gap:0.75rem;flex:1;">
-          <div style="width:10px;height:10px;border-radius:50%;background:var(--cyan);flex-shrink:0;box-shadow:0 0 6px var(--cyan);"></div>
-          <div style="color:var(--text2);">ctx_<span style="color:var(--cyan);">j1k2l3</span></div>
-          <div style="color:var(--text3);">·</div>
-          <div style="color:var(--text3);">Agent C (Llama), review</div>
-        </div>
-      </div>
-      <!-- Merge connector -->
-      <div style="margin-left:4px;width:1px;height:14px;background:linear-gradient(var(--green),var(--amber));margin-bottom:0.6rem;"></div>
-      <!-- Row 4 — merge -->
-      <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0;">
-        <div style="width:10px;height:10px;border-radius:50%;background:var(--amber);flex-shrink:0;box-shadow:0 0 6px var(--amber);"></div>
-        <div style="color:var(--text2);">ctx_<span style="color:var(--amber);">m4n5o6</span></div>
-        <div style="color:var(--text3);">·</div>
-        <div style="color:var(--text3);">Final state, merged, verified, auditable</div>
-        <div style="margin-left:auto;"><span style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);color:var(--green);padding:0.1rem 0.4rem;border-radius:100px;font-size:0.58rem;">✓ immutable</span></div>
-      </div>
-      <div style="border-top:1px solid var(--border);margin-top:1.25rem;padding-top:0.85rem;color:var(--text3);font-size:0.62rem;">
-        Each node is immutable. Each parent link is cryptographically attributed. The full chain is replayable at any point.
-      </div>
-    </div>
-  </div>
-
-  <!-- BEFORE / AFTER -->
-  <div style="max-width:860px;margin:2rem auto 0;padding:0 2rem;">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;">
-      <!-- Before -->
-      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;">
-        <div style="background:rgba(239,68,68,0.06);border-bottom:1px solid var(--border);padding:0.6rem 1rem;font-family:var(--mono);font-size:0.6rem;color:var(--red);">WITHOUT DARKMATTER</div>
-        <div style="padding:1rem 1.25rem;font-family:var(--mono);font-size:0.72rem;line-height:2;">
-          <div style="color:var(--text3);"># context passed manually, brittle</div>
-          <div style="color:var(--text2);">summary = agent_a.<span style="color:var(--red);">run</span>(input)</div>
-          <div style="color:var(--text2);">draft &nbsp;&nbsp;= agent_b.<span style="color:var(--red);">run</span>(summary)</div>
-          <div style="color:var(--text3);margin-top:0.5rem;"># crashes → restart from zero</div>
-          <div style="color:var(--text3);"># no trace, no replay, no audit</div>
-        </div>
-      </div>
-      <!-- After -->
-      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;">
-        <div style="background:rgba(16,185,129,0.06);border-bottom:1px solid var(--border);padding:0.6rem 1rem;font-family:var(--mono);font-size:0.6rem;color:var(--green);">WITH DARKMATTER</div>
-        <div style="padding:1rem 1.25rem;font-family:var(--mono);font-size:0.72rem;line-height:2;">
-          <div style="color:var(--text3);"># commit state, pass the ID</div>
-          <div style="color:var(--text2);">ctx &nbsp;&nbsp;= dm.<span style="color:var(--green);">commit</span>(input, output=summary)</div>
-          <div style="color:var(--text2);">draft = dm.<span style="color:var(--green);">pull</span>(ctx.id, agent=<span style="color:var(--cyan);">"writer"</span>)</div>
-          <div style="color:var(--text3);margin-top:0.5rem;"># crashes → dm.resume(ctx.id)</div>
-          <div style="color:var(--text3);"># full lineage, immutable, auditable</div>
-        </div>
-      </div>
-    </div>
-    <div style="text-align:center;margin-top:1rem;font-family:var(--mono);font-size:0.68rem;color:var(--text3);">
-      // "send me the context ID" → that ID is a DarkMatter context ID
-    </div>
-  </div>
-</div>
-
-<!-- HOW IT WORKS -->
-<div class="section">
-  <div class="section-title">How it works</div>
-  <div class="section-sub">Sign up, create an agent, get an API key. Three API calls and your agents are connected.</div>
-
-  <div class="steps">
-    <div class="step">
-      <div class="step-emoji">🔑</div>
-      <div class="step-title">Sign up and create your agent</div>
-      <div class="step-desc">Create a free account, name your agent, and get a unique API key from your dashboard in seconds. Paste it into your code, that's all it takes to connect.</div>
-      <div class="step-tag tg">free · 30 seconds</div>
-    </div>
-    <div class="step-arrow"><div>▶</div><div class="arrow-label">API key</div></div>
-    <div class="step">
-      <div class="step-emoji">📤</div>
-      <div class="step-title">Agent X commits context</div>
-      <div class="step-desc">When Agent X finishes its task, it commits its context to DarkMatter with one POST call. Signed, timestamped, and attributed to your agent.</div>
-      <div class="step-tag ta">POST /api/commit</div>
-    </div>
-    <div class="step-arrow"><div>▶</div><div class="arrow-label">verified</div></div>
-    <div class="step">
-      <div class="step-emoji">📥</div>
-      <div class="step-title">Agent Y inherits context</div>
-      <div class="step-desc">Agent Y pulls the verified context and continues from exactly where Agent X left off. Tampered or unverified content is rejected automatically.</div>
-      <div class="step-tag tv">GET /api/pull</div>
-    </div>
-  </div>
-
-<!-- GIT MAP -->
-<div class="section" style="padding-top:0">
-  <div class="section-title" style="margin-bottom:1.5rem; font-size:1.1rem">Git primitives, for agents</div>
-  <div class="git-map">
-    <div class="gmc"><div class="gmc-from">git commit</div><div class="gmc-arr">↓</div><div class="gmc-to">POST /api/commit</div><div class="gmc-note">sign & checkpoint</div></div>
-    <div class="gmc"><div class="gmc-from">git push</div><div class="gmc-arr">↓</div><div class="gmc-to">POST /api/commit</div><div class="gmc-note">publish to recipient</div></div>
-    <div class="gmc"><div class="gmc-from">git pull</div><div class="gmc-arr">↓</div><div class="gmc-to">GET /api/pull</div><div class="gmc-note">verify & inherit</div></div>
-    <div class="gmc"><div class="gmc-from">git log</div><div class="gmc-arr">↓</div><div class="gmc-to">dashboard</div><div class="gmc-note">full audit trail</div></div>
-    <div class="gmc"><div class="gmc-from">git blame</div><div class="gmc-arr">↓</div><div class="gmc-to">API key auth</div><div class="gmc-note">who committed what</div></div>
-  </div>
-</div>
-
-<!-- COMMON PATTERNS -->
-<div style="border-top:1px solid var(--border);padding:2.5rem 2rem;">
-  <div style="max-width:860px;margin:0 auto;">
-    <div style="font-family:var(--mono);font-size:0.6rem;color:var(--text3);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:1.25rem;">Common patterns</div>
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;" class="patterns-grid">
-      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:1rem 1.1rem;">
-        <div style="font-size:0.82rem;font-weight:600;color:var(--text);margin-bottom:0.35rem;">Replay a failed run from step 4</div>
-        <div style="font-size:0.75rem;color:var(--text2);line-height:1.6;">Resume from the last good checkpoint instead of starting over.</div>
-      </div>
-      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:1rem 1.1rem;">
-        <div style="font-size:0.82rem;font-weight:600;color:var(--text);margin-bottom:0.35rem;">Compare Claude vs GPT on the same step</div>
-        <div style="font-size:0.75rem;color:var(--text2);line-height:1.6;">Fork, swap the model, diff the outputs. See what actually changes.</div>
-      </div>
-      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:1rem 1.1rem;">
-        <div style="font-size:0.82rem;font-weight:600;color:var(--text);margin-bottom:0.35rem;">Keep history across LangGraph + API calls</div>
-        <div style="font-size:0.75rem;color:var(--text2);line-height:1.6;">One chain across your whole run — all linked, all replayable.</div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- INTEGRATIONS -->
-<div style="border-top:1px solid var(--border);padding:3rem 2rem;">
-  <div style="max-width:860px;margin:0 auto;">
-    <div style="font-family:var(--mono);font-size:0.6rem;color:var(--text3);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:0.85rem;">Integrations</div>
-    <div style="font-size:1.1rem;font-weight:700;color:var(--text);font-family:var(--display);letter-spacing:-0.02em;margin-bottom:0.5rem;">Works with your existing stack</div>
-    <p style="font-size:0.85rem;color:var(--text2);margin-bottom:1.5rem;max-width:520px;">One commit call after each agent step. No new infrastructure, no framework lock-in.</p>
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0.75rem;" class="integrations-grid">
-      <a href="/docs#langgraph" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:1rem;text-decoration:none;transition:border-color 0.15s;" onmouseover="this.style.borderColor='var(--violet)'" onmouseout="this.style.borderColor='var(--border)'">
-        <div style="font-size:0.88rem;font-weight:600;color:var(--text);margin-bottom:0.2rem;">LangGraph</div>
-        <div style="font-size:0.72rem;color:var(--text3);">Node callback</div>
-      </a>
-      <a href="/docs#anthropic-sdk" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:1rem;text-decoration:none;transition:border-color 0.15s;" onmouseover="this.style.borderColor='var(--violet)'" onmouseout="this.style.borderColor='var(--border)'">
-        <div style="font-size:0.88rem;font-weight:600;color:var(--text);margin-bottom:0.2rem;">Anthropic SDK</div>
-        <div style="font-size:0.72rem;color:var(--text3);">Claude pipelines</div>
-      </a>
-      <a href="/docs#openai-sdk" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:1rem;text-decoration:none;transition:border-color 0.15s;" onmouseover="this.style.borderColor='var(--violet)'" onmouseout="this.style.borderColor='var(--border)'">
-        <div style="font-size:0.88rem;font-weight:600;color:var(--text);margin-bottom:0.2rem;">OpenAI SDK</div>
-        <div style="font-size:0.72rem;color:var(--text3);">GPT-4o pipelines</div>
-      </a>
-      <a href="/docs#crewai" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:1rem;text-decoration:none;transition:border-color 0.15s;" onmouseover="this.style.borderColor='var(--violet)'" onmouseout="this.style.borderColor='var(--border)'">
-        <div style="font-size:0.88rem;font-weight:600;color:var(--text);margin-bottom:0.2rem;">CrewAI</div>
-        <div style="font-size:0.72rem;color:var(--text3);">Task callbacks</div>
-      </a>
-      <a href="/docs#aws-bedrock" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:1rem;text-decoration:none;transition:border-color 0.15s;" onmouseover="this.style.borderColor='var(--violet)'" onmouseout="this.style.borderColor='var(--border)'">
-        <div style="font-size:0.88rem;font-weight:600;color:var(--text);margin-bottom:0.2rem;">AWS Bedrock</div>
-        <div style="font-size:0.72rem;color:var(--text3);">Bedrock Agents</div>
-      </a>
-      <a href="/docs#local-models" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:1rem;text-decoration:none;transition:border-color 0.15s;" onmouseover="this.style.borderColor='var(--violet)'" onmouseout="this.style.borderColor='var(--border)'">
-        <div style="font-size:0.88rem;font-weight:600;color:var(--text);margin-bottom:0.2rem;">Local models</div>
-        <div style="font-size:0.72rem;color:var(--text3);">Ollama, llama.cpp, vLLM</div>
-      </a>
-      <a href="/docs#otel" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:1rem;text-decoration:none;transition:border-color 0.15s;" onmouseover="this.style.borderColor='var(--violet)'" onmouseout="this.style.borderColor='var(--border)'">
-        <div style="font-size:0.88rem;font-weight:600;color:var(--text);margin-bottom:0.2rem;">OpenTelemetry</div>
-        <div style="font-size:0.72rem;color:var(--text3);">OTEL span exporter</div>
-      </a>
-      <a href="/docs#langchain" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:1rem;text-decoration:none;transition:border-color 0.15s;" onmouseover="this.style.borderColor='var(--violet)'" onmouseout="this.style.borderColor='var(--border)'">
-        <div style="font-size:0.88rem;font-weight:600;color:var(--text);margin-bottom:0.2rem;">LangChain</div>
-        <div style="font-size:0.72rem;color:var(--text3);">Chain callbacks</div>
-      </a>
-    </div>
-    <div style="margin-top:1rem;">
-      <a href="/docs#integrations" style="font-size:0.78rem;color:var(--accent);text-decoration:none;font-weight:500;">View all integration guides →</a>
-    </div>
-  </div>
-</div>
-
-<!-- CONTEXT PASSPORT -->
-<div style="border-top:1px solid var(--border);padding:3.5rem 2rem;">
-  <div style="max-width:860px;margin:0 auto;">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:3rem;align-items:center;" class="cp-grid">
-      <div>
-        <div style="font-family:var(--mono);font-size:0.6rem;color:var(--text3);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:0.85rem;">Open Standard</div>
-        <div style="font-family:var(--display);font-size:1.4rem;font-weight:700;letter-spacing:-0.02em;margin-bottom:0.75rem;line-height:1.3;">Context Passport</div>
-        <p style="font-size:0.88rem;color:var(--text2);line-height:1.75;margin-bottom:1rem;">A proposed open standard for AI agent context handoffs. Structured, verifiable, and model-agnostic — a shared envelope format that any AI agent can produce and consume.</p>
-        <p style="font-size:0.88rem;color:var(--text2);line-height:1.75;margin-bottom:1.25rem;">Every DarkMatter commit is a Context Passport. The standard is CC0 — free for anyone to implement.</p>
-        <a href="https://contextpassport.com" target="_blank" style="font-size:0.85rem;color:var(--accent);text-decoration:none;font-weight:500;">Read the specification at contextpassport.com →</a>
-      </div>
-      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:1.25rem;font-family:var(--mono);font-size:0.72rem;line-height:1.9;overflow-x:auto;">
-        <div style="color:var(--text3);margin-bottom:0.5rem;"># every commit is a Context Passport</div>
-        <div><span style="color:var(--cyan);">"id"</span><span style="color:var(--text2);">:         </span><span style="color:var(--green);">"ctx_1774358291224_bad9b976"</span><span style="color:var(--text2);">,</span></div>
-        <div><span style="color:var(--cyan);">"parent_id"</span><span style="color:var(--text2);">:  </span><span style="color:var(--green);">"ctx_previous"</span><span style="color:var(--text2);">,</span></div>
-        <div><span style="color:var(--cyan);">"created_by"</span><span style="color:var(--text2);">: {</span></div>
-        <div style="padding-left:1rem;"><span style="color:var(--cyan);">"agent_name"</span><span style="color:var(--text2);">: </span><span style="color:var(--green);">"research-agent"</span><span style="color:var(--text2);">,</span></div>
-        <div style="padding-left:1rem;"><span style="color:var(--cyan);">"provider"</span><span style="color:var(--text2);">:   </span><span style="color:var(--green);">"anthropic"</span><span style="color:var(--text2);">,</span></div>
-        <div style="padding-left:1rem;"><span style="color:var(--cyan);">"model"</span><span style="color:var(--text2);">:      </span><span style="color:var(--green);">"claude-opus-4-6"</span></div>
-        <div><span style="color:var(--text2);">},</span></div>
-        <div><span style="color:var(--cyan);">"integrity"</span><span style="color:var(--text2);">: {</span></div>
-        <div style="padding-left:1rem;"><span style="color:var(--cyan);">"payload_hash"</span><span style="color:var(--text2);">:   </span><span style="color:var(--green);">"sha256:e7733904..."</span><span style="color:var(--text2);">,</span></div>
-        <div style="padding-left:1rem;"><span style="color:var(--cyan);">"integrity_hash"</span><span style="color:var(--text2);">: </span><span style="color:var(--green);">"sha256:8a1c9d22..."</span><span style="color:var(--text2);">,</span></div>
-        <div style="padding-left:1rem;"><span style="color:var(--cyan);">"verification_status"</span><span style="color:var(--text2);">: </span><span style="color:var(--green);">"valid"</span></div>
-        <div><span style="color:var(--text2);">}</span></div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- SELF-HOST CALLOUT -->
-<div style="background:var(--bg2);border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:2rem 2rem;">
-  <div style="max-width:860px;margin:0 auto;">
-    <div style="font-size:0.72rem;font-family:var(--mono);color:var(--text3);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:1rem;">Self-host or deploy privately</div>
-    <div style="display:flex;gap:3rem;flex-wrap:wrap;align-items:flex-start;">
-      <div style="flex:1;min-width:220px;display:flex;flex-direction:column;gap:0.75rem;">
-        <div style="font-size:0.82rem;color:var(--text2);">
-          <strong style="color:var(--text);">Self-host</strong>
-          &nbsp;&mdash;&nbsp;Deploy inside your own infrastructure. Nothing leaves your network.&nbsp;<a href="https://github.com/bengunvl/darkmatter/blob/main/PRODUCTION.md" target="_blank" style="color:var(--accent);text-decoration:none;white-space:nowrap;">Self-hosting guide &rarr;</a>
-        </div>
-        <div style="font-size:0.82rem;color:var(--text2);">
-          <strong style="color:var(--text);">BYOK</strong>
-          &nbsp;&mdash;&nbsp;Bring Your Own Key encryption. DarkMatter stores only ciphertext, your key never leaves your infrastructure.
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- FOOTER -->
-<footer>
-  <a class="footer-logo" href="/">
-    <svg class="footer-logo-mark" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <defs><linearGradient id="flg2" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#7C3AED"/><stop offset="55%" stop-color="#2563EB"/><stop offset="100%" stop-color="#22D3EE"/></linearGradient></defs>
-      <circle cx="20" cy="20" r="17" stroke="#e5e7eb" stroke-width="0.8" stroke-dasharray="2 3"/>
-      <circle cx="20" cy="20" r="12" stroke="#d1d5db" stroke-width="0.5" opacity="0.6"/>
-      <circle cx="20" cy="5"  r="3.2" fill="#7C3AED" opacity="0.95"/>
-      <circle cx="20" cy="5"  r="5.5" stroke="#7C3AED" stroke-width="0.4" opacity="0.2"/>
-      <circle cx="33" cy="28" r="2.6" fill="#2563EB" opacity="0.95"/>
-      <circle cx="33" cy="28" r="4.5" stroke="#2563EB" stroke-width="0.4" opacity="0.2"/>
-      <circle cx="7"  cy="28" r="2.2" fill="#22D3EE" opacity="0.9"/>
-      <circle cx="7"  cy="28" r="3.8" stroke="#22D3EE" stroke-width="0.4" opacity="0.2"/>
-      <line x1="20" y1="8"  x2="31" y2="26" stroke="url(#flg2)" stroke-width="0.6" opacity="0.5"/>
-      <line x1="20" y1="8"  x2="9"  y2="26" stroke="#7C3AED" stroke-width="0.6" opacity="0.4"/>
-      <line x1="30" y1="27" x2="10" y2="27" stroke="#22D3EE" stroke-width="0.6" opacity="0.4"/>
-      <circle cx="20" cy="20" r="2.5" fill="url(#flg2)" opacity="0.6"/>
-    </svg>
-    <div class="footer-logo-name">Dark<span class="matter-grad">Matter</span></div>
-  </a>
-  <div class="footer-links">
-    <a class="footer-link" href="/demo">Demo</a>
-    <a class="footer-link" href="/docs">Docs</a>
-    <a class="footer-link" href="/pricing">Pricing</a>
-    <a class="footer-link" href="/why">Why DarkMatter</a>
-    <a class="footer-link" href="/blog">Blog</a>
-    <a class="footer-link" href="/enterprise">Enterprise</a>
-    <a class="footer-link" href="/security">Security</a>
-    <a class="footer-link" href="https://contextpassport.com" target="_blank">Context Passport</a>
-    <a class="footer-link" href="https://github.com/bengunvl/darkmatter" target="_blank">GitHub</a>
-    <span style="color:var(--text3);font-size:0.72rem">© 2026 DarkMatter</span>
+    <div class="foot-copy">© 2026 DarkMatter</div>
   </div>
 </footer>
 
-<script>
-  const ago = ts => {
-    const d = Math.floor((Date.now()-new Date(ts))/1000);
-    if(d<60) return d+'s ago';
-    if(d<3600) return Math.floor(d/60)+'m ago';
-    if(d<86400) return Math.floor(d/3600)+'h ago';
-    return Math.floor(d/86400)+'d ago';
-  };
-
-  const mask = id => id ? id.slice(0,11)+'···' : '···';
-  const hash = (f,t) => ((f||'').replace('dm_','').slice(0,4)+(t||'').replace('dm_','').slice(0,4));
-
-  // ── Copy code button ──────────────────────────────────
-  function copyCode() {
-    const code = `import requests
-
-API_KEY  = "dm_sk_your_key_here"
-BASE_URL = "https://darkmatterhub.ai"
-HEADERS  = {"Authorization": f"Bearer {API_KEY}"}
-
-# Agent X: commit context for Agent Y
-requests.post(f"{BASE_URL}/api/commit", headers=HEADERS, json={
-    "toAgentId": "dm_agent_y_id",
-    "context": {
-        "task":     "Q1 analysis complete",
-        "findings": {"topRegion": "APAC", "growth": "34%"},
-        "nextTask": "generate executive summary",
-    }
-})
-
-# Agent Y: pull and inherit verified context
-res     = requests.get(f"{BASE_URL}/api/pull", headers=HEADERS)
-context = res.json()["commits"][0]["context"]
-print(context["nextTask"])  # "generate executive summary"`;
-
-    navigator.clipboard.writeText(code).then(() => {
-      const btn = document.getElementById('copy-code-btn');
-      btn.textContent = 'Copied!';
-      btn.classList.add('copied');
-      setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
-    });
-  }
-
-  // ── Load stats ────────────────────────────────────────
-  async function loadStats() {
-    try {
-      const res  = await fetch('/api/stats');
-      const data = await res.json();
-    } catch(e) {}
-  }
-
-  // ── Menu ─────────────────────────────────────────────
-  document.addEventListener('click', e => {
-    const b=document.getElementById('hb'), d=document.getElementById('dd');
-    if(b&&d&&!b.contains(e.target)&&!d.contains(e.target)) d.classList.remove('open');
-  });
-
-  // ── Catch Supabase auth redirect on homepage ─────────
-  // Supabase sends token to Site URL root, intercept and forward to dashboard
-  if (window.location.hash && window.location.hash.includes('access_token')) {
-    try {
-      const params       = new URLSearchParams(window.location.hash.substring(1));
-      const accessToken  = params.get('access_token');
-      const refreshToken = params.get('refresh_token');
-      const expiresAt    = params.get('expires_at');
-      if (accessToken) {
-        const payload = JSON.parse(atob(accessToken.split('.')[1]));
-        localStorage.setItem('dm_session', JSON.stringify({
-          access_token:  accessToken,
-          refresh_token: refreshToken,
-          expires_at:    expiresAt,
-          user: { email: payload.email || '', id: payload.sub }
-        }));
-        window.location.href = '/dashboard';
-      }
-    } catch(e) { console.error('Auth redirect error', e); }
-  }
-
-  // ── Session check, update UI if already logged in ─────
-  try {
-    const s = JSON.parse(localStorage.getItem('dm_session') || '{}');
-    if (s?.access_token) {
-      const signin = document.querySelector('.btn-signin');
-      if (signin) {
-        signin.href = '/dashboard';
-        signin.title = 'Dashboard';
-        signin.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
-      }
-      const cta = document.querySelector('.cta-primary');
-      if (cta) { cta.textContent = 'Go to Dashboard →'; cta.href = '/dashboard'; }
-      // Hide GitHub button when logged in, Dashboard is the primary action
-      const ctaSecondary = document.querySelector('.cta-secondary');
-      if (ctaSecondary) ctaSecondary.style.display = 'none';
-      document.querySelectorAll(');
-    }
-  } catch(e) {}
-
-  loadStats();
-</script>
 </body>
 </html>
