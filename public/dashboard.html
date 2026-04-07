@@ -15,10 +15,10 @@
   --accent:#2563EB;--green:#059669;--red:#dc2626;--amber:#d97706;
   --violet:#7C3AED;
   --mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;
-  --sidebar-w:280px;--header-h:52px;
+  --sidebar-w:290px;--header-h:56px;--font-base:15px;
 }
 html,body{height:100%;overflow:hidden;}
-body{font-family:var(--sans);background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;font-size:15px;}
 
 /* ── HEADER ── */
 header{
@@ -61,7 +61,7 @@ header{
   padding:6px 10px;margin-bottom:10px;
 }
 .search-icon{color:var(--text3);font-size:13px;flex-shrink:0;}
-.search-input{
+.search-input{font-size:14px;
   border:none;background:none;outline:none;
   font-size:13px;color:var(--text);width:100%;
   font-family:var(--sans);
@@ -85,9 +85,9 @@ header{
 .thread-row.active{background:var(--bg4);}
 .thread-plat{width:18px;height:18px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:9px;flex-shrink:0;margin-right:7px;}
 .thread-body{flex:1;min-width:0;}
-.thread-title{font-size:13px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;}
+.thread-title{font-size:14px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;}
 .thread-meta{display:flex;align-items:center;gap:4px;margin-top:1px;}
-.thread-time{font-size:11px;color:var(--text3);}
+.thread-time{font-size:12px;color:var(--text3);}
 .thread-badges{display:flex;gap:3px;margin-left:auto;}
 .thread-badge{font-size:9px;padding:0 4px;border-radius:3px;line-height:15px;}
 .tb-fork{background:rgba(37,99,235,.08);color:var(--accent);}
@@ -129,8 +129,8 @@ header{
   display:flex;align-items:center;justify-content:space-between;
   flex-shrink:0;min-height:52px;
 }
-.main-title{font-size:14px;font-weight:600;color:var(--text);}
-.main-meta{font-size:12px;color:var(--text3);margin-top:1px;display:flex;align-items:center;gap:8px;}
+.main-title{font-size:16px;font-weight:600;color:var(--text);}
+.main-meta{font-size:13px;color:var(--text3);margin-top:1px;display:flex;align-items:center;gap:8px;}
 .main-actions{display:flex;gap:6px;}
 .mbtn{
   font-size:12px;padding:5px 10px;border-radius:6px;
@@ -150,18 +150,18 @@ header{
 /* Messages */
 .msg-group{padding:20px 24px 0;}
 .msg-group:last-child{padding-bottom:20px;}
-.msg-role{font-size:11px;font-weight:600;color:var(--text3);letter-spacing:.04em;text-transform:uppercase;margin-bottom:6px;display:flex;align-items:center;gap:6px;}
+.msg-role{font-size:12px;font-weight:600;color:var(--text3);letter-spacing:.04em;text-transform:uppercase;margin-bottom:6px;display:flex;align-items:center;gap:6px;}
 .msg-role-icon{width:20px;height:20px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:10px;}
 .msg-bubble{
   font-size:14px;color:var(--text);line-height:1.7;
   max-width:720px;
 }
 .msg-bubble.user{
-  background:var(--bg2);border:1px solid var(--border);
-  border-radius:8px;padding:10px 14px;
-  max-width:600px;font-size:14px;
+  background:#1d4ed8;color:#fff;
+  border-radius:18px 18px 4px 18px;padding:10px 16px;
+  max-width:560px;font-size:15px;margin-left:auto;
 }
-.msg-bubble.assistant{font-size:14px;}
+.msg-bubble.assistant{font-size:15px;line-height:1.75;}
 .msg-bubble code{font-family:var(--mono);font-size:12px;background:var(--bg3);padding:1px 4px;border-radius:3px;}
 .msg-bubble pre{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:12px;overflow-x:auto;font-family:var(--mono);font-size:12px;margin:8px 0;}
 .msg-footer{display:flex;align-items:center;gap:8px;margin-top:6px;}
@@ -220,7 +220,7 @@ header{
 }
 .agent-dot{width:7px;height:7px;border-radius:50%;background:var(--green);flex-shrink:0;}
 .agent-info{flex:1;min-width:0;}
-.agent-name{font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.agent-name{font-size:14px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .agent-id-row{display:flex;align-items:center;gap:4px;margin-top:1px;}
 .agent-id{font-family:var(--mono);font-size:10px;color:var(--text3);}
 .agent-key-row{display:flex;align-items:center;gap:4px;margin-top:4px;}
@@ -612,7 +612,17 @@ const RENAME_KEY = 'dm_thread_renames';
 function getRenames() { try { return JSON.parse(localStorage.getItem(RENAME_KEY)||'{}'); } catch{return {};} }
 function getThreadTitle(thread) {
   const renames = getRenames();
-  return renames[thread.id] || thread.title || thread.convTitle || thread.agent_name || 'Untitled conversation';
+  if (renames[thread.id]) return renames[thread.id];
+  if (thread.title && thread.title !== 'Untitled') return thread.title;
+  // Use agent name if it looks like a real name (not a DM internal ID)
+  const agentName = thread.agentName || '';
+  if (agentName && !agentName.startsWith('dm_') && agentName !== 'capture') {
+    return agentName;
+  }
+  // Fall back to platform + date
+  const plat = PLAT_LABELS[thread.platform] || thread.platform || 'Agent';
+  const d = thread.latest ? new Date(thread.latest).toLocaleDateString('en-US', {month:'short',day:'numeric'}) : '';
+  return d ? `${plat} · ${d}` : plat;
 }
 function saveRename(id, title) {
   const r = getRenames(); r[id] = title; localStorage.setItem(RENAME_KEY, JSON.stringify(r));
@@ -690,7 +700,12 @@ async function loadThreads() {
         threadMap.set(traceId, {
           id:        traceId,
           platform:  platformId,
-          title:     c.payload?.convTitle || c.payload?.title || c.agent_name || 'Untitled',
+          title:     c.payload?.convTitle
+                    || c.payload?.title
+                    || c.payload?.thread?.title
+                    || c.thread?.title
+                    || (c.agent_name && !c.agent_name.includes('dm_') ? c.agent_name : null)
+                    || null,
           commits:   [],
           latest:    c.created_at || c.timestamp,
           isCapture: !!platform,
@@ -841,16 +856,18 @@ function renderConversation(thread) {
     const isVerified = c.verified || c.integrity?.verification_status === 'valid';
 
     if (isUser) {
-      html += `<div class="msg-group">
-        <div class="msg-role">
-          <div class="msg-role-icon" style="background:#f3f4f6;">👤</div>
+      html += `<div class="msg-group" style="align-items:flex-end;">
+        <div class="msg-role" style="justify-content:flex-end;">
           You
+          <div class="msg-role-icon" style="background:#dbeafe;color:#1d4ed8;">U</div>
         </div>
-        <div class="msg-bubble user">${escHtml(text)}</div>
-        <div class="msg-footer">
+        <div style="display:flex;justify-content:flex-end;">
+          <div class="msg-bubble user">${escHtml(text)}</div>
+        </div>
+        <div class="msg-footer" style="justify-content:flex-end;">
           <span class="msg-time">${ago(timestamp)}</span>
-          ${isVerified ? '<span class="msg-dm-badge">✓ recorded</span>' : ''}
-          ${ctxId ? `<button class="msg-chain-btn" onclick="openChainDrawerForCtx('${escHtml(ctxId)}')">⑂ ${escHtml(ctxId.slice(-8))}</button>` : ''}
+          ${isVerified ? '<span class="msg-dm-badge">✓</span>' : ''}
+          ${ctxId ? `<button class="msg-chain-btn" onclick="openChainDrawerForCtx('${escHtml(ctxId)}')">⑂</button>` : ''}
         </div>
       </div>`;
     } else {
@@ -994,18 +1011,26 @@ async function shareThread(id) {
   document.getElementById('tm-popup')?.remove();
   activeMenuId = null;
   if (!thread?.commits?.length) { toast('No commits to share'); return; }
-  const tipCtx = thread.commits[thread.commits.length - 1]?.id;
-  if (!tipCtx) return;
-  if (!dmApiKey) { toast('Copy your API key first'); return; }
+  // Sort by timestamp to find root (oldest) commit
+  const sorted = [...thread.commits].sort((a,b) =>
+    new Date(a.created_at||a.timestamp) - new Date(b.created_at||b.timestamp)
+  );
+  const rootCtx = sorted[0]?.id;
+  const tipCtx  = sorted[sorted.length - 1]?.id;
+  const shareCtx = tipCtx || rootCtx; // share from tip — chain viewer walks back to root
+  if (!shareCtx) return;
+  if (!dmApiKey) { toast('Open Agents panel and copy an API key first'); return; }
   try {
-    const res = await fetch(`/api/share/${tipCtx}`, {
+    const res = await fetch('/api/share/' + shareCtx, {
       method: 'POST', headers: apiKeyHeaders(),
       body: JSON.stringify({ label: getThreadTitle(thread) }),
     });
     const data = await res.json();
     if (data.shareUrl) {
       await navigator.clipboard.writeText(data.shareUrl);
-      toast('✓ Share link copied to clipboard');
+      toast('✓ Share link copied — opens full conversation chain');
+    } else {
+      toast('Share failed: ' + (data.error || 'unknown error'));
     }
   } catch(e) { toast('Share failed: ' + e.message); }
 }
@@ -1035,7 +1060,7 @@ async function forkThread(id) {
 function copyThreadLink(id) {
   document.getElementById('tm-popup')?.remove();
   activeMenuId = null;
-  navigator.clipboard.writeText(location.origin + '/dashboard?t=' + id);
+  navigator.clipboard.writeText(location.origin + '/dashboard/thread/' + encodeURIComponent(id));
   toast('✓ Link copied');
 }
 
@@ -1147,7 +1172,7 @@ async function exportCurrentChain() {
     const blob = await res.blob();
     const url  = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url; a.download = `proof_bundle_${ctxId.slice(-8)}.zip`; a.click();
+    a.href = url; a.download = `darkmatter_proof_${ctxId.slice(-8)}.json`; a.click();
     URL.revokeObjectURL(url);
   } catch(e) { toast('Export failed: ' + e.message); }
 }
@@ -1382,6 +1407,18 @@ document.getElementById('agent-name-input').addEventListener('keydown', e => {
 // Auto-open agents panel if no commits yet
 async function init() {
   await Promise.all([loadThreads(), loadAgents()]);
+
+  // Auto-select thread from URL param ?t= or /dashboard/thread/:id redirect
+  const urlParams = new URLSearchParams(location.search);
+  const targetThread = urlParams.get('t');
+  if (targetThread && allThreads.length) {
+    const found = allThreads.find(t => t.id === targetThread);
+    if (found) {
+      selectThread(found.id);
+    }
+  }
+
+  // Auto-open agents panel if no commits yet
   if (!allThreads.length) {
     agentsPanelOpen = true;
     document.getElementById('agents-panel-body').classList.add('open');

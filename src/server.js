@@ -636,12 +636,18 @@ app.get('/dashboard/commits', requireAuth, async (req, res) => {
 
     if (agentIds.length === 0) return res.json([]);
 
+    // Query by agent_id (v13+), falling back to from_agent/to_agent
+    const idList = agentIds.map(id => `"${id}"`).join(',');
     const { data, error } = await supabaseService
       .from('commits')
       .select('*')
-      .or(`from_agent.in.(${agentIds.map(id=>`"${id}"`).join(',')}),to_agent.in.(${agentIds.map(id=>`"${id}"`).join(',')})`)
+      .or([
+        `agent_id.in.(${idList})`,
+        `from_agent.in.(${idList})`,
+        `to_agent.in.(${idList})`
+      ].join(','))
       .order('timestamp', { ascending: false })
-      .limit(50);
+      .limit(200);
 
     if (error) throw error;
 
@@ -1319,9 +1325,10 @@ app.get('/api/export/:ctxId', requireApiKey, async (req, res) => {
     exportObj.export_hash = 'sha256:' +
       crypto.createHash('sha256').update(JSON.stringify(exportObj)).digest('hex');
 
+    // Return as JSON proof bundle (not ZIP — verifier.py reads the JSON directly)
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Content-Disposition',
-      `attachment; filename="darkmatter_ctx_${ctxId.slice(-8)}.json"`);
+      `attachment; filename="darkmatter_proof_${ctxId.slice(-8)}.json"`);
     res.json(exportObj);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -3042,6 +3049,12 @@ app.delete('/dashboard/account', requireAuth, async (req, res) => {
     console.error('Account deletion error:', err);
     res.status(500).json({ error: err.message });
   }
+});
+
+
+// ── GET /dashboard/thread/:traceId ── redirect to dashboard with thread selected
+app.get('/dashboard/thread/:traceId', requireAuth, (req, res) => {
+  res.redirect(`/dashboard?t=${encodeURIComponent(req.params.traceId)}`);
 });
 
 // ── Static page routes ────────────────────────────────────────────────────────
