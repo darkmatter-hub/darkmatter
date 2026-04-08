@@ -1189,6 +1189,34 @@ function closeBg(id,e) { if(e.target===document.getElementById(id)) closeModal(i
 async function init() {
   await Promise.all([loadThreads(), loadAgents()]);
   if (!allThreads.length) { agentsOpen=true; document.getElementById('ag-body').classList.add('open'); document.getElementById('ag-toggle').textContent='▼'; }
+
+  // Show admin link for superuser
+  const SUPERUSER = 'hello@darkmatterai.hub';
+  if (emailStr === SUPERUSER) {
+    const adminBtn = document.createElement('a');
+    adminBtn.href = '/admin';
+    adminBtn.className = 'h-btn';
+    adminBtn.textContent = 'Admin ↗';
+    adminBtn.style.cssText = 'color:var(--violet);font-weight:600;text-decoration:none;';
+    document.getElementById('settings-btn').before(adminBtn);
+  }
+
+  // Also ping admin/stats to detect superuser server-side
+  try {
+    const h = await authH();
+    const r = await fetch('/admin/stats', { headers: h });
+    if (r.ok) {
+      const existing = document.querySelector('a[href="/admin"]');
+      if (!existing) {
+        const adminBtn = document.createElement('a');
+        adminBtn.href = '/admin';
+        adminBtn.className = 'h-btn';
+        adminBtn.textContent = 'Admin ↗';
+        adminBtn.style.cssText = 'color:var(--violet);font-weight:600;text-decoration:none;';
+        document.getElementById('settings-btn').before(adminBtn);
+      }
+    }
+  } catch(e) {}
 }
 init();
 </script>

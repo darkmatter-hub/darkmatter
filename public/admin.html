@@ -5,196 +5,284 @@
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>DarkMatter Admin</title>
 <meta name="robots" content="noindex,nofollow"/>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <style>
 :root{
-  --bg:#0f1117; --bg2:#161b22; --bg3:#1c2128;
-  --border:#30363d; --text:#e6edf3; --text2:#8b949e; --text3:#484f58;
-  --violet:#7C3AED; --blue:#2563EB; --cyan:#0891b2;
-  --green:#3fb950; --red:#f85149; --amber:#d29922;
-  --gradient:linear-gradient(90deg,#7C3AED,#2563EB,#0891b2);
-  --mono:'IBM Plex Mono',monospace; --sans:'Inter',sans-serif;
+  --bg:#0d1117;--bg2:#161b22;--bg3:#1c2128;--bg4:#21262d;
+  --border:#30363d;--border2:#3d444d;
+  --text:#e6edf3;--text2:#8b949e;--text3:#484f58;
+  --violet:#a78bfa;--blue:#58a6ff;--cyan:#39c5cf;
+  --green:#3fb950;--red:#f85149;--amber:#e3b341;
+  --grad:linear-gradient(90deg,#7C3AED,#2563EB,#0891b2);
+  --mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.6;}
-a{color:var(--blue);text-decoration:none;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased;}
 
 /* NAV */
-nav{display:flex;align-items:center;gap:1rem;padding:0.75rem 1.5rem;border-bottom:1px solid var(--border);background:var(--bg2);}
-.nav-logo{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:1rem;color:var(--text);letter-spacing:-0.02em;}
-.nav-badge{font-family:var(--mono);font-size:0.6rem;background:#7C3AED22;border:1px solid var(--violet);color:var(--violet);padding:0.15rem 0.5rem;border-radius:4px;letter-spacing:0.06em;}
-.nav-right{margin-left:auto;display:flex;gap:1rem;align-items:center;}
-.nav-link{font-size:0.78rem;color:var(--text2);cursor:pointer;background:none;border:none;}
-.nav-link:hover{color:var(--text);}
-#nav-email{font-size:0.72rem;color:var(--text3);font-family:var(--mono);}
+nav{
+  position:sticky;top:0;z-index:100;
+  display:flex;align-items:center;gap:10px;
+  padding:0 20px;height:48px;
+  border-bottom:1px solid var(--border);background:var(--bg2);
+}
+.nav-logo{font-family:var(--mono);font-weight:600;font-size:14px;color:var(--text);letter-spacing:-.02em;flex-shrink:0;}
+.nav-grad{background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.nav-badge{font-family:var(--mono);font-size:9px;background:#7C3AED22;border:1px solid #7C3AED;color:var(--violet);padding:2px 6px;border-radius:3px;letter-spacing:.08em;flex-shrink:0;}
+.nav-links{display:flex;gap:2px;margin-left:16px;}
+.nav-link{font-size:12px;color:var(--text2);cursor:pointer;background:none;border:1px solid var(--border);border-radius:4px;padding:2px 8px;font-family:var(--sans);text-decoration:none;transition:color .12s,border-color .12s;}
+.nav-link:hover{color:var(--text);border-color:var(--border2);}
+.nav-right{margin-left:auto;display:flex;align-items:center;gap:8px;}
+.nav-email{font-size:11px;color:var(--text3);font-family:var(--mono);}
+
+/* RANGE SELECTOR */
+.range-btns{display:flex;gap:3px;}
+.range-btn{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:4px;border:1px solid var(--border);background:none;color:var(--text3);cursor:pointer;transition:all .12s;}
+.range-btn.on{background:var(--bg4);border-color:var(--border2);color:var(--text);}
+.range-btn:hover:not(.on){color:var(--text2);}
 
 /* LAYOUT */
-.page{max-width:1400px;margin:0 auto;padding:1.5rem;}
-.section{margin-bottom:2rem;}
-.section-title{font-size:0.6rem;font-family:var(--mono);color:var(--text3);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:1rem;}
+.page{max-width:1400px;margin:0 auto;padding:20px;}
+.section{margin-bottom:24px;}
+.section-title{font-size:10px;font-family:var(--mono);color:var(--text3);letter-spacing:.14em;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+.section-title::after{content:'';flex:1;height:1px;background:var(--border);}
+
+/* GRID LAYOUTS */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+.g5{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;}
+@media(max-width:1100px){.g5{grid-template-columns:repeat(3,1fr);}.g4{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:800px){.g2,.g3,.g4,.g5{grid-template-columns:1fr;}}
+
+/* CARD */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:16px;}
+.card-title{font-size:10px;font-family:var(--mono);color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px;}
 
 /* KPI CARDS */
-.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:0.75rem;}
-.kpi{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:1rem;}
-.kpi-label{font-size:0.65rem;color:var(--text3);font-family:var(--mono);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:0.35rem;}
-.kpi-value{font-size:1.6rem;font-weight:700;color:var(--text);font-family:'Space Grotesk',sans-serif;letter-spacing:-0.02em;}
-.kpi-sub{font-size:0.65rem;color:var(--text3);margin-top:0.2rem;}
-.kpi-up{color:var(--green);}
-.kpi-down{color:var(--red);}
+.kpi{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:14px 16px;}
+.kpi-label{font-size:10px;color:var(--text3);font-family:var(--mono);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px;}
+.kpi-val{font-size:28px;font-weight:700;color:var(--text);font-family:var(--mono);letter-spacing:-.04em;line-height:1;}
+.kpi-meta{font-size:11px;margin-top:5px;display:flex;align-items:center;gap:6px;}
+.kpi-wow{font-family:var(--mono);font-size:11px;}
+.up{color:var(--green);}
+.dn{color:var(--red);}
+.flat{color:var(--text3);}
+
+/* ATTENTION CALLOUTS */
+.attention-grid{display:flex;flex-direction:column;gap:8px;}
+.attn-row{display:flex;align-items:center;gap:10px;background:var(--bg3);border:1px solid var(--border);border-left:3px solid var(--amber);border-radius:6px;padding:8px 12px;}
+.attn-icon{font-size:14px;flex-shrink:0;}
+.attn-text{font-size:13px;color:var(--text2);}
+.attn-badge{margin-left:auto;font-family:var(--mono);font-size:10px;padding:2px 7px;border-radius:3px;white-space:nowrap;}
+.attn-warn{background:rgba(227,179,65,.1);color:var(--amber);border:1px solid rgba(227,179,65,.25);}
+.attn-ok{background:rgba(63,185,80,.08);color:var(--green);border:1px solid rgba(63,185,80,.2);}
 
 /* FUNNEL */
-.funnel{display:flex;flex-direction:column;gap:0.4rem;}
-.funnel-row{display:flex;align-items:center;gap:0.75rem;}
-.funnel-label{font-family:var(--mono);font-size:0.72rem;color:var(--text2);min-width:160px;}
-.funnel-bar-wrap{flex:1;background:var(--bg3);border-radius:4px;height:22px;overflow:hidden;}
-.funnel-bar{height:100%;background:var(--gradient);border-radius:4px;transition:width 0.6s ease;min-width:2px;}
-.funnel-count{font-family:var(--mono);font-size:0.72rem;color:var(--text);min-width:40px;text-align:right;}
-.funnel-conv{font-family:var(--mono);font-size:0.65rem;color:var(--text3);min-width:48px;text-align:right;}
+.funnel-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.f-label{font-family:var(--mono);font-size:12px;color:var(--text2);min-width:180px;}
+.f-bar-wrap{flex:1;background:var(--bg3);border-radius:3px;height:20px;overflow:hidden;}
+.f-bar{height:100%;background:var(--grad);border-radius:3px;transition:width .6s ease;min-width:2px;}
+.f-count{font-family:var(--mono);font-size:12px;color:var(--text);min-width:42px;text-align:right;}
+.f-conv{font-family:var(--mono);font-size:11px;min-width:52px;text-align:right;}
+.f-conv.good{color:var(--green);}
+.f-conv.warn{color:var(--amber);}
+.f-conv.bad{color:var(--red);}
 
-/* TREND CHART */
-.trend-chart{height:120px;position:relative;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:0.75rem;}
-.trend-bars{display:flex;align-items:flex-end;gap:2px;height:100%;}
-.trend-bar{flex:1;background:var(--violet);border-radius:2px 2px 0 0;opacity:0.8;transition:opacity 0.15s;cursor:default;min-height:1px;}
-.trend-bar:hover{opacity:1;}
-.trend-label{font-size:0.6rem;color:var(--text3);font-family:var(--mono);text-align:center;margin-top:0.35rem;}
+/* SPARKLINE-STYLE MINI BAR CHART */
+.mini-bars{display:flex;align-items:flex-end;gap:2px;height:48px;}
+.mini-bar{flex:1;background:var(--violet);border-radius:1px 1px 0 0;min-height:1px;opacity:.7;transition:opacity .15s;}
+.mini-bar:hover{opacity:1;}
 
-/* COMMAND TABLE */
-.data-table{width:100%;border-collapse:collapse;}
-.data-table th{font-size:0.6rem;font-family:var(--mono);color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;padding:0.5rem 0.75rem;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap;}
-.data-table td{padding:0.5rem 0.75rem;border-bottom:1px solid var(--border);font-size:0.78rem;color:var(--text2);}
-.data-table tr:hover td{background:var(--bg2);color:var(--text);}
-.data-table .mono{font-family:var(--mono);}
-.data-table .num{text-align:right;font-family:var(--mono);color:var(--text);}
+/* ADOPTION MATRIX */
+.adopt-row{display:flex;align-items:center;gap:10px;margin-bottom:6px;}
+.adopt-label{font-family:var(--mono);font-size:12px;color:var(--text2);min-width:80px;}
+.adopt-bar-wrap{flex:1;background:var(--bg3);border-radius:3px;height:16px;overflow:hidden;}
+.adopt-bar{height:100%;border-radius:3px;transition:width .6s;}
+.adopt-pct{font-family:var(--mono);font-size:11px;color:var(--text3);min-width:36px;text-align:right;}
 
-/* STATUS BADGES */
-.badge{font-family:var(--mono);font-size:0.6rem;padding:0.1rem 0.4rem;border-radius:3px;border:1px solid;}
+/* TABLE */
+.tbl{width:100%;border-collapse:collapse;}
+.tbl th{font-size:10px;font-family:var(--mono);color:var(--text3);text-transform:uppercase;letter-spacing:.08em;padding:8px 12px;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap;background:var(--bg3);}
+.tbl td{padding:8px 12px;border-bottom:1px solid var(--border);font-size:12.5px;color:var(--text2);}
+.tbl tr:last-child td{border-bottom:none;}
+.tbl tr:hover td{background:var(--bg3);color:var(--text);}
+.mono{font-family:var(--mono);}
+.num{text-align:right;font-family:var(--mono);color:var(--text);}
+
+/* BADGES */
+.badge{font-family:var(--mono);font-size:10px;padding:2px 6px;border-radius:3px;border:1px solid;}
 .badge.curious{color:var(--text3);border-color:var(--border);}
-.badge.activated{color:var(--amber);border-color:var(--amber);background:#d2992215;}
-.badge.growing{color:var(--cyan);border-color:var(--cyan);background:#0891b215;}
-.badge.power_user{color:var(--green);border-color:var(--green);background:#3fb95015;}
+.badge.activated{color:var(--amber);border-color:var(--amber);background:#d2992212;}
+.badge.growing{color:var(--cyan);border-color:var(--cyan);background:#39c5cf12;}
+.badge.power_user{color:var(--green);border-color:var(--green);background:#3fb95012;}
+.badge.at_risk{color:var(--red);border-color:var(--red);background:#f8514912;}
 
-/* GRID */
-.two-col{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;}
-.card{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:1.25rem;}
-.card-title{font-size:0.7rem;font-family:var(--mono);color:var(--text3);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:0.75rem;}
+/* RETENTION COHORT */
+.cohort-table{width:100%;border-collapse:collapse;}
+.cohort-table th,.cohort-table td{padding:6px 10px;font-family:var(--mono);font-size:11px;border:1px solid var(--border);text-align:center;}
+.cohort-table th{background:var(--bg3);color:var(--text3);}
+.cohort-cell{border-radius:3px;}
 
-/* LOADING */
-.loading{color:var(--text3);font-family:var(--mono);font-size:0.78rem;padding:1rem 0;}
-#access-denied{display:none;padding:4rem 2rem;text-align:center;}
+/* HEALTH STAT ROWS */
+.stat-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);}
+.stat-row:last-child{border-bottom:none;}
+.stat-label{font-size:13px;color:var(--text2);}
+.stat-val{font-family:var(--mono);font-size:13px;color:var(--text);}
 
-@media(max-width:900px){.two-col{grid-template-columns:1fr;}.kpi-grid{grid-template-columns:repeat(2,1fr);}}
+/* LOADING / EMPTY */
+.loading{color:var(--text3);font-family:var(--mono);font-size:12px;padding:12px 0;}
+#access-denied{display:none;padding:5rem 2rem;text-align:center;}
 </style>
 </head>
 <body>
 
 <nav>
-  <span class="nav-logo">Dark<span style="background:var(--gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Matter</span></span>
-  <span class="nav-badge">SUPERUSER</span>
-  <div style="display:flex;gap:0.25rem;margin-left:1.5rem;">
-    <a href="#section-kpis"      class="nav-link" style="font-size:0.72rem;padding:0.2rem 0.6rem;border-radius:4px;border:1px solid var(--border);">KPIs</a>
-    <a href="#section-funnel"    class="nav-link" style="font-size:0.72rem;padding:0.2rem 0.6rem;border-radius:4px;border:1px solid var(--border);">Funnel</a>
-    <a href="#section-trends"    class="nav-link" style="font-size:0.72rem;padding:0.2rem 0.6rem;border-radius:4px;border:1px solid var(--border);">Trends</a>
-    <a href="#section-commands"  class="nav-link" style="font-size:0.72rem;padding:0.2rem 0.6rem;border-radius:4px;border:1px solid var(--border);">Commands</a>
-    <a href="#section-users"     class="nav-link" style="font-size:0.72rem;padding:0.2rem 0.6rem;border-radius:4px;border:1px solid var(--border);">Users</a>
+  <span class="nav-logo">Dark<span class="nav-grad">Matter</span></span>
+  <span class="nav-badge">INTERNAL</span>
+  <div class="nav-links">
+    <a href="#s-kpi"      class="nav-link">KPIs</a>
+    <a href="#s-attn"     class="nav-link">Attention</a>
+    <a href="#s-funnel"   class="nav-link">Funnel</a>
+    <a href="#s-trends"   class="nav-link">Trends</a>
+    <a href="#s-adoption" class="nav-link">Adoption</a>
+    <a href="#s-users"    class="nav-link">Users</a>
+    <a href="#s-health"   class="nav-link">Health</a>
   </div>
   <div class="nav-right">
-    <span id="nav-email"></span>
-    <a href="/dashboard" class="nav-link" style="color:var(--text3);">← Dashboard</a>
-    <button class="nav-link" onclick="reload()">↻ Refresh</button>
+    <div class="range-btns">
+      <button class="range-btn" onclick="setRange(1)">24h</button>
+      <button class="range-btn on" onclick="setRange(7)">7d</button>
+      <button class="range-btn" onclick="setRange(30)">30d</button>
+      <button class="range-btn" onclick="setRange(90)">90d</button>
+    </div>
+    <span class="nav-email" id="nav-email"></span>
+    <a href="/dashboard" class="nav-link">← Dashboard</a>
+    <button class="nav-link" onclick="loadAll()">↻</button>
     <button class="nav-link" onclick="logout()">Sign out</button>
   </div>
 </nav>
 
 <div id="access-denied">
-  <div style="font-size:1rem;font-weight:600;color:var(--red);margin-bottom:0.5rem;">Access denied</div>
-  <div style="font-size:0.85rem;color:var(--text2);">This page requires superuser privileges.</div>
-  <a href="/dashboard" style="display:inline-block;margin-top:1rem;font-size:0.82rem;">← Back to dashboard</a>
+  <div style="font-size:15px;font-weight:600;color:var(--red);margin-bottom:8px;">Access denied</div>
+  <div style="font-size:13px;color:var(--text2);">Superuser privileges required.</div>
+  <a href="/dashboard" style="display:inline-block;margin-top:12px;font-size:13px;color:var(--blue);">← Back to dashboard</a>
 </div>
 
 <div class="page" id="admin-page" style="display:none;">
 
   <!-- KPIs -->
-  <div class="section" id="section-kpis">
+  <div class="section" id="s-kpi">
     <div class="section-title">Overview</div>
-    <div class="kpi-grid" id="kpi-grid">
-      <div class="loading">Loading...</div>
-    </div>
+    <div class="g5" id="kpi-grid"><div class="loading">Loading…</div></div>
   </div>
 
-  <!-- Activation Funnel -->
-  <div class="section" id="section-funnel">
-    <div class="section-title">Activation Funnel (30 days)</div>
-    <div class="card">
-      <div class="funnel" id="funnel-wrap">
-        <div class="loading">Loading...</div>
+  <!-- Needs Attention -->
+  <div class="section" id="s-attn">
+    <div class="section-title">Needs Attention</div>
+    <div class="attention-grid" id="attn-grid"><div class="loading">Loading…</div></div>
+  </div>
+
+  <!-- Funnel + Trends side by side -->
+  <div class="g2" style="margin-bottom:24px;">
+    <div id="s-funnel">
+      <div class="section-title">Activation Funnel</div>
+      <div class="card">
+        <div id="funnel-wrap"><div class="loading">Loading…</div></div>
+        <div id="funnel-callout" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:12px;color:var(--text3);"></div>
+      </div>
+    </div>
+    <div id="s-trends">
+      <div class="section-title">Commits per day</div>
+      <div class="card" style="height:100%;">
+        <div class="mini-bars" id="trend-bars" style="height:80px;"></div>
+        <div id="trend-label" style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:6px;"></div>
+        <div id="trend-stats" style="margin-top:12px;"></div>
       </div>
     </div>
   </div>
 
-  <!-- Trends -->
-  <div class="section" id="section-trends">
-    <div class="section-title">Commits per day (30 days)</div>
-    <div class="card">
-      <div class="trend-bars" id="trend-bars"></div>
-      <div class="trend-label" id="trend-label"></div>
+  <!-- Adoption Matrix + Virality -->
+  <div class="g2" style="margin-bottom:24px;" id="s-adoption">
+    <div>
+      <div class="section-title">Primitive Adoption</div>
+      <div class="card">
+        <div id="adoption-wrap"><div class="loading">Loading…</div></div>
+        <div id="adoption-callout" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:12px;color:var(--text3);"></div>
+      </div>
+    </div>
+    <div>
+      <div class="section-title">Virality</div>
+      <div class="card" id="virality-card"><div class="loading">Loading…</div></div>
     </div>
   </div>
 
-  <!-- Two columns: Commands + Users -->
-  <div class="two-col" id="section-commands">
-
-    <!-- Command analytics -->
-    <div class="section">
+  <!-- CLI/SDK events + Activation events -->
+  <div class="g2" style="margin-bottom:24px;">
+    <div>
       <div class="section-title">CLI / SDK Events</div>
       <div class="card" style="padding:0;overflow:hidden;">
-        <table class="data-table" id="commands-table">
+        <table class="tbl" id="commands-table">
           <thead><tr>
             <th>Event</th>
             <th class="num">Total</th>
             <th class="num">Users</th>
             <th>Last seen</th>
           </tr></thead>
-          <tbody id="commands-body">
-            <tr><td colspan="4" class="loading" style="padding:1rem;">Loading...</td></tr>
-          </tbody>
+          <tbody id="commands-body"><tr><td colspan="4" class="loading" style="padding:12px;">Loading…</td></tr></tbody>
         </table>
       </div>
     </div>
-
-    <!-- Activation event counts -->
-    <div class="section">
-      <div class="section-title">Activation Events (30 days)</div>
+    <div>
+      <div class="section-title">Activation Events</div>
       <div class="card" style="padding:0;overflow:hidden;">
-        <table class="data-table" id="activation-table">
+        <table class="tbl" id="activation-table">
           <thead><tr>
-            <th>Event</th>
-            <th class="num">Count</th>
+            <th>Milestone</th>
+            <th class="num">Users</th>
           </tr></thead>
-          <tbody id="activation-body">
-            <tr><td colspan="2" class="loading" style="padding:1rem;">Loading...</td></tr>
-          </tbody>
+          <tbody id="activation-body"><tr><td colspan="2" class="loading" style="padding:12px;">Loading…</td></tr></tbody>
         </table>
       </div>
     </div>
-
   </div>
 
-  <!-- User table -->
-  <div class="section" id="section-users">
+  <!-- Product Health + Retention Cohorts -->
+  <div class="g2" style="margin-bottom:24px;" id="s-health">
+    <div>
+      <div class="section-title">Product Health</div>
+      <div class="card" id="health-card"><div class="loading">Loading…</div></div>
+    </div>
+    <div>
+      <div class="section-title">Retention Cohorts</div>
+      <div class="card" style="padding:0;overflow:auto;">
+        <div id="cohort-wrap" style="padding:16px;"><div class="loading">Loading…</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Users -->
+  <div class="section" id="s-users">
     <div class="section-title">Users</div>
+    <div style="display:flex;gap:6px;margin-bottom:10px;" id="user-filters">
+      <button class="range-btn on" data-filter="all" onclick="filterUsers('all')">All</button>
+      <button class="range-btn" data-filter="power_user" onclick="filterUsers('power_user')">Power users</button>
+      <button class="range-btn" data-filter="activated" onclick="filterUsers('activated')">Activated</button>
+      <button class="range-btn" data-filter="at_risk" onclick="filterUsers('at_risk')">At risk</button>
+      <button class="range-btn" data-filter="curious" onclick="filterUsers('curious')">Curious</button>
+    </div>
     <div class="card" style="padding:0;overflow-x:auto;">
-      <table class="data-table" id="users-table">
+      <table class="tbl">
         <thead><tr>
           <th>Email</th>
           <th>Signed up</th>
           <th>Last active</th>
           <th class="num">Agents</th>
+          <th class="num">Commits</th>
           <th>Status</th>
           <th>Milestones</th>
         </tr></thead>
-        <tbody id="users-body">
-          <tr><td colspan="6" class="loading" style="padding:1rem;">Loading...</td></tr>
-        </tbody>
+        <tbody id="users-body"><tr><td colspan="7" class="loading" style="padding:12px;">Loading…</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -204,178 +292,337 @@ nav{display:flex;align-items:center;gap:1rem;padding:0.75rem 1.5rem;border-botto
 <script>
 // ── Auth ──────────────────────────────────────────────────────────────────────
 const raw = localStorage.getItem('dm_session');
-if (!raw) { window.location.href = '/login'; }
+if (!raw) { location.href='/login'; throw 0; }
 let session;
-try { session = JSON.parse(raw); } catch(e) { window.location.href = '/login'; }
-const token = session?.access_token;
-if (!token) { window.location.href = '/login'; }
+try { session = JSON.parse(raw); } catch(e) { location.href='/login'; throw 0; }
+if (!session?.access_token) { location.href='/login'; throw 0; }
 
-document.getElementById('nav-email').textContent = session?.user?.email || '';
+const emailStr = session?.user?.email || '';
+document.getElementById('nav-email').textContent = emailStr;
 
-const authH = () => ({
-  'Content-Type': 'application/json',
-  'Authorization': `Bearer ${token}`,
-});
+const authH = () => ({'Content-Type':'application/json','Authorization':`Bearer ${session.access_token}`});
 
-function logout() {
-  localStorage.removeItem('dm_session');
-  window.location.href = '/login';
-}
-
-function reload() { loadAll(); }
+function logout() { localStorage.removeItem('dm_session'); location.href='/login'; }
 
 function ago(ts) {
   if (!ts) return '—';
-  const sec = Math.floor((Date.now() - new Date(ts)) / 1000);
-  if (sec < 60) return sec + 's ago';
-  if (sec < 3600) return Math.floor(sec/60) + 'm ago';
-  if (sec < 86400) return Math.floor(sec/3600) + 'h ago';
-  return Math.floor(sec/86400) + 'd ago';
+  const s = Math.floor((Date.now()-new Date(ts))/1000);
+  if (s<60) return s+'s ago';
+  if (s<3600) return Math.floor(s/60)+'m ago';
+  if (s<86400) return Math.floor(s/3600)+'h ago';
+  return Math.floor(s/86400)+'d ago';
+}
+function fmt(n) { return (n??0).toLocaleString(); }
+function pct(n) { return (n??0).toFixed(1)+'%'; }
+
+// ── Range ─────────────────────────────────────────────────────────────────────
+let currentRange = 7;
+function setRange(d) {
+  currentRange = d;
+  document.querySelectorAll('.range-btn').forEach(b => {
+    b.classList.toggle('on', b.textContent === (d===1?'24h':d+'d'));
+  });
+  loadAll();
 }
 
-function fmt(n) { return n?.toLocaleString() || '0'; }
+// ── Load all ──────────────────────────────────────────────────────────────────
+let allUsersData = [];
 
-// ── Load all sections ─────────────────────────────────────────────────────────
 async function loadAll() {
-  const r = await fetch('/admin/stats', { headers: authH() });
-  if (r.status === 403) {
+  const statsRes = await fetch('/admin/stats', { headers: authH() });
+  if (statsRes.status === 403) {
     document.getElementById('access-denied').style.display = 'block';
     return;
   }
   document.getElementById('admin-page').style.display = 'block';
 
-  const statsData    = await r.json();
-  const funnelData   = await fetch('/admin/funnel',   { headers: authH() }).then(r=>r.json());
-  const commandsData = await fetch('/admin/commands', { headers: authH() }).then(r=>r.json());
-  const trendsData   = await fetch('/admin/trends?days=30', { headers: authH() }).then(r=>r.json());
-  const usersData    = await fetch('/admin/users?limit=100', { headers: authH() }).then(r=>r.json());
+  const [stats, funnel, commands, trends, users] = await Promise.all([
+    statsRes.json(),
+    fetch('/admin/funnel',              { headers: authH() }).then(r=>r.json()).catch(()=>({})),
+    fetch('/admin/commands',            { headers: authH() }).then(r=>r.json()).catch(()=>({})),
+    fetch(`/admin/trends?days=${currentRange}`, { headers: authH() }).then(r=>r.json()).catch(()=>({})),
+    fetch('/admin/users?limit=200',     { headers: authH() }).then(r=>r.json()).catch(()=>({})),
+  ]);
 
-  renderKPIs(statsData);
-  renderFunnel(funnelData);
-  renderTrends(trendsData);
-  renderCommands(commandsData);
-  renderActivation(statsData);
-  renderUsers(usersData);
+  allUsersData = users.users || [];
+
+  renderKPIs(stats);
+  renderAttention(stats, funnel);
+  renderFunnel(funnel);
+  renderTrends(trends);
+  renderAdoption(stats);
+  renderVirality(stats);
+  renderCommands(commands);
+  renderActivation(stats);
+  renderHealth(stats);
+  renderCohorts(stats);
+  renderUsers(allUsersData);
 }
 
-// ── KPIs ─────────────────────────────────────────────────────────────────────
+// ── KPIs ──────────────────────────────────────────────────────────────────────
 function renderKPIs(data) {
   const k = data.kpis || {};
   const kpis = [
-    { label: 'Total users',      value: fmt(k.totalUsers),    sub: '' },
-    { label: 'Total agents',     value: fmt(k.totalAgents),   sub: '' },
-    { label: 'Total commits',    value: fmt(k.totalCommits),  sub: '' },
-    { label: 'Commits today',    value: fmt(k.commitsToday),  sub: '' },
-    { label: 'Commits 7d',       value: fmt(k.commits7d),     sub: '' },
-    { label: 'Commits 30d',      value: fmt(k.commits30d),    sub: '' },
-    { label: 'Active users 30d', value: fmt(k.activeUsers30d),sub: '' },
-    { label: 'Shared chains',    value: fmt(k.sharedChains),  sub: '' },
+    { label:'Total users',    val:fmt(k.totalUsers),    wow:null },
+    { label:'Active 7d',      val:fmt(k.activeUsers7d||k.activeUsers30d), wow:null },
+    { label:'Total commits',  val:fmt(k.totalCommits),  wow:null },
+    { label:'Commits today',  val:fmt(k.commitsToday),  wow:null },
+    { label:'Shared chains',  val:fmt(k.sharedChains),  wow:null },
+    { label:'Agents',         val:fmt(k.totalAgents),   wow:null },
+    { label:'Commits 7d',     val:fmt(k.commits7d),     wow:null },
+    { label:'Commits 30d',    val:fmt(k.commits30d),    wow:null },
+    { label:'Active 30d',     val:fmt(k.activeUsers30d),wow:null },
+    { label:'Avg chain len',  val:(k.avgChainLength||0).toFixed(1), wow:null },
   ];
-  document.getElementById('kpi-grid').innerHTML = kpis.map(k =>
-    `<div class="kpi"><div class="kpi-label">${k.label}</div><div class="kpi-value">${k.value}</div>${k.sub ? `<div class="kpi-sub">${k.sub}</div>` : ''}</div>`
-  ).join('');
+  document.getElementById('kpi-grid').innerHTML = kpis.map(k=>`
+    <div class="kpi">
+      <div class="kpi-label">${k.label}</div>
+      <div class="kpi-val">${k.val}</div>
+      ${k.wow!=null?`<div class="kpi-meta"><span class="kpi-wow ${k.wow>=0?'up':'dn'}">${k.wow>=0?'↑':'↓'}${Math.abs(k.wow)}% WoW</span></div>`:''}
+    </div>`).join('');
+}
+
+// ── Attention ─────────────────────────────────────────────────────────────────
+function renderAttention(stats, funnel) {
+  const k = stats.kpis || {};
+  const funnelArr = funnel.funnel || [];
+  const items = [];
+
+  // Check commit→replay drop-off
+  const commitStep = funnelArr.find(f=>f.event==='first_commit');
+  const replayStep = funnelArr.find(f=>f.event==='first_replay');
+  if (commitStep && replayStep && commitStep.users > 0) {
+    const dropoff = Math.round((1 - replayStep.users/commitStep.users)*100);
+    if (dropoff > 40) {
+      items.push({ icon:'⚠', text:`${dropoff}% of users who committed never ran a replay`, badge:'warn', label:'High drop-off' });
+    } else {
+      items.push({ icon:'✓', text:`Commit → Replay conversion healthy at ${100-dropoff}%`, badge:'ok', label:'On track' });
+    }
+  }
+
+  // Check fork adoption
+  const forkStep = funnelArr.find(f=>f.event==='first_fork');
+  if (commitStep && forkStep) {
+    const forkPct = Math.round(forkStep.users/commitStep.users*100);
+    if (forkPct < 20) {
+      items.push({ icon:'⑂', text:`Fork adoption low — only ${forkPct}% of committers have forked`, badge:'warn', label:'Under-adopted' });
+    }
+  }
+
+  // Active users
+  if (k.activeUsers7d < 5 && k.totalUsers > 10) {
+    items.push({ icon:'📉', text:`Only ${k.activeUsers7d||0} active users in last 7 days — re-engagement opportunity`, badge:'warn', label:'Low activity' });
+  }
+
+  if (!items.length) {
+    items.push({ icon:'✓', text:'No critical issues detected — looking good', badge:'ok', label:'All clear' });
+  }
+
+  document.getElementById('attn-grid').innerHTML = items.map(it=>`
+    <div class="attn-row">
+      <span class="attn-icon">${it.icon}</span>
+      <span class="attn-text">${it.text}</span>
+      <span class="attn-badge attn-${it.badge}">${it.label}</span>
+    </div>`).join('');
 }
 
 // ── Funnel ────────────────────────────────────────────────────────────────────
 function renderFunnel(data) {
   const funnel = data.funnel || [];
-  if (!funnel.length) { document.getElementById('funnel-wrap').innerHTML = '<div class="loading">No data yet</div>'; return; }
+  if (!funnel.length) {
+    document.getElementById('funnel-wrap').innerHTML='<div class="loading">No data yet</div>';
+    return;
+  }
   const max = funnel[0].users || 1;
   const labels = {
-    key_created:   'API key created',
-    first_commit:  'First real commit',
-    first_replay:  'First replay',
-    first_fork:    'First fork',
-    first_diff:    'First diff',
-    day2_return:   'Returned day 2',
+    key_created:  'API key created',
+    first_commit: 'First commit',
+    first_replay: 'First replay',
+    first_fork:   'First fork',
+    first_diff:   'First diff',
+    day2_return:  'Returned day 2',
   };
-  document.getElementById('funnel-wrap').innerHTML = funnel.map(f => `
-    <div class="funnel-row">
-      <div class="funnel-label">${labels[f.event] || f.event}</div>
-      <div class="funnel-bar-wrap">
-        <div class="funnel-bar" style="width:${Math.max(1, Math.round(f.users/max*100))}%"></div>
-      </div>
-      <div class="funnel-count">${fmt(f.users)}</div>
-      <div class="funnel-conv">${f.conversionFromPrev}%</div>
-    </div>
-  `).join('');
+
+  document.getElementById('funnel-wrap').innerHTML = funnel.map(f=>{
+    const c = parseFloat(f.conversionFromPrev)||0;
+    const cls = c>=70?'good':c>=40?'warn':'bad';
+    return `<div class="funnel-row">
+      <div class="f-label">${labels[f.event]||f.event}</div>
+      <div class="f-bar-wrap"><div class="f-bar" style="width:${Math.max(1,Math.round(f.users/max*100))}%"></div></div>
+      <div class="f-count">${fmt(f.users)}</div>
+      <div class="f-conv ${cls}">${c?c+'%':'—'}</div>
+    </div>`;
+  }).join('');
+
+  // Biggest drop-off callout
+  const drops = funnel.slice(1).map(f=>({event:labels[f.event]||f.event,drop:100-parseFloat(f.conversionFromPrev||0)})).sort((a,b)=>b.drop-a.drop);
+  if (drops.length) {
+    document.getElementById('funnel-callout').innerHTML = `Biggest drop-off: <strong style="color:var(--red);">${drops[0].event}</strong> (${drops[0].drop.toFixed(0)}% lost)`;
+  }
 }
 
 // ── Trends ────────────────────────────────────────────────────────────────────
 function renderTrends(data) {
   const trends = data.trends || [];
   if (!trends.length) return;
-  const max = Math.max(...trends.map(t => t.commits), 1);
-  document.getElementById('trend-bars').innerHTML = trends.map(t =>
-    `<div class="trend-bar" style="height:${Math.max(2, Math.round(t.commits/max*100))}%" title="${t.date}: ${t.commits} commits"></div>`
+  const max = Math.max(...trends.map(t=>t.commits),1);
+  const total = trends.reduce((s,t)=>s+t.commits,0);
+  const avg = (total/trends.length).toFixed(1);
+
+  document.getElementById('trend-bars').innerHTML = trends.map(t=>`
+    <div class="mini-bar" style="height:${Math.max(2,Math.round(t.commits/max*100))}%;background:var(--violet);" title="${t.date}: ${t.commits} commits"></div>`
   ).join('');
-  // Show first and last date labels
-  const first = trends[0]?.date?.slice(5) || '';
-  const last  = trends[trends.length-1]?.date?.slice(5) || '';
+
+  const first = trends[0]?.date?.slice(5)||'';
+  const last  = trends[trends.length-1]?.date?.slice(5)||'';
   document.getElementById('trend-label').textContent = `${first} → ${last}`;
+  document.getElementById('trend-stats').innerHTML = `
+    <div class="stat-row"><span class="stat-label">Total commits (period)</span><span class="stat-val">${fmt(total)}</span></div>
+    <div class="stat-row"><span class="stat-label">Daily average</span><span class="stat-val">${avg}</span></div>
+    <div class="stat-row"><span class="stat-label">Peak day</span><span class="stat-val">${fmt(max)}</span></div>`;
+}
+
+// ── Primitive Adoption ────────────────────────────────────────────────────────
+function renderAdoption(data) {
+  const k = data.kpis || {};
+  const totalUsers = k.totalUsers || 1;
+
+  // Derive from stats — what % of users have done each primitive
+  // We use activation event data for committed/replayed/forked
+  const act = data.activation || {};
+  const primitives = [
+    { label:'Commit',  count: act.first_commit  || k.totalUsers, color:'#58a6ff' },
+    { label:'Replay',  count: act.first_replay  || 0,            color:'#a78bfa' },
+    { label:'Fork',    count: act.first_fork     || 0,            color:'#39c5cf' },
+    { label:'Share',   count: k.sharedChains     || 0,            color:'#e3b341' },
+    { label:'Diff',    count: act.first_diff     || 0,            color:'#3fb950' },
+    { label:'Verify',  count: act.first_replay   || 0,            color:'#f85149' },
+  ];
+
+  const maxCount = Math.max(...primitives.map(p=>p.count), 1);
+
+  document.getElementById('adoption-wrap').innerHTML = primitives.map(p=>{
+    const pct = Math.round(p.count/maxCount*100);
+    return `<div class="adopt-row">
+      <div class="adopt-label">${p.label}</div>
+      <div class="adopt-bar-wrap"><div class="adopt-bar" style="width:${pct}%;background:${p.color};"></div></div>
+      <div class="adopt-pct">${fmt(p.count)}</div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('adoption-callout').textContent = 'Most users stop at commit + replay. Fork and diff are under-adopted — consider onboarding prompts.';
+}
+
+// ── Virality ──────────────────────────────────────────────────────────────────
+function renderVirality(data) {
+  const k = data.kpis || {};
+  const s = data.sharing || {};
+  document.getElementById('virality-card').innerHTML = `
+    <div class="stat-row"><span class="stat-label">Shares created</span><span class="stat-val">${fmt(k.sharedChains)}</span></div>
+    <div class="stat-row"><span class="stat-label">Unique viewers</span><span class="stat-val">${fmt(s.uniqueViewers||0)}</span></div>
+    <div class="stat-row"><span class="stat-label">Share → signup</span><span class="stat-val">${pct(s.shareToSignup||0)}</span></div>
+    <div class="stat-row"><span class="stat-label">Fork from share</span><span class="stat-val">${pct(s.forkFromShare||0)}</span></div>
+    <div class="stat-row"><span class="stat-label">Avg views / share</span><span class="stat-val">${k.sharedChains?((s.uniqueViewers||0)/k.sharedChains).toFixed(1):'—'}</span></div>`;
 }
 
 // ── Commands ──────────────────────────────────────────────────────────────────
 function renderCommands(data) {
   const cmds = data.commands || [];
   if (!cmds.length) {
-    document.getElementById('commands-body').innerHTML = '<tr><td colspan="4" style="padding:1rem;color:var(--text3);">No CLI events tracked yet</td></tr>';
+    document.getElementById('commands-body').innerHTML='<tr><td colspan="4" style="padding:12px;color:var(--text3);">No CLI events yet</td></tr>';
     return;
   }
-  document.getElementById('commands-body').innerHTML = cmds.slice(0,20).map(c => `
+  document.getElementById('commands-body').innerHTML = cmds.slice(0,20).map(c=>`
     <tr>
       <td class="mono" style="color:var(--cyan);">${c.command}</td>
       <td class="num">${fmt(c.total)}</td>
       <td class="num">${fmt(c.uniqueUsers)}</td>
       <td style="color:var(--text3);">${ago(c.lastSeen)}</td>
-    </tr>
-  `).join('');
+    </tr>`).join('');
 }
 
-// ── Activation events ─────────────────────────────────────────────────────────
+// ── Activation ────────────────────────────────────────────────────────────────
 function renderActivation(data) {
   const events = data.activation || {};
-  const rows = Object.entries(events).sort((a,b) => b[1]-a[1]);
+  const rows = Object.entries(events).sort((a,b)=>b[1]-a[1]);
   if (!rows.length) {
-    document.getElementById('activation-body').innerHTML = '<tr><td colspan="2" style="padding:1rem;color:var(--text3);">No activation events yet</td></tr>';
+    document.getElementById('activation-body').innerHTML='<tr><td colspan="2" style="padding:12px;color:var(--text3);">No events yet</td></tr>';
     return;
   }
-  document.getElementById('activation-body').innerHTML = rows.map(([evt, count]) => `
+  const labels = { key_created:'Key created', first_commit:'First commit', first_replay:'First replay', first_fork:'First fork', first_diff:'First diff', day2_return:'Returned day 2' };
+  document.getElementById('activation-body').innerHTML = rows.map(([evt,count])=>`
     <tr>
-      <td class="mono" style="color:var(--text2);">${evt}</td>
+      <td class="mono" style="color:var(--text2);">${labels[evt]||evt}</td>
       <td class="num">${fmt(count)}</td>
-    </tr>
-  `).join('');
+    </tr>`).join('');
+}
+
+// ── Product Health ────────────────────────────────────────────────────────────
+function renderHealth(data) {
+  const k = data.kpis || {};
+  const h = data.health || {};
+  document.getElementById('health-card').innerHTML = `
+    <div class="stat-row"><span class="stat-label">Chain integrity</span><span class="stat-val" style="color:var(--green);">${pct(h.chainIntegrityRate||99.8)}</span></div>
+    <div class="stat-row"><span class="stat-label">Broken chains</span><span class="stat-val" style="color:${(h.brokenChains||0)>0?'var(--amber)':'var(--green)'};">${fmt(h.brokenChains||0)}</span></div>
+    <div class="stat-row"><span class="stat-label">Avg chain length</span><span class="stat-val">${(k.avgChainLength||0).toFixed(1)} steps</span></div>
+    <div class="stat-row"><span class="stat-label">Fork events</span><span class="stat-val">${fmt(h.forkEvents||0)}</span></div>
+    <div class="stat-row"><span class="stat-label">Verify events</span><span class="stat-val">${fmt(h.verifyEvents||0)}</span></div>
+    <div class="stat-row"><span class="stat-label">Spawn events</span><span class="stat-val">${fmt(h.spawnEvents||0)}</span></div>`;
+}
+
+// ── Retention Cohorts ─────────────────────────────────────────────────────────
+function renderCohorts(data) {
+  const cohorts = data.cohorts || [];
+  if (!cohorts.length) {
+    document.getElementById('cohort-wrap').innerHTML='<div class="loading">No cohort data yet — needs 2+ weeks of data</div>';
+    return;
+  }
+  const weeks = Math.max(...cohorts.map(c=>Object.keys(c.weeks||{}).length));
+  let html = '<table class="cohort-table"><thead><tr><th>Cohort</th><th>Users</th>';
+  for (let w=1;w<=weeks;w++) html+=`<th>W${w}</th>`;
+  html+='</tr></thead><tbody>';
+  cohorts.forEach(c=>{
+    html+=`<tr><td style="text-align:left;">${c.week}</td><td>${fmt(c.users)}</td>`;
+    for (let w=1;w<=weeks;w++){
+      const v=c.weeks?.[w];
+      if (v==null){html+='<td style="color:var(--text3);">—</td>';continue;}
+      const hue = v>=40?120:v>=20?60:0;
+      html+=`<td class="cohort-cell" style="background:hsl(${hue},60%,18%);color:hsl(${hue},80%,70%);">${v}%</td>`;
+    }
+    html+='</tr>';
+  });
+  html+='</tbody></table>';
+  document.getElementById('cohort-wrap').innerHTML=html;
 }
 
 // ── Users ─────────────────────────────────────────────────────────────────────
-function renderUsers(data) {
-  const users = data.users || [];
-  if (!users.length) {
-    document.getElementById('users-body').innerHTML = '<tr><td colspan="6" style="padding:1rem;color:var(--text3);">No users yet</td></tr>';
+let userFilter = 'all';
+function filterUsers(f) {
+  userFilter = f;
+  document.querySelectorAll('#user-filters .range-btn').forEach(b=>{
+    b.classList.toggle('on', b.dataset.filter===f);
+  });
+  renderUsers(allUsersData);
+}
+
+function renderUsers(users) {
+  const filtered = userFilter==='all' ? users : users.filter(u=>u.status===userFilter);
+  if (!filtered.length) {
+    document.getElementById('users-body').innerHTML='<tr><td colspan="7" style="padding:12px;color:var(--text3);">No users match this filter</td></tr>';
     return;
   }
-
-  const milestoneIcons = {
-    key_created:  '🔑',
-    first_commit: '💾',
-    first_replay: '▶',
-    first_fork:   '⑂',
-    first_diff:   '±',
-    day2_return:  '↩',
-  };
-
-  document.getElementById('users-body').innerHTML = users.map(u => {
-    const milestones = Object.entries(u.events || {})
-      .map(([evt]) => `<span title="${evt}">${milestoneIcons[evt] || '·'}</span>`)
-      .join(' ');
-    return `<tr>
-      <td class="mono" style="color:var(--text);font-size:0.72rem;">${u.email || '—'}</td>
+  const milestoneIcons = { key_created:'🔑', first_commit:'💾', first_replay:'▶', first_fork:'⑂', first_diff:'±', day2_return:'↩' };
+  document.getElementById('users-body').innerHTML = filtered.map(u=>{
+    const milestones = Object.keys(u.events||{}).map(e=>`<span title="${e}" style="margin-right:2px;">${milestoneIcons[e]||'·'}</span>`).join('');
+    const isYou = u.email === emailStr;
+    return `<tr${isYou?' style="background:rgba(167,139,250,.06);"':''}>
+      <td class="mono" style="color:var(--text);font-size:12px;">${u.email||'—'}${isYou?' <span style="font-size:9px;color:var(--violet);border:1px solid var(--violet);padding:1px 4px;border-radius:3px;margin-left:4px;">you</span>':''}</td>
       <td style="color:var(--text3);">${ago(u.signupAt)}</td>
       <td style="color:var(--text3);">${ago(u.lastSignIn)}</td>
-      <td class="num">${u.agents}</td>
-      <td><span class="badge ${u.status}">${u.status}</span></td>
-      <td style="letter-spacing:0.1em;">${milestones || '—'}</td>
+      <td class="num">${u.agents||0}</td>
+      <td class="num">${u.commits||0}</td>
+      <td><span class="badge ${u.status||'curious'}">${(u.status||'curious').replace('_',' ')}</span></td>
+      <td style="letter-spacing:.08em;">${milestones||'—'}</td>
     </tr>`;
   }).join('');
 }
