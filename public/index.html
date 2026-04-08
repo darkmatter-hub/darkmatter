@@ -27,26 +27,7 @@ html{scroll-behavior:smooth;}
 body{font-family:var(--sans);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden;}
 a{text-decoration:none;color:inherit;}
 
-/* ── NAV ── Dark, like LangChain */
-nav{
-  position:sticky;top:0;z-index:300;
-  background:rgba(10,14,26,.92);backdrop-filter:blur(16px);
-  border-bottom:1px solid var(--dark-border);
-  height:60px;display:flex;align-items:center;padding:0 40px;gap:32px;
-}
-.nav-brand{display:flex;align-items:center;gap:9px;flex-shrink:0;}
-.nav-logo{width:26px;height:26px;}
-.nav-wordmark{font-family:var(--mono);font-size:17px;font-weight:600;color:var(--dark-text);letter-spacing:-.02em;}
-.nav-links{display:flex;gap:4px;list-style:none;}
-.nav-links a{font-size:13.5px;color:var(--dark-text2);padding:5px 10px;border-radius:6px;transition:color .15s,background .15s;}
-.nav-links a:hover{color:var(--dark-text);background:rgba(255,255,255,.06);}
-.nav-right{margin-left:auto;display:flex;align-items:center;gap:10px;}
-.nav-signin{font-size:13.5px;color:var(--dark-text2);padding:6px 14px;border-radius:6px;transition:color .15s;}
-.nav-signin:hover{color:var(--dark-text);}
-.nav-cta{font-family:var(--mono);font-size:12.5px;font-weight:600;background:var(--blue);color:#fff;padding:8px 18px;border-radius:6px;letter-spacing:.01em;transition:background .15s,transform .12s;}
-.nav-cta:hover{background:var(--blue-dark);transform:translateY(-1px);}
-.nav-demo{font-family:var(--mono);font-size:12.5px;font-weight:500;background:rgba(255,255,255,.06);color:var(--dark-text);padding:7px 16px;border-radius:6px;border:1px solid var(--dark-border2);transition:background .15s;}
-.nav-demo:hover{background:rgba(255,255,255,.1);}
+
 
 /* ── HERO — dark, centered, LangChain style ── */
 .hero{
@@ -91,13 +72,10 @@ nav{
 .stage{
   flex:1;display:flex;align-items:center;justify-content:center;
   padding:14px 0;font-family:var(--mono);font-size:12px;
-  color:var(--dark-text3);letter-spacing:.06em;
+  color:rgba(232,237,245,.4);letter-spacing:.06em;
   border-right:1px solid var(--dark-border);position:relative;
 }
 .stage:last-child{border-right:none;}
-.stage.active{color:var(--blue-light);}
-.stage-dot{width:6px;height:6px;border-radius:50%;background:var(--blue-light);margin-right:7px;flex-shrink:0;}
-
 /* ── CHAIN DEMO (below stage bar, floating up from dark) ── */
 .chain-showcase{
   background:var(--dark2);border:1px solid var(--dark-border2);
@@ -218,15 +196,22 @@ footer{background:var(--dark2);border-top:1px solid var(--dark-border);padding:4
 }
 
 /* ── SHARED NAV (darkmatterhub.ai standard) ── */
+@media(max-width:640px){}
+
+/* ── SHARED FOOTER ── */
+@media(max-width:640px){}
+
+
+/* ── CANONICAL NAV ── */
 .dm-nav{
   position:sticky;top:0;z-index:300;
-  height:56px;background:#fff;border-bottom:1px solid #e5e7eb;
+  height:60px;background:#fff;border-bottom:1px solid #e5e7eb;
   display:flex;align-items:center;padding:0 40px;gap:28px;
 }
-.dm-nav-logo{display:flex;align-items:center;gap:9px;text-decoration:none;flex-shrink:0;}
+.dm-nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none;flex-shrink:0;}
 .dm-nav-name{
   font-family:'IBM Plex Mono','Courier New',monospace;
-  font-size:14px;font-weight:700;color:#111827;letter-spacing:-0.02em;
+  font-size:17px;font-weight:700;color:#111827;letter-spacing:-0.03em;
 }
 .dm-nav-links{display:flex;align-items:center;gap:4px;list-style:none;margin-left:4px;}
 .dm-nav-links a{
@@ -235,33 +220,36 @@ footer{background:var(--dark2);border-top:1px solid var(--dark-border);padding:4
 }
 .dm-nav-links a:hover{color:#111827;background:#f3f4f6;}
 .dm-nav-links a.active{color:#111827;font-weight:500;}
-.dm-nav-right{margin-left:auto;display:flex;align-items:center;gap:8px;}
-.dm-nav-signin{font-size:13.5px;color:#6b7280;text-decoration:none;padding:6px 12px;border-radius:6px;transition:color .12s;}
-.dm-nav-signin:hover{color:#111827;}
+.dm-nav-right{margin-left:auto;display:flex;align-items:center;gap:10px;}
+.dm-nav-icon{
+  display:flex;align-items:center;justify-content:center;
+  width:34px;height:34px;border-radius:7px;color:#6b7280;
+  text-decoration:none;transition:color .12s,background .12s;
+}
+.dm-nav-icon:hover{color:#111827;background:#f3f4f6;}
+.dm-nav-icon svg{width:18px;height:18px;stroke-width:1.6;}
 .dm-nav-cta{
   font-family:'IBM Plex Mono','Courier New',monospace;
   font-size:12.5px;font-weight:700;background:#111827;color:#fff;
-  padding:8px 16px;border-radius:7px;text-decoration:none;transition:opacity .15s;
+  padding:8px 18px;border-radius:7px;text-decoration:none;transition:opacity .15s;
 }
 .dm-nav-cta:hover{opacity:.85;}
-@media(max-width:640px){.dm-nav{padding:0 16px;gap:12px;}.dm-nav-links{display:none;}}
-
-/* ── SHARED FOOTER ── */
+@media(max-width:768px){.dm-nav{padding:0 16px;gap:12px;}.dm-nav-links{display:none;}}
+/* ── CANONICAL FOOTER ── */
 .dm-footer{
-  border-top:1px solid #e5e7eb;padding:24px 40px;
-  display:flex;align-items:center;justify-content:space-between;
-  flex-wrap:wrap;gap:14px;background:#fff;
+  border-top:1px solid #e5e7eb;padding:28px 40px;
+  display:flex;align-items:center;flex-wrap:wrap;gap:16px;
 }
-.dm-footer-brand{display:flex;align-items:center;gap:8px;text-decoration:none;}
+.dm-footer-brand{display:flex;align-items:center;gap:8px;text-decoration:none;flex-shrink:0;}
 .dm-footer-name{
   font-family:'IBM Plex Mono','Courier New',monospace;
-  font-size:13px;font-weight:700;color:#111827;letter-spacing:-0.02em;
+  font-size:14px;font-weight:700;color:#111827;letter-spacing:-0.02em;
 }
-.dm-footer-links{display:flex;gap:18px;flex-wrap:wrap;align-items:center;}
-.dm-footer-links a{font-size:12px;color:#9ca3af;text-decoration:none;transition:color .12s;}
-.dm-footer-links a:hover{color:#4b5563;}
-.dm-footer-copy{font-size:12px;color:#9ca3af;}
-@media(max-width:640px){.dm-footer{padding:20px;flex-direction:column;align-items:flex-start;}}
+.dm-footer-links{display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin-left:auto;}
+.dm-footer-links a{font-size:12.5px;color:#9ca3af;text-decoration:none;padding:3px 8px;transition:color .12s;}
+.dm-footer-links a:hover{color:#374151;}
+.dm-footer-copy{font-size:12px;color:#d1d5db;padding:3px 8px;}
+@media(max-width:768px){.dm-footer{padding:20px 16px;}.dm-footer-links{margin-left:0;}}
 
 </style>
 </head>
@@ -270,7 +258,7 @@ footer{background:var(--dark2);border-top:1px solid var(--dark-border);padding:4
 <!-- NAV -->
 <nav class="dm-nav">
   <a class="dm-nav-logo" href="/">
-    <svg class="nav-logo" style="width:28px;height:28px;flex-shrink:0;" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <svg style="width:28px;height:28px;flex-shrink:0;" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
   <defs><linearGradient id="dlg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#7C3AED"/><stop offset="55%" stop-color="#2563EB"/><stop offset="100%" stop-color="#0891b2"/></linearGradient></defs>
   <circle cx="20" cy="20" r="17" stroke="#e5e7eb" stroke-width="0.8" stroke-dasharray="2 3"/>
   <circle cx="20" cy="20" r="12" stroke="#d1d5db" stroke-width="0.5" opacity="0.6"/>
@@ -281,13 +269,19 @@ footer{background:var(--dark2);border-top:1px solid var(--dark-border);padding:4
   <line x1="20" y1="8"  x2="9"  y2="26" stroke="#7C3AED"   stroke-width="0.6" opacity="0.4"/>
   <line x1="30" y1="27" x2="10" y2="27" stroke="#22D3EE"   stroke-width="0.6" opacity="0.4"/>
   <circle cx="20" cy="20" r="2.5" fill="url(#dlg)" opacity="0.6"/>
-</svg><filter id="fi26x26"><feGaussianBlur stdDeviation="0.9100000000000001"/></filter><path d="M23.39,9.62 L23.4,9.71 L23.37,9.81 L23.31,9.94 L23.21,10.07 L23.08,10.22 L22.92,10.39 L22.73,10.58 L22.51,10.79 L22.27,11.01 L22.01,11.25 L21.73,11.51 L21.43,11.78 L21.13,12.07 L20.81,12.38 L20.49,12.7 L20.17,13.03 L19.84,13.38 L19.51,13.73 L19.19,14.09 L18.88,14.45 L18.58,14.81 L18.29,15.17 L18.01,15.53 L17.75,15.89 L17.49,16.24 L17.25,16.58 L17.04,16.91 L16.83,17.23 L16.64,17.53 L16.46,17.81 L16.29,18.08 L16.14,18.32 L16.0,18.55 L15.86,18.75 L15.73,18.92 L15.6,19.08 L15.48,19.2 L15.35,19.31 L15.22,19.39 L15.09,19.44 L14.96,19.48 L14.81,19.49 L14.65,19.48 L14.47,19.45 L14.28,19.39 L14.07,19.33 L13.84,19.25 L13.59,19.15 L13.32,19.04 L13.03,18.93 L12.72,18.81 L12.39,18.67 L12.04,18.54 L11.66,18.4 L11.27,18.27 L10.86,18.13 L10.44,18.0 L9.99,17.87 L9.55,17.75 L9.09,17.63 L8.62,17.52 L8.16,17.42 L7.69,17.32 L7.22,17.24 L6.77,17.16 L6.32,17.09 L5.88,17.03 L5.46,16.97 L5.06,16.92 L4.68,16.88 L4.33,16.84 L4.0,16.8 L3.71,16.76 L3.44,16.72 L3.21,16.68 L3.02,16.63 L2.86,16.58 L2.74,16.53 L2.66,16.45 L2.61,16.38 L2.6,16.29 L2.63,16.19 L2.69,16.06 L2.79,15.93 L2.92,15.78 L3.08,15.61 L3.27,15.42 L3.49,15.21 L3.73,14.99 L3.99,14.75 L4.27,14.49 L4.57,14.22 L4.87,13.93 L5.19,13.62 L5.51,13.3 L5.83,12.97 L6.16,12.62 L6.49,12.27 L6.81,11.91 L7.12,11.55 L7.42,11.19 L7.71,10.83 L7.99,10.47 L8.25,10.11 L8.51,9.76 L8.75,9.42 L8.96,9.09 L9.17,8.77 L9.36,8.47 L9.54,8.19 L9.71,7.92 L9.86,7.68" fill="none" stroke="#9bb8ff" stroke-width="1.04" stroke-linecap="round" opacity="0.22" filter="url(#fi26x26)"/><path d="M11.91,18.49 L11.53,18.36 L11.14,18.22 L10.72,18.09 L10.29,17.95 L9.85,17.83 L9.4,17.71 L8.93,17.59 L8.47,17.48 L8.0,17.39 L7.54,17.29 L7.07,17.21 L6.62,17.13 L6.17,17.07 L5.74,17.01 L5.32,16.95 L4.94,16.9 L4.56,16.87 L4.22,16.82 L3.9,16.78 L3.61,16.74 L3.37,16.71 L3.15,16.66 L2.96,16.61 L2.82,16.56 L2.7,16.5 L2.64,16.43 L2.6,16.35 L2.61,16.25 L2.65,16.14 L2.72,16.02 L2.83,15.88 L2.97,15.72 L3.14,15.54 L3.35,15.35 L3.56,15.15 L3.82,14.92 L4.08,14.66 L4.37,14.4 L4.67,14.13 L4.97,13.82 L5.29,13.51 L5.62,13.19 L5.95,12.86 L6.27,12.51 L6.59,12.16 L6.91,11.8 L7.21,11.43 L7.52,11.07 L7.8,10.7 L8.07,10.34 L8.34,9.99 L8.58,9.64 L8.82,9.3 L9.04,8.98 L9.24,8.67 L9.43,8.38 L9.6,8.09 L9.76,7.84 L9.91,7.6 L10.05,7.38 L10.18,7.19 L10.31,7.02 L10.44,6.88 L10.56,6.76 L10.69,6.67 L10.82,6.59 L10.95,6.54 L11.1,6.51 L11.25,6.51 L11.41,6.53 L11.6,6.57 L11.79,6.63 L12.01,6.69 L12.24,6.79 L12.5,6.88 L12.77,7.0 L13.07,7.11 L13.39,7.24 L13.73,7.37 L14.09,7.51 L14.47,7.64 L14.86,7.78 L15.28,7.91 L15.71,8.05 L16.15,8.17 L16.6,8.29 L17.07,8.41 L17.53,8.52 L18.0,8.61 L18.46,8.71 L18.93,8.79 L19.38,8.87 L19.83,8.93 L20.26,8.99 L20.68,9.05 L21.06,9.1 L21.44,9.13 L21.78,9.18 L22.1,9.22 L22.39,9.26 L22.63,9.29 L22.85,9.34 L23.04,9.39 L23.18,9.44 L23.3,9.5 L23.36,9.57 L23.4,9.65 L23.39,9.75 L23.35,9.86 L23.28,9.98 L23.17,10.12 L23.03,10.28" fill="none" stroke="#ff6020" stroke-width="1.04" stroke-linecap="round" opacity="0.25" filter="url(#fi26x26)"/><path d="M8.89,9.2 L9.1,8.88 L9.3,8.57 L9.48,8.28 L9.65,8.01 L9.81,7.75 L9.96,7.53 L10.1,7.32 L10.23,7.14 L10.35,6.98 L10.49,6.84 L10.61,6.72 L10.73,6.64 L10.86,6.57 L11.0,6.53 L11.15,6.51 L11.31,6.52 L11.48,6.54 L11.66,6.59 L11.87,6.65 L12.08,6.72 L12.33,6.82 L12.58,6.92 L12.87,7.03 L13.17,7.16 L13.5,7.28 L13.84,7.41 L14.21,7.55 L14.6,7.69 L15.0,7.83 L15.42,7.96 L15.86,8.09 L16.3,8.22 L16.75,8.33 L17.22,8.44 L17.69,8.55 L18.15,8.65 L18.63,8.74 L19.08,8.81 L19.53,8.89 L19.98,8.95 L20.4,9.01 L20.81,9.06 L21.2,9.1 L21.56,9.15 L21.89,9.19 L22.2,9.23 L22.47,9.27 L22.71,9.3 L22.92,9.35 L23.09,9.4 L23.22,9.45 L23.32,9.52 L23.38,9.6 L23.4,9.68 L23.38,9.79 L23.33,9.9 L23.25,10.02 L23.13,10.17 L22.97,10.33 L22.79,10.51 L22.59,10.71 L22.35,10.93 L22.1,11.17 L21.82,11.42 L21.54,11.69 L21.23,11.98 L20.91,12.27 L20.6,12.59 L20.27,12.92 L19.95,13.26 L19.62,13.61 L19.31,13.96 L18.98,14.32 L18.68,14.69 L18.39,15.05 L18.11,15.41 L17.83,15.77 L17.58,16.13 L17.34,16.47 L17.11,16.8 L16.9,17.12 L16.7,17.43 L16.52,17.72 L16.35,17.99 L16.19,18.25 L16.04,18.47 L15.9,18.68 L15.77,18.86 L15.65,19.02 L15.51,19.16 L15.39,19.28 L15.27,19.36 L15.14,19.43 L15.0,19.47 L14.85,19.49 L14.69,19.48 L14.52,19.46 L14.34,19.41 L14.13,19.35 L13.92,19.28 L13.67,19.18 L13.42,19.08 L13.13,18.97 L12.83,18.84 L12.5,18.72 L12.16,18.59 L11.79,18.45 L11.4,18.31 L11.0,18.17 L10.58,18.04 L10.14,17.91 L9.7,17.78" fill="none" stroke="#ffc840" stroke-width="1.04" stroke-linecap="round" opacity="0.20" filter="url(#fi26x26)"/><path d="M23.39,9.62 L23.4,9.71 L23.37,9.81 L23.31,9.94 L23.21,10.07 L23.08,10.22 L22.92,10.39 L22.73,10.58 L22.51,10.79 L22.27,11.01 L22.01,11.25 L21.73,11.51 L21.43,11.78 L21.13,12.07 L20.81,12.38 L20.49,12.7 L20.17,13.03 L19.84,13.38 L19.51,13.73 L19.19,14.09 L18.88,14.45 L18.58,14.81 L18.29,15.17 L18.01,15.53 L17.75,15.89 L17.49,16.24 L17.25,16.58 L17.04,16.91 L16.83,17.23 L16.64,17.53 L16.46,17.81 L16.29,18.08 L16.14,18.32 L16.0,18.55 L15.86,18.75 L15.73,18.92 L15.6,19.08 L15.48,19.2 L15.35,19.31 L15.22,19.39 L15.09,19.44 L14.96,19.48 L14.81,19.49 L14.65,19.48 L14.47,19.45 L14.28,19.39 L14.07,19.33 L13.84,19.25 L13.59,19.15 L13.32,19.04 L13.03,18.93 L12.72,18.81 L12.39,18.67 L12.04,18.54 L11.66,18.4 L11.27,18.27 L10.86,18.13 L10.44,18.0 L9.99,17.87 L9.55,17.75 L9.09,17.63 L8.62,17.52 L8.16,17.42 L7.69,17.32 L7.22,17.24 L6.77,17.16 L6.32,17.09 L5.88,17.03 L5.46,16.97 L5.06,16.92 L4.68,16.88 L4.33,16.84 L4.0,16.8 L3.71,16.76 L3.44,16.72 L3.21,16.68 L3.02,16.63 L2.86,16.58 L2.74,16.53 L2.66,16.45 L2.61,16.38 L2.6,16.29 L2.63,16.19 L2.69,16.06 L2.79,15.93 L2.92,15.78 L3.08,15.61 L3.27,15.42 L3.49,15.21 L3.73,14.99 L3.99,14.75 L4.27,14.49 L4.57,14.22 L4.87,13.93 L5.19,13.62 L5.51,13.3 L5.83,12.97 L6.16,12.62 L6.49,12.27 L6.81,11.91 L7.12,11.55 L7.42,11.19 L7.71,10.83 L7.99,10.47 L8.25,10.11 L8.51,9.76 L8.75,9.42 L8.96,9.09 L9.17,8.77 L9.36,8.47 L9.54,8.19 L9.71,7.92 L9.86,7.68" fill="none" stroke="#b0c8ff" stroke-width="0.7" stroke-linecap="round" opacity="0.88"/><path d="M11.91,18.49 L11.53,18.36 L11.14,18.22 L10.72,18.09 L10.29,17.95 L9.85,17.83 L9.4,17.71 L8.93,17.59 L8.47,17.48 L8.0,17.39 L7.54,17.29 L7.07,17.21 L6.62,17.13 L6.17,17.07 L5.74,17.01 L5.32,16.95 L4.94,16.9 L4.56,16.87 L4.22,16.82 L3.9,16.78 L3.61,16.74 L3.37,16.71 L3.15,16.66 L2.96,16.61 L2.82,16.56 L2.7,16.5 L2.64,16.43 L2.6,16.35 L2.61,16.25 L2.65,16.14 L2.72,16.02 L2.83,15.88 L2.97,15.72 L3.14,15.54 L3.35,15.35 L3.56,15.15 L3.82,14.92 L4.08,14.66 L4.37,14.4 L4.67,14.13 L4.97,13.82 L5.29,13.51 L5.62,13.19 L5.95,12.86 L6.27,12.51 L6.59,12.16 L6.91,11.8 L7.21,11.43 L7.52,11.07 L7.8,10.7 L8.07,10.34 L8.34,9.99 L8.58,9.64 L8.82,9.3 L9.04,8.98 L9.24,8.67 L9.43,8.38 L9.6,8.09 L9.76,7.84 L9.91,7.6 L10.05,7.38 L10.18,7.19 L10.31,7.02 L10.44,6.88 L10.56,6.76 L10.69,6.67 L10.82,6.59 L10.95,6.54 L11.1,6.51 L11.25,6.51 L11.41,6.53 L11.6,6.57 L11.79,6.63 L12.01,6.69 L12.24,6.79 L12.5,6.88 L12.77,7.0 L13.07,7.11 L13.39,7.24 L13.73,7.37 L14.09,7.51 L14.47,7.64 L14.86,7.78 L15.28,7.91 L15.71,8.05 L16.15,8.17 L16.6,8.29 L17.07,8.41 L17.53,8.52 L18.0,8.61 L18.46,8.71 L18.93,8.79 L19.38,8.87 L19.83,8.93 L20.26,8.99 L20.68,9.05 L21.06,9.1 L21.44,9.13 L21.78,9.18 L22.1,9.22 L22.39,9.26 L22.63,9.29 L22.85,9.34 L23.04,9.39 L23.18,9.44 L23.3,9.5 L23.36,9.57 L23.4,9.65 L23.39,9.75 L23.35,9.86 L23.28,9.98 L23.17,10.12 L23.03,10.28" fill="none" stroke="#ff7030" stroke-width="0.7" stroke-linecap="round" opacity="0.92"/><path d="M8.89,9.2 L9.1,8.88 L9.3,8.57 L9.48,8.28 L9.65,8.01 L9.81,7.75 L9.96,7.53 L10.1,7.32 L10.23,7.14 L10.35,6.98 L10.49,6.84 L10.61,6.72 L10.73,6.64 L10.86,6.57 L11.0,6.53 L11.15,6.51 L11.31,6.52 L11.48,6.54 L11.66,6.59 L11.87,6.65 L12.08,6.72 L12.33,6.82 L12.58,6.92 L12.87,7.03 L13.17,7.16 L13.5,7.28 L13.84,7.41 L14.21,7.55 L14.6,7.69 L15.0,7.83 L15.42,7.96 L15.86,8.09 L16.3,8.22 L16.75,8.33 L17.22,8.44 L17.69,8.55 L18.15,8.65 L18.63,8.74 L19.08,8.81 L19.53,8.89 L19.98,8.95 L20.4,9.01 L20.81,9.06 L21.2,9.1 L21.56,9.15 L21.89,9.19 L22.2,9.23 L22.47,9.27 L22.71,9.3 L22.92,9.35 L23.09,9.4 L23.22,9.45 L23.32,9.52 L23.38,9.6 L23.4,9.68 L23.38,9.79 L23.33,9.9 L23.25,10.02 L23.13,10.17 L22.97,10.33 L22.79,10.51 L22.59,10.71 L22.35,10.93 L22.1,11.17 L21.82,11.42 L21.54,11.69 L21.23,11.98 L20.91,12.27 L20.6,12.59 L20.27,12.92 L19.95,13.26 L19.62,13.61 L19.31,13.96 L18.98,14.32 L18.68,14.69 L18.39,15.05 L18.11,15.41 L17.83,15.77 L17.58,16.13 L17.34,16.47 L17.11,16.8 L16.9,17.12 L16.7,17.43 L16.52,17.72 L16.35,17.99 L16.19,18.25 L16.04,18.47 L15.9,18.68 L15.77,18.86 L15.65,19.02 L15.51,19.16 L15.39,19.28 L15.27,19.36 L15.14,19.43 L15.0,19.47 L14.85,19.49 L14.69,19.48 L14.52,19.46 L14.34,19.41 L14.13,19.35 L13.92,19.28 L13.67,19.18 L13.42,19.08 L13.13,18.97 L12.83,18.84 L12.5,18.72 L12.16,18.59 L11.79,18.45 L11.4,18.31 L11.0,18.17 L10.58,18.04 L10.14,17.91 L9.7,17.78" fill="none" stroke="#ffe090" stroke-width="0.7" stroke-linecap="round" opacity="0.85"/><circle cx="23.39" cy="9.62" r="2.223" fill="#9bb8ff" opacity="0.35" filter="url(#fi26x26)"/><circle cx="11.91" cy="18.49" r="2.223" fill="#ff6020" opacity="0.4" filter="url(#fi26x26)"/><circle cx="8.89" cy="9.2" r="2.223" fill="#ffc840" opacity="0.32" filter="url(#fi26x26)"/><circle cx="23.39" cy="9.62" r="1.17" fill="#dde8ff"/><circle cx="11.91" cy="18.49" r="1.17" fill="#ff8040"/><circle cx="8.89" cy="9.2" r="1.17" fill="#fff0b0"/></svg>
+</svg>
     <span class="dm-nav-name">Dark<span style="background:linear-gradient(90deg,#7C3AED,#2563EB,#0891b2);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Matter</span></span>
   </a>
-  <ul class="dm-nav-links"><li><a href="/demo">Demo</a></li><li><a href="/docs">Docs</a></li><li><a href="/pricing">Pricing</a></li><li><a href="/compare">Compare</a></li><li><a href="/enterprise">Enterprise</a></li></ul>
+  <ul class="dm-nav-links">
+    <li><a href="/demo">Demo</a></li>
+    <li><a href="/docs">Docs</a></li>
+    <li><a href="/pricing">Pricing</a></li>
+    <li><a href="/compare">Compare</a></li>
+    <li><a href="/enterprise">Enterprise</a></li>
+  </ul>
   <div class="dm-nav-right">
-    <a href="/login" class="dm-nav-signin">Sign in</a>
-    <a href="/signup" class="dm-nav-cta">Get API Key</a>
+    <a href="/login" class="dm-nav-icon" title="Sign in"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/></svg></a>
+    <a href="/signup" class="dm-nav-cta">Start free</a>
   </div>
 </nav>
 
@@ -308,7 +302,7 @@ footer{background:var(--dark2);border-top:1px solid var(--dark-border);padding:4
 
   <!-- Stage bar -->
   <div class="stage-bar">
-    <div class="stage active"><span class="stage-dot"></span>Commit</div>
+    <div class="stage">Commit</div>
     <div class="stage">Replay</div>
     <div class="stage">Fork</div>
     <div class="stage">Verify</div>
@@ -522,14 +516,6 @@ function showFeat(id) {
   event.currentTarget.classList.add('active');
 }
 
-// Animate stage bar
-const stages = document.querySelectorAll('.stage');
-let si = 0;
-setInterval(()=>{
-  stages.forEach(s=>s.classList.remove('active'));
-  stages[si].classList.add('active');
-  si = (si+1)%stages.length;
-}, 2000);
 </script>
 </body>
 </html>
