@@ -27,7 +27,7 @@ nav{
   border-bottom:1px solid var(--border);background:var(--bg2);
 }
 .nav-logo{font-family:var(--mono);font-weight:600;font-size:14px;color:var(--text);letter-spacing:-.02em;flex-shrink:0;}
-.nav-grad{background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.nav-grad{background:linear-gradient(90deg,#60a5fa,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
 .nav-badge{font-family:var(--mono);font-size:9px;background:#7C3AED22;border:1px solid #7C3AED;color:var(--violet);padding:2px 6px;border-radius:3px;letter-spacing:.08em;flex-shrink:0;}
 .nav-links{display:flex;gap:2px;margin-left:16px;}
 .nav-link{font-size:12px;color:var(--text2);cursor:pointer;background:none;border:1px solid var(--border);border-radius:4px;padding:2px 8px;font-family:var(--sans);text-decoration:none;transition:color .12s,border-color .12s;}
@@ -138,7 +138,17 @@ nav{
 <body>
 
 <nav>
-  <span class="nav-logo">Dark<span class="nav-grad">Matter</span></span>
+  <svg style="width:24px;height:24px;vertical-align:middle;" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <circle cx="16" cy="16" r="10" fill="none" stroke="rgba(96,165,250,0.3)" stroke-width="0.75" stroke-dasharray="2.5 3"/>
+  <path d="M16,6 Q16,16 9,20" fill="none" stroke="#60a5fa" stroke-width="1" stroke-linecap="round" opacity="0.6"/>
+  <path d="M9,20 Q16,16 23,20" fill="none" stroke="#a78bfa" stroke-width="1" stroke-linecap="round" opacity="0.6"/>
+  <path d="M23,20 Q16,16 16,6" fill="none" stroke="#34d399" stroke-width="1" stroke-linecap="round" opacity="0.6"/>
+  <circle cx="16" cy="16" r="2.5" fill="#93c5fd" opacity="0.5"/>
+  <circle cx="16" cy="6" r="4" fill="#60a5fa"/>
+  <circle cx="9" cy="20" r="4" fill="#a78bfa"/>
+  <circle cx="23" cy="20" r="4" fill="#34d399"/>
+</svg>
+  <span class="nav-logo" style="margin-left:2px;">Dark<span class="nav-grad">Matter</span></span>
   <span class="nav-badge">INTERNAL</span>
   <div class="nav-links">
     <a href="#s-kpi"      class="nav-link">KPIs</a>
