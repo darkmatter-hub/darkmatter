@@ -9,396 +9,379 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 :root{
-  --bg:#f4f6fb;--bg2:#ffffff;--bg3:#eceef5;--bg4:#e4e7f0;
-  --border:#dde1ed;--border2:#c8cde0;
-  --text:#0a0e1a;--text2:#2d3552;--text3:#5a6480;--text4:#9199b0;
-  --sb-bg:#0a0e1a;--sb-bg2:#0f1629;--sb-border:rgba(255,255,255,.08);
-  --sb-text:rgba(232,237,245,.9);--sb-text2:rgba(232,237,245,.5);--sb-text3:rgba(232,237,245,.28);
-  --accent:#3b82f6;--accent2:#1d4ed8;
+  /* Full dark theme — matches homepage */
+  --bg:#0a0e1a;
+  --bg2:#0f1629;
+  --bg3:#151e35;
+  --bg4:#1a2440;
+  --border:rgba(255,255,255,.08);
+  --border2:rgba(255,255,255,.14);
+  --text:rgba(232,237,245,.95);
+  --text2:rgba(232,237,245,.65);
+  --text3:rgba(232,237,245,.38);
+  --text4:rgba(232,237,245,.22);
+  --accent:#3b82f6;--accent2:#60a5fa;
   --green:#10b981;--red:#ef4444;--amber:#f59e0b;--violet:#8b5cf6;
   --mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;
-  --sb:272px;--hh:56px;
+  --sb:264px;--hh:52px;
 }
 html,body{height:100%;overflow:hidden;}
-body{font-family:var(--sans);background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;font-size:15px;}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;font-size:14px;}
 
-/* ── HEADER ──────────────────────────────────────────────────────── */
+/* ── HEADER ─────────────────────────────────────────────────── */
 header{
   position:fixed;inset:0 0 auto 0;z-index:100;
-  height:var(--hh);background:#0a0e1a;border-bottom:1px solid rgba(255,255,255,.08);
+  height:var(--hh);background:var(--bg);border-bottom:1px solid var(--border);
   display:flex;align-items:center;padding:0 16px;gap:0;
 }
-.logo{display:flex;align-items:center;gap:8px;text-decoration:none;flex-shrink:0;margin-right:28px;}
-.logo-svg{width:26px;height:26px;}
-.logo-name{font-family:var(--mono);font-size:16px;font-weight:600;color:rgba(232,237,245,.95);letter-spacing:-.03em;}
+.logo{display:flex;align-items:center;gap:8px;text-decoration:none;flex-shrink:0;margin-right:24px;}
+.logo-name{font-family:var(--mono);font-size:15px;font-weight:600;color:var(--text);letter-spacing:-.03em;}
 .logo-grad{background:linear-gradient(90deg,#7C3AED,#2563EB,#0891b2);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
-/* Top nav links */
 .h-nav{display:flex;align-items:center;gap:2px;flex:1;}
 .h-nav-link{
-  font-size:13px;color:rgba(232,237,245,.5);background:none;border:none;
-  cursor:pointer;padding:5px 11px;border-radius:6px;font-family:var(--sans);
+  font-size:13px;color:var(--text3);background:none;border:none;
+  cursor:pointer;padding:5px 10px;border-radius:6px;font-family:var(--sans);
   transition:background .12s,color .12s;text-decoration:none;white-space:nowrap;
 }
-.h-nav-link:hover{background:rgba(255,255,255,.07);color:rgba(232,237,245,.85);}
-.h-nav-link.active{background:rgba(59,130,246,.15);color:#93c5fd;}
+.h-nav-link:hover{background:rgba(255,255,255,.05);color:var(--text2);}
+.h-nav-link.active{background:rgba(59,130,246,.12);color:var(--accent2);}
 .h-right{margin-left:auto;display:flex;align-items:center;gap:8px;}
-.h-agent-name{font-family:var(--mono);font-size:11px;color:rgba(232,237,245,.4);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.avatar{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#8b5cf6,#3b82f6);display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;font-weight:700;flex-shrink:0;cursor:pointer;border:none;}
-.h-btn{font-size:13px;color:rgba(232,237,245,.6);background:none;border:none;cursor:pointer;padding:5px 9px;border-radius:6px;font-family:var(--sans);transition:background .12s,color .12s;text-decoration:none;}
-.h-btn:hover{background:rgba(255,255,255,.07);color:rgba(232,237,245,.95);}
+.avatar{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#8b5cf6,#3b82f6);display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff;font-weight:700;flex-shrink:0;cursor:pointer;border:none;}
 
-/* ── LAYOUT ──────────────────────────────────────────────────────── */
+/* ── LAYOUT ─────────────────────────────────────────────────── */
 .app{display:grid;grid-template-columns:var(--sb) 1fr;height:calc(100vh - var(--hh));margin-top:var(--hh);overflow:hidden;}
 
-/* ── SIDEBAR ─────────────────────────────────────────────────────── */
-.sb{border-right:1px solid var(--sb-border);display:flex;flex-direction:column;background:var(--sb-bg);overflow:hidden;}
-.sb-top{padding:10px 10px 0;flex-shrink:0;}
-.search{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.06);border:1px solid var(--sb-border);border-radius:8px;padding:7px 10px;margin-bottom:8px;transition:border-color .15s;}
-.search:focus-within{border-color:rgba(59,130,246,.5);}
-.search-ic{font-size:14px;color:var(--sb-text3);flex-shrink:0;}
-.search-inp{border:none;background:none;outline:none;font-size:14px;color:var(--sb-text);width:100%;font-family:var(--sans);}
-.search-inp::placeholder{color:var(--sb-text3);}
-.search-kbd{font-family:var(--mono);font-size:9px;color:var(--sb-text3);background:rgba(255,255,255,.06);border:1px solid var(--sb-border);padding:2px 4px;border-radius:3px;flex-shrink:0;}
-/* Status filters — NOT provider filters */
-.filters{display:flex;gap:3px;flex-wrap:wrap;padding:0 0 10px;}
-.f-btn{font-size:11px;padding:3px 9px;border-radius:20px;border:1px solid transparent;background:none;cursor:pointer;color:var(--sb-text3);font-family:var(--sans);transition:all .12s;white-space:nowrap;}
-.f-btn.on{background:rgba(59,130,246,.15);border-color:rgba(59,130,246,.3);color:#93c5fd;font-weight:500;}
-.f-btn:hover:not(.on){color:var(--sb-text2);}
+/* ── SIDEBAR ────────────────────────────────────────────────── */
+.sb{border-right:1px solid var(--border);display:flex;flex-direction:column;background:var(--bg);overflow:hidden;}
+.sb-top{padding:10px;flex-shrink:0;}
+.search{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:8px;padding:7px 10px;margin-bottom:8px;transition:border-color .15s;}
+.search:focus-within{border-color:rgba(59,130,246,.4);}
+.search-ic{font-size:13px;color:var(--text4);flex-shrink:0;}
+.search-inp{border:none;background:none;outline:none;font-size:13px;color:var(--text);width:100%;font-family:var(--sans);}
+.search-inp::placeholder{color:var(--text4);}
+.search-kbd{font-family:var(--mono);font-size:9px;color:var(--text4);background:rgba(255,255,255,.04);border:1px solid var(--border);padding:2px 4px;border-radius:3px;flex-shrink:0;}
+/* Simplified filters: All / Recent / Starred */
+.filters{display:flex;gap:3px;padding-bottom:2px;}
+.f-btn{font-size:11px;padding:3px 9px;border-radius:20px;border:1px solid transparent;background:none;cursor:pointer;color:var(--text3);font-family:var(--sans);transition:all .12s;}
+.f-btn.on{background:rgba(59,130,246,.12);border-color:rgba(59,130,246,.25);color:var(--accent2);font-weight:500;}
+.f-btn:hover:not(.on){color:var(--text2);}
 /* Record list */
-.tlist{flex:1;overflow-y:auto;padding:0 6px 16px;}
+.tlist{flex:1;overflow-y:auto;padding:0 4px 16px;}
 .tlist::-webkit-scrollbar{width:3px;}
-.tlist::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:2px;}
-.tg-label{font-size:11px;color:var(--sb-text3);font-weight:600;padding:10px 6px 3px;letter-spacing:.03em;text-transform:uppercase;}
-/* Record row */
-.tr{
-  position:relative;display:flex;align-items:flex-start;gap:10px;
-  padding:9px 8px 9px 10px;border-radius:8px;cursor:pointer;
-  transition:background .1s;margin-bottom:1px;
-}
-.tr:hover{background:rgba(255,255,255,.06);}
-.tr.active{background:rgba(59,130,246,.12);border-left:2px solid #60a5fa;padding-left:8px;}
-/* Status dot — replaces provider letter badge */
-.tr-status-dot{
-  width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:5px;
-}
-.tr-status-dot.verified{background:var(--green);}
-.tr-status-dot.pending{background:var(--amber);}
-.tr-status-dot.failed{background:var(--red);}
-.tr-status-dot.unknown{background:var(--sb-text3);}
-.tr-body{flex:1;min-width:0;}
-.tr-title{font-size:13.5px;font-weight:500;color:var(--sb-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;}
-.tr-meta{font-size:11px;color:var(--sb-text3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.tr-foot{display:flex;align-items:center;gap:4px;margin-top:3px;}
-.tr-time{font-size:11px;color:var(--sb-text3);}
-.tr-badge-v{font-family:var(--mono);font-size:9px;color:var(--green);margin-left:auto;}
-.tr-badge-p{font-family:var(--mono);font-size:9px;color:var(--amber);margin-left:auto;}
-.tr-tags{display:flex;gap:3px;margin-left:auto;}
-.tr-tag{font-size:9px;padding:1px 5px;border-radius:3px;line-height:14px;font-family:var(--mono);}
-.tt-fork{background:rgba(37,99,235,.07);color:var(--accent);}
-.tt-star{color:#f59e0b;}
-.tr-dots{
-  opacity:0;flex-shrink:0;width:24px;height:24px;
-  display:flex;align-items:center;justify-content:center;
-  border-radius:5px;border:none;background:none;cursor:pointer;
-  font-size:16px;color:var(--sb-text3);transition:all .1s;margin-left:2px;
-}
-.tr:hover .tr-dots,.tr.active .tr-dots{opacity:1;}
-.tr-dots:hover{background:rgba(255,255,255,.1);color:var(--sb-text);}
+.tlist::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:2px;}
+.tg-label{font-size:10px;color:var(--text4);font-weight:600;padding:10px 8px 4px;letter-spacing:.05em;text-transform:uppercase;}
 
-/* Skeleton loader */
-.tr-skeleton{display:flex;align-items:flex-start;gap:10px;padding:9px 8px 9px 10px;margin-bottom:1px;}
-.sk-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.08);flex-shrink:0;margin-top:5px;}
+/* ── RECORD ROW ─────────────────────────────────────────────── */
+.tr{
+  border-radius:8px;cursor:pointer;margin-bottom:2px;
+  transition:background .1s;border:1px solid transparent;
+}
+.tr:hover{background:rgba(255,255,255,.04);}
+.tr.active{background:rgba(59,130,246,.08);border-color:rgba(59,130,246,.18);}
+/* Collapsed header (always visible) */
+.tr-head{display:flex;align-items:flex-start;gap:8px;padding:9px 10px;}
+.tr-status-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:4px;}
+.tr-status-dot.ok{background:var(--green);}
+.tr-status-dot.warn{background:var(--amber);}
+.tr-status-dot.fail{background:var(--red);}
+.tr-status-dot.none{background:var(--text4);}
+.tr-body{flex:1;min-width:0;}
+.tr-title{font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.35;}
+.tr-meta{font-size:11px;color:var(--text3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.tr-preview{font-size:12px;color:var(--text3);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.35;}
+.tr-foot{display:flex;align-items:center;justify-content:space-between;margin-top:4px;}
+.tr-time{font-size:11px;color:var(--text4);}
+.tr-star{color:#f59e0b;font-size:10px;}
+.tr-chevron{font-size:9px;color:var(--text4);flex-shrink:0;width:16px;text-align:center;padding-top:3px;transition:transform .15s;}
+.tr.expanded .tr-chevron{transform:rotate(90deg);}
+/* Expanded conversation inline */
+.tr-expanded-body{display:none;padding:0 10px 12px 25px;border-top:1px solid var(--border);}
+.tr.expanded .tr-expanded-body{display:block;}
+
+/* Skeleton */
+.tr-skeleton{display:flex;align-items:flex-start;gap:8px;padding:9px 10px;margin-bottom:2px;}
+.sk-dot{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.06);flex-shrink:0;margin-top:4px;}
 .sk-body{flex:1;}
-.sk-line{height:10px;border-radius:3px;background:linear-gradient(90deg,rgba(255,255,255,.04) 25%,rgba(255,255,255,.08) 50%,rgba(255,255,255,.04) 75%);background-size:200% 100%;animation:shimmer 1.4s infinite;}
+.sk-line{height:9px;border-radius:3px;margin-bottom:5px;background:linear-gradient(90deg,rgba(255,255,255,.04) 25%,rgba(255,255,255,.07) 50%,rgba(255,255,255,.04) 75%);background-size:200% 100%;animation:shimmer 1.4s infinite;}
 @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
 
-/* ── DROPDOWN ────────────────────────────────────────────────────── */
-.dropdown{
-  position:fixed;z-index:500;background:#fff;border:1px solid var(--border);
-  border-radius:10px;padding:4px;min-width:176px;
-  box-shadow:0 8px 30px rgba(0,0,0,.15);
-}
-.dd-item{display:flex;align-items:center;gap:9px;padding:7px 10px;border-radius:7px;font-size:13px;color:var(--text2);cursor:pointer;border:none;background:none;width:100%;text-align:left;font-family:var(--sans);transition:background .1s;}
-.dd-item:hover{background:var(--bg3);color:var(--text);}
-.dd-item.red:hover{background:rgba(220,38,38,.05);color:var(--red);}
-.dd-ic{width:16px;text-align:center;font-size:13px;flex-shrink:0;}
+/* Dropdown */
+.dropdown{position:fixed;z-index:500;background:var(--bg3);border:1px solid var(--border2);border-radius:10px;padding:4px;min-width:170px;box-shadow:0 8px 30px rgba(0,0,0,.4);}
+.dd-item{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:7px;font-size:13px;color:var(--text2);cursor:pointer;border:none;background:none;width:100%;text-align:left;font-family:var(--sans);transition:background .1s;}
+.dd-item:hover{background:rgba(255,255,255,.06);color:var(--text);}
+.dd-item.red:hover{background:rgba(239,68,68,.08);color:var(--red);}
+.dd-ic{width:14px;text-align:center;font-size:12px;flex-shrink:0;color:var(--text3);}
 .dd-sep{height:1px;background:var(--border);margin:3px 0;}
 
-/* ── MAIN AREA ───────────────────────────────────────────────────── */
+/* ── MAIN AREA ──────────────────────────────────────────────── */
 .main{display:flex;flex-direction:column;overflow:hidden;background:var(--bg2);}
 
 /* Record header */
 .conv-head{
-  padding:12px 20px;border-bottom:1px solid var(--border);
-  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 20px;border-bottom:1px solid var(--border);
+  display:flex;align-items:flex-start;justify-content:space-between;
   flex-shrink:0;min-height:58px;gap:12px;background:var(--bg2);
 }
 .conv-head-left{flex:1;min-width:0;}
-.conv-head-title{font-size:16px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-.02em;}
-.conv-head-meta{display:flex;align-items:center;gap:8px;margin-top:3px;flex-wrap:wrap;}
-.ch-badge{font-size:11px;padding:2px 8px;border-radius:4px;font-family:var(--mono);border:1px solid var(--border);color:var(--text3);background:var(--bg);}
-.ch-badge.verified{border-color:rgba(16,185,129,.25);color:var(--green);background:rgba(16,185,129,.06);}
-.ch-badge.failed{border-color:rgba(239,68,68,.25);color:var(--red);background:rgba(239,68,68,.06);}
-.conv-head-actions{display:flex;gap:6px;flex-shrink:0;}
+.conv-head-title{font-size:16px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-.02em;line-height:1.2;}
+.conv-head-meta{display:flex;align-items:center;gap:10px;margin-top:5px;font-size:12px;color:var(--text3);}
+.conv-head-meta span{display:flex;align-items:center;gap:4px;}
+/* ONE status badge — record level only */
+.status-badge{
+  display:inline-flex;align-items:center;gap:5px;
+  font-family:var(--mono);font-size:11px;font-weight:600;
+  padding:3px 10px;border-radius:20px;
+}
+.status-badge.ok{background:rgba(16,185,129,.1);color:var(--green);border:1px solid rgba(16,185,129,.2);}
+.status-badge.warn{background:rgba(245,158,11,.1);color:var(--amber);border:1px solid rgba(245,158,11,.2);}
+.status-badge.fail{background:rgba(239,68,68,.1);color:var(--red);border:1px solid rgba(239,68,68,.2);}
+/* Action buttons */
+.conv-head-actions{display:flex;gap:6px;flex-shrink:0;padding-top:2px;}
 .cbtn{
-  font-size:12.5px;padding:5px 13px;border-radius:7px;
-  border:1px solid var(--border);background:var(--bg);
+  font-size:12px;padding:5px 12px;border-radius:7px;
+  border:1px solid var(--border2);background:rgba(255,255,255,.04);
   color:var(--text2);cursor:pointer;font-family:var(--sans);
-  display:flex;align-items:center;gap:5px;transition:all .12s;white-space:nowrap;
+  transition:all .12s;white-space:nowrap;
 }
-.cbtn:hover{border-color:var(--border2);color:var(--text);background:var(--bg2);}
-.cbtn.accent{background:var(--accent);color:#fff;border-color:transparent;font-weight:600;}
-.cbtn.accent:hover{background:var(--accent2);}
-.cbtn.verify-btn{border-color:rgba(16,185,129,.35);color:var(--green);background:rgba(16,185,129,.05);}
-.cbtn.verify-btn:hover{background:rgba(16,185,129,.1);}
+.cbtn:hover{background:rgba(255,255,255,.08);color:var(--text);}
+.cbtn.primary{background:var(--accent);color:#fff;border-color:transparent;font-weight:600;}
+.cbtn.primary:hover{background:var(--accent2);color:#fff;}
 
-/* Verification status bar — appears below header when verified */
-.verify-bar{
-  padding:10px 20px;border-bottom:1px solid var(--border);
-  display:flex;align-items:center;gap:10px;flex-shrink:0;
-  font-size:13px;
-}
-.verify-bar.ok{background:rgba(16,185,129,.05);border-color:rgba(16,185,129,.15);}
-.verify-bar.warn{background:rgba(245,158,11,.05);border-color:rgba(245,158,11,.15);}
-.verify-bar.fail{background:rgba(239,68,68,.05);border-color:rgba(239,68,68,.15);}
-.verify-bar-icon{font-size:14px;flex-shrink:0;}
-.verify-bar-text{flex:1;color:var(--text2);}
-.verify-bar-link{font-size:12px;color:var(--accent);cursor:pointer;white-space:nowrap;background:none;border:none;font-family:var(--sans);}
-.verify-bar-link:hover{text-decoration:underline;}
-
-/* Timestamps */
-.step-ts{display:flex;flex-direction:column;gap:1px;margin-top:4px;}
-.ts-row{display:flex;align-items:center;gap:5px;}
-.ts-label{font-family:var(--mono);font-size:9.5px;color:var(--text4);min-width:60px;}
-.ts-value{font-family:var(--mono);font-size:9.5px;color:var(--text3);}
-
-/* Tabs */
+/* Proof tab toggle */
 .tabs{display:flex;border-bottom:1px solid var(--border);padding:0 20px;flex-shrink:0;background:var(--bg2);}
-.tab{
-  font-size:13px;padding:10px 14px;cursor:pointer;border:none;background:none;
-  color:var(--text3);font-family:var(--sans);border-bottom:2px solid transparent;
-  margin-bottom:-1px;transition:color .12s,border-color .12s;
-}
+.tab{font-size:13px;padding:9px 12px;cursor:pointer;border:none;background:none;color:var(--text3);font-family:var(--sans);border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .12s,border-color .12s;}
 .tab:hover{color:var(--text2);}
-.tab.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:500;}
-
-/* Tab panels */
+.tab.active{color:var(--accent2);border-bottom-color:var(--accent);font-weight:500;}
 .tab-panel{display:none;flex:1;overflow-y:auto;}
 .tab-panel.active{display:flex;flex-direction:column;}
 
-/* Messages */
-.conv-area{flex:1;overflow-y:auto;padding:0;}
+/* ── RECORD BODY (conversation view) ──────────────────────────── */
+.conv-area{flex:1;overflow-y:auto;padding:24px;display:flex;flex-direction:column;gap:0;}
 .conv-area::-webkit-scrollbar{width:4px;}
 .conv-area::-webkit-scrollbar-thumb{background:var(--border2);}
-.msg-wrap{max-width:780px;margin:0 auto;padding:0 24px;}
-.msg-group{padding-top:24px;}
-.msg-group:last-child{padding-bottom:28px;}
-.msg-user-outer{display:flex;flex-direction:column;align-items:flex-end;}
-.msg-user-label{font-size:11px;font-weight:600;color:var(--text3);letter-spacing:.04em;text-transform:uppercase;margin-bottom:5px;}
-.msg-user-bubble{background:#1d4ed8;color:#eff6ff;border-radius:12px 12px 3px 12px;padding:11px 16px;max-width:520px;font-size:15px;line-height:1.65;word-break:break-word;box-shadow:0 2px 8px rgba(29,78,216,.25);}
-.msg-user-foot{display:flex;align-items:center;gap:6px;margin-top:5px;justify-content:flex-end;}
-.msg-ai-outer{display:flex;flex-direction:column;align-items:flex-start;}
-.msg-ai-label{font-size:11px;font-weight:600;color:var(--text3);letter-spacing:.04em;text-transform:uppercase;margin-bottom:5px;}
-.msg-ai-body{font-size:15px;line-height:1.75;color:var(--text);max-width:660px;word-break:break-word;}
-.msg-ai-body p{margin-bottom:10px;}.msg-ai-body p:last-child{margin-bottom:0;}
-.msg-ai-body h2,.msg-ai-body h3,.msg-ai-body h4{font-weight:600;color:var(--text);margin:14px 0 6px;}
-.msg-ai-body h2{font-size:16px;} .msg-ai-body h3{font-size:15px;} .msg-ai-body h4{font-size:14px;}
-.msg-ai-body strong{font-weight:600;color:var(--text);}
-.msg-ai-body em{font-style:italic;}
-.msg-ai-body code{font-family:var(--mono);font-size:12.5px;background:var(--bg3);padding:1px 5px;border-radius:4px;color:var(--text2);}
-.msg-ai-body pre{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:14px 16px;overflow-x:auto;margin:10px 0;position:relative;}
-.msg-ai-body pre code{background:none;padding:0;font-size:13px;line-height:1.7;}
-.msg-ai-body ul,.msg-ai-body ol{margin:8px 0 8px 22px;}
-.msg-ai-body li{margin-bottom:4px;}
-.msg-ai-foot{display:flex;align-items:center;gap:6px;margin-top:6px;}
-.msg-time{font-size:11px;color:var(--text4);}
-.msg-verified{font-family:var(--mono);font-size:9.5px;color:var(--green);background:rgba(5,150,105,.06);border:1px solid rgba(5,150,105,.14);padding:1px 6px;border-radius:3px;}
-.msg-chain-id{font-family:var(--mono);font-size:10px;color:var(--text4);background:none;border:none;cursor:pointer;padding:0;transition:color .12s;}
-.msg-chain-id:hover{color:var(--accent);}
-.code-lang{position:absolute;top:8px;right:10px;font-family:var(--mono);font-size:10px;color:var(--text3);}
 
-/* Proof tab */
-.proof-wrap{padding:20px;display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+/* Chain detail section (collapsed below conversation) */
+.chain-section{border-top:1px solid var(--border);flex-shrink:0;}
+.chain-toggle{
+  display:flex;align-items:center;gap:8px;padding:10px 20px;
+  cursor:pointer;font-size:12px;color:var(--text3);
+  background:none;border:none;width:100%;text-align:left;font-family:var(--sans);
+  transition:color .12s;
+}
+.chain-toggle:hover{color:var(--text2);}
+.chain-toggle-chevron{font-size:9px;transition:transform .15s;}
+.chain-toggle.open .chain-toggle-chevron{transform:rotate(90deg);}
+.chain-detail{display:none;padding:0 20px 16px;}
+.chain-toggle.open + .chain-detail{display:block;}
+
+/* Conversation messages — CLEAN, no role labels by default */
+.msg-wrap{max-width:700px;margin:0 auto;width:100%;}
+.msg-group{margin-bottom:16px;}
+
+/* User — right */
+.msg-user-outer{display:flex;flex-direction:column;align-items:flex-end;}
+.msg-bubble-user{
+  background:#1d4ed8;color:#eff6ff;
+  border-radius:14px 14px 3px 14px;padding:10px 14px;
+  max-width:560px;font-size:14px;line-height:1.65;word-break:break-word;
+}
+.msg-foot{display:flex;align-items:center;gap:6px;margin-top:4px;}
+.msg-foot.right{justify-content:flex-end;}
+.msg-time-subtle{font-size:10px;color:var(--text4);}
+/* Advanced ts details — hidden by default */
+.msg-ts-detail{display:none;font-family:var(--mono);font-size:9.5px;color:var(--text3);margin-top:3px;}
+.msg-ts-detail.open{display:block;}
+.ts-row{display:flex;gap:6px;align-items:center;margin-bottom:2px;}
+.ts-lbl{color:var(--text4);min-width:64px;}
+
+/* Agent/system — left */
+.msg-agent-outer{display:flex;flex-direction:column;align-items:flex-start;}
+.msg-bubble-agent{
+  background:var(--bg3);border:1px solid var(--border);
+  border-radius:3px 14px 14px 14px;padding:10px 14px;
+  max-width:600px;font-size:14px;line-height:1.72;color:var(--text);word-break:break-word;
+}
+.msg-bubble-agent p{margin-bottom:8px;} .msg-bubble-agent p:last-child{margin-bottom:0;}
+.msg-bubble-agent h2,.msg-bubble-agent h3,.msg-bubble-agent h4{font-weight:600;margin:12px 0 5px;color:var(--text);}
+.msg-bubble-agent h2{font-size:15px;} .msg-bubble-agent h3{font-size:14px;} .msg-bubble-agent h4{font-size:13px;}
+.msg-bubble-agent strong{font-weight:600;color:var(--text);}
+.msg-bubble-agent em{font-style:italic;}
+.msg-bubble-agent code{font-family:var(--mono);font-size:12px;background:rgba(255,255,255,.06);padding:1px 5px;border-radius:3px;}
+.msg-bubble-agent pre{background:rgba(0,0,0,.35);border:1px solid var(--border);border-radius:8px;padding:12px 14px;overflow-x:auto;margin:8px 0;position:relative;}
+.msg-bubble-agent pre code{background:none;padding:0;font-size:12px;line-height:1.7;}
+.msg-bubble-agent ul,.msg-bubble-agent ol{margin:6px 0 6px 20px;}
+.msg-bubble-agent li{margin-bottom:3px;}
+.code-lang{position:absolute;top:7px;right:9px;font-family:var(--mono);font-size:9px;color:var(--text4);}
+
+/* Chain timeline */
+.chain-timeline{display:flex;flex-direction:column;gap:0;padding:4px 0;}
+.chain-node{position:relative;display:flex;gap:12px;padding-bottom:14px;}
+.chain-node:last-child{padding-bottom:0;}
+.chain-node-line{display:flex;flex-direction:column;align-items:center;flex-shrink:0;}
+.chain-dot{width:10px;height:10px;border-radius:50%;border:2px solid var(--green);background:var(--bg2);flex-shrink:0;}
+.chain-dot.fork{border-color:var(--amber);}
+.chain-dot.err{border-color:var(--red);}
+.chain-connector{flex:1;width:1px;background:var(--border);margin:3px 0;}
+.chain-node:last-child .chain-connector{display:none;}
+.chain-node-content{flex:1;min-width:0;padding-bottom:2px;}
+.chain-node-head{display:flex;align-items:baseline;gap:8px;margin-bottom:3px;}
+.chain-step-num{font-family:var(--mono);font-size:9px;color:var(--text4);}
+.chain-step-desc{font-size:12.5px;font-weight:500;color:var(--text2);}
+.chain-step-time{font-size:10px;color:var(--text4);margin-left:auto;}
+.chain-hash{font-family:var(--mono);font-size:9px;color:var(--text4);display:none;}/* hidden by default */
+
+/* Proof cards */
+.proof-wrap{padding:20px;display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 @media(max-width:700px){.proof-wrap{grid-template-columns:1fr;}}
-.proof-card{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px 16px;}
-.proof-card.ok{border-color:rgba(16,185,129,.2);background:rgba(16,185,129,.03);}
-.proof-card.warn{border-color:rgba(245,158,11,.2);background:rgba(245,158,11,.03);}
-.proof-card.fail{border-color:rgba(239,68,68,.2);background:rgba(239,68,68,.03);}
-.proof-card.skip{border-color:var(--border);background:var(--bg3);}
-.proof-card-title{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:600;color:var(--text);margin-bottom:5px;}
-.proof-icon-ok{color:var(--green);} .proof-icon-warn{color:var(--amber);} .proof-icon-fail{color:var(--red);} .proof-icon-skip{color:var(--text4);}
+.proof-card{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:14px 16px;}
+.proof-card.ok{border-color:rgba(16,185,129,.2);background:rgba(16,185,129,.04);}
+.proof-card.warn{border-color:rgba(245,158,11,.15);}
+.proof-card.skip{border-color:var(--border);opacity:.7;}
+.proof-card-title{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:var(--text);margin-bottom:5px;}
+.proof-icon-ok{color:var(--green);}
+.proof-icon-skip{color:var(--text4);}
 .proof-card-detail{font-size:12px;color:var(--text3);line-height:1.6;}
-.proof-card-mono{font-family:var(--mono);font-size:10.5px;color:var(--text3);margin-top:5px;word-break:break-all;}
-.proof-offline{grid-column:1/-1;padding:16px;background:rgba(59,130,246,.04);border:1px solid rgba(59,130,246,.15);border-radius:8px;}
-.proof-offline-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px;}
-.proof-offline-sub{font-size:12.5px;color:var(--text3);line-height:1.6;margin-bottom:12px;}
-.proof-offline-actions{display:flex;gap:8px;flex-wrap:wrap;}
-.proof-action-btn{font-size:12.5px;padding:6px 14px;border-radius:7px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);cursor:pointer;font-family:var(--sans);transition:all .12s;text-decoration:none;display:inline-block;}
-.proof-action-btn:hover{border-color:var(--accent);color:var(--accent);}
+.proof-card-mono{font-family:var(--mono);font-size:10px;color:var(--text4);margin-top:4px;word-break:break-all;}
+.proof-offline{grid-column:1/-1;padding:14px 16px;background:rgba(59,130,246,.05);border:1px solid rgba(59,130,246,.15);border-radius:8px;}
+.proof-offline-title{font-size:12.5px;font-weight:600;color:var(--text);margin-bottom:5px;}
+.proof-offline-sub{font-size:12px;color:var(--text3);line-height:1.6;margin-bottom:10px;}
+.proof-offline-code{font-family:var(--mono);font-size:11px;background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:6px;padding:7px 10px;color:var(--text2);margin-bottom:10px;}
+.proof-actions{display:flex;gap:8px;flex-wrap:wrap;}
+.proof-action-btn{font-size:12px;padding:5px 12px;border-radius:7px;border:1px solid var(--border2);background:rgba(255,255,255,.04);color:var(--text2);cursor:pointer;font-family:var(--sans);transition:all .12s;text-decoration:none;display:inline-block;}
+.proof-action-btn:hover{border-color:var(--accent);color:var(--accent2);}
 .proof-action-btn.primary{background:var(--accent);color:#fff;border-color:transparent;}
 .proof-action-btn.primary:hover{background:var(--accent2);}
 
-/* Chain panel (was Lineage) */
-.chain-panel{
-  position:fixed;right:0;top:var(--hh);bottom:0;width:400px;
-  background:var(--bg);border-left:1px solid var(--border);
-  z-index:200;transform:translateX(100%);transition:transform .2s ease;
-  display:flex;flex-direction:column;
-}
-.chain-panel.open{transform:translateX(0);}
-.chain-head{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
-.chain-title{font-size:14px;font-weight:600;color:var(--text);}
-.chain-actions{display:flex;gap:6px;align-items:center;}
-.chain-body{flex:1;overflow-y:auto;padding:14px 16px;}
-.ln-node{position:relative;padding-left:24px;padding-bottom:16px;}
-.ln-node::before{content:'';position:absolute;left:6px;top:18px;bottom:0;width:1px;background:var(--border);}
-.ln-node:last-child::before{display:none;}
-.ln-dot{position:absolute;left:0;top:8px;width:13px;height:13px;border-radius:50%;border:2px solid var(--green);background:#fff;}
-.ln-dot.fork{border-color:var(--amber);} .ln-dot.err{border-color:var(--red);}
-.ln-card{background:var(--bg2);border:1px solid var(--border);border-radius:7px;padding:9px 11px;}
-.ln-card-head{display:flex;align-items:center;gap:6px;margin-bottom:3px;}
-.ln-step{font-family:var(--mono);font-size:9px;color:var(--text3);}
-.ln-name{font-size:12.5px;font-weight:500;color:var(--text);}
-.ln-time{margin-left:auto;font-size:10px;color:var(--text3);}
-.ln-ts{font-family:var(--mono);font-size:9px;color:var(--text3);margin-top:2px;}
-.ln-hash{font-family:var(--mono);font-size:9px;color:var(--green);margin-top:2px;}
-.ln-role{font-size:10px;color:var(--text3);margin-top:2px;}
-.ln-actions{display:flex;gap:4px;margin-top:6px;}
-.ln-btn{font-size:10px;padding:2px 8px;border-radius:4px;border:1px solid var(--border);background:none;color:var(--text3);cursor:pointer;font-family:var(--sans);}
-.ln-btn:hover{color:var(--accent);border-color:var(--accent);}
-
-/* Agents view */
-.agents-view{flex:1;overflow-y:auto;padding:20px;}
-.agents-view-title{font-size:18px;font-weight:700;color:var(--text);margin-bottom:6px;letter-spacing:-.02em;}
-.agents-view-sub{font-size:13.5px;color:var(--text3);line-height:1.6;margin-bottom:20px;}
+/* Agents */
+.agents-view{flex:1;overflow-y:auto;padding:24px;}
+.agents-view-title{font-size:18px;font-weight:700;color:var(--text);margin-bottom:6px;letter-spacing:-.03em;}
+.agents-view-sub{font-size:13px;color:var(--text3);line-height:1.65;margin-bottom:20px;max-width:520px;}
 .agents-create-row{display:flex;gap:8px;margin-bottom:20px;}
-.create-inp{flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:14px;color:var(--text);font-family:var(--sans);outline:none;transition:border-color .15s;}
+.create-inp{flex:1;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);font-family:var(--sans);outline:none;transition:border-color .15s;}
 .create-inp:focus{border-color:var(--accent);}
-.create-inp::placeholder{color:var(--text3);}
-.create-btn-el{background:var(--accent);color:#fff;font-weight:600;font-size:13px;padding:9px 18px;border-radius:8px;border:none;cursor:pointer;font-family:var(--sans);white-space:nowrap;transition:background .15s;}
+.create-inp::placeholder{color:var(--text4);}
+.create-btn-el{background:var(--accent);color:#fff;font-weight:600;font-size:12.5px;padding:9px 18px;border-radius:8px;border:none;cursor:pointer;font-family:var(--sans);white-space:nowrap;transition:background .15s;}
 .create-btn-el:hover{background:var(--accent2);}
 .create-btn-el:disabled{opacity:.5;cursor:not-allowed;}
 .agents-list{display:flex;flex-direction:column;gap:10px;}
-.ag-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;}
+.ag-card{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px 16px;}
 .ag-card-head{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
-.ag-dot{width:8px;height:8px;border-radius:50%;background:var(--green);flex-shrink:0;}
+.ag-dot{width:7px;height:7px;border-radius:50%;background:var(--green);}
 .ag-name{font-size:14px;font-weight:600;color:var(--text);}
 .ag-id-row{display:flex;align-items:center;gap:6px;margin-bottom:8px;}
 .ag-id{font-family:var(--mono);font-size:11px;color:var(--text3);}
 .ag-key-row{display:flex;align-items:center;gap:6px;}
 .ag-key-label{font-family:var(--mono);font-size:10px;color:var(--text4);flex-shrink:0;}
-.ag-key-val{font-family:var(--mono);font-size:11px;color:var(--text2);background:var(--bg3);padding:3px 8px;border-radius:4px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.ag-btn{font-size:11px;padding:3px 9px;border-radius:5px;border:1px solid var(--border);background:none;color:var(--text2);cursor:pointer;font-family:var(--sans);transition:all .12s;flex-shrink:0;}
-.ag-btn:hover{border-color:var(--accent);color:var(--accent);}
+.ag-key-val{font-family:var(--mono);font-size:11px;color:var(--text2);background:rgba(255,255,255,.04);padding:3px 8px;border-radius:4px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.ag-btn{font-size:11px;padding:3px 8px;border-radius:5px;border:1px solid var(--border2);background:none;color:var(--text3);cursor:pointer;font-family:var(--sans);transition:all .12s;}
+.ag-btn:hover{border-color:var(--accent);color:var(--accent2);}
 .ag-btn.red:hover{border-color:var(--red);color:var(--red);}
 .agents-empty{text-align:center;padding:48px 20px;}
-.agents-empty-title{font-size:15px;font-weight:600;color:var(--text2);margin-bottom:8px;}
-.agents-empty-sub{font-size:13.5px;color:var(--text3);line-height:1.6;max-width:380px;margin:0 auto;}
+.agents-empty-title{font-size:14px;font-weight:600;color:var(--text2);margin-bottom:8px;}
+.agents-empty-sub{font-size:13px;color:var(--text3);line-height:1.65;max-width:360px;margin:0 auto;}
 
 /* Empty states */
 .empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:3rem;text-align:center;}
-.empty-icon{font-size:2.5rem;margin-bottom:1rem;opacity:.35;}
-.empty-title{font-size:15px;font-weight:600;color:var(--text2);margin-bottom:6px;}
-.empty-sub{font-size:13.5px;color:var(--text3);line-height:1.6;max-width:360px;}
-.empty-actions{display:flex;gap:8px;margin-top:20px;flex-wrap:wrap;justify-content:center;}
-.ea-btn{font-size:13px;padding:7px 16px;border-radius:7px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);cursor:pointer;font-family:var(--sans);text-decoration:none;transition:all .12s;display:inline-block;}
-.ea-btn:hover{border-color:var(--border2);color:var(--text);}
+.empty-icon{font-size:2rem;margin-bottom:1rem;opacity:.25;}
+.empty-title{font-size:14px;font-weight:600;color:var(--text2);margin-bottom:6px;}
+.empty-sub{font-size:13px;color:var(--text3);line-height:1.6;max-width:320px;}
+.empty-actions{display:flex;gap:8px;margin-top:18px;flex-wrap:wrap;justify-content:center;}
+.ea-btn{font-size:12.5px;padding:7px 14px;border-radius:7px;border:1px solid var(--border2);background:rgba(255,255,255,.04);color:var(--text2);cursor:pointer;font-family:var(--sans);text-decoration:none;transition:all .12s;display:inline-block;}
+.ea-btn:hover{color:var(--text);}
 .ea-btn.primary{background:var(--accent);color:#fff;border-color:transparent;}
-.ea-btn.primary:hover{filter:brightness(1.08);}
+.ea-btn.primary:hover{background:var(--accent2);}
 
-/* AGENTS BOTTOM PANEL (collapsed, in main area) — removed, now a nav section */
+/* Stale data banner */
+.stale-banner{
+  padding:6px 20px;background:rgba(245,158,11,.08);border-bottom:1px solid rgba(245,158,11,.15);
+  font-size:11.5px;color:var(--amber);display:none;align-items:center;gap:8px;flex-shrink:0;
+}
+.stale-banner.show{display:flex;}
 
-/* ── MODALS ──────────────────────────────────────────────────────── */
-.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:600;align-items:center;justify-content:center;padding:1rem;}
+/* Modals */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:600;align-items:center;justify-content:center;padding:1rem;}
 .modal-bg.open{display:flex;}
-.modal{background:var(--bg);border:1px solid var(--border);border-radius:14px;width:100%;padding:0;overflow:hidden;max-height:90vh;display:flex;flex-direction:column;}
-.modal-hd{display:flex;align-items:center;justify-content:space-between;padding:18px 20px 14px;border-bottom:1px solid var(--border);flex-shrink:0;}
-.modal-title{font-size:16px;font-weight:700;color:var(--text);}
-.modal-x{background:none;border:none;color:var(--text3);font-size:20px;cursor:pointer;padding:0;line-height:1;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:5px;}
-.modal-x:hover{background:var(--bg3);color:var(--text);}
+.modal{background:var(--bg3);border:1px solid var(--border2);border-radius:14px;width:100%;padding:0;overflow:hidden;max-height:90vh;display:flex;flex-direction:column;}
+.modal-hd{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.modal-title{font-size:15px;font-weight:700;color:var(--text);}
+.modal-x{background:none;border:none;color:var(--text3);font-size:18px;cursor:pointer;padding:0;width:26px;height:26px;display:flex;align-items:center;justify-content:center;border-radius:5px;}
+.modal-x:hover{background:rgba(255,255,255,.08);color:var(--text);}
 .modal-body{padding:18px 20px;overflow-y:auto;flex:1;}
-.modal-ft{padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;flex-shrink:0;}
-.mf-btn{padding:8px 18px;border-radius:8px;font-size:13.5px;font-weight:500;cursor:pointer;font-family:var(--sans);border:1px solid var(--border);transition:all .12s;}
+.modal-ft{padding:12px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;flex-shrink:0;}
+.mf-btn{padding:7px 16px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;font-family:var(--sans);border:1px solid var(--border2);transition:all .12s;}
 .mf-cancel{background:none;color:var(--text2);}
-.mf-cancel:hover{background:var(--bg3);}
+.mf-cancel:hover{background:rgba(255,255,255,.06);}
 .mf-ok{background:var(--accent);color:#fff;border-color:transparent;}
-.mf-ok:hover{filter:brightness(1.08);}
+.mf-ok:hover{background:var(--accent2);}
 .mf-del{background:var(--red);color:#fff;border-color:transparent;}
 .mf-del:hover{filter:brightness(1.1);}
-
 /* Share modal */
-.share-record-summary{background:var(--bg3);border-radius:8px;padding:12px 14px;margin-bottom:16px;font-size:13.5px;color:var(--text2);}
-.share-record-summary strong{color:var(--text);display:block;margin-bottom:4px;font-size:14px;}
-.share-section-label{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:6px;margin-top:16px;}
+.share-record-info{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:16px;font-size:13px;color:var(--text2);}
+.share-record-info strong{color:var(--text);display:block;margin-bottom:3px;font-size:14px;}
+.share-section-label{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:6px;margin-top:14px;}
 .share-copy-row{display:flex;gap:6px;}
-.share-copy-input{flex:1;font-family:var(--mono);font-size:12px;background:var(--bg2);border:1px solid var(--border);border-radius:7px;padding:8px 10px;color:var(--text2);outline:none;}
-.share-copy-btn{padding:8px 14px;border-radius:7px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);cursor:pointer;font-size:12.5px;font-family:var(--sans);white-space:nowrap;transition:all .12s;}
-.share-copy-btn:hover{border-color:var(--accent);color:var(--accent);}
-.share-hint{font-size:12px;color:var(--text3);line-height:1.6;margin-top:8px;}
-.share-action-row{display:flex;gap:8px;margin-top:8px;}
-
+.share-copy-input{flex:1;font-family:var(--mono);font-size:11.5px;background:rgba(255,255,255,.04);border:1px solid var(--border2);border-radius:6px;padding:7px 10px;color:var(--text2);outline:none;}
+.share-copy-btn{padding:7px 13px;border-radius:6px;border:1px solid var(--border2);background:rgba(255,255,255,.06);color:var(--text2);cursor:pointer;font-size:12px;font-family:var(--sans);white-space:nowrap;transition:all .12s;}
+.share-copy-btn:hover{color:var(--text);}
+.share-hint{font-size:11.5px;color:var(--text3);line-height:1.6;margin-top:7px;}
 /* Settings */
-.setting-section{margin-bottom:24px;}
+.setting-section{margin-bottom:22px;}
 .setting-section:last-child{margin-bottom:0;}
-.setting-section-title{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;font-family:var(--mono);margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border);}
+.setting-section-title{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;font-family:var(--mono);margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border);}
 .setting-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;gap:12px;}
-.setting-row:not(:last-child){border-bottom:1px solid var(--bg3);}
-.setting-label{font-size:13.5px;color:var(--text);}
-.setting-desc{font-size:12px;color:var(--text3);margin-top:2px;}
+.setting-row:not(:last-child){border-bottom:1px solid rgba(255,255,255,.04);}
+.setting-label{font-size:13px;color:var(--text);}
+.setting-desc{font-size:11.5px;color:var(--text3);margin-top:2px;}
 .setting-action{flex-shrink:0;}
-.s-btn{font-size:12.5px;padding:5px 12px;border-radius:7px;border:1px solid var(--border);background:none;color:var(--text2);cursor:pointer;font-family:var(--sans);transition:all .12s;text-decoration:none;display:inline-block;}
-.s-btn:hover{border-color:var(--border2);color:var(--text);}
-.s-btn.destructive{border-color:rgba(220,38,38,.3);color:var(--red);}
-.s-btn.destructive:hover{background:rgba(220,38,38,.05);}
-.field{margin-bottom:14px;}
-.field label{display:block;font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;font-family:var(--mono);}
-.field input,.field select,.field textarea{width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:7px;padding:8px 11px;font-size:13.5px;color:var(--text);font-family:var(--sans);outline:none;transition:border-color .15s;}
+.s-btn{font-size:12px;padding:5px 12px;border-radius:7px;border:1px solid var(--border2);background:none;color:var(--text2);cursor:pointer;font-family:var(--sans);transition:all .12s;text-decoration:none;display:inline-block;}
+.s-btn:hover{color:var(--text);}
+.s-btn.destructive{border-color:rgba(239,68,68,.3);color:var(--red);}
+.s-btn.destructive:hover{background:rgba(239,68,68,.06);}
+.field{margin-bottom:13px;}
+.field label{display:block;font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;font-family:var(--mono);}
+.field input,.field select{width:100%;background:rgba(255,255,255,.04);border:1px solid var(--border2);border-radius:7px;padding:8px 11px;font-size:13px;color:var(--text);font-family:var(--sans);outline:none;transition:border-color .15s;}
 .field input:focus,.field select:focus{border-color:var(--accent);}
-.notice{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:14px;}
-.notice.warn{background:rgba(220,38,38,.04);border-color:rgba(220,38,38,.15);}
-.notice.info{background:rgba(5,150,105,.04);border-color:rgba(5,150,105,.15);}
-
+.notice{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:8px;padding:9px 13px;font-size:12.5px;color:var(--text2);line-height:1.6;margin-bottom:12px;}
+.notice.warn{background:rgba(239,68,68,.04);border-color:rgba(239,68,68,.15);color:rgba(239,68,68,.9);}
+.notice.info{background:rgba(16,185,129,.04);border-color:rgba(16,185,129,.15);color:var(--green);}
+.key-display{font-family:var(--mono);font-size:11.5px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:6px;padding:9px 11px;word-break:break-all;color:var(--text);}
 /* Toast */
-.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#0a0e1a;color:#e8edf5;border-radius:8px;padding:9px 18px;font-size:13.5px;z-index:999;display:none;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,.25);}
-.toast.show{display:block;animation:fadeUp .2s ease;}
-@keyframes fadeUp{from{opacity:0;transform:translateX(-50%) translateY(6px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
-
-@media(max-width:760px){:root{--sb:0px;}.sb{display:none;}.chain-panel{width:100%;}}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--bg4);border:1px solid var(--border2);color:var(--text);border-radius:8px;padding:8px 16px;font-size:13px;z-index:999;display:none;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,.5);}
+.toast.show{display:block;animation:fadeUp .18s ease;}
+@keyframes fadeUp{from{opacity:0;transform:translateX(-50%) translateY(5px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+@media(max-width:760px){:root{--sb:0px;}.sb{display:none;}}
 </style>
 </head>
 <body>
 
 <header>
   <a class="logo" href="/">
-    <svg class="logo-svg" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <defs><linearGradient id="dlg-dash" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#7C3AED"/><stop offset="55%" stop-color="#2563EB"/><stop offset="100%" stop-color="#0891b2"/></linearGradient></defs>
-      <circle cx="20" cy="20" r="17" stroke="#e5e7eb" stroke-width="0.8" stroke-dasharray="2 3"/>
-      <circle cx="20" cy="20" r="12" stroke="#d1d5db" stroke-width="0.5" opacity="0.6"/>
+    <svg style="width:24px;height:24px;flex-shrink:0;" viewBox="0 0 40 40" fill="none">
+      <defs><linearGradient id="dlg-d" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#7C3AED"/><stop offset="55%" stop-color="#2563EB"/><stop offset="100%" stop-color="#0891b2"/></linearGradient></defs>
+      <circle cx="20" cy="20" r="17" stroke="rgba(255,255,255,.1)" stroke-width="0.8"/>
       <circle cx="20" cy="5"  r="3.2" fill="#7C3AED" opacity="0.95"/>
       <circle cx="33" cy="28" r="2.6" fill="#2563EB" opacity="0.95"/>
       <circle cx="7"  cy="28" r="2.2" fill="#22D3EE" opacity="0.9"/>
-      <line x1="20" y1="8"  x2="31" y2="26" stroke="url(#dlg-dash)" stroke-width="0.6" opacity="0.5"/>
+      <line x1="20" y1="8"  x2="31" y2="26" stroke="url(#dlg-d)" stroke-width="0.6" opacity="0.5"/>
       <line x1="20" y1="8"  x2="9"  y2="26" stroke="#7C3AED" stroke-width="0.6" opacity="0.4"/>
       <line x1="30" y1="27" x2="10" y2="27" stroke="#22D3EE" stroke-width="0.6" opacity="0.4"/>
-      <circle cx="20" cy="20" r="2.5" fill="url(#dlg-dash)" opacity="0.6"/>
+      <circle cx="20" cy="20" r="2.5" fill="url(#dlg-d)" opacity="0.6"/>
     </svg>
     <span class="logo-name">Dark<span class="logo-grad">Matter</span></span>
   </a>
-  <!-- Top nav: Records · Agents · Settings -->
   <nav class="h-nav">
     <button class="h-nav-link active" id="nav-records" onclick="showView('records')">Records</button>
-    <button class="h-nav-link" id="nav-agents"  onclick="showView('agents')">Agents</button>
+    <button class="h-nav-link" id="nav-agents" onclick="showView('agents')">Agents</button>
     <button class="h-nav-link" id="nav-settings" onclick="openModal('settings-modal')">Settings</button>
   </nav>
   <div class="h-right">
-    <span class="h-agent-name" id="user-email-display"></span>
-    <button class="avatar" id="user-avatar" onclick="openModal('settings-modal')" title="Settings">?</button>
+    <button class="avatar" id="user-avatar" onclick="openModal('settings-modal')">?</button>
   </div>
 </header>
 
 <div class="app">
 
-  <!-- SIDEBAR — record list with status filters -->
+  <!-- SIDEBAR -->
   <aside class="sb">
     <div class="sb-top">
       <div class="search">
@@ -406,108 +389,104 @@ header{
         <input class="search-inp" id="search-inp" placeholder="Search records…" autocomplete="off"/>
         <span class="search-kbd">/</span>
       </div>
-      <!-- Status-based filters — NOT provider filters -->
+      <!-- Simplified filters -->
       <div class="filters">
         <button class="f-btn on" data-f="all">All</button>
-        <button class="f-btn" data-f="verified">✓ Verified</button>
-        <button class="f-btn" data-f="unverified">⚠ Unverified</button>
+        <button class="f-btn" data-f="recent">Recent</button>
         <button class="f-btn" data-f="starred">★ Starred</button>
       </div>
     </div>
     <div class="tlist" id="tlist">
-      <!-- Skeletons shown immediately -->
+      <!-- Skeletons shown immediately, before fetch -->
       <div id="tlist-skeleton">
         <div class="tg-label">Loading records…</div>
-        <div class="tr-skeleton"><div class="sk-dot"></div><div class="sk-body"><div class="sk-line" style="width:68%;margin-bottom:5px;"></div><div class="sk-line" style="width:42%;opacity:.6;"></div></div></div>
-        <div class="tr-skeleton"><div class="sk-dot"></div><div class="sk-body"><div class="sk-line" style="width:55%;margin-bottom:5px;"></div><div class="sk-line" style="width:38%;opacity:.6;"></div></div></div>
-        <div class="tr-skeleton"><div class="sk-dot"></div><div class="sk-body"><div class="sk-line" style="width:72%;margin-bottom:5px;"></div><div class="sk-line" style="width:45%;opacity:.6;"></div></div></div>
-        <div class="tr-skeleton"><div class="sk-dot"></div><div class="sk-body"><div class="sk-line" style="width:60%;margin-bottom:5px;"></div><div class="sk-line" style="width:35%;opacity:.6;"></div></div></div>
-        <div class="tr-skeleton"><div class="sk-dot"></div><div class="sk-body"><div class="sk-line" style="width:50%;margin-bottom:5px;"></div><div class="sk-line" style="width:30%;opacity:.6;"></div></div></div>
+        <div class="tr-skeleton"><div class="sk-dot"></div><div class="sk-body"><div class="sk-line" style="width:65%;"></div><div class="sk-line" style="width:40%;opacity:.5;"></div></div></div>
+        <div class="tr-skeleton"><div class="sk-dot"></div><div class="sk-body"><div class="sk-line" style="width:72%;"></div><div class="sk-line" style="width:35%;opacity:.5;"></div></div></div>
+        <div class="tr-skeleton"><div class="sk-dot"></div><div class="sk-body"><div class="sk-line" style="width:55%;"></div><div class="sk-line" style="width:45%;opacity:.5;"></div></div></div>
+        <div class="tr-skeleton"><div class="sk-dot"></div><div class="sk-body"><div class="sk-line" style="width:60%;"></div><div class="sk-line" style="width:38%;opacity:.5;"></div></div></div>
       </div>
       <div id="tlist-content" style="display:none;"></div>
-      <div id="tlist-error" style="display:none;"></div>
+      <div id="tlist-error" style="display:none;padding:8px;"></div>
     </div>
   </aside>
 
-  <!-- MAIN — record detail + agents view -->
+  <!-- MAIN -->
   <div class="main" id="main-area">
 
     <!-- RECORDS VIEW -->
     <div id="view-records">
-      <!-- Record header — hidden until a record is selected -->
+
+      <!-- Stale data banner -->
+      <div class="stale-banner" id="stale-banner">
+        Connection issue — showing last known data
+        <button style="margin-left:auto;background:none;border:none;color:var(--amber);cursor:pointer;font-size:11px;font-family:var(--sans);" onclick="fetchRecords()">Retry ↺</button>
+      </div>
+
+      <!-- Record header -->
       <div class="conv-head" id="conv-head">
         <div class="conv-head-left">
           <div class="conv-head-title" id="conv-title">Select a record</div>
           <div class="conv-head-meta" id="conv-meta"></div>
         </div>
         <div class="conv-head-actions" id="conv-actions" style="display:none;">
-          <button class="cbtn" id="chain-btn" onclick="toggleChain()">Chain</button>
-          <button class="cbtn verify-btn" id="verify-btn" onclick="verifyActive()">✓ Verify</button>
-          <button class="cbtn accent" onclick="shareActive()">↗ Share</button>
+          <button class="cbtn" id="verify-btn" onclick="runVerifyNow()">Verify</button>
+          <button class="cbtn primary" onclick="openShareModal()">Share</button>
           <button class="cbtn" onclick="activeMenu()">···</button>
         </div>
       </div>
 
-      <!-- Verification status bar — shown after verify -->
-      <div class="verify-bar" id="verify-bar" style="display:none;">
-        <span class="verify-bar-icon" id="verify-icon">✓</span>
-        <span class="verify-bar-text" id="verify-text"></span>
-        <button class="verify-bar-link" onclick="switchTab('proof')">View proof details →</button>
-      </div>
-
-      <!-- Tabs — visible after record selected -->
+      <!-- Tabs: Record | Proof -->
       <div class="tabs" id="record-tabs" style="display:none;">
-        <button class="tab active" data-tab="summary" onclick="switchTab('summary')">Summary</button>
-        <button class="tab" data-tab="chain" onclick="switchTab('chain')">Chain</button>
+        <button class="tab active" data-tab="record" onclick="switchTab('record')">Record</button>
         <button class="tab" data-tab="proof" onclick="switchTab('proof')">Proof</button>
       </div>
 
-      <!-- Tab panels -->
-      <!-- Summary tab -->
-      <div class="tab-panel active" id="tab-summary">
+      <!-- Record tab (conversation + chain detail) -->
+      <div class="tab-panel active" id="tab-record">
         <div class="conv-area" id="conv-area">
           <div class="empty" id="empty-state">
             <div class="empty-icon">🌑</div>
-            <div class="empty-title">No record selected</div>
-            <div class="empty-sub">Select a record from the sidebar, or commit your first agent step to get started.</div>
+            <div class="empty-title">No records yet</div>
+            <div class="empty-sub">Your agent will appear here once it starts recording.</div>
             <div class="empty-actions">
               <a href="/docs" class="ea-btn primary">Read docs →</a>
               <button class="ea-btn" onclick="showView('agents')">Create agent</button>
             </div>
           </div>
         </div>
-      </div>
-
-      <!-- Chain tab -->
-      <div class="tab-panel" id="tab-chain">
-        <div class="conv-area" id="chain-area">
-          <div class="empty"><div class="empty-title">Select a record to view its chain</div></div>
+        <!-- Chain detail — collapsed below conversation -->
+        <div class="chain-section" id="chain-section" style="display:none;">
+          <button class="chain-toggle" id="chain-toggle" onclick="toggleChainDetail()">
+            <span class="chain-toggle-chevron">▶</span>
+            View chain details
+            <span id="chain-step-count" style="color:var(--text4);font-size:11px;margin-left:4px;"></span>
+          </button>
+          <div class="chain-detail" id="chain-detail"></div>
         </div>
       </div>
 
       <!-- Proof tab -->
       <div class="tab-panel" id="tab-proof">
         <div id="proof-area">
-          <div class="empty"><div class="empty-title">Select a record to view proof details</div></div>
+          <div class="empty"><div class="empty-title">Select a record to view proof</div></div>
         </div>
       </div>
-    </div>
+
+    </div><!-- /view-records -->
 
     <!-- AGENTS VIEW -->
     <div id="view-agents" style="display:none;">
       <div class="agents-view">
         <div class="agents-view-title">Agents</div>
-        <div class="agents-view-sub">An agent is any process that commits records to DarkMatter — a script, a model pipeline, or a browser session. Each agent has its own API key and Ed25519 signing key.</div>
+        <div class="agents-view-sub">An agent is any process that commits records to DarkMatter. Each agent has its own API key and signing key.</div>
         <div class="agents-create-row">
           <input class="create-inp" id="ag-name-inp" placeholder="Agent name (e.g. research-agent)" maxlength="60"/>
           <button class="create-btn-el" id="ag-create-btn" onclick="createAgent()">+ New agent</button>
         </div>
-        <div id="ag-list-wrap">
-          <div class="agents-list" id="ag-list">
-            <div class="agents-empty">
-              <div class="agents-empty-title">No agents yet</div>
-              <div class="agents-empty-sub">Create an agent above to get an API key. Each agent commits records independently with its own signing key.</div>
-            </div>
+        <div class="agents-list" id="ag-list">
+          <div class="agents-empty">
+            <div class="agents-empty-title">No agents yet</div>
+            <div class="agents-empty-sub">Create an agent to get an API key and start committing records.</div>
           </div>
         </div>
       </div>
@@ -516,50 +495,32 @@ header{
   </div><!-- /main -->
 </div><!-- /app -->
 
-<!-- CHAIN DRAWER (was Lineage) -->
-<div class="chain-panel" id="chain-panel">
-  <div class="chain-head">
-    <span class="chain-title">Chain</span>
-    <div class="chain-actions">
-      <button class="cbtn verify-btn" id="chain-verify-btn" onclick="verifyChain()">✓ Verify</button>
-      <button class="cbtn" id="chain-export-btn" onclick="exportChain()">↓ Export bundle</button>
-      <button style="background:none;border:none;font-size:20px;color:var(--text3);cursor:pointer;padding:0;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:5px;" onclick="toggleChain()">×</button>
-    </div>
-  </div>
-  <div class="chain-body" id="chain-body">
-    <div style="color:var(--text3);font-size:13.5px;">Select a record to view its chain.</div>
-  </div>
-</div>
-
-<!-- SHARE MODAL -->
+<!-- SHARE MODAL — simplified to 2 actions -->
 <div class="modal-bg" id="share-modal" onclick="closeBg('share-modal',event)">
-  <div class="modal" style="max-width:480px;" onclick="event.stopPropagation()">
+  <div class="modal" style="max-width:420px;" onclick="event.stopPropagation()">
     <div class="modal-hd">
-      <span class="modal-title">Share this record</span>
+      <span class="modal-title">Share record</span>
       <button class="modal-x" onclick="closeModal('share-modal')">×</button>
     </div>
     <div class="modal-body">
-      <div class="share-record-summary" id="share-summary"></div>
-      <div style="font-size:13px;color:var(--text3);margin-bottom:14px;line-height:1.6;">The recipient can verify this record is genuine without a DarkMatter account.</div>
-      <div class="share-section-label">Share link</div>
+      <div class="share-record-info" id="share-record-info"></div>
+      <p style="font-size:13px;color:var(--text3);margin-bottom:14px;">This record can be verified independently.</p>
+      <div class="share-section-label">Link</div>
       <div class="share-copy-row">
         <input class="share-copy-input" id="share-link-inp" readonly/>
         <button class="share-copy-btn" onclick="copyShareLink()">Copy</button>
       </div>
-      <div class="share-hint">Read-only view. No account required.</div>
-      <div class="share-section-label">Proof bundle</div>
-      <div class="share-hint" style="margin-bottom:10px;">A self-sufficient JSON file. Verify offline:<br><code style="font-family:var(--mono);font-size:11px;background:var(--bg3);padding:2px 6px;border-radius:3px;">python verify_darkmatter_chain.py bundle.json</code></div>
-      <div class="share-action-row">
-        <button class="proof-action-btn primary" onclick="downloadBundleFromShare()">Download proof bundle</button>
-        <a class="proof-action-btn" href="/integrity#spec" target="_blank">View spec →</a>
-      </div>
+      <div class="share-hint">No account required to view or verify.</div>
+      <div class="share-section-label" style="margin-top:14px;">Proof bundle</div>
+      <div class="share-hint" style="margin-bottom:10px;">Self-sufficient JSON — verifiable offline without contacting DarkMatter.</div>
+      <button class="proof-action-btn primary" style="font-size:13px;padding:7px 16px;" onclick="downloadBundle();closeModal('share-modal')">Download proof bundle</button>
     </div>
   </div>
 </div>
 
 <!-- SETTINGS MODAL -->
 <div class="modal-bg" id="settings-modal" onclick="closeBg('settings-modal',event)">
-  <div class="modal" style="max-width:500px;" onclick="event.stopPropagation()">
+  <div class="modal" style="max-width:480px;" onclick="event.stopPropagation()">
     <div class="modal-hd">
       <span class="modal-title">Settings</span>
       <button class="modal-x" onclick="closeModal('settings-modal')">×</button>
@@ -571,41 +532,41 @@ header{
           <div><div class="setting-label" id="s-email">—</div><div class="setting-desc">Signed in</div></div>
         </div>
         <div class="setting-row">
-          <div><div class="setting-label">Sign out</div><div class="setting-desc">End your current session on this browser</div></div>
+          <div><div class="setting-label">Sign out</div><div class="setting-desc">End your session on this browser</div></div>
           <div class="setting-action"><button class="s-btn" onclick="logout()">Sign out</button></div>
         </div>
       </div>
       <div class="setting-section">
         <div class="setting-section-title">Data</div>
         <div class="setting-row">
-          <div><div class="setting-label">Export all records</div><div class="setting-desc">Download your full commit history as JSON</div></div>
+          <div><div class="setting-label">Export all records</div><div class="setting-desc">Download your full commit history</div></div>
           <div class="setting-action"><button class="s-btn" onclick="exportAll()">Export JSON</button></div>
         </div>
         <div class="setting-row">
-          <div><div class="setting-label">Refresh records</div><div class="setting-desc">Reload all records from the server</div></div>
+          <div><div class="setting-label">Refresh</div><div class="setting-desc">Reload records from server</div></div>
           <div class="setting-action"><button class="s-btn" onclick="fetchRecords();toast('Refreshing…');">Refresh</button></div>
         </div>
       </div>
       <div class="setting-section">
         <div class="setting-section-title">Resources</div>
         <div class="setting-row">
-          <div><div class="setting-label">Documentation</div><div class="setting-desc">API reference, SDK guides, and examples</div></div>
-          <div class="setting-action"><a href="/docs" class="s-btn" style="text-decoration:none;">Open →</a></div>
+          <div><div class="setting-label">Documentation</div></div>
+          <div class="setting-action"><a href="/docs" class="s-btn">Open →</a></div>
         </div>
         <div class="setting-row">
-          <div><div class="setting-label">Integrity Spec v1.0</div><div class="setting-desc">Protocol specification and verification details</div></div>
-          <div class="setting-action"><a href="/integrity" class="s-btn" style="text-decoration:none;">Open →</a></div>
+          <div><div class="setting-label">Integrity Spec v1.0</div></div>
+          <div class="setting-action"><a href="/integrity" class="s-btn">Open →</a></div>
         </div>
         <div class="setting-row">
-          <div><div class="setting-label">Context Passport</div><div class="setting-desc">Open CC0 standard for AI context handoffs</div></div>
-          <div class="setting-action"><a href="https://contextpassport.com" target="_blank" class="s-btn" style="text-decoration:none;">Open →</a></div>
+          <div><div class="setting-label">Context Passport</div></div>
+          <div class="setting-action"><a href="https://contextpassport.com" target="_blank" class="s-btn">Open →</a></div>
         </div>
       </div>
       <div class="setting-section">
         <div class="setting-section-title">Account removal</div>
         <div class="setting-row">
-          <div><div class="setting-label">Delete account</div><div class="setting-desc">Permanently remove your account and optionally your data.</div></div>
-          <div class="setting-action"><button class="s-btn destructive" onclick="closeModal('settings-modal');openModal('delete-modal')">Delete account</button></div>
+          <div><div class="setting-label">Delete account</div><div class="setting-desc">Permanently remove your account. Cannot be undone.</div></div>
+          <div class="setting-action"><button class="s-btn destructive" onclick="closeModal('settings-modal');openModal('delete-modal')">Delete</button></div>
         </div>
       </div>
     </div>
@@ -614,16 +575,15 @@ header{
 
 <!-- DELETE ACCOUNT MODAL -->
 <div class="modal-bg" id="delete-modal" onclick="closeBg('delete-modal',event)">
-  <div class="modal" style="max-width:460px;" onclick="event.stopPropagation()">
+  <div class="modal" style="max-width:440px;" onclick="event.stopPropagation()">
     <div class="modal-hd">
       <span class="modal-title">Delete account</span>
       <button class="modal-x" onclick="closeModal('delete-modal')">×</button>
     </div>
     <div class="modal-body">
-      <div class="notice warn">This permanently removes your account and access. It cannot be reversed.</div>
-      <div class="notice info">Your commit records can be kept (anonymised) or deleted. Keeping them preserves integrity for any shared chain links you've created.</div>
+      <div class="notice warn">This permanently removes your account. It cannot be reversed.</div>
       <div class="field">
-        <label>What to do with your records</label>
+        <label>Records</label>
         <select id="del-choice">
           <option value="keep">Keep records — anonymised, chain integrity preserved</option>
           <option value="delete">Delete all records — shared links will break</option>
@@ -640,9 +600,9 @@ header{
 
 <!-- RENAME MODAL -->
 <div class="modal-bg" id="rename-modal" onclick="closeBg('rename-modal',event)">
-  <div class="modal" style="max-width:380px;" onclick="event.stopPropagation()">
+  <div class="modal" style="max-width:360px;" onclick="event.stopPropagation()">
     <div class="modal-hd">
-      <span class="modal-title">Rename record</span>
+      <span class="modal-title">Rename</span>
       <button class="modal-x" onclick="closeModal('rename-modal')">×</button>
     </div>
     <div class="modal-body">
@@ -655,17 +615,17 @@ header{
   </div>
 </div>
 
-<!-- API KEY MODAL -->
+<!-- KEY MODAL -->
 <div class="modal-bg" id="key-modal" onclick="closeBg('key-modal',event)">
-  <div class="modal" style="max-width:460px;" onclick="event.stopPropagation()">
+  <div class="modal" style="max-width:440px;" onclick="event.stopPropagation()">
     <div class="modal-hd">
       <span class="modal-title" id="key-modal-title">API Key</span>
       <button class="modal-x" onclick="closeModal('key-modal')">×</button>
     </div>
     <div class="modal-body">
-      <div class="notice info">Keep this key secret. Anyone with this key can commit records as this agent.</div>
-      <div class="field"><label>Agent ID</label><div style="font-family:var(--mono);font-size:12px;background:var(--bg2);padding:8px 10px;border-radius:7px;border:1px solid var(--border);color:var(--text2);" id="km-id"></div></div>
-      <div class="field"><label>API Key</label><div style="font-family:var(--mono);font-size:12px;background:var(--bg2);padding:8px 10px;border-radius:7px;border:1px solid var(--border);word-break:break-all;color:var(--text);" id="km-key"></div></div>
+      <div class="notice info" style="font-size:11.5px;">Keep this key secret. Anyone with this key can commit records as this agent.</div>
+      <div class="field"><label>Agent ID</label><div class="key-display" id="km-id"></div></div>
+      <div class="field"><label>API Key</label><div class="key-display" id="km-key"></div></div>
     </div>
     <div class="modal-ft">
       <button class="mf-btn mf-cancel" onclick="rotateKey()">Rotate key</button>
@@ -679,43 +639,35 @@ header{
 <script>
 'use strict';
 
-// ── Session management ────────────────────────────────────────────────────────
+// ── Session ───────────────────────────────────────────────────────────────────
 async function refreshSession() {
   const raw = localStorage.getItem('dm_session');
   if (!raw) return null;
   const s = JSON.parse(raw);
-  const exp = parseInt(s.expires_at || '0', 10);
+  const exp = parseInt(s.expires_at||'0',10);
   if (exp - Math.floor(Date.now()/1000) > 300) return s;
   if (!s.refresh_token) return s;
   try {
-    const r = await fetch('/api/auth/refresh', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({refresh_token: s.refresh_token}),
-    });
+    const r = await fetch('/api/auth/refresh',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({refresh_token:s.refresh_token})});
     if (!r.ok) return s;
     const d = await r.json();
     if (d.access_token) {
-      const ns = {...s, access_token:d.access_token, expires_at:d.expires_at, refresh_token:d.refresh_token||s.refresh_token};
-      localStorage.setItem('dm_session', JSON.stringify(ns));
-      return ns;
+      const ns = {...s,access_token:d.access_token,expires_at:d.expires_at,refresh_token:d.refresh_token||s.refresh_token};
+      localStorage.setItem('dm_session',JSON.stringify(ns)); return ns;
     }
   } catch(e) {}
   return s;
 }
 setInterval(refreshSession, 4*60*1000);
 
-// ── Auth init ────────────────────────────────────────────────────────────────
 if (location.hash?.includes('access_token')) {
   try {
     const p = new URLSearchParams(location.hash.substring(1));
     const at = p.get('access_token');
     if (at) {
       const pl = JSON.parse(atob(at.split('.')[1]));
-      localStorage.setItem('dm_session', JSON.stringify({
-        access_token:at, refresh_token:p.get('refresh_token'),
-        expires_at:p.get('expires_at'), user:{email:pl.email||'',id:pl.sub}
-      }));
-      history.replaceState({},'',' /dashboard');
+      localStorage.setItem('dm_session',JSON.stringify({access_token:at,refresh_token:p.get('refresh_token'),expires_at:p.get('expires_at'),user:{email:pl.email||'',id:pl.sub}}));
+      history.replaceState({},'','/dashboard');
     }
   } catch(e) {}
 }
@@ -726,22 +678,16 @@ let session;
 try { session = JSON.parse(rawSess); } catch(e) { location.href='/login'; throw 0; }
 if (!session?.access_token) { location.href='/login'; throw 0; }
 
-const emailStr = session?.user?.email || '';
+const emailStr = session?.user?.email||'';
 document.getElementById('user-avatar').textContent = (emailStr[0]||'?').toUpperCase();
-document.getElementById('user-avatar').title = emailStr;
 document.getElementById('s-email').textContent = emailStr;
-document.getElementById('user-email-display').textContent = emailStr;
 
-async function authH() {
-  const s = await refreshSession() || session;
-  return {'Content-Type':'application/json', 'Authorization':`Bearer ${s.access_token}`};
-}
-let dmKey = session?.dm_api_key || localStorage.getItem('dm_api_key') || '';
+async function authH() { const s=await refreshSession()||session; return {'Content-Type':'application/json','Authorization':`Bearer ${s.access_token}`}; }
+let dmKey = session?.dm_api_key||localStorage.getItem('dm_api_key')||'';
 const keyH = () => ({'Content-Type':'application/json','Authorization':`Bearer ${dmKey}`});
 
-// ── State ────────────────────────────────────────────────────────────────────
-const STARS = 'dm_stars';
-const RENAMES = 'dm_renames';
+// ── State ─────────────────────────────────────────────────────────────────────
+const STARS='dm_stars', RENAMES='dm_renames';
 function getStars()  { try{return JSON.parse(localStorage.getItem(STARS)||'[]');}catch{return[];} }
 function setStars(s) { localStorage.setItem(STARS,JSON.stringify(s)); }
 function starred(id) { return getStars().includes(id); }
@@ -749,14 +695,14 @@ function toggleStar(id) { const s=getStars(),i=s.indexOf(id); i>=0?s.splice(i,1)
 function getRenames() { try{return JSON.parse(localStorage.getItem(RENAMES)||'{}');}catch{return{};} }
 function saveRename(id,t) { const r=getRenames();r[id]=t;localStorage.setItem(RENAMES,JSON.stringify(r)); }
 
-let allThreads=[], selThread=null, activeFilter='all', searchQ='', openMenu=null, renameId=null, keyModal=null;
+let allThreads=[], selThread=null, expandedId=null, activeFilter='all', searchQ='', openMenu=null, renameId=null, keyModal=null;
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 
 function ago(ts) {
   if (!ts) return '';
-  const d = Math.floor((Date.now()-new Date(ts))/1000);
+  const d=Math.floor((Date.now()-new Date(ts))/1000);
   if (d<60) return 'just now';
   if (d<3600) return Math.floor(d/60)+'m ago';
   if (d<86400) return Math.floor(d/3600)+'h ago';
@@ -764,14 +710,11 @@ function ago(ts) {
   return new Date(ts).toLocaleDateString();
 }
 
-// Absolute short format: "Apr 9 at 15:02 UTC"
 function fmtAbs(iso) {
   if (!iso) return '';
-  const d = new Date(iso);
-  return d.toLocaleString('en-GB',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit',timeZone:'UTC',hour12:false})+' UTC';
+  return new Date(iso).toLocaleString('en-GB',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit',timeZone:'UTC',hour12:false})+' UTC';
 }
 
-// Short time only: "15:02:01 UTC"
 function fmtTime(iso) {
   if (!iso) return '';
   return new Date(iso).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit',timeZone:'UTC',hour12:false})+' UTC';
@@ -779,443 +722,397 @@ function fmtTime(iso) {
 
 function relDate(ts) {
   if (!ts) return 'Older';
-  const d=new Date(ts), now=new Date();
+  const d=new Date(ts),now=new Date();
   if (d.toDateString()===now.toDateString()) return 'Today';
-  const y=new Date(now); y.setDate(now.getDate()-1);
+  const y=new Date(now);y.setDate(now.getDate()-1);
   if (d.toDateString()===y.toDateString()) return 'Yesterday';
   const days=Math.floor((now-d)/86400000);
-  if (days<7) return 'Previous 7 days';
-  if (days<30) return 'Previous 30 days';
+  if (days<7) return 'This week';
+  if (days<30) return 'This month';
   return 'Older';
 }
 
-function toast(msg,dur=2800) {
+function toast(msg,dur=2600) {
   const el=document.getElementById('toast');
   el.textContent=msg; el.classList.add('show');
   clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove('show'),dur);
 }
 
-function maskKey(k) { if(!k)return''; return k.slice(0,9)+'••••••••••'+k.slice(-4); }
-
 function threadTitle(t) {
   const rn=getRenames();
   if (rn[t.id]) return rn[t.id];
-  if (t.title && t.title!=='Untitled') return t.title;
-  // No platform branding — use agent name or date
-  const agent = t.agentName || '';
-  const d = t.latest ? new Date(t.latest).toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '';
-  if (agent && d) return `${agent} · ${d}`;
-  if (agent) return agent;
-  if (d) return `Record · ${d}`;
-  return 'Untitled record';
+  if (t.title&&t.title!=='Untitled') return t.title;
+  const agent=t.agentName||'';
+  const d=t.latest?new Date(t.latest).toLocaleDateString('en-US',{month:'short',day:'numeric'}):'';
+  if (agent&&d) return `${agent} · ${d}`;
+  return agent||d||'Untitled record';
 }
 
-function isThreadVerified(t) {
-  if (!t.commits.length) return null;
-  return t.commits.every(c => c.verified || c.integrity?.verification_status==='valid');
+function recordStatus(t) {
+  if (!t.commits.length) return 'none';
+  const allVerified = t.commits.every(c=>c.verified||c.integrity?.verification_status==='valid');
+  if (allVerified) return 'ok';
+  return 'none'; // not failed — just not yet verified
 }
 
-// ── View switching (Records / Agents) ────────────────────────────────────────
+// ── View switching ────────────────────────────────────────────────────────────
 function showView(view) {
-  document.getElementById('view-records').style.display = view==='records' ? '' : 'none';
-  document.getElementById('view-agents').style.display  = view==='agents'  ? '' : 'none';
-  document.querySelectorAll('.h-nav-link').forEach(l => l.classList.remove('active'));
+  document.getElementById('view-records').style.display = view==='records'?'':'none';
+  document.getElementById('view-agents').style.display  = view==='agents' ?'':'none';
+  document.querySelectorAll('.h-nav-link').forEach(l=>l.classList.remove('active'));
   document.getElementById('nav-'+view)?.classList.add('active');
   if (view==='agents') loadAgents();
 }
 
-// ── Data loading — SWR-style ─────────────────────────────────────────────────
-let fetchRetryCount = 0;
+// ── Tab switching — now just Record | Proof ───────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===name));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active',p.id==='tab-'+name));
+}
 
-function loadThreads(retryCount = 0) {
-  // 1. Serve cached data instantly
-  const cached = sessionStorage.getItem('dm_records_v2');
+// ── Chain detail collapse ─────────────────────────────────────────────────────
+function toggleChainDetail() {
+  const toggle=document.getElementById('chain-toggle');
+  const detail=document.getElementById('chain-detail');
+  toggle.classList.toggle('open');
+}
+
+// ── SWR data loading ─────────────────────────────────────────────────────────
+function loadThreads(retryCount=0) {
+  const cached=sessionStorage.getItem('dm_records_v3');
   if (cached) {
-    try {
-      const parsed = JSON.parse(cached);
-      processCommits(parsed);
-      showList();
-    } catch(e) {}
-  } else {
-    showSkeletons();
-  }
-  // 2. Fetch fresh in background
+    try { processCommits(JSON.parse(cached)); showList(); } catch(e) {}
+  } else { showSkeletons(); }
   fetchRecords(retryCount);
 }
 
-async function fetchRecords(retryCount = 0) {
+async function fetchRecords(retryCount=0) {
   try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 10000);
-    const h = await authH();
-    const r = await fetch('/dashboard/commits', {headers:h, signal:controller.signal});
-    clearTimeout(timeout);
-
-    if (r.status === 401) {
-      if (retryCount > 0) { showSessionExpired(); return; }
-      await refreshSession();
-      return fetchRecords(retryCount + 1);
+    const ctrl=new AbortController();
+    const to=setTimeout(()=>ctrl.abort(),10000);
+    const h=await authH();
+    const r=await fetch('/dashboard/commits',{headers:h,signal:ctrl.signal});
+    clearTimeout(to);
+    if (r.status===401) {
+      if (retryCount>0) return showSessionExpired();
+      await refreshSession(); return fetchRecords(retryCount+1);
     }
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
-
-    const commits = await r.json();
-    sessionStorage.setItem('dm_records_v2', JSON.stringify(commits));
-    processCommits(commits);
-    showList();
-
-    const tp = new URLSearchParams(location.search).get('t');
+    const commits=await r.json();
+    sessionStorage.setItem('dm_records_v3',JSON.stringify(commits));
+    processCommits(commits); showList();
+    document.getElementById('stale-banner').classList.remove('show');
+    const tp=new URLSearchParams(location.search).get('t');
     if (tp) { const f=allThreads.find(t=>t.id===tp); if(f) selectThread(f.id); }
-
   } catch(e) {
-    if (e.name === 'AbortError') {
-      showError('Request timed out. Check your connection.');
-    } else if (!allThreads.length) {
-      showError("Couldn't load records. Check your connection.");
+    if (!allThreads.length) {
+      if (e.name==='AbortError') showError('Request timed out.');
+      else showError("Couldn't load records.");
+    } else {
+      document.getElementById('stale-banner').classList.add('show');
     }
-    // If stale data already showing, don't overwrite with error
   }
 }
 
 function processCommits(commits) {
-  const map = new Map();
+  const map=new Map();
   for (const c of commits) {
-    const tid = c.trace_id || c.traceId || c.id;
+    const tid=c.trace_id||c.traceId||c.id;
     if (!map.has(tid)) {
-      map.set(tid, {
-        id:tid,
-        title: c.payload?.convTitle||c.payload?.title||c.payload?.thread?.title||null,
-        commits:[], latest:c.created_at||c.timestamp||'',
-        hasFork:false, agentName:c.agent_name||'',
-      });
+      map.set(tid,{id:tid,title:c.payload?.convTitle||c.payload?.title||null,commits:[],latest:c.created_at||c.timestamp||'',hasFork:false,agentName:c.agent_name||''});
     }
-    const t = map.get(tid);
+    const t=map.get(tid);
     t.commits.push(c);
     if ((c.eventType||c.event_type)==='fork') t.hasFork=true;
-    if ((c.created_at||c.timestamp||'') > t.latest) t.latest=c.created_at||c.timestamp;
+    if ((c.created_at||c.timestamp||'')>t.latest) t.latest=c.created_at||c.timestamp;
   }
-  allThreads = [...map.values()].sort((a,b)=>b.latest.localeCompare(a.latest));
+  allThreads=[...map.values()].sort((a,b)=>b.latest.localeCompare(a.latest));
 }
 
 function showSkeletons() {
-  document.getElementById('tlist-skeleton').style.display = '';
-  document.getElementById('tlist-content').style.display = 'none';
-  document.getElementById('tlist-error').style.display = 'none';
+  document.getElementById('tlist-skeleton').style.display='';
+  document.getElementById('tlist-content').style.display='none';
+  document.getElementById('tlist-error').style.display='none';
 }
-
 function showList() {
-  document.getElementById('tlist-skeleton').style.display = 'none';
-  document.getElementById('tlist-content').style.display = '';
-  document.getElementById('tlist-error').style.display = 'none';
+  document.getElementById('tlist-skeleton').style.display='none';
+  document.getElementById('tlist-content').style.display='';
+  document.getElementById('tlist-error').style.display='none';
   renderList();
 }
-
 function showError(msg) {
-  document.getElementById('tlist-skeleton').style.display = 'none';
-  document.getElementById('tlist-content').style.display = 'none';
-  const el = document.getElementById('tlist-error');
-  el.style.display = '';
-  el.innerHTML = `<div class="tg-label" style="color:var(--red);">${esc(msg)}</div>
-    <div style="padding:0 8px 12px;">
-      <button onclick="loadThreads()" style="font-size:12px;color:var(--accent);background:none;border:none;cursor:pointer;padding:0;font-family:var(--sans);">↺ Retry</button>
-    </div>`;
+  document.getElementById('tlist-skeleton').style.display='none';
+  document.getElementById('tlist-content').style.display='none';
+  const el=document.getElementById('tlist-error');
+  el.style.display='';
+  el.innerHTML=`<div class="tg-label" style="color:var(--red);">${esc(msg)}</div><button onclick="loadThreads()" style="font-size:11.5px;color:var(--accent2);background:none;border:none;cursor:pointer;padding:4px 8px;font-family:var(--sans);">↺ Retry</button>`;
 }
-
 function showSessionExpired() {
-  document.getElementById('tlist-skeleton').style.display = 'none';
-  document.getElementById('tlist-content').style.display = 'none';
-  const el = document.getElementById('tlist-error');
-  el.style.display = '';
-  el.innerHTML = `<div class="tg-label" style="color:var(--amber);">Session expired</div>
-    <div style="padding:0 8px 12px;font-size:13px;color:var(--sb-text2);">
-      <a href="/login" style="color:var(--accent);">Sign in again →</a>
-    </div>`;
+  document.getElementById('tlist-skeleton').style.display='none';
+  document.getElementById('tlist-content').style.display='none';
+  const el=document.getElementById('tlist-error');
+  el.style.display='';
+  el.innerHTML=`<div class="tg-label" style="color:var(--amber);">Session expired</div><a href="/login" style="font-size:11.5px;color:var(--accent2);padding:4px 8px;display:block;">Sign in again →</a>`;
 }
 
 // ── Render sidebar ────────────────────────────────────────────────────────────
 function renderList() {
-  const q = searchQ.toLowerCase();
-  const threads = allThreads.filter(t => {
-    if (activeFilter === 'verified')   return isThreadVerified(t) === true;
-    if (activeFilter === 'unverified') return isThreadVerified(t) !== true;
-    if (activeFilter === 'starred')    return starred(t.id);
+  const q=searchQ.toLowerCase();
+  const now=Date.now();
+  const threads=allThreads.filter(t=>{
+    if (activeFilter==='starred') return starred(t.id);
+    if (activeFilter==='recent') return (now-new Date(t.latest).getTime())<86400000*7; // last 7 days
     return true;
-  }).filter(t => {
+  }).filter(t=>{
     if (!q) return true;
     if (threadTitle(t).toLowerCase().includes(q)) return true;
     if ((t.agentName||'').toLowerCase().includes(q)) return true;
-    return t.commits.some(c => {
-      const p=c.payload||{};
-      return [p.text,p.summary,p.prompt,p.output,p.convTitle].some(f=>f&&String(f).toLowerCase().includes(q));
-    });
+    return t.commits.some(c=>{const p=c.payload||{};return [p.text,p.summary,p.prompt,p.output].some(f=>f&&String(f).toLowerCase().includes(q));});
   });
 
-  const el = document.getElementById('tlist-content');
-
+  const el=document.getElementById('tlist-content');
   if (!threads.length) {
-    el.innerHTML = `<div class="tg-label">${q?'No results for "'+esc(q)+'"':'No records yet'}</div>
-      ${!q?'<div style="padding:0 8px 8px;font-size:12px;color:var(--sb-text3);">Commit your first agent step to get started.</div>':''}`;
+    el.innerHTML=`<div class="tg-label">${q?'No results for "'+esc(q)+'"':'No records yet'}</div>${!q?'<div style="padding:4px 8px 8px;font-size:12px;color:var(--text4);">Your agent will appear here once it starts recording.</div>':''}`;
     return;
   }
 
-  const groups = {};
-  threads.forEach(t => { const g=relDate(t.latest); (groups[g]=groups[g]||[]).push(t); });
-  const ORDER = ['Today','Yesterday','Previous 7 days','Previous 30 days','Older'];
-  let html = '';
-  ORDER.forEach(g => {
+  const groups={};
+  threads.forEach(t=>{const g=relDate(t.latest);(groups[g]=groups[g]||[]).push(t);});
+  const ORDER=['Today','Yesterday','This week','This month','Older'];
+  let html='';
+  ORDER.forEach(g=>{
     if (!groups[g]) return;
-    html += `<div class="tg-label">${g}</div>`;
-    groups[g].forEach(t => { html += renderRow(t); });
+    html+=`<div class="tg-label">${g}</div>`;
+    groups[g].forEach(t=>{html+=renderRow(t);});
   });
-  el.innerHTML = html;
+  el.innerHTML=html;
 }
 
 function renderRow(t) {
-  const title   = esc(threadTitle(t));
-  const isOn    = selThread?.id === t.id;
-  const verified = isThreadVerified(t);
-  const dotCls  = verified === true ? 'verified' : verified === false ? 'pending' : 'unknown';
-  const star    = starred(t.id);
-  const steps   = t.commits.length;
-  const agent   = esc(t.agentName||'');
+  const isOn   = selThread?.id===t.id;
+  const isExp  = expandedId===t.id;
+  const status = recordStatus(t);
+  const steps  = t.commits.length;
+  const agent  = esc(t.agentName||'');
+  const star   = starred(t.id);
+  // Preview from first commit
+  const first  = [...t.commits].sort((a,b)=>(a.client_timestamp||a.created_at||'').localeCompare(b.client_timestamp||b.created_at||''))[0];
+  const preview= first?(first.payload?.text||first.payload?.prompt||first.payload?.output||'').trim().slice(0,72):'';
 
-  return `<div class="tr${isOn?' active':''}" id="tr-${esc(t.id)}" onclick="selectThread('${esc(t.id)}')">
-    <div class="tr-status-dot ${dotCls}" title="${dotCls==='verified'?'Verified':dotCls==='pending'?'Not yet verified':'Unknown'}"></div>
-    <div class="tr-body">
-      <div class="tr-title">${title}</div>
-      <div class="tr-meta">${agent?agent+' · ':''}${steps} step${steps!==1?'s':''}</div>
-      <div class="tr-foot">
-        <span class="tr-time" title="${esc(t.latest)}">${ago(t.latest)}</span>
-        <div class="tr-tags">
-          ${star?'<span class="tr-tag tt-star">★</span>':''}
-          ${t.hasFork?'<span class="tr-tag tt-fork">fork</span>':''}
-          ${verified==='verified'?'<span class="tr-badge-v">✓</span>':''}
+  return `<div class="tr${isOn?' active':''}${isExp?' expanded':''}" id="tr-${esc(t.id)}">
+    <div class="tr-head" onclick="handleRowClick('${esc(t.id)}')">
+      <div class="tr-status-dot ${status}"></div>
+      <div class="tr-body">
+        <div class="tr-title">${esc(threadTitle(t))}</div>
+        <div class="tr-meta">${agent?agent+' · ':''}${steps} step${steps!==1?'s':''}</div>
+        ${preview&&!isExp?`<div class="tr-preview">${esc(preview.slice(0,60))}${preview.length>60?'…':''}</div>`:''}
+        <div class="tr-foot">
+          <span class="tr-time">${ago(t.latest)}</span>
+          ${star?'<span class="tr-star">★</span>':''}
         </div>
       </div>
+      <span class="tr-chevron">▶</span>
     </div>
-    <button class="tr-dots" onclick="event.stopPropagation();openRecordMenu('${esc(t.id)}',this)" title="Options">⋯</button>
+    ${isExp?`<div class="tr-expanded-body">${renderInlineConv(t)}</div>`:''}
   </div>`;
 }
 
-// ── Select record ─────────────────────────────────────────────────────────────
+// Mini inline conversation shown when sidebar row is expanded
+function renderInlineConv(t) {
+  const commits=[...t.commits].sort((a,b)=>(a.client_timestamp||a.created_at||'').localeCompare(b.client_timestamp||b.created_at||''));
+  if (!commits.length) return '<div style="font-size:12px;color:var(--text4);padding:8px 0;">No steps</div>';
+  return commits.slice(0,4).map(c=>{
+    const p=c.payload||{};
+    const text=(p.text||p.prompt||p.output||p.summary||'').trim().slice(0,80);
+    const ts=fmtAbs(c.client_timestamp||c.created_at||'');
+    const role=p.role||c.actors?.from?.role||'';
+    const isUser=role==='user';
+    return `<div style="margin-top:8px;font-size:11.5px;${isUser?'text-align:right;':''}">
+      <div style="display:inline-block;max-width:90%;background:${isUser?'rgba(29,78,216,.3)':'rgba(255,255,255,.05)'};border-radius:8px;padding:5px 9px;color:var(--text2);line-height:1.5;">${esc(text||'—')}</div>
+      <div style="font-size:10px;color:var(--text4);margin-top:2px;">${esc(ts)}</div>
+    </div>`;
+  }).join('')+(commits.length>4?`<div style="font-size:11px;color:var(--text4);margin-top:8px;">+${commits.length-4} more steps</div>`:'');
+}
+
+// ── Row click: expand/collapse sidebar OR select for main view ────────────────
+function handleRowClick(id) {
+  const t=allThreads.find(x=>x.id===id); if(!t) return;
+  // Always select for main panel
+  selectThread(id);
+  // Expand/collapse in sidebar
+  if (expandedId===id) {
+    expandedId=null;
+  } else {
+    expandedId=id;
+  }
+  renderList();
+}
+
+// ── Select record for main panel ─────────────────────────────────────────────
 function selectThread(id) {
-  selThread = allThreads.find(t=>t.id===id)||null;
+  selThread=allThreads.find(t=>t.id===id)||null;
   if (!selThread) return;
 
-  document.querySelectorAll('.tr').forEach(r=>r.classList.remove('active'));
-  document.getElementById('tr-'+id)?.classList.add('active');
+  const steps=selThread.commits.length;
+  const status=recordStatus(selThread);
 
-  const steps = selThread.commits.length;
-  const verified = isThreadVerified(selThread);
+  document.getElementById('conv-title').textContent=threadTitle(selThread);
 
-  document.getElementById('conv-title').textContent = threadTitle(selThread);
+  // ONE status badge — record level only
+  const badgeHtml = status==='ok'
+    ? '<span class="status-badge ok">Record intact</span>'
+    : '<span class="status-badge warn">Verification required</span>';
 
-  // Meta: steps + absolute time + verified status
-  const verBadge = verified === true
-    ? '<span class="ch-badge verified">✓ Verified</span>'
-    : verified === false
-      ? '<span class="ch-badge" style="border-color:rgba(245,158,11,.25);color:var(--amber);background:rgba(245,158,11,.05);">⚠ Not verified</span>'
-      : '';
   document.getElementById('conv-meta').innerHTML = `
-    <span class="ch-badge">${steps} step${steps!==1?'s':''}</span>
-    <span class="ch-badge" title="${esc(selThread.latest)}">${fmtAbs(selThread.latest)}</span>
-    ${selThread.agentName?`<span class="ch-badge">${esc(selThread.agentName)}</span>`:''}
-    ${verBadge}
-    ${selThread.hasFork?'<span class="ch-badge" style="color:var(--amber);">forked</span>':''}
+    ${badgeHtml}
+    <span>${fmtAbs(selThread.latest)}</span>
+    <span>${steps} step${steps!==1?'s':''}</span>
+    ${selThread.agentName?`<span>${esc(selThread.agentName)}</span>`:''}
   `;
 
   document.getElementById('conv-actions').style.display='flex';
   document.getElementById('record-tabs').style.display='flex';
 
-  // Hide verify bar until verified
-  document.getElementById('verify-bar').style.display = 'none';
-
-  // Switch to summary tab
-  switchTab('summary');
+  switchTab('record');
   renderConversation(selThread);
-  renderChainTab(selThread);
   renderProofTab(selThread);
-
-  // Close chain panel if open and reload it
-  const cp = document.getElementById('chain-panel');
-  if (cp.classList.contains('open')) {
-    loadChain(selThread);
-  }
 }
 
-// ── Tab switching ─────────────────────────────────────────────────────────────
-function switchTab(name) {
-  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.tab===name));
-  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active', p.id==='tab-'+name));
-}
-
-// ── Summary tab — human-readable record view ──────────────────────────────────
+// ── Conversation — CLEAN, no role labels, no verification badges ──────────────
 function renderConversation(thread) {
-  const area = document.getElementById('conv-area');
-  const commits = [...thread.commits].sort((a,b)=>(a.client_timestamp||a.accepted_at||a.created_at||a.timestamp||'').localeCompare(b.client_timestamp||b.accepted_at||b.created_at||b.timestamp||''));
+  const area=document.getElementById('conv-area');
+  const commits=[...thread.commits].sort((a,b)=>(a.client_timestamp||a.accepted_at||a.created_at||'').localeCompare(b.client_timestamp||b.accepted_at||b.created_at||''));
 
   if (!commits.length) {
-    area.innerHTML='<div class="empty"><div class="empty-title">No steps in this record</div><div class="empty-sub">The record may still be processing, or the commit was empty.</div></div>';
+    area.innerHTML='<div class="empty"><div class="empty-title">No steps in this record</div></div>';
+    document.getElementById('chain-section').style.display='none';
     return;
   }
 
-  let html = '<div class="msg-wrap">';
-  commits.forEach((c,i) => {
-    const p        = c.payload||{};
-    const role     = p.role||c.actors?.from?.role||(i%2===0?'user':'assistant');
-    const text     = p.text||p.summary||p.output||p.input||p.prompt||'';
-    const clientTs = c.client_timestamp||c.timestamp||'';
-    const acceptTs = c.accepted_at||c.created_at||clientTs||'';
-    const ctxId    = c.id||'';
-    const verified = c.verified||c.integrity?.verification_status==='valid';
-    const eventType= c.event_type||c.eventType||role||'';
+  // Show chain section toggle
+  document.getElementById('chain-section').style.display='';
+  document.getElementById('chain-step-count').textContent=`${commits.length} steps`;
 
-    // Dual timestamps — always show both if different
-    const showBothTs = clientTs && acceptTs && clientTs !== acceptTs;
-    const tsHtml = `<div class="step-ts">
-      ${clientTs?`<div class="ts-row"><span class="ts-label">Submitted</span><span class="ts-value">${fmtTime(clientTs)}</span></div>`:''}
-      ${showBothTs?`<div class="ts-row"><span class="ts-label">Recorded</span><span class="ts-value">${fmtTime(acceptTs)}</span></div>`:''}
-    </div>`;
+  const wrap=document.createElement('div');
+  wrap.className='msg-wrap';
 
-    if (role==='user') {
-      html += `<div class="msg-group">
-        <div class="msg-user-outer">
-          <div class="msg-user-label">Input</div>
-          <div class="msg-user-bubble">${esc(text)}</div>
-          <div class="msg-user-foot">
-            ${tsHtml}
-            ${verified?'<span class="msg-verified">✓ recorded</span>':''}
-            ${ctxId?`<button class="msg-chain-id" onclick="openChainCtx('${esc(ctxId)}')" title="View in chain">ctx_${esc(ctxId.slice(-8))}</button>`:''}
-          </div>
+  commits.forEach((c,i)=>{
+    const p=c.payload||{};
+    const role=p.role||c.actors?.from?.role||(i%2===0?'user':'assistant');
+    const text=p.text||p.summary||p.output||p.input||p.prompt||'';
+    const clientTs=c.client_timestamp||c.timestamp||'';
+    const acceptTs=c.accepted_at||c.created_at||clientTs;
+    const ctxId=c.id||'';
+    const isUser=role==='user';
+    const tsId=`ts-${i}`;
+
+    const g=document.createElement('div');
+    g.className='msg-group';
+
+    if (isUser) {
+      g.innerHTML=`<div class="msg-user-outer">
+        <div class="msg-bubble-user">${esc(text)}</div>
+        <div class="msg-foot right">
+          <span class="msg-time-subtle">${ago(clientTs)}</span>
+          ${ctxId?`<button onclick="document.getElementById('${tsId}').classList.toggle('open')" style="font-size:10px;color:var(--text4);background:none;border:none;cursor:pointer;padding:0;font-family:var(--mono);">···</button>`:''}
+        </div>
+        <div class="msg-ts-detail" id="${tsId}" style="text-align:right;">
+          ${clientTs?`<div class="ts-row" style="justify-content:flex-end;"><span class="ts-lbl">Submitted</span><span>${esc(fmtTime(clientTs))}</span></div>`:''}
+          ${acceptTs&&acceptTs!==clientTs?`<div class="ts-row" style="justify-content:flex-end;"><span class="ts-lbl">Recorded</span><span>${esc(fmtTime(acceptTs))}</span></div>`:''}
+          ${ctxId?`<div style="margin-top:2px;font-size:9px;color:var(--text4);">ctx: ${esc(ctxId)}</div>`:''}
         </div>
       </div>`;
     } else {
-      const label = eventType==='fork'?'Fork' : eventType==='system'?'System' : 'Output';
-      html += `<div class="msg-group">
-        <div class="msg-ai-outer">
-          <div class="msg-ai-label">${esc(label)}</div>
-          <div class="msg-ai-body">${formatMsg(text)}</div>
-          <div class="msg-ai-foot">
-            ${tsHtml}
-            ${verified?'<span class="msg-verified">✓ verified</span>':''}
-            ${ctxId?`<button class="msg-chain-id" onclick="openChainCtx('${esc(ctxId)}')" title="View in chain">ctx_${esc(ctxId.slice(-8))}</button>`:''}
-          </div>
+      g.innerHTML=`<div class="msg-agent-outer">
+        <div class="msg-bubble-agent">${formatMsg(text)}</div>
+        <div class="msg-foot">
+          <span class="msg-time-subtle">${ago(clientTs)}</span>
+          ${ctxId?`<button onclick="document.getElementById('${tsId}').classList.toggle('open')" style="font-size:10px;color:var(--text4);background:none;border:none;cursor:pointer;padding:0;font-family:var(--mono);">···</button>`:''}
+        </div>
+        <div class="msg-ts-detail" id="${tsId}">
+          ${clientTs?`<div class="ts-row"><span class="ts-lbl">Submitted</span><span>${esc(fmtTime(clientTs))}</span></div>`:''}
+          ${acceptTs&&acceptTs!==clientTs?`<div class="ts-row"><span class="ts-lbl">Recorded</span><span>${esc(fmtTime(acceptTs))}</span></div>`:''}
+          ${ctxId?`<div style="margin-top:2px;font-size:9px;color:var(--text4);">ctx: ${esc(ctxId)}</div>`:''}
         </div>
       </div>`;
     }
+    wrap.appendChild(g);
   });
-  html += '</div>';
-  area.innerHTML = html;
-  area.scrollTop = area.scrollHeight;
+  area.innerHTML='';
+  area.appendChild(wrap);
+  area.scrollTop=area.scrollHeight;
+
+  // Render chain detail
+  renderChainDetail(commits);
 }
 
-// ── Chain tab ─────────────────────────────────────────────────────────────────
-function renderChainTab(thread) {
-  const area = document.getElementById('chain-area');
-  const commits = [...thread.commits].sort((a,b)=>(a.client_timestamp||a.accepted_at||a.created_at||'').localeCompare(b.client_timestamp||b.accepted_at||b.created_at||''));
-
-  if (!commits.length) {
-    area.innerHTML='<div class="empty"><div class="empty-title">No steps</div></div>';
-    return;
-  }
-
-  let html = '<div class="msg-wrap" style="padding-top:20px;">';
-  commits.forEach((c,i) => {
-    const p        = c.payload||{};
-    const role     = p.role||c.actors?.from?.role||'step';
-    const clientTs = c.client_timestamp||c.timestamp||'';
-    const acceptTs = c.accepted_at||c.created_at||clientTs;
-    const ctxId    = c.id||'';
-    const ih       = c.integrity_hash||c.integrity?.integrity_hash||'';
-    const phash    = c.payload_hash||c.integrity?.payload_hash||'';
-    const verified = c.verified||c.integrity?.verification_status==='valid';
-    const logPos   = c.log_position ?? c._proof?.log_position ?? null;
-
-    html += `<div style="margin-bottom:14px;padding:14px 16px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;${verified?'border-left:3px solid var(--green);':''}" >
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-        <span style="font-family:var(--mono);font-size:10px;color:var(--text3);">Step ${i+1}</span>
-        <span style="font-size:13px;font-weight:500;color:var(--text);">${esc(role)}</span>
-        ${verified?'<span style="font-family:var(--mono);font-size:9px;color:var(--green);background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.15);padding:1px 6px;border-radius:3px;margin-left:auto;">✓ verified</span>':'<span style="font-family:var(--mono);font-size:9px;color:var(--amber);margin-left:auto;">⚠ not verified</span>'}
+// ── Chain detail (timeline, hidden by default) ────────────────────────────────
+function renderChainDetail(commits) {
+  const detail=document.getElementById('chain-detail');
+  const nodes=commits.map((c,i)=>{
+    const p=c.payload||{};
+    const role=p.role||c.actors?.from?.role||'step';
+    const clientTs=c.client_timestamp||c.timestamp||'';
+    const name=c.agent_name||role||`Step ${i+1}`;
+    const isFork=(c.eventType||c.event_type)==='fork';
+    const isErr=c.integrity?.chainValid===false;
+    return `<div class="chain-node">
+      <div class="chain-node-line">
+        <div class="chain-dot ${isFork?'fork':isErr?'err':''}"></div>
+        <div class="chain-connector"></div>
       </div>
-      <div class="step-ts">
-        ${clientTs?`<div class="ts-row"><span class="ts-label" style="min-width:75px;">Submitted at</span><span class="ts-value">${esc(fmtTime(clientTs))}</span></div>`:''}
-        ${acceptTs&&acceptTs!==clientTs?`<div class="ts-row"><span class="ts-label" style="min-width:75px;">Recorded at</span><span class="ts-value">${esc(fmtTime(acceptTs))}</span></div>`:''}
-        ${logPos!=null?`<div class="ts-row"><span class="ts-label" style="min-width:75px;">Log position</span><span class="ts-value">${logPos}</span></div>`:''}
+      <div class="chain-node-content">
+        <div class="chain-node-head">
+          <span class="chain-step-num">Step ${i+1}</span>
+          <span class="chain-step-desc">${esc(name)}</span>
+          <span class="chain-step-time">${fmtTime(clientTs)}</span>
+        </div>
       </div>
-      ${ih?`<div style="margin-top:7px;font-family:var(--mono);font-size:9.5px;color:var(--text4);">integrity: ${esc(ih.replace('sha256:','').slice(0,24))}…</div>`:''}
-      ${phash?`<div style="font-family:var(--mono);font-size:9.5px;color:var(--text4);">payload: ${esc(phash.replace('sha256:','').slice(0,24))}…</div>`:''}
-      ${ctxId?`<div style="margin-top:6px;"><button onclick="openChainCtx('${esc(ctxId)}')" style="font-family:var(--mono);font-size:9.5px;color:var(--accent);background:none;border:none;cursor:pointer;padding:0;">view in chain →</button></div>`:''}
     </div>`;
-  });
-  html += '</div>';
-  area.innerHTML = html;
+  }).join('');
+  detail.innerHTML=`<div class="chain-timeline">${nodes}</div>`;
 }
 
 // ── Proof tab ─────────────────────────────────────────────────────────────────
 function renderProofTab(thread) {
-  const area = document.getElementById('proof-area');
-  const tipCommit = [...thread.commits].sort((a,b)=>(b.accepted_at||b.created_at||'').localeCompare(a.accepted_at||a.created_at||''))[0];
-  const proof = tipCommit?._proof;
-  const verified = isThreadVerified(thread);
+  const area=document.getElementById('proof-area');
+  const tip=[...thread.commits].sort((a,b)=>(b.accepted_at||b.created_at||'').localeCompare(a.accepted_at||a.created_at||''))[0];
+  const proof=tip?._proof;
+  const status=recordStatus(thread);
 
-  let cards = '';
-
-  // Chain integrity
-  const chainOk = verified === true;
-  cards += proofCard(chainOk?'ok':'warn',
-    chainOk?'✓':'⚠',
+  const chainCard=proofCard(status==='ok'?'ok':'warn',
+    status==='ok'?'✓':'—',
     'Chain integrity',
-    chainOk
-      ? `${thread.commits.length}/${thread.commits.length} steps verified — parent hash chain intact`
-      : 'Not yet verified — run Verify to check chain integrity',
-    ''
+    status==='ok'?`${thread.commits.length} steps — hash chain intact`:'Run Verify to check chain integrity',''
   );
 
-  // Merkle proof
-  if (proof?.log_position != null) {
-    cards += proofCard('ok','✓','Merkle inclusion',
-      `Log position ${proof.log_position} · Tree size ${proof.tree_size||'—'}`,
-      proof.leaf_hash?`leaf: ${proof.leaf_hash.slice(0,24)}…`:''
-    );
-  } else {
-    cards += proofCard('skip','—','Merkle inclusion',
-      'Merkle proof not yet available. Trigger a checkpoint to generate inclusion proof.',''
-    );
-  }
+  const merkleCard=proof?.log_position!=null
+    ? proofCard('ok','✓','Merkle inclusion',`Log position ${proof.log_position} · Tree size ${proof.tree_size||'—'}`,proof.leaf_hash?`leaf: ${proof.leaf_hash.slice(0,20)}…`:'')
+    : proofCard('skip','—','Merkle inclusion','Proof generated at next checkpoint','');
 
-  // Checkpoint
-  if (proof?.tree_root) {
-    cards += proofCard('ok','✓','Checkpoint signature',
-      'Signed by DarkMatter — verify with the server public key',
-      `tree_root: ${proof.tree_root.slice(0,24)}…`
-    );
-  } else {
-    cards += proofCard('skip','—','Checkpoint signature',
-      'Checkpoint not yet published. Checkpoints are signed every 10 minutes.', ''
-    );
-  }
+  const cpCard=proof?.tree_root
+    ? proofCard('ok','✓','Checkpoint',`Signed by DarkMatter`,`tree_root: ${proof.tree_root.slice(0,20)}…`)
+    : proofCard('skip','—','Checkpoint','Checkpoints published every 10 minutes','');
 
-  // Witness
-  cards += proofCard('skip','—','Witness signature',
-    'Witness status not loaded in this view. Open the Chain panel and export the proof bundle for full witness data.', ''
-  );
+  const witnessCard=proofCard('skip','—','Witness','Export proof bundle to view witness signatures','');
 
-  area.innerHTML = `<div class="proof-wrap">
-    ${cards}
+  area.innerHTML=`<div class="proof-wrap">
+    ${chainCard}${merkleCard}${cpCard}${witnessCard}
     <div class="proof-offline">
       <div class="proof-offline-title">Verify without trusting DarkMatter</div>
-      <div class="proof-offline-sub">Export a self-sufficient proof bundle. Verify offline with <code style="font-family:var(--mono);font-size:11px;background:var(--bg3);padding:1px 5px;border-radius:3px;">python verify_darkmatter_chain.py bundle.json</code> — or build your own verifier from the open spec.</div>
-      <div class="proof-offline-actions">
-        <button class="proof-action-btn primary" onclick="exportProofBundle()">Download proof bundle</button>
-        <button class="proof-action-btn" onclick="runVerifyNow()">✓ Verify now</button>
-        <a class="proof-action-btn" href="/integrity#spec" target="_blank">View spec →</a>
-        <a class="proof-action-btn" href="https://github.com/darkmatter-hub/darkmatter/blob/main/github-template/verify_darkmatter_chain.py" target="_blank">Verifier script →</a>
+      <div class="proof-offline-sub">Export a self-sufficient proof bundle and verify with no network connection, no account required.</div>
+      <div class="proof-offline-code">python verify_darkmatter_chain.py bundle.json</div>
+      <div class="proof-actions">
+        <button class="proof-action-btn primary" onclick="doExportBundle(selThread?.id)">Download proof bundle</button>
+        <button class="proof-action-btn" onclick="runVerifyNow()">Verify now</button>
+        <a class="proof-action-btn" href="/integrity#spec" target="_blank">Integrity Spec →</a>
       </div>
     </div>
   </div>`;
 }
 
-function proofCard(cls, icon, title, detail, mono) {
-  const iconColor = cls==='ok'?'var(--green)':cls==='warn'?'var(--amber)':cls==='fail'?'var(--red)':'var(--text4)';
+function proofCard(cls,icon,title,detail,mono) {
+  const iconColor=cls==='ok'?'var(--green)':cls==='warn'?'var(--amber)':'var(--text4)';
   return `<div class="proof-card ${cls}">
     <div class="proof-card-title"><span style="color:${iconColor}">${icon}</span>${esc(title)}</div>
     <div class="proof-card-detail">${esc(detail)}</div>
@@ -1223,26 +1120,88 @@ function proofCard(cls, icon, title, detail, mono) {
   </div>`;
 }
 
-// ── Markdown renderer ─────────────────────────────────────────────────────────
+// ── Markdown ──────────────────────────────────────────────────────────────────
 function formatMsg(text) {
   if (!text) return '';
   const blocks=[];
-  let t = text.replace(/```([a-zA-Z0-9]*)\\n?([\\s\\S]*?)```/g, (_,lang,code)=>{ blocks.push({lang,code}); return `\\x00BLK${blocks.length-1}\\x00`; });
-  t = t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  t = t.replace(/`([^`\\n]+)`/g,'<code>$1</code>');
-  t = t.replace(/\\*\\*(.+?)\\*\\*/g,'<strong>$1</strong>');
-  t = t.replace(/\\*([^*\\n]+)\\*/g,'<em>$1</em>');
-  t = t.replace(/^### (.+)$/gm,'<h4>$1</h4>').replace(/^## (.+)$/gm,'<h3>$1</h3>').replace(/^# (.+)$/gm,'<h2>$1</h2>');
-  t = t.replace(/^[-*] (.+)$/gm,'<li>$1</li>');
-  t = t.split(/\\n\\n+/).map(para=>{ para=para.trim(); if(!para)return''; if(/^<(h[2-4]|ul|ol|li|\\x00BLK)/.test(para))return para.replace(/\\n/g,'<br>'); return '<p>'+para.replace(/\\n/g,'<br>')+'</p>'; }).join('');
-  t = t.replace(/\\x00BLK(\\d+)\\x00/g,(_,i)=>{ const {lang,code}=blocks[+i]; const ec=code.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); return `<pre>${lang?`<span class="code-lang">${esc(lang)}</span>`:''}<code>${ec}</code></pre>`; });
+  let t=text.replace(/```([a-zA-Z0-9]*)\\n?([\\s\\S]*?)```/g,(_,lang,code)=>{blocks.push({lang,code});return `\\x00BLK${blocks.length-1}\\x00`;});
+  t=t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  t=t.replace(/`([^`\\n]+)`/g,'<code>$1</code>');
+  t=t.replace(/\\*\\*(.+?)\\*\\*/g,'<strong>$1</strong>');
+  t=t.replace(/\\*([^*\\n]+)\\*/g,'<em>$1</em>');
+  t=t.replace(/^### (.+)$/gm,'<h4>$1</h4>').replace(/^## (.+)$/gm,'<h3>$1</h3>').replace(/^# (.+)$/gm,'<h2>$1</h2>');
+  t=t.replace(/^[-*] (.+)$/gm,'<li>$1</li>');
+  t=t.split(/\\n\\n+/).map(para=>{para=para.trim();if(!para)return'';if(/^<(h[2-4]|ul|ol|li|\\x00BLK)/.test(para))return para.replace(/\\n/g,'<br>');return '<p>'+para.replace(/\\n/g,'<br>')+'</p>';}).join('');
+  t=t.replace(/\\x00BLK(\\d+)\\x00/g,(_,i)=>{const{lang,code}=blocks[+i];const ec=code.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');return `<pre>${lang?`<span class="code-lang">${esc(lang)}</span>`:''}<code>${ec}</code></pre>`;});
   return t;
 }
 
-// ── Record 3-dot menu ────────────────────────────────────────────────────────
-function openRecordMenu(id, btn) {
+// ── Verification ──────────────────────────────────────────────────────────────
+async function runVerifyNow() {
+  if (!selThread) return;
+  const tip=[...selThread.commits].sort((a,b)=>(b.accepted_at||b.created_at||'').localeCompare(a.accepted_at||a.created_at||''))[0]?.id;
+  if (!tip) return;
+  const btn=document.getElementById('verify-btn');
+  btn.textContent='Verifying…'; btn.disabled=true;
+  try {
+    const r=await fetch(`/api/verify/${tip}`,{headers:dmKey?keyH():await authH()});
+    const d=await r.json();
+    // Update status badge — this is the ONE verification signal
+    const meta=document.getElementById('conv-meta');
+    if (d.chain_intact) {
+      meta.querySelector('.status-badge').className='status-badge ok';
+      meta.querySelector('.status-badge').textContent='Record intact';
+    } else {
+      meta.querySelector('.status-badge').className='status-badge fail';
+      meta.querySelector('.status-badge').textContent='Record mismatch detected';
+    }
+    toast(d.chain_intact?'✓ Record intact':'✗ Mismatch detected');
+    switchTab('proof');
+    renderProofTab(selThread);
+  } catch(e) { toast('Verify failed'); }
+  finally { btn.textContent='Verify'; btn.disabled=false; }
+}
+
+// ── Export ────────────────────────────────────────────────────────────────────
+async function doExportBundle(id) {
+  document.getElementById('dm-dd')?.remove(); openMenu=null;
+  const t=id?allThreads.find(x=>x.id===id):selThread; if(!t) return;
+  const tip=[...t.commits].sort((a,b)=>(b.accepted_at||b.created_at||'').localeCompare(a.accepted_at||a.created_at||''))[0]?.id;
+  if (!tip) return toast('No commits to export');
+  try {
+    const r=await fetch(`/api/export/${tip}`,{headers:dmKey?keyH():await authH()});
+    if (!r.ok) throw new Error(await r.text());
+    const blob=await r.blob();
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a'); a.href=url; a.download=`darkmatter_proof_${tip.slice(-8)}.json`; a.click();
+    URL.revokeObjectURL(url); toast('✓ Proof bundle downloaded');
+  } catch(e) { toast('Export failed: '+e.message); }
+}
+
+function downloadBundle() { if(selThread) doExportBundle(selThread.id); }
+
+// ── Share ─────────────────────────────────────────────────────────────────────
+function openShareModal() {
+  if (!selThread) return;
+  const t=selThread;
+  const status=recordStatus(t);
+  document.getElementById('share-record-info').innerHTML=`
+    <strong>${esc(threadTitle(t))}</strong>
+    ${t.commits.length} steps · ${fmtAbs(t.latest)} · ${status==='ok'?'<span style="color:var(--green);">Record intact</span>':'<span style="color:var(--amber);">Verification required</span>'}
+  `;
+  document.getElementById('share-link-inp').value=`${location.origin}/dashboard?t=${encodeURIComponent(t.id)}`;
+  openModal('share-modal');
+}
+
+function copyShareLink() {
+  const link=document.getElementById('share-link-inp').value;
+  navigator.clipboard.writeText(link).then(()=>toast('✓ Link copied'));
+}
+
+// ── 3-dot menu ────────────────────────────────────────────────────────────────
+function openRecordMenu(id,btn) {
   document.getElementById('dm-dd')?.remove();
-  if (openMenu===id) { openMenu=null; return; }
+  if (openMenu===id){openMenu=null;return;}
   openMenu=id;
   const t=allThreads.find(x=>x.id===id); if(!t) return;
   const star=starred(id);
@@ -1250,219 +1209,51 @@ function openRecordMenu(id, btn) {
   const m=document.createElement('div');
   m.id='dm-dd'; m.className='dropdown';
   m.style.top=(rect.bottom+4)+'px';
-  m.style.left=Math.max(4,rect.right-190)+'px';
+  m.style.left=Math.max(4,rect.right-180)+'px';
   m.innerHTML=`
     <button class="dd-item" onclick="doStar('${esc(id)}')"><span class="dd-ic">${star?'★':'☆'}</span>${star?'Unstar':'Star'}</button>
     <button class="dd-item" onclick="doRename('${esc(id)}')"><span class="dd-ic">✏</span>Rename</button>
     <div class="dd-sep"></div>
-    <button class="dd-item" onclick="openShareModal('${esc(id)}')"><span class="dd-ic">↗</span>Share</button>
+    <button class="dd-item" onclick="openShareModal()"><span class="dd-ic">↗</span>Share</button>
     <button class="dd-item" onclick="doFork('${esc(id)}')"><span class="dd-ic">⑂</span>Fork</button>
-    <button class="dd-item" onclick="doVerifyMenu('${esc(id)}')"><span class="dd-ic">✓</span>Verify</button>
     <button class="dd-item" onclick="doExportBundle('${esc(id)}')"><span class="dd-ic">↓</span>Export proof bundle</button>
     <div class="dd-sep"></div>
     <button class="dd-item red" onclick="doDelete('${esc(id)}')"><span class="dd-ic">🗑</span>Delete</button>
   `;
   document.body.appendChild(m);
-  const close=e=>{ if(!m.contains(e.target)&&e.target!==btn){m.remove();openMenu=null;document.removeEventListener('click',close);} };
+  const close=e=>{if(!m.contains(e.target)&&e.target!==btn){m.remove();openMenu=null;document.removeEventListener('click',close);}};
   setTimeout(()=>document.addEventListener('click',close),0);
 }
 
-function doStar(id)   { toggleStar(id); document.getElementById('dm-dd')?.remove(); openMenu=null; renderList(); toast(starred(id)?'★ Starred':'Unstarred'); }
+function activeMenu() { if(selThread){const btn=document.getElementById('conv-actions').lastElementChild;openRecordMenu(selThread.id,btn);} }
+function doStar(id) { toggleStar(id); document.getElementById('dm-dd')?.remove(); openMenu=null; renderList(); toast(starred(id)?'★ Starred':'Unstarred'); }
 function doRename(id) { document.getElementById('dm-dd')?.remove(); openMenu=null; renameId=id; const t=allThreads.find(x=>x.id===id); document.getElementById('rename-inp').value=threadTitle(t)||''; openModal('rename-modal'); setTimeout(()=>document.getElementById('rename-inp').select(),50); }
-function confirmRename() { const v=document.getElementById('rename-inp').value.trim(); if(!v||!renameId) return; saveRename(renameId,v); closeModal('rename-modal'); renderList(); if(selThread?.id===renameId) document.getElementById('conv-title').textContent=v; toast('✓ Renamed'); }
+function confirmRename() { const v=document.getElementById('rename-inp').value.trim(); if(!v||!renameId)return; saveRename(renameId,v); closeModal('rename-modal'); renderList(); if(selThread?.id===renameId) document.getElementById('conv-title').textContent=v; toast('✓ Renamed'); }
 document.getElementById('rename-inp').addEventListener('keydown',e=>{if(e.key==='Enter')confirmRename();if(e.key==='Escape')closeModal('rename-modal');});
-
-// Share modal
-function openShareModal(id) {
-  document.getElementById('dm-dd')?.remove(); openMenu=null;
-  const t=allThreads.find(x=>x.id===id); if(!t) return;
-  const title = threadTitle(t);
-  const steps = t.commits.length;
-  const time  = fmtAbs(t.latest);
-  const verified = isThreadVerified(t);
-  const link = `${location.origin}/dashboard?t=${encodeURIComponent(t.id)}`;
-
-  document.getElementById('share-summary').innerHTML = `
-    <strong>${esc(title)}</strong>
-    ${steps} step${steps!==1?'s':''} · ${esc(time)} · ${verified?'<span style="color:var(--green);">✓ Verified</span>':'<span style="color:var(--amber);">⚠ Not verified</span>'}
-  `;
-  document.getElementById('share-link-inp').value = link;
-  // Store id for download
-  document.getElementById('share-modal').dataset.tid = id;
-  openModal('share-modal');
-}
-
-function copyShareLink() {
-  const link = document.getElementById('share-link-inp').value;
-  navigator.clipboard.writeText(link).then(()=>toast('✓ Link copied'));
-}
-
-function downloadBundleFromShare() {
-  const id = document.getElementById('share-modal').dataset.tid;
-  if(id) doExportBundle(id);
-  closeModal('share-modal');
-}
 
 async function doFork(id) {
   document.getElementById('dm-dd')?.remove(); openMenu=null;
   const t=allThreads.find(x=>x.id===id); if(!t) return;
-  const sorted=[...t.commits].sort((a,b)=>(a.accepted_at||a.created_at||'').localeCompare(b.accepted_at||b.created_at||''));
-  const tip=sorted[sorted.length-1]?.id; if(!tip||!dmKey) { toast('Copy an API key from Agents first'); return; }
-  try {
-    const r=await fetch(`/api/fork/${tip}`,{method:'POST',headers:keyH(),body:JSON.stringify({})});
-    const d=await r.json();
-    if(d.id){toast(`✓ Fork created → ${d.id.slice(-8)}`);loadThreads();}
-  } catch(e) { toast('Fork failed: '+e.message); }
+  const tip=[...t.commits].sort((a,b)=>(a.accepted_at||a.created_at||'').localeCompare(b.accepted_at||b.created_at||''));
+  const tipId=tip[tip.length-1]?.id;
+  if (!tipId||!dmKey){toast('Copy an API key from Agents first');return;}
+  try { const r=await fetch(`/api/fork/${tipId}`,{method:'POST',headers:keyH(),body:'{}'}); const d=await r.json(); if(d.id){toast(`✓ Fork → ${d.id.slice(-8)}`);loadThreads();} } catch(e){toast('Fork failed');}
 }
 
-async function doVerifyMenu(id) {
-  document.getElementById('dm-dd')?.remove(); openMenu=null;
-  if (selThread?.id!==id) selectThread(id);
-  setTimeout(runVerifyNow, 100);
-}
+function doDelete(id) { document.getElementById('dm-dd')?.remove(); openMenu=null; toast('To remove data, delete the agent from Agents.'); }
 
-async function runVerifyNow() {
-  if(!selThread) return;
-  const tip=[...selThread.commits].sort((a,b)=>(b.accepted_at||b.created_at||'').localeCompare(a.accepted_at||a.created_at||''))[0]?.id;
-  if(!tip) return;
-  document.getElementById('verify-btn').textContent='Verifying…';
-  try {
-    const r=await fetch(`/api/verify/${tip}`,{headers:dmKey?keyH():await authH()});
-    const d=await r.json();
-    const bar = document.getElementById('verify-bar');
-    bar.style.display='flex';
-    if(d.chain_intact) {
-      bar.className='verify-bar ok';
-      document.getElementById('verify-icon').textContent='✓';
-      document.getElementById('verify-text').textContent=`Record verified — ${d.length||selThread.commits.length} steps intact. Merkle proofs and signatures valid.`;
-    } else {
-      bar.className='verify-bar fail';
-      document.getElementById('verify-icon').textContent='✗';
-      document.getElementById('verify-text').textContent=`Verification failed — chain broken at step ${d.broken_at||'?'}. This record may have been modified.`;
-    }
-    // Refresh proof tab with result
-    renderProofTab(selThread);
-  } catch(e) { toast('Verify failed: '+e.message); }
-  finally { document.getElementById('verify-btn').textContent='✓ Verify'; }
-}
-
-async function doExportBundle(id) {
-  document.getElementById('dm-dd')?.remove(); openMenu=null;
-  const t=allThreads.find(x=>x.id===id); if(!t) return;
-  const tip=[...t.commits].sort((a,b)=>(b.accepted_at||b.created_at||'').localeCompare(a.accepted_at||a.created_at||''))[0]?.id;
-  if(!tip) return toast('No commits to export');
-  try {
-    const r=await fetch(`/api/export/${tip}`,{headers:dmKey?keyH():await authH()});
-    if(!r.ok) throw new Error(await r.text());
-    const blob=await r.blob();
-    const url=URL.createObjectURL(blob);
-    const a=document.createElement('a'); a.href=url; a.download=`darkmatter_proof_${tip.slice(-8)}_v3.json`; a.click();
-    URL.revokeObjectURL(url); toast('✓ Proof bundle downloaded');
-  } catch(e) { toast('Export failed: '+e.message); }
-}
-
-function exportProofBundle() { if(selThread) doExportBundle(selThread.id); }
-
-function doDelete(id) { document.getElementById('dm-dd')?.remove(); openMenu=null; toast('To remove data, delete the agent from the Agents panel.'); }
-
-// Active record header actions
-function shareActive()  { if(selThread) openShareModal(selThread.id); }
-function verifyActive() { if(selThread) { switchTab('proof'); runVerifyNow(); } }
-function activeMenu()   { if(selThread) { const btn=document.getElementById('conv-actions').lastElementChild; openRecordMenu(selThread.id,btn); } }
-
-// ── Chain drawer ──────────────────────────────────────────────────────────────
-function toggleChain() {
-  const p=document.getElementById('chain-panel');
-  if (p.classList.toggle('open') && selThread) loadChain(selThread);
-}
-function openChainCtx(ctxId) {
-  const p=document.getElementById('chain-panel'); p.classList.add('open');
-  loadChainCtx(ctxId);
-}
-
-async function loadChain(thread) {
-  const tip=thread.commits[thread.commits.length-1]?.id; if(!tip) return;
-  await loadChainCtx(tip);
-}
-
-async function loadChainCtx(ctxId) {
-  document.getElementById('chain-body').innerHTML='<div style="color:var(--text3);font-size:13.5px;">Loading chain…</div>';
-  document.getElementById('chain-verify-btn').dataset.ctx=ctxId;
-  document.getElementById('chain-export-btn').dataset.ctx=ctxId;
-  try {
-    const r=await fetch(`/api/replay/${ctxId}?mode=summary`,{headers:dmKey?keyH():await authH()});
-    if(!r.ok) throw new Error('Not found');
-    const d=await r.json();
-    const intact=d.chainIntact;
-    let html=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
-      <span style="font-family:var(--mono);font-size:11px;color:${intact?'var(--green)':'var(--red)'};font-weight:600;">${intact?'✓ Chain intact':'✗ Chain broken'}</span>
-      <span style="font-size:11px;color:var(--text3);">${d.totalSteps} steps</span>
-    </div>`;
-    (d.replay||[]).forEach((step,i)=>{
-      const isFork=step.eventType==='fork';
-      const isErr=step.integrity?.chainValid===false;
-      const name=step.createdBy?.agent_name||`Step ${step.step}`;
-      const clientTs=step.client_timestamp||step.timestamp||'';
-      const acceptTs=step.accepted_at||step.created_at||clientTs;
-      const h=step.integrity?.payload_hash?.replace('sha256:','').slice(0,12)||'';
-      html+=`<div class="ln-node">
-        <div class="ln-dot ${isFork?'fork':isErr?'err':''}"></div>
-        <div class="ln-card">
-          <div class="ln-card-head">
-            <span class="ln-step">Step ${step.step}</span>
-            <span class="ln-name">${esc(name)}</span>
-          </div>
-          ${clientTs?`<div class="ts-row" style="margin-top:3px;"><span class="ts-label">Submitted</span><span class="ts-value">${fmtTime(clientTs)}</span></div>`:''}
-          ${acceptTs&&acceptTs!==clientTs?`<div class="ts-row"><span class="ts-label">Recorded</span><span class="ts-value">${fmtTime(acceptTs)}</span></div>`:''}
-          ${h?`<div class="ln-hash">${h}···</div>`:''}
-          <div class="ln-actions">
-            <button class="ln-btn" onclick="doForkSingle('${esc(step.id||'')}')">⑂ Fork</button>
-          </div>
-        </div>
-      </div>`;
-    });
-    document.getElementById('chain-body').innerHTML=html;
-  } catch(e) {
-    document.getElementById('chain-body').innerHTML=`<div style="color:var(--red);font-size:13px;">${esc(e.message)}</div>`;
-  }
-}
-
-async function verifyChain() {
-  const ctx=document.getElementById('chain-verify-btn').dataset.ctx; if(!ctx) return;
-  const r=await fetch(`/api/verify/${ctx}`,{headers:dmKey?keyH():await authH()});
-  const d=await r.json();
-  toast(d.chain_intact?`✓ Verified — ${d.length} steps intact`:`✗ Broken at step ${d.broken_at}`);
-}
-
-async function exportChain() {
-  const ctx=document.getElementById('chain-export-btn').dataset.ctx; if(!ctx) return;
-  await doExportBundle(selThread?.id||ctx);
-}
-
-async function doForkSingle(ctxId) {
-  if(!ctxId||!dmKey){toast('Copy an API key from Agents first');return;}
-  const r=await fetch(`/api/fork/${ctxId}`,{method:'POST',headers:keyH(),body:'{}'});
-  const d=await r.json();
-  if(d.id){toast(`✓ Fork → ${d.id.slice(-8)}`);loadThreads();}
-}
-
-// ── Filters & search ──────────────────────────────────────────────────────────
+// ── Filters + search ──────────────────────────────────────────────────────────
 document.querySelectorAll('.f-btn').forEach(b=>{
   b.addEventListener('click',()=>{
     activeFilter=b.dataset.f;
     document.querySelectorAll('.f-btn').forEach(x=>x.classList.remove('on'));
-    b.classList.add('on');
-    renderList();
+    b.classList.add('on'); renderList();
   });
 });
-document.getElementById('search-inp').addEventListener('input',e=>{ searchQ=e.target.value; renderList(); });
+document.getElementById('search-inp').addEventListener('input',e=>{searchQ=e.target.value;renderList();});
 document.addEventListener('keydown',e=>{
-  if (e.key==='/') { const inp=document.getElementById('search-inp'); if(document.activeElement!==inp){e.preventDefault();inp.focus();} }
-  if (e.key==='Escape') {
-    document.getElementById('dm-dd')?.remove(); openMenu=null;
-    document.getElementById('chain-panel').classList.remove('open');
-    document.querySelectorAll('.modal-bg.open').forEach(m=>m.classList.remove('open'));
-  }
+  if(e.key==='/'){const inp=document.getElementById('search-inp');if(document.activeElement!==inp){e.preventDefault();inp.focus();}}
+  if(e.key==='Escape'){document.getElementById('dm-dd')?.remove();openMenu=null;document.querySelectorAll('.modal-bg.open').forEach(m=>m.classList.remove('open'));}
 });
 
 // ── Agents ────────────────────────────────────────────────────────────────────
@@ -1480,8 +1271,7 @@ async function createAgent() {
     if(d.error){toast('Error: '+d.error);return;}
     inp.value='';
     if(d.apiKey){dmKey=d.apiKey;localStorage.setItem('dm_api_key',d.apiKey);}
-    toast('✓ Agent created');
-    await loadAgents();
+    toast('✓ Agent created'); await loadAgents();
   } finally { btn.disabled=false; btn.textContent='+ New agent'; }
 }
 
@@ -1491,21 +1281,18 @@ async function loadAgents() {
     const r=await fetch('/dashboard/agents',{headers:h});
     if(r.status===401){await refreshSession();return loadAgents();}
     const data=await r.json();
-    if(!dmKey){const s=localStorage.getItem('dm_api_key');if(s)dmKey=s;else if(data[0]?.apiKey&&!data[0].apiKey.includes('·')){dmKey=data[0].apiKey;localStorage.setItem('dm_api_key',data[0].apiKey);}}
+    if(!dmKey){const s=localStorage.getItem('dm_api_key');if(s)dmKey=s;else if(data[0]?.apiKey){dmKey=data[0].apiKey;localStorage.setItem('dm_api_key',data[0].apiKey);}}
     const list=document.getElementById('ag-list');
     if(!data.length){
-      list.innerHTML='<div class="agents-empty"><div class="agents-empty-title">No agents yet</div><div class="agents-empty-sub">Create an agent above to get an API key. Each agent commits records independently with its own signing key.</div></div>';
+      list.innerHTML='<div class="agents-empty"><div class="agents-empty-title">No agents yet</div><div class="agents-empty-sub">Create an agent to get an API key and start committing records.</div></div>';
       return;
     }
     list.innerHTML=data.map(a=>`
       <div class="ag-card">
-        <div class="ag-card-head">
-          <div class="ag-dot"></div>
-          <div class="ag-name">${esc(a.agentName)}</div>
-        </div>
+        <div class="ag-card-head"><div class="ag-dot"></div><div class="ag-name">${esc(a.agentName)}</div></div>
         <div class="ag-id-row">
           <span class="ag-id">${esc(a.agentId)}</span>
-          <button class="ag-btn" onclick="navigator.clipboard.writeText('${esc(a.agentId)}');toast('Agent ID copied')" title="Copy agent ID">⎘ Copy ID</button>
+          <button class="ag-btn" onclick="navigator.clipboard.writeText('${esc(a.agentId)}');toast('Agent ID copied')">⎘ Copy ID</button>
         </div>
         <div class="ag-key-row">
           <span class="ag-key-label">API key</span>
@@ -1518,56 +1305,31 @@ async function loadAgents() {
   } catch(e) { console.error(e); }
 }
 
-function showKey(id,key,name) { keyModal={id,key,name}; document.getElementById('key-modal-title').textContent=name; document.getElementById('km-id').textContent=id; document.getElementById('km-key').textContent=key; openModal('key-modal'); }
-function copyKeyFromModal() { if(!keyModal)return; navigator.clipboard.writeText(keyModal.key); dmKey=keyModal.key; localStorage.setItem('dm_api_key',dmKey); toast('✓ API key copied'); }
-function copyKey(id,key) { navigator.clipboard.writeText(key); dmKey=key; localStorage.setItem('dm_api_key',key); toast('✓ Key copied'); }
-async function rotateKey() { if(!keyModal)return; if(!confirm('Rotate this key? The current key stops working immediately.'))return; const h=await authH(); const r=await fetch(`/dashboard/agents/${keyModal.id}/rotate`,{method:'POST',headers:h}); const d=await r.json(); if(d.error){toast('Error: '+d.error);return;} closeModal('key-modal'); toast('✓ Key rotated — past records remain verifiable'); await loadAgents(); }
-async function deleteAgent(id,name) { if(!confirm(`Delete agent "${name}"?\n\nThis removes the agent and its API key. Existing records are kept.`))return; const h=await authH(); await fetch(`/dashboard/agents/${id}`,{method:'DELETE',headers:h}); toast('Agent deleted'); await loadAgents(); loadThreads(); }
+function maskKey(k) { if(!k)return''; return k.slice(0,9)+'••••••••••'+k.slice(-4); }
+function showKey(id,key,name){keyModal={id,key,name};document.getElementById('key-modal-title').textContent=name;document.getElementById('km-id').textContent=id;document.getElementById('km-key').textContent=key;openModal('key-modal');}
+function copyKeyFromModal(){if(!keyModal)return;navigator.clipboard.writeText(keyModal.key);dmKey=keyModal.key;localStorage.setItem('dm_api_key',dmKey);toast('✓ Key copied');}
+function copyKey(id,key){navigator.clipboard.writeText(key);dmKey=key;localStorage.setItem('dm_api_key',key);toast('✓ Key copied');}
+async function rotateKey(){if(!keyModal)return;if(!confirm('Rotate this key? The current key stops working immediately.'))return;const h=await authH();const r=await fetch(`/dashboard/agents/${keyModal.id}/rotate`,{method:'POST',headers:h});const d=await r.json();if(d.error){toast('Error: '+d.error);return;}closeModal('key-modal');toast('✓ Key rotated — past records remain verifiable');await loadAgents();}
+async function deleteAgent(id,name){if(!confirm(`Delete agent "${name}"?`))return;const h=await authH();await fetch(`/dashboard/agents/${id}`,{method:'DELETE',headers:h});toast('Agent deleted');await loadAgents();loadThreads();}
 
-// ── Settings / Account ────────────────────────────────────────────────────────
-async function exportAll() {
-  const h=await authH(); const r=await fetch('/dashboard/commits',{headers:h}); const data=await r.json();
-  if(!data.length){toast('No records to export');return;}
-  const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));
-  const a=document.createElement('a');a.href=url;a.download=`darkmatter-export-${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(url);
-  toast(`✓ Exported ${data.length} commits`);
-}
-
-async function deleteAccount() {
-  const inp=document.getElementById('del-confirm').value.trim();
-  if(inp!=='DELETE'){toast('Type DELETE to confirm');return;}
-  const del=document.getElementById('del-choice').value==='delete';
-  const h=await authH();
-  const r=await fetch('/dashboard/account',{method:'DELETE',headers:h,body:JSON.stringify({deleteCommits:del})});
-  if(!r.ok){const d=await r.json();toast('Error: '+(d.error||'Failed'));return;}
-  localStorage.clear(); toast('Account deleted.'); setTimeout(()=>location.href='/',2000);
-}
-
-function logout() { localStorage.removeItem('dm_session'); localStorage.removeItem('dm_api_key'); sessionStorage.clear(); location.href='/login'; }
+// ── Settings ──────────────────────────────────────────────────────────────────
+async function exportAll(){const h=await authH();const r=await fetch('/dashboard/commits',{headers:h});const data=await r.json();if(!data.length){toast('No records');return;}const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download=`darkmatter-export-${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(url);toast(`✓ Exported ${data.length} commits`);}
+async function deleteAccount(){const inp=document.getElementById('del-confirm').value.trim();if(inp!=='DELETE'){toast('Type DELETE to confirm');return;}const del=document.getElementById('del-choice').value==='delete';const h=await authH();const r=await fetch('/dashboard/account',{method:'DELETE',headers:h,body:JSON.stringify({deleteCommits:del})});if(!r.ok){const d=await r.json();toast('Error: '+(d.error||'Failed'));return;}localStorage.clear();toast('Account deleted.');setTimeout(()=>location.href='/',2000);}
+function logout(){localStorage.removeItem('dm_session');localStorage.removeItem('dm_api_key');sessionStorage.clear();location.href='/login';}
 
 // ── Modals ────────────────────────────────────────────────────────────────────
-function openModal(id) { document.getElementById(id).classList.add('open'); }
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
-function closeBg(id,e) { if(e.target===document.getElementById(id)) closeModal(id); }
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+function closeBg(id,e){if(e.target===document.getElementById(id))closeModal(id);}
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 async function init() {
-  // Load records immediately (SWR: cached first, then fresh)
   loadThreads();
-
-  // Show admin link for superuser
   try {
-    const h = await authH();
-    const r = await fetch('/admin/stats', { headers: h });
-    if (r.ok) {
-      const adminLink = document.createElement('button');
-      adminLink.className = 'h-nav-link';
-      adminLink.textContent = 'Admin ↗';
-      adminLink.style.cssText = 'color:var(--violet);font-weight:600;';
-      adminLink.onclick = () => location.href='/admin';
-      document.querySelector('.h-nav').appendChild(adminLink);
-    }
-  } catch(e) {}
+    const h=await authH();
+    const r=await fetch('/admin/stats',{headers:h});
+    if(r.ok){const adminLink=document.createElement('button');adminLink.className='h-nav-link';adminLink.textContent='Admin ↗';adminLink.style.cssText='color:var(--violet);font-weight:600;';adminLink.onclick=()=>location.href='/admin';document.querySelector('.h-nav').appendChild(adminLink);}
+  } catch(e){}
 }
 init();
 </script>
