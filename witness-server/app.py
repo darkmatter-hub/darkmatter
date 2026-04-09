@@ -1,246 +1,203 @@
 #!/usr/bin/env python3
 """
-DarkMatter Reference Witness Server
-=====================================
-A standalone HTTP server that acts as an external witness for DarkMatter checkpoints.
-
-This is what an independent auditing organisation (Deloitte, E&Y, university,
-independent researcher) would run to co-sign DarkMatter checkpoints.
-
-What it does:
-  1. Receives checkpoint delivery from DarkMatter (POST /witness)
-  2. Verifies DarkMatter's own server signature on the checkpoint
-  3. Verifies the checkpoint is structurally valid (correct fields, no missing data)
-  4. Signs the same canonical checkpoint envelope with the witness's own Ed25519 key
-  5. Returns the witness signature to DarkMatter
-  6. Stores a local log of all witnessed checkpoints for independent audit
-
-What the witness server needs:
-  - Its own Ed25519 keypair (private key stays on witness server only)
-  - The witness's public key must be registered with DarkMatter
-  - An HTTPS endpoint DarkMatter can reach
-
-What this proves:
-  "At timestamp T, [witness organisation] independently confirmed that the
-   DarkMatter log had Merkle tree root R at tree size N, and that DarkMatter's
-   server signature on this checkpoint is valid."
-
-Witness servers are entirely independent. They cannot be pressured to produce
-a false signature because they have nothing to gain from lying — their
-professional reputation is the thing they're staking.
-
-Usage:
-  # 1. Generate witness keypair
-  python darkmatter_witness_server.py --generate-keys --name "My Organisation"
-
-  # 2. Register public key with DarkMatter
-  #    POST https://darkmatterhub.ai/api/admin/witnesses
-  #    { "name": "My Organisation", "publicKey": "<pem>", "endpointUrl": "https://..." }
-
-  # 3. Run the witness server
-  python darkmatter_witness_server.py --private-key witness.private.pem --port 8080
-
-Requirements:
-  pip install cryptography
+DarkMatter Witness Server — Railway deployment
+===============================================
+Reads private key from WITNESS_PRIVATE_KEY environment variable.
+Set this in Railway dashboard → Variables.
 """
 
 import sys
+import os
 import json
 import hashlib
 import math
-import re
-import argparse
 import logging
+import argparse
 from datetime import datetime, timezone
 from pathlib import Path
 from http.server import HTTPServer, BaseHTTPRequestHandler
-from io import BytesIO
 
 try:
     from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
     from cryptography.hazmat.primitives import serialization
     from cryptography.hazmat.primitives.serialization import load_pem_public_key, load_pem_private_key
     from cryptography.exceptions import InvalidSignature
-    CRYPTO = True
 except ImportError:
-    print('ERROR: pip install cryptography')
+    print("ERROR: cryptography not installed. Run: pip install cryptography")
     sys.exit(1)
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s [witness] %(message)s')
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [witness] %(message)s'
+)
 log = logging.getLogger('witness')
 
 
-# ─── Canonical serialization (must match DarkMatter spec v1 exactly) ──────────
+# ─── Canonical serialization (DarkMatter Spec v1.0) ──────────────────────────
 
 def canonicalize(value) -> str:
     if value is None:           return 'null'
     if isinstance(value, bool): return 'true' if value else 'false'
     if isinstance(value, int):  return str(value)
     if isinstance(value, float):
-        if not math.isfinite(value): raise TypeError(f'non-finite: {value}')
+        if not math.isfinite(value):
+            raise TypeError(f'non-finite number rejected: {value}')
         s = format(value, '.17g')
-        if '.' not in s and 'e' not in s: s += '.0'
+        if '.' not in s and 'e' not in s:
+            s += '.0'
         elif '.' in s and 'e' not in s:
             s = s.rstrip('0')
             if s.endswith('.'): s += '0'
         return s
-    if isinstance(value, str):  return json.dumps(value, ensure_ascii=False)
-    if isinstance(value, list): return '[' + ','.join(canonicalize(item) for item in value) + ']'
+    if isinstance(value, str):
+        return json.dumps(value, ensure_ascii=False)
+    if isinstance(value, list):
+        return '[' + ','.join(canonicalize(item) for item in value) + ']'
     if isinstance(value, dict):
-        pairs = [json.dumps(k, ensure_ascii=False) + ':' + canonicalize(value[k])
-                 for k in sorted(value.keys())]
+        pairs = [
+            json.dumps(k, ensure_ascii=False) + ':' + canonicalize(value[k])
+            for k in sorted(value.keys())
+        ]
         return '{' + ','.join(pairs) + '}'
-    raise TypeError(type(value).__name__)
+    raise TypeError(f'Cannot canonicalize: {type(value).__name__}')
 
 
-# ─── Key generation ───────────────────────────────────────────────────────────
+# ─── Checkpoint processing ────────────────────────────────────────────────────
 
-def generate_keypair(name: str, output_dir: str = '.') -> dict:
-    private_key = Ed25519PrivateKey.generate()
-    public_key  = private_key.public_key()
-
-    private_pem = private_key.private_bytes(
-        serialization.Encoding.PEM,
-        serialization.PrivateFormat.PKCS8,
-        serialization.NoEncryption()
-    )
-    public_pem = public_key.public_bytes(
-        serialization.Encoding.PEM,
-        serialization.PublicFormat.SubjectPublicKeyInfo
-    )
-
-    pub_bytes  = public_key.public_bytes(serialization.Encoding.DER, serialization.PublicFormat.SubjectPublicKeyInfo)
-    witness_id = 'wit_' + hashlib.sha256(pub_bytes).hexdigest()[:16]
-
-    safe = name.lower().replace(' ', '-')
-    out  = Path(output_dir)
-    priv = out / f'{safe}.witness.private.pem'
-    pub  = out / f'{safe}.witness.public.pem'
-
-    priv.write_bytes(private_pem)
-    priv.chmod(0o600)
-    pub.write_bytes(public_pem)
-
-    print(f'✓ Witness keypair generated')
-    print(f'  Witness ID:  {witness_id}')
-    print(f'  Private key: {priv}  ← keep secret, never share')
-    print(f'  Public key:  {pub}   ← register this with DarkMatter')
-    print(f'')
-    print(f'  Register with DarkMatter:')
-    print(f'  POST https://darkmatterhub.ai/api/admin/witnesses')
-    print(f'  {{')
-    print(f'    "name": "{name}",')
-    print(f'    "publicKey": "<contents of {pub}>",')
-    print(f'    "endpointUrl": "https://your-witness-server.example.com/witness"')
-    print(f'  }}')
-    return {'witness_id': witness_id, 'private_key_path': str(priv), 'public_key_path': str(pub)}
-
-
-# ─── Checkpoint verification and signing ──────────────────────────────────────
-
-def build_checkpoint_envelope(checkpoint: dict) -> dict:
-    """Extract the canonical envelope from a checkpoint for signing/verification."""
+def build_checkpoint_envelope(cp: dict) -> dict:
+    """
+    Build the exact canonical envelope that DarkMatter signed.
+    Key order matches DarkMatter Spec v1.0 checkpoint format.
+    """
     return {
-        'schema_version':     checkpoint.get('schema_version', '3'),
-        'checkpoint_id':      checkpoint['checkpoint_id'],
-        'tree_root':          checkpoint['tree_root'],
-        'tree_size':          checkpoint['tree_size'],
-        'log_root':           checkpoint['log_root'],
-        'log_position':       checkpoint.get('position') or checkpoint.get('log_position'),
-        'timestamp':          checkpoint['timestamp'],
-        'previous_cp_id':     checkpoint.get('previous_cp_id'),
-        'previous_tree_root': checkpoint.get('previous_tree_root'),
+        'schema_version':     cp.get('schema_version', '3'),
+        'checkpoint_id':      cp['checkpoint_id'],
+        'tree_root':          cp['tree_root'],
+        'tree_size':          cp['tree_size'],
+        'log_root':           cp['log_root'],
+        'log_position':       cp.get('position') or cp.get('log_position'),
+        'timestamp':          cp['timestamp'],
+        'previous_cp_id':     cp.get('previous_cp_id'),
+        'previous_tree_root': cp.get('previous_tree_root'),
     }
 
 
 def process_checkpoint(body: dict, private_key_pem: bytes, witness_log_path: Path) -> dict:
     """
-    Core witness logic: verify DarkMatter's signature then sign the checkpoint.
-    Returns the response dict to send back to DarkMatter.
+    Core witness logic:
+    1. Verify DarkMatter's signature on the checkpoint
+    2. Sign the same envelope with our witness key
+    3. Log locally
+    4. Return signature to DarkMatter
     """
-    checkpoint     = body.get('checkpoint', {})
-    dm_pubkey_pem  = body.get('darkmatter_pubkey', '')
+    checkpoint    = body.get('checkpoint', {})
+    dm_pubkey_pem = body.get('darkmatter_pubkey', '')
 
     # Validate required fields
     required = ['checkpoint_id', 'tree_root', 'tree_size', 'log_root', 'timestamp', 'server_sig']
     missing  = [f for f in required if not checkpoint.get(f)]
     if missing:
-        return {'error': f'Missing required checkpoint fields: {missing}'}
+        return {'error': f'Missing required fields: {missing}'}
 
-    # Build canonical envelope
+    # Build canonical envelope — this is what gets signed
     envelope = build_checkpoint_envelope(checkpoint)
     msg      = canonicalize(envelope).encode('utf-8')
 
-    # 1. Verify DarkMatter's server signature
+    # Step 1: Verify DarkMatter's server signature
     try:
-        dm_pub = load_pem_public_key(dm_pubkey_pem.encode())
-        sig    = bytes.fromhex(checkpoint['server_sig'])
-        dm_pub.verify(sig, msg)
-        log.info(f'DarkMatter sig verified for {checkpoint["checkpoint_id"]}')
-    except (InvalidSignature, Exception) as e:
-        log.warning(f'DarkMatter sig INVALID for {checkpoint["checkpoint_id"]}: {e}')
-        return {'error': f'DarkMatter server signature invalid: {e}'}
+        dm_pub  = load_pem_public_key(dm_pubkey_pem.encode())
+        dm_sig  = bytes.fromhex(checkpoint['server_sig'])
+        dm_pub.verify(dm_sig, msg)
+        log.info(f"DarkMatter sig verified: {checkpoint['checkpoint_id']}")
+    except InvalidSignature:
+        log.warning(f"DarkMatter sig INVALID: {checkpoint['checkpoint_id']}")
+        return {'error': 'DarkMatter server signature is invalid — refusing to co-sign'}
+    except Exception as e:
+        log.error(f"Sig verification error: {e}")
+        return {'error': f'Signature verification failed: {e}'}
 
-    # 2. Sign with witness private key
+    # Step 2: Sign with our witness private key
     priv_key     = load_pem_private_key(private_key_pem, password=None)
     witnessed_at = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
     witness_sig  = priv_key.sign(msg).hex()
 
-    # Derive witness ID from our public key
-    pub_bytes  = priv_key.public_key().public_bytes(
-        serialization.Encoding.DER, serialization.PublicFormat.SubjectPublicKeyInfo)
-    witness_id = 'wit_' + hashlib.sha256(pub_bytes).hexdigest()[:16]
+    # Derive witness_id from our public key (deterministic)
+    pub_der    = priv_key.public_key().public_bytes(
+        serialization.Encoding.DER,
+        serialization.PublicFormat.SubjectPublicKeyInfo
+    )
+    witness_id = 'wit_' + hashlib.sha256(pub_der).hexdigest()[:16]
 
-    log.info(f'Signed checkpoint {checkpoint["checkpoint_id"]} tree_size={checkpoint["tree_size"]}')
+    log.info(f"Signed checkpoint {checkpoint['checkpoint_id']} "
+             f"tree_size={checkpoint['tree_size']} "
+             f"tree_root={checkpoint['tree_root'][:12]}...")
 
-    # 3. Append to local witness log
+    # Step 3: Append to local witness log (JSONL — one line per checkpoint)
     log_entry = {
-        'checkpoint_id': checkpoint['checkpoint_id'],
-        'tree_root':     checkpoint['tree_root'],
-        'tree_size':     checkpoint['tree_size'],
-        'dm_sig_valid':  True,
-        'witness_sig':   witness_sig,
-        'witnessed_at':  witnessed_at,
+        'checkpoint_id':  checkpoint['checkpoint_id'],
+        'tree_root':      checkpoint['tree_root'],
+        'tree_size':      checkpoint['tree_size'],
+        'log_position':   envelope['log_position'],
+        'timestamp':      checkpoint['timestamp'],
+        'dm_sig_valid':   True,
+        'witness_sig':    witness_sig,
+        'witnessed_at':   witnessed_at,
+        'witness_id':     witness_id,
     }
-    with open(witness_log_path, 'a') as f:
-        f.write(json.dumps(log_entry) + '\n')
+    try:
+        with open(witness_log_path, 'a') as f:
+            f.write(json.dumps(log_entry) + '\n')
+    except Exception as e:
+        log.error(f"Failed to write witness log: {e}")
 
+    # Step 4: Return signature to DarkMatter
     return {
-        'witness_id':    witness_id,
-        'checkpoint_id': checkpoint['checkpoint_id'],
-        'tree_root':     checkpoint['tree_root'],
-        'tree_size':     checkpoint['tree_size'],
-        'witness_sig':   witness_sig,
-        'witnessed_at':  witnessed_at,
+        'witness_id':     witness_id,
+        'checkpoint_id':  checkpoint['checkpoint_id'],
+        'tree_root':      checkpoint['tree_root'],
+        'tree_size':      checkpoint['tree_size'],
+        'witness_sig':    witness_sig,
+        'witnessed_at':   witnessed_at,
     }
 
 
-# ─── HTTP server ──────────────────────────────────────────────────────────────
+# ─── HTTP handler ─────────────────────────────────────────────────────────────
 
-def make_handler(private_key_pem: bytes, witness_log_path: Path):
+def make_handler(private_key_pem: bytes, witness_log_path: Path, witness_id: str):
     class WitnessHandler(BaseHTTPRequestHandler):
-        def log_message(self, format, *args):
-            log.info(f'{self.client_address[0]} - {format % args}')
+
+        def log_message(self, fmt, *args):
+            log.info(f"{self.client_address[0]} — {fmt % args}")
 
         def do_GET(self):
-            if self.path == '/health':
-                self._respond(200, {'status': 'ok', 'role': 'darkmatter_witness'})
+            if self.path in ('/', '/health'):
+                self._json(200, {
+                    'status':      'ok',
+                    'role':        'darkmatter_witness',
+                    'witness_id':  witness_id,
+                    'spec':        'https://darkmatterhub.ai/docs#integrity-spec',
+                })
             else:
-                self._respond(404, {'error': 'not found'})
+                self._json(404, {'error': 'not found'})
 
         def do_POST(self):
             if self.path not in ('/witness', '/witness/'):
-                return self._respond(404, {'error': 'not found'})
+                return self._json(404, {'error': 'not found — use POST /witness'})
 
-            length = int(self.headers.get('Content-Length', 0))
-            body   = json.loads(self.rfile.read(length))
+            try:
+                length = int(self.headers.get('Content-Length', 0))
+                if length == 0:
+                    return self._json(400, {'error': 'empty body'})
+                body   = json.loads(self.rfile.read(length))
+            except Exception as e:
+                return self._json(400, {'error': f'invalid JSON: {e}'})
+
             result = process_checkpoint(body, private_key_pem, witness_log_path)
-
             status = 200 if 'witness_sig' in result else 400
-            self._respond(status, result)
+            self._json(status, result)
 
-        def _respond(self, status: int, body: dict):
-            data = json.dumps(body).encode()
+        def _json(self, status: int, body: dict):
+            data = json.dumps(body, indent=2).encode()
             self.send_response(status)
             self.send_header('Content-Type', 'application/json')
             self.send_header('Content-Length', len(data))
@@ -250,40 +207,56 @@ def make_handler(private_key_pem: bytes, witness_log_path: Path):
     return WitnessHandler
 
 
-# ─── Main ─────────────────────────────────────────────────────────────────────
+# ─── Startup ──────────────────────────────────────────────────────────────────
 
 def main():
-    ap = argparse.ArgumentParser(description='DarkMatter reference witness server')
-    ap.add_argument('--generate-keys', action='store_true', help='Generate a new witness keypair and exit')
-    ap.add_argument('--name',        default='DarkMatter Witness', help='Organisation name (for key generation)')
-    ap.add_argument('--private-key', help='Path to witness Ed25519 private key PEM')
-    ap.add_argument('--port',        type=int, default=8080, help='Port to listen on (default: 8080)')
-    ap.add_argument('--log-file',    default='witness_log.jsonl', help='Path to local witness log')
+    ap = argparse.ArgumentParser(description='DarkMatter witness server')
+    ap.add_argument('--port',       type=int, default=8080)
+    ap.add_argument('--log-file',   default='witness_log.jsonl')
+    ap.add_argument('--private-key', help='Path to private key PEM file (alternative to env var)')
     args = ap.parse_args()
 
-    if args.generate_keys:
-        generate_keypair(args.name)
-        sys.exit(0)
-
-    if not args.private_key:
-        print('Error: --private-key required (or use --generate-keys to create one)')
+    # Load private key — env var takes priority over file
+    key_env = os.environ.get('WITNESS_PRIVATE_KEY', '').strip()
+    if key_env:
+        # Railway env var: replace literal \n with actual newlines
+        private_key_pem = key_env.replace('\\n', '\n').encode()
+        log.info("Private key loaded from WITNESS_PRIVATE_KEY environment variable")
+    elif args.private_key:
+        private_key_pem = Path(args.private_key).read_bytes()
+        log.info(f"Private key loaded from {args.private_key}")
+    else:
+        log.error("No private key found. Set WITNESS_PRIVATE_KEY env var or pass --private-key")
         sys.exit(1)
 
-    private_key_pem  = Path(args.private_key).read_bytes()
-    witness_log_path = Path(args.log_file)
+    # Validate key and derive witness_id
+    try:
+        priv    = load_pem_private_key(private_key_pem, password=None)
+        pub_der = priv.public_key().public_bytes(
+            serialization.Encoding.DER,
+            serialization.PublicFormat.SubjectPublicKeyInfo
+        )
+        pub_pem = priv.public_key().public_bytes(
+            serialization.Encoding.PEM,
+            serialization.PublicFormat.SubjectPublicKeyInfo
+        ).decode()
+        witness_id = 'wit_' + hashlib.sha256(pub_der).hexdigest()[:16]
+    except Exception as e:
+        log.error(f"Invalid private key: {e}")
+        sys.exit(1)
 
-    # Derive and display witness ID on startup
-    priv    = load_pem_private_key(private_key_pem, password=None)
-    pub_der = priv.public_key().public_bytes(
-        serialization.Encoding.DER, serialization.PublicFormat.SubjectPublicKeyInfo)
-    witness_id = 'wit_' + hashlib.sha256(pub_der).hexdigest()[:16]
+    log.info(f"Witness ID:  {witness_id}")
+    log.info(f"Witness log: {args.log_file}")
+    log.info(f"Port:        {args.port}")
+    log.info(f"Public key (register this with DarkMatter):")
+    for line in pub_pem.strip().split('\n'):
+        log.info(f"  {line}")
 
-    log.info(f'Witness ID:  {witness_id}')
-    log.info(f'Witness log: {witness_log_path}')
-    log.info(f'Listening on port {args.port}')
-    log.info(f'Endpoint to register: http://your-host:{args.port}/witness')
+    witness_log = Path(args.log_file)
+    handler     = make_handler(private_key_pem, witness_log, witness_id)
 
-    server = HTTPServer(('0.0.0.0', args.port), make_handler(private_key_pem, witness_log_path))
+    server = HTTPServer(('0.0.0.0', args.port), handler)
+    log.info(f"Witness server ready — POST /witness to submit checkpoints")
     server.serve_forever()
 
 
