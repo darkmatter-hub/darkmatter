@@ -32,14 +32,28 @@ let _serverPubPem = null;
 
 function _initKey() {
   if (_serverKey) return;
-  if (process.env.DM_LOG_SIGNING_KEY_PEM) {
-    _serverKey = crypto.createPrivateKey(process.env.DM_LOG_SIGNING_KEY_PEM);
+  const rawPem = process.env.DM_LOG_SIGNING_KEY_PEM;
+  if (rawPem) {
+    try {
+      // Railway stores env vars with literal \n — normalize to real newlines
+      const normalizedPem = rawPem.replace(/\\n/g, '\n').replace(/\n/g, '\n').trim();
+      _serverKey = crypto.createPrivateKey(normalizedPem);
+      console.log('[append-log] Signing key loaded from DM_LOG_SIGNING_KEY_PEM');
+    } catch (err) {
+      console.error('[append-log] Failed to load DM_LOG_SIGNING_KEY_PEM:', err.message);
+      console.error('[append-log] Check that the PEM value in Railway has proper newlines');
+      const { privateKey } = crypto.generateKeyPairSync('ed25519');
+      _serverKey = privateKey;
+      console.warn('[append-log] WARNING: Falling back to ephemeral key — checkpoints will not verify across restarts');
+    }
   } else {
     const { privateKey } = crypto.generateKeyPairSync('ed25519');
     _serverKey = privateKey;
-    console.warn('[append-log] WARNING: Using ephemeral signing key. Set DM_LOG_SIGNING_KEY_PEM.');
+    console.warn('[append-log] WARNING: DM_LOG_SIGNING_KEY_PEM not set — using ephemeral key');
   }
   _serverPubPem = crypto.createPublicKey(_serverKey).export({ type: 'spki', format: 'pem' });
+  console.log('[append-log] Server public key fingerprint:', 
+    crypto.createHash('sha256').update(_serverPubPem).digest('hex').slice(0, 16) + '...');
 }
 
 function getServerPublicKeyPem() { _initKey(); return _serverPubPem; }
