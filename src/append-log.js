@@ -102,8 +102,13 @@ function buildCheckpointEnvelope(treeRoot, treeSize, logRoot, logPosition, times
 
 function signCheckpointEnvelope(envelope) {
   _initKey();
-  const msg = Buffer.from(canonicalize(envelope), 'utf8');
-  return crypto.sign(null, msg, _serverKey).toString('hex');
+  const canonical = canonicalize(envelope);
+  const msg = Buffer.from(canonical, 'utf8');
+  const sig = crypto.sign(null, msg, _serverKey).toString('hex');
+  // Debug: log what we're signing so we can compare with what witness receives
+  console.log('[append-log] Signing envelope:', canonical.slice(0, 150) + '...');
+  console.log('[append-log] Signature:', sig.slice(0, 32) + '...');
+  return sig;
 }
 
 function verifyCheckpointSig(envelope, signatureHex, publicKeyPem) {
