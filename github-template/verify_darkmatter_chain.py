@@ -461,11 +461,60 @@ def main():
     else:
         print(f'Phase 3.5— Checkpoint consistency:   {c(None)}  (pass --checkpoint A --checkpoint-b B)')
 
+    # ── Phase 4A: Witness signatures ───────────────────────────
+    witness_ok = None
+    if bundle_meta := (data if isinstance(data, dict) else {}):
+        cp = bundle_meta.get('checkpoint') or {}
+        witness_sigs = cp.get('witness_signatures') or []
+        if witness_sigs:
+            w_valid = 0; w_failed = 0
+
+            # Rebuild checkpoint envelope for verification (same as server builds)
+            cp_envelope = {
+                'schema_version':     cp.get('schema_version', '3'),
+                'checkpoint_id':      cp.get('checkpoint_id'),
+                'tree_root':          cp.get('tree_root'),
+                'tree_size':          cp.get('tree_size'),
+                'log_root':           cp.get('log_root'),
+                'log_position':       cp.get('position') or cp.get('log_position'),
+                'timestamp':          cp.get('timestamp'),
+                'previous_cp_id':     cp.get('previous_cp_id'),
+                'previous_tree_root': cp.get('previous_tree_root'),
+            }
+            cp_msg = canonicalize(cp_envelope).encode('utf-8')
+
+            for ws in witness_sigs:
+                pubkey_pem = ws.get('public_key_pem')
+                wit_sig    = ws.get('witness_sig')
+                wit_id     = ws.get('witness_id', '?')
+                wit_name   = ws.get('witness_name', wit_id)
+
+                if not pubkey_pem or not wit_sig:
+                    if args.verbose:
+                        print(f'  ~ {wit_name}: no public key in bundle')
+                    continue
+
+                try:
+                    sig_bytes = bytes.fromhex(wit_sig)
+                    load_pem_public_key(pubkey_pem.encode()).verify(sig_bytes, cp_msg)
+                    w_valid += 1
+                    if args.verbose: print(f'  ✓ {wit_name} ({wit_id[:16]}...)')
+                except Exception as e:
+                    w_failed += 1
+                    if args.verbose: print(f'  ✗ {wit_name} ({wit_id[:16]}...): {e}')
+
+            witness_ok = w_failed == 0 and w_valid > 0
+            print(f'Phase 4A— Witness signatures:   {c(witness_ok)}  ({w_valid} valid, {w_failed} failed of {len(witness_sigs)} witnesses)')
+        else:
+            print(f'Phase 4A— Witness signatures:   {c(None)}  (no witness_signatures in checkpoint — not yet witnessed)')
+    else:
+        print(f'Phase 4A— Witness signatures:   {c(None)}  (single chain export — use bundle export for witness data)')
+
     # ── Summary ───────────────────────────────────────────────────────────────
     required_ok = struct['ok']
     sig_ok      = sigs['ok'] if pubkeys else None
     chk_ok      = cp_result['ok'] if cp_result else None
-    all_ok      = required_ok and (sig_ok is None or sig_ok) and (chk_ok is None or chk_ok) and (phase3_ok is None or phase3_ok) and (consistency_ok is None or consistency_ok)
+    all_ok      = required_ok and (sig_ok is None or sig_ok) and (chk_ok is None or chk_ok) and (phase3_ok is None or phase3_ok) and (consistency_ok is None or consistency_ok) and (witness_ok is None or witness_ok)
 
     print()
     print('────────────────────────────────────────────')
@@ -490,6 +539,7 @@ def main():
             'signatures': {'ok': sig_ok, 'verified': sigs['verified'], 'failures': sigs['failures']},
             'merkle':     {'ok': phase3_ok, 'valid': proofs_valid if proofs_found else 0, 'total': proofs_found if 'proofs_found' in dir() else 0},
             'checkpoint': {'ok': chk_ok},
+            'witnesses':  {'ok': witness_ok},
         }, indent=2))
 
     sys.exit(0 if all_ok else 1)

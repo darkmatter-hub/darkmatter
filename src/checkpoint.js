@@ -30,6 +30,8 @@ const {
   signCheckpointEnvelope,
   CHECKPOINT_SCHEMA_VERSION,
 } = require('./append-log');
+const { broadcastToWitnesses }   = require('./witness');
+const { getServerPublicKeyPem }  = require('./append-log');
 
 const INTERVAL_MS = 10 * 60 * 1000; // 10 minutes
 
@@ -164,6 +166,12 @@ async function publishCheckpoint(supabaseService) {
     }
 
     console.log(`[checkpoint] ${checkpoint.checkpoint_id} pos=${checkpoint.log_position} tree_root=${checkpoint.tree_root.slice(0,12)}... github=${githubResult.published}`);
+
+    // ── Phase 4A: broadcast to witnesses (non-blocking) ──────────────────────
+    broadcastToWitnesses(supabaseService, checkpoint, getServerPublicKeyPem())
+      .then(r => console.log(`[witness] Broadcast complete: ${r.sent} witnesses`))
+      .catch(e => console.error('[witness] Broadcast error:', e.message));
+
     return { checkpoint, github: githubResult };
 
   } catch (err) {

@@ -22,6 +22,10 @@ const {
   registerKey, rotateKey, revokeKey,
   getKeyAtTime, getKeyHistory, verifyCommitSignature,
 } = require('./keys');
+const {
+  registerWitness, acceptWitnessSignature,
+  verifyWitnessSignature,
+} = require('./witness');
 
 const app = express();
 
@@ -1517,12 +1521,43 @@ app.get('/api/export/:ctxId', requireApiKey, async (req, res) => {
         chain_hash:      'sha256:' + chainHash,
         timestamp_range: { from: root?.timestamp, to: tip?.timestamp },
       },
-      checkpoint:    checkpoint ? {
-        ...checkpoint,
-        note: checkpoint.position >= (tipLogEntry?.position ?? -1)
-          ? 'This checkpoint covers the tip of this chain'
-          : 'Latest available checkpoint — tip may not yet be checkpointed',
-      } : null,
+      checkpoint:    checkpoint ? await (async () => {
+        // Fetch witness signatures for this checkpoint
+        const { data: witSigs } = await supabaseService
+          .from('witness_sigs')
+          .select('witness_id, witness_sig, witnessed_at, sig_valid')
+          .eq('checkpoint_id', checkpoint.checkpoint_id);
+
+        // Fetch witness public keys for offline verification
+        const witIds = (witSigs || []).map(w => w.witness_id);
+        let witnessKeys = [];
+        if (witIds.length > 0) {
+          const { data: wits } = await supabaseService
+            .from('witnesses')
+            .select('witness_id, name, public_key_pem')
+            .in('witness_id', witIds);
+          witnessKeys = wits || [];
+        }
+
+        const witKeyMap = {};
+        for (const w of witnessKeys) witKeyMap[w.witness_id] = w;
+
+        return {
+          ...checkpoint,
+          witness_signatures: (witSigs || []).map(ws => ({
+            witness_id:    ws.witness_id,
+            witness_name:  witKeyMap[ws.witness_id]?.name || 'unknown',
+            witness_sig:   ws.witness_sig,
+            witnessed_at:  ws.witnessed_at,
+            sig_valid:     ws.sig_valid,
+            public_key_pem: witKeyMap[ws.witness_id]?.public_key_pem || null,
+          })),
+          witness_count:  checkpoint.witness_count || 0,
+          note: checkpoint.position >= (tipLogEntry?.position ?? -1)
+            ? 'This checkpoint covers the tip of this chain'
+            : 'Latest available checkpoint — tip may not yet be checkpointed',
+        };
+      })() : null,
       server_pubkey: {
         algorithm:   'Ed25519',
         public_key:  getServerPublicKeyPem(),
@@ -1546,6 +1581,121 @@ app.get('/api/export/:ctxId', requireApiKey, async (req, res) => {
   }
 });
 
+
+
+// ═══════════════════════════════════════════════════
+// PHASE 4A — WITNESS API
+// ═══════════════════════════════════════════════════
+
+// ── GET /api/witnesses ────────────────────────────────────────────────────────
+// List all active witnesses. Public — witness identities are public information.
+app.get('/api/witnesses', async (req, res) => {
+  try {
+    const { data } = await supabaseService
+      .from('witnesses')
+      .select('witness_id, name, registered_at, endpoint_url')
+      .eq('active', true)
+      .order('registered_at', { ascending: true });
+    res.json({ witnesses: data || [], count: (data || []).length });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── GET /api/witnesses/:witnessId/pubkey ──────────────────────────────────────
+// Get a witness's public key. No auth — public information.
+app.get('/api/witnesses/:witnessId/pubkey', async (req, res) => {
+  try {
+    const { data } = await supabaseService
+      .from('witnesses')
+      .select('witness_id, name, public_key_pem, registered_at')
+      .eq('witness_id', req.params.witnessId)
+      .single();
+    if (!data) return res.status(404).json({ error: 'Witness not found' });
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── POST /api/witness/sign ────────────────────────────────────────────────────
+// Submit a witness signature on a checkpoint.
+// Called by witnesses after they receive a checkpoint delivery and sign it.
+// Auth: witness identifies via X-Witness-ID header; sig verified against registered pubkey.
+app.post('/api/witness/sign', async (req, res) => {
+  try {
+    const { checkpoint_id, witness_sig, witnessed_at } = req.body;
+    const witnessId = req.headers['x-witness-id'];
+
+    if (!checkpoint_id || !witness_sig || !witnessId) {
+      return res.status(400).json({ error: 'checkpoint_id, witness_sig, X-Witness-ID required' });
+    }
+
+    const result = await acceptWitnessSignature(
+      supabaseService,
+      checkpoint_id,
+      witnessId,
+      witness_sig,
+      witnessed_at,
+    );
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// ── GET /api/log/checkpoint/:checkpointId/witnesses ───────────────────────────
+// Get all witness signatures for a specific checkpoint. No auth.
+app.get('/api/log/checkpoint/:checkpointId/witnesses', async (req, res) => {
+  try {
+    const { data: sigs } = await supabaseService
+      .from('witness_sigs')
+      .select('witness_id, witness_sig, witnessed_at, sig_valid')
+      .eq('checkpoint_id', req.params.checkpointId);
+
+    const witIds = (sigs || []).map(s => s.witness_id);
+    let witnesses = [];
+    if (witIds.length > 0) {
+      const { data } = await supabaseService
+        .from('witnesses')
+        .select('witness_id, name, public_key_pem')
+        .in('witness_id', witIds);
+      witnesses = data || [];
+    }
+
+    const witMap = {};
+    for (const w of witnesses) witMap[w.witness_id] = w;
+
+    res.json({
+      checkpoint_id: req.params.checkpointId,
+      witness_count: (sigs || []).length,
+      witnesses: (sigs || []).map(s => ({
+        ...s,
+        name:           witMap[s.witness_id]?.name,
+        public_key_pem: witMap[s.witness_id]?.public_key_pem,
+      })),
+      pubkey_url: 'https://darkmatterhub.ai/api/witnesses',
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── POST /api/admin/witnesses (superuser only) ────────────────────────────────
+// Register a new witness. Superuser only.
+app.post('/api/admin/witnesses', requireApiKey, async (req, res) => {
+  if (req.agent?.email !== process.env.SUPERUSER_EMAIL) {
+    return res.status(403).json({ error: 'Superuser only' });
+  }
+  try {
+    const { name, publicKey, endpointUrl } = req.body;
+    if (!name || !publicKey) return res.status(400).json({ error: 'name and publicKey required' });
+    const result = await registerWitness(supabaseService, name, publicKey, endpointUrl);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
 
 // ═══════════════════════════════════════════════════
 // KEY LIFECYCLE API
