@@ -18,6 +18,10 @@ const {
   generateInclusionProof, verifyInclusionProof,
 } = require('./merkle');
 const { publishCheckpoint, startCheckpointScheduler } = require('./checkpoint');
+const {
+  registerKey, rotateKey, revokeKey,
+  getKeyAtTime, getKeyHistory, verifyCommitSignature,
+} = require('./keys');
 
 const app = express();
 
@@ -773,9 +777,12 @@ app.post('/api/commit', apiLimiter, requireApiKey, async (req, res) => {
     const VALID_TYPES = ['commit', 'revert', 'override', 'branch', 'merge', 'error', 'spawn', 'timeout', 'retry', 'checkpoint', 'consent', 'redact', 'escalate', 'audit'];
     const resolvedType = (eventType && VALID_TYPES.includes(eventType)) ? eventType : 'commit';
 
-    const commitId  = 'ctx_' + Date.now() + '_' + crypto.randomBytes(6).toString('hex');
-    const timestamp = new Date().toISOString();
+    const commitId      = 'ctx_' + Date.now() + '_' + crypto.randomBytes(6).toString('hex');
+    const acceptedAt    = new Date().toISOString().replace(/\.\d+Z$/, 'Z'); // server ledger time
+    const timestamp     = acceptedAt; // kept for backwards compat
     const schemaVersion = '1.0';
+    // client_timestamp: what the agent asserted in their envelope (may differ from accepted_at)
+    const clientTimestamp = req.body.envelope?.timestamp || acceptedAt;
 
     // ── Phase 1: Client-side hashing support ──────────────────────────────
     // If the client supplied pre-computed hashes (commit_verified / Phase 1 SDK),
@@ -859,6 +866,9 @@ app.post('/api/commit', apiLimiter, requireApiKey, async (req, res) => {
           agent_signature:     agentSignature,
           agent_public_key:    agentPublicKey,
           hash_mismatch:       hashMismatch || false,
+          client_timestamp:    clientTimestamp,
+          accepted_at:         acceptedAt,
+          spec_version:        '1.0',
           verified:            false,
           verification_reason: `Recipient agent ${toAgentId} not found`,
           timestamp,
@@ -973,6 +983,8 @@ app.post('/api/commit', apiLimiter, requireApiKey, async (req, res) => {
         leaf_hash:       logEntry.leaf_hash,
         tree_root:       logEntry.tree_root,
         tree_size:       logEntry.tree_size,
+        accepted_at:     logEntry.accepted_at,
+        client_timestamp: clientTimestamp,
         inclusion_proof: logEntry.inclusion_proof,
         proof_status:    'included',
         pubkey_url:      'https://darkmatterhub.ai/api/log/pubkey',
@@ -1530,6 +1542,133 @@ app.get('/api/export/:ctxId', requireApiKey, async (req, res) => {
     res.json(bundle);
   } catch (err) {
     console.error('[export] error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
+// ═══════════════════════════════════════════════════
+// KEY LIFECYCLE API
+// ═══════════════════════════════════════════════════
+
+// ── POST /api/agents/keys ────────────────────────────────────────────────────
+// Register a public key for the authenticated agent.
+// Only public key is stored — private key never leaves the agent's machine.
+app.post('/api/agents/keys', requireApiKey, async (req, res) => {
+  try {
+    const { publicKey, keyId = 'default', validUntil } = req.body;
+    if (!publicKey) return res.status(400).json({ error: 'publicKey required' });
+    const result = await registerKey(
+      supabaseService,
+      req.agent.agent_id,
+      publicKey,
+      keyId,
+      { validUntil, performedBy: req.agent.agent_id }
+    );
+    res.json({ ...result, message: 'Key registered. Private key never stored.' });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// ── POST /api/agents/keys/rotate ──────────────────────────────────────────────
+// Rotate to a new key. Old key remains valid for historical verification.
+app.post('/api/agents/keys/rotate', requireApiKey, async (req, res) => {
+  try {
+    const { currentKeyId = 'default', newPublicKey, newKeyId = 'default', reason } = req.body;
+    if (!newPublicKey) return res.status(400).json({ error: 'newPublicKey required' });
+    const result = await rotateKey(
+      supabaseService,
+      req.agent.agent_id,
+      currentKeyId,
+      newPublicKey,
+      newKeyId,
+      reason
+    );
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// ── POST /api/agents/keys/revoke ──────────────────────────────────────────────
+// Revoke a key immediately (use for compromised keys).
+// Unlike rotation, revocation flags historical commits as signed_by_revoked_key.
+app.post('/api/agents/keys/revoke', requireApiKey, async (req, res) => {
+  try {
+    const { keyId = 'default', reason } = req.body;
+    if (!reason) return res.status(400).json({ error: 'reason required for revocation' });
+    const result = await revokeKey(
+      supabaseService,
+      req.agent.agent_id,
+      keyId,
+      reason,
+      req.agent.agent_id
+    );
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// ── GET /api/agents/keys ─────────────────────────────────────────────────────
+// Get key history for the authenticated agent.
+app.get('/api/agents/keys', requireApiKey, async (req, res) => {
+  try {
+    const history = await getKeyHistory(supabaseService, req.agent.agent_id);
+    res.json(history);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── GET /api/agents/:agentId/pubkey ──────────────────────────────────────────
+// Get the current active public key for any agent (no auth — public info).
+// For historical verification, use /api/agents/:agentId/pubkey?at=<ISO timestamp>
+app.get('/api/agents/:agentId/pubkey', async (req, res) => {
+  try {
+    const { agentId }  = req.params;
+    const atTime       = req.query.at || new Date().toISOString();
+    const keyId        = req.query.key_id || 'default';
+
+    const keyInfo = await getKeyAtTime(supabaseService, agentId, keyId, atTime);
+    if (!keyInfo) {
+      return res.status(404).json({ error: 'No key found for this agent at the specified time' });
+    }
+
+    // Never return the private key — only public key PEM and metadata
+    const { public_key_pem, ...meta } = keyInfo;
+    res.json({
+      agent_id:       agentId,
+      public_key_pem,
+      ...meta,
+      queried_at:     atTime,
+      note: meta.status_at_commit_time === 'revoked'
+        ? 'This key was revoked — commits signed with it should be treated with caution'
+        : meta.is_revoked_now
+          ? 'This key is currently revoked but was active at the queried time'
+          : null,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── GET /api/commits/:commitId/signature ──────────────────────────────────────
+// Verify the agent signature on a specific commit, with full key lifecycle awareness.
+app.get('/api/commits/:commitId/signature', requireApiKey, async (req, res) => {
+  try {
+    const { data: commit } = await supabaseService
+      .from('commits')
+      .select('*')
+      .eq('id', req.params.commitId)
+      .single();
+
+    if (!commit) return res.status(404).json({ error: 'Commit not found' });
+
+    const result = await verifyCommitSignature(supabaseService, commit);
+    res.json({ commit_id: req.params.commitId, ...result });
+  } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
