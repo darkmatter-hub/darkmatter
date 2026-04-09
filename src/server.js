@@ -29,6 +29,10 @@ const {
 
 const app = express();
 
+// ── Trust proxy — required for Railway/Heroku/etc behind reverse proxy ────────
+// Without this, express-rate-limit cannot identify users correctly
+app.set('trust proxy', 1);
+
 // ── Security headers ─────────────────────────────────
 app.use(helmet({
   contentSecurityPolicy: false, // disabled — inline scripts in HTML pages
@@ -903,7 +907,6 @@ app.post('/api/commit', apiLimiter, requireApiKey, async (req, res) => {
         integrity_hash:      integrityHash,
         payload_hash:        payloadHash,
         parent_hash:         parentHash,
-        server_payload_hash: serverPayloadHash,
         hash_mismatch:       hashMismatch || false,
         verified:            true,
         verification_reason: 'API key authenticated',
