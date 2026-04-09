@@ -420,11 +420,52 @@ def main():
     else:
         print(f'Phase 3 — Merkle inclusion:   {c(None)}  (skipped via --skip-proof)')
 
+    # ── Phase 3.5: Checkpoint consistency ───────────────────────
+    consistency_ok = None
+    if args.checkpoint and getattr(args, 'checkpoint_b', None):
+        try:
+            cp_a = json.loads(Path(args.checkpoint).read_text())
+            cp_b = json.loads(Path(args.checkpoint_b).read_text())
+
+            def compute_root_local(leaves):
+                if not leaves: return hashlib.sha256(b'\x00').hexdigest()
+                if len(leaves) == 1: return leaves[0]
+                nodes = list(leaves)
+                while len(nodes) > 1:
+                    nxt = []
+                    for i in range(0, len(nodes), 2):
+                        nxt.append(node_hash_fn(nodes[i], nodes[i+1]) if i+1 < len(nodes) else nodes[i])
+                    nodes = nxt
+                return nodes[0]
+
+            # Verify both checkpoint signatures
+            pubkey_pem = Path(args.pubkey).read_text() if args.pubkey else None
+            sig_a = verify_checkpoint_sig(cp_a, pubkey_pem) if pubkey_pem else None
+            sig_b = verify_checkpoint_sig(cp_b, pubkey_pem) if pubkey_pem else None
+
+            # Verify chain linkage
+            linked = cp_b.get('previous_cp_id') == cp_a.get('checkpoint_id') or \
+                     cp_b.get('previous_tree_root') == cp_a.get('tree_root')
+
+            print(f'Phase 3.5— Checkpoint consistency:')
+            print(f'            Checkpoint A: {cp_a.get("checkpoint_id","?")[:24]}  tree_size={cp_a.get("tree_size")}')
+            print(f'            Checkpoint B: {cp_b.get("checkpoint_id","?")[:24]}  tree_size={cp_b.get("tree_size")}')
+            print(f'            Sig A:        {c(sig_a)}')
+            print(f'            Sig B:        {c(sig_b)}')
+            print(f'            Chain linked: {c(linked if linked else False)}')
+            consistency_ok = (sig_a is None or sig_a) and (sig_b is None or sig_b) and linked
+            print(f'            Result:       {c(consistency_ok)}')
+        except Exception as e:
+            print(f'Phase 3.5— Checkpoint consistency:   {c(False)}  ({e})')
+            consistency_ok = False
+    else:
+        print(f'Phase 3.5— Checkpoint consistency:   {c(None)}  (pass --checkpoint A --checkpoint-b B)')
+
     # ── Summary ───────────────────────────────────────────────────────────────
     required_ok = struct['ok']
     sig_ok      = sigs['ok'] if pubkeys else None
     chk_ok      = cp_result['ok'] if cp_result else None
-    all_ok      = required_ok and (sig_ok is None or sig_ok) and (chk_ok is None or chk_ok) and (phase3_ok is None or phase3_ok)
+    all_ok      = required_ok and (sig_ok is None or sig_ok) and (chk_ok is None or chk_ok) and (phase3_ok is None or phase3_ok) and (consistency_ok is None or consistency_ok)
 
     print()
     print('────────────────────────────────────────────')

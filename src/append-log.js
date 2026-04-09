@@ -258,3 +258,95 @@ module.exports = {
   verifyLogConsistency,
   CHECKPOINT_SCHEMA_VERSION,
 };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CHECKPOINT CONSISTENCY VERIFICATION
+// Proves that checkpoint B is an append-only extension of checkpoint A.
+// No entries were deleted or rewritten between the two snapshots.
+//
+// Method: fetch all leaf hashes between the two checkpoints, recompute
+// both tree roots, and verify they match the signed checkpoint values.
+//
+// This is the lightweight version — full RFC 6962 consistency proofs
+// (which only require O(log n) hashes rather than all leaves) are Phase 4.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Verify that checkpoint B is a valid append-only extension of checkpoint A.
+ *
+ * @param {object} supabaseService
+ * @param {object} cpA  - older checkpoint { checkpoint_id, tree_root, tree_size, position }
+ * @param {object} cpB  - newer checkpoint { checkpoint_id, tree_root, tree_size, position }
+ * @param {string} pubKeyPem - server public key PEM for signature verification
+ * @returns {object} { consistent, reason, old_root_ok, new_root_ok, sig_a_ok, sig_b_ok }
+ */
+async function verifyCheckpointConsistency(supabaseService, cpA, cpB, pubKeyPem) {
+  // 1. Both checkpoint signatures must be valid
+  const sig_a_ok = verifyCheckpointSig(
+    { schema_version: cpA.schema_version || '3', checkpoint_id: cpA.checkpoint_id,
+      tree_root: cpA.tree_root, tree_size: cpA.tree_size, log_root: cpA.log_root,
+      log_position: cpA.position, timestamp: cpA.timestamp,
+      previous_cp_id: cpA.previous_cp_id || null,
+      previous_tree_root: cpA.previous_tree_root || null },
+    cpA.server_sig, pubKeyPem
+  );
+  const sig_b_ok = verifyCheckpointSig(
+    { schema_version: cpB.schema_version || '3', checkpoint_id: cpB.checkpoint_id,
+      tree_root: cpB.tree_root, tree_size: cpB.tree_size, log_root: cpB.log_root,
+      log_position: cpB.position, timestamp: cpB.timestamp,
+      previous_cp_id: cpB.previous_cp_id || null,
+      previous_tree_root: cpB.previous_tree_root || null },
+    cpB.server_sig, pubKeyPem
+  );
+
+  if (!sig_a_ok) return { consistent: false, reason: 'checkpoint_a_sig_invalid', sig_a_ok, sig_b_ok };
+  if (!sig_b_ok) return { consistent: false, reason: 'checkpoint_b_sig_invalid', sig_a_ok, sig_b_ok };
+
+  // 2. Verify checkpoint chain linkage — B must reference A (or a later checkpoint that does)
+  const chain_linked = cpB.previous_cp_id === cpA.checkpoint_id
+    || cpB.previous_tree_root === cpA.tree_root;
+
+  // 3. Fetch all leaf hashes up to B's tree_size
+  const { data: allLeaves } = await supabaseService
+    .from('log_entries')
+    .select('position, leaf_hash')
+    .lte('position', (cpB.tree_size || 0) - 1)
+    .order('position', { ascending: true });
+
+  if (!allLeaves || allLeaves.length < (cpB.tree_size || 0)) {
+    return {
+      consistent: false,
+      reason:     'insufficient_log_entries',
+      entries_found: allLeaves?.length ?? 0,
+      expected: cpB.tree_size,
+      sig_a_ok, sig_b_ok,
+    };
+  }
+
+  const allLeafHashes = allLeaves.map(e => e.leaf_hash);
+
+  // 4. Recompute root A from first cpA.tree_size leaves
+  const oldLeaves     = allLeafHashes.slice(0, cpA.tree_size || 0);
+  const recomputedOld = computeRoot(oldLeaves);
+  const old_root_ok   = recomputedOld === (cpA.tree_root || '').replace('sha256:', '');
+
+  // 5. Recompute root B from all cpB.tree_size leaves
+  const recomputedNew = computeRoot(allLeafHashes.slice(0, cpB.tree_size || 0));
+  const new_root_ok   = recomputedNew === (cpB.tree_root || '').replace('sha256:', '');
+
+  const consistent = old_root_ok && new_root_ok && sig_a_ok && sig_b_ok;
+
+  return {
+    consistent,
+    reason:       consistent ? 'ok' : (!old_root_ok ? 'old_root_mismatch' : 'new_root_mismatch'),
+    old_root_ok,
+    new_root_ok,
+    sig_a_ok,
+    sig_b_ok,
+    chain_linked,
+    checkpoints_compared: { a: cpA.checkpoint_id, b: cpB.checkpoint_id },
+    tree_sizes:           { a: cpA.tree_size, b: cpB.tree_size },
+  };
+}
+
+module.exports = Object.assign(module.exports, { verifyCheckpointConsistency });

@@ -210,6 +210,111 @@ test('key-order independence of payload hash', () => {
   assertEq(h1, h2);
 });
 
+// ─── 7. Phase 3 — verifyReceipt + verifyBundle ───────────────────────────────
+import { verifyReceipt, verifyBundle } from './index';
+
+console.log('\n7. Phase 3 — receipt and bundle verification');
+
+const AGENT3 = 'dm_test3'; const KEY3 = 'default'; const TS3 = '2026-04-09T10:00:00Z';
+
+function makeProofReceipt(
+  commitId: string,
+  ih: string,
+  logPosition: number,
+  treeRoot: string,
+  proof: Array<{ hash: string; direction: 'left' | 'right' }>,
+): import('./index').ProofReceipt {
+  // Compute leaf hash using same algorithm as server
+  const ts = TS3.replace(/\.\d+Z?$/, '').replace(/Z?$/, 'Z');
+  const ihBare = ih.startsWith('sha256:') ? ih.slice(7) : ih;
+  const leafEnv = `{"accepted_at":${JSON.stringify(ts)},"commit_id":${JSON.stringify(commitId)},"integrity_hash":${JSON.stringify(ihBare)},"log_position":${logPosition}}`;
+  const crypto = require('crypto');
+  const buf = Buffer.concat([Buffer.from([0x00]), Buffer.from(leafEnv, 'utf8')]);
+  const leafH = crypto.createHash('sha256').update(buf).digest('hex');
+
+  return {
+    log_position:   logPosition,
+    leaf_hash:      leafH,
+    tree_root:      treeRoot,
+    tree_size:      logPosition + 1,
+    accepted_at:    TS3,
+    inclusion_proof: { leaf_index: logPosition, tree_size: logPosition + 1, proof },
+    proof_status:   'included',
+    pubkey_url:     'https://darkmatterhub.ai/api/log/pubkey',
+    checkpoint_url: 'https://darkmatterhub.ai/api/log/checkpoint',
+    verify_url:     `https://darkmatterhub.ai/api/log/proof/${commitId}`,
+  };
+}
+
+// Single-commit receipt — leaf is also root, no proof steps
+const { payloadHash: ph1t, integrityHash: ih1t } = computeIntegrityHash(
+  { output: 'step1' }, null, AGENT3, KEY3, TS3
+);
+// leaf hash for single-leaf tree = the leaf hash itself = tree root
+const crypto2 = require('crypto');
+const ts3norm = TS3;
+const ih1bare = ih1t;
+const leafEnv1 = `{"accepted_at":${JSON.stringify(ts3norm)},"commit_id":"ctx_t1","integrity_hash":${JSON.stringify(ih1bare)},"log_position":0}`;
+const buf1 = Buffer.concat([Buffer.from([0x00]), Buffer.from(leafEnv1, 'utf8')]);
+const lh1 = crypto2.createHash('sha256').update(buf1).digest('hex');
+
+const receipt1: import('./index').CommitReceipt = {
+  id: 'ctx_t1', schema_version: '2', integrity_hash: 'sha256:' + ih1t,
+  payload_hash: 'sha256:' + ph1t, parent_hash: null,
+  verified: true, timestamp: TS3,
+  _proof: {
+    log_position: 0, leaf_hash: lh1, tree_root: lh1, tree_size: 1,
+    accepted_at: TS3, inclusion_proof: { leaf_index: 0, tree_size: 1, proof: [] },
+    proof_status: 'included', pubkey_url: '', checkpoint_url: '', verify_url: '',
+  },
+};
+
+test('verifyReceipt: valid single-commit proof (empty proof steps = leaf is root)', () => {
+  const r = verifyReceipt(receipt1);
+  assert(r.ok, `leaf_hash_ok=${r.leaf_hash_ok} proof_ok=${r.proof_ok} reason=${r.reason}`);
+});
+
+test('verifyReceipt: missing _proof returns ok=false', () => {
+  const r = verifyReceipt({ ...receipt1, _proof: undefined });
+  assert(!r.ok && r.reason === 'no proof receipt');
+});
+
+test('verifyReceipt: tampered integrity_hash detected', () => {
+  const tampered = { ...receipt1, integrity_hash: 'sha256:' + 'f'.repeat(64) };
+  const r = verifyReceipt(tampered);
+  // leaf_hash_ok should be false — recomputed leaf won't match stored
+  assert(!r.ok || r.leaf_hash_ok === false);
+});
+
+// verifyBundle with a minimal valid bundle
+const bundle1: import('./index').ProofBundle = {
+  _spec: { bundle_version: '3.0', spec_url: '', verifier_url: '', verify_command: '', checkpoint_repo: '', phases: [] },
+  metadata: { ctx_id: 'ctx_t1', chain_length: 1, lineage_root: 'ctx_t1', trace_id: null, exported_at: TS3, exported_by: AGENT3 },
+  integrity: { chain_intact: true, algorithm: 'sha256-envelope', root_hash: 'sha256:'+ih1t, tip_hash: 'sha256:'+ih1t, chain_hash: 'sha256:abc', timestamp_range: { from: TS3, to: TS3 } },
+  checkpoint: null,
+  server_pubkey: { algorithm: 'Ed25519', public_key: '', use: '', pubkey_url: '' },
+  commits: [{ ...receipt1, payload: { output: 'step1' }, agent_id: AGENT3, key_id: KEY3 } as any],
+  export_hash: 'sha256:abc',
+};
+
+test('verifyBundle: valid bundle passes structure check', () => {
+  const r = verifyBundle(bundle1, { strict: false });
+  assert(r.structure.chain_intact, `chain broken at ${r.structure.broken_at}`);
+});
+
+test('verifyBundle: proof receipt verified in bundle', () => {
+  const r = verifyBundle(bundle1, { strict: false });
+  assert(r.merkle.proofs_found === 1, `proofs_found=${r.merkle.proofs_found}`);
+  assert(r.merkle.proofs_valid === 1, `proofs_valid=${r.merkle.proofs_valid}`);
+  assert(r.merkle.ok === true, `merkle.ok=${r.merkle.ok}`);
+});
+
+test('verifyBundle: no proofs → merkle.ok is null (not false)', () => {
+  const b2 = { ...bundle1, commits: [{ ...bundle1.commits[0], _proof: undefined }] };
+  const r  = verifyBundle(b2 as any, { strict: false });
+  assertEq(r.merkle.ok, null);
+});
+
 // ─── Summary ──────────────────────────────────────────────────────────────────
 console.log(`\n${'─'.repeat(44)}`);
 const total = passed + failed;
@@ -220,3 +325,4 @@ if (failed === 0) {
   console.log(`\x1b[31m✗ ${failed}/${total} tests FAILED\x1b[0m\n`);
   process.exit(1);
 }
+

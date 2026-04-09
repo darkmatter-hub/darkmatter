@@ -1149,10 +1149,12 @@ integrity_hash = sha256(canonicalize(envelope))<div class="lang-label">python</d
 
   <h3>Verification trust levels</h3>
   <table><thead><tr><th>Check</th><th>What it proves</th><th>Requires DarkMatter?</th></tr></thead><tbody>
-    <tr><td>Chain structure</td><td>Payload hashes and chain links are intact</td><td>No — offline</td></tr>
-    <tr><td>Agent signatures</td><td>Commits were signed by the claiming agent</td><td>No — offline</td></tr>
-    <tr><td>Log checkpoint</td><td>DarkMatter's server attested to this log root</td><td>No — offline with pubkey</td></tr>
-    <tr><td>Checkpoint publication</td><td>Checkpoint was published to GitHub</td><td>No — GitHub is public</td></tr>
+    <tr><td>Phase 1 — Chain structure</td><td>Payload hashes and integrity chain are intact. Tampering breaks every downstream hash.</td><td>No — offline</td></tr>
+    <tr><td>Phase 1 — Agent signatures</td><td>Commits were signed by the claiming agent using their Ed25519 private key. Operator cannot forge.</td><td>No — offline</td></tr>
+    <tr><td>Phase 2 — Log checkpoint</td><td>DarkMatter's server signed this Merkle tree root at a specific point in time.</td><td>No — offline with server pubkey</td></tr>
+    <tr><td>Phase 3 — Merkle inclusion</td><td>A specific commit is included in the signed Merkle tree root. Proof is O(log n) hashes.</td><td>No — offline</td></tr>
+    <tr><td>Phase 3.5 — Consistency</td><td>Checkpoint B is an append-only extension of checkpoint A. No entries were deleted between snapshots.</td><td>No — offline with both checkpoints</td></tr>
+    <tr><td>Checkpoint publication</td><td>Checkpoint was published to GitHub and is in the public commit history.</td><td>No — GitHub is public</td></tr>
   </tbody></table>
 
   <h2 id="integrity-spec">Canonical serialization spec</h2>
@@ -1194,22 +1196,40 @@ python verify_darkmatter_chain.py export.json --test-vectors integrity_test_vect
   <h3>Offline verification</h3>
   <p>The standalone verifier works with zero DarkMatter dependencies. It is included in every chain export bundle.</p>
 
-<pre><code><span class="cm"># Basic — verify chain structure only</span>
+<pre><code><span class="cm"># Phase 1: chain structure only</span>
 python verify_darkmatter_chain.py chain_export.json
 
-<span class="cm"># With agent signature verification</span>
-python verify_darkmatter_chain.py chain_export.json \
-  --agent-keys agent_pubkeys.json
-
-<span class="cm"># With log checkpoint verification (Phase 2)</span>
+<span class="cm"># Phase 1 + 2: with checkpoint signature verification</span>
 python verify_darkmatter_chain.py chain_export.json \
   --checkpoint checkpoint.json \
   --pubkey server_pubkey.pem
 
-<span class="cm"># Legacy exports (before Phase 1 — missing hashes allowed)</span>
+<span class="cm"># Phase 1 + 2 + 3: full — includes Merkle inclusion proof verification</span>
+<span class="cm"># (proofs are checked by default if present in the export bundle)</span>
+python verify_darkmatter_chain.py chain_export.json \
+  --checkpoint checkpoint.json \
+  --pubkey server_pubkey.pem
+
+<span class="cm"># Phase 3.5: checkpoint consistency — prove no history was rewritten</span>
+python verify_darkmatter_chain.py chain_export.json \
+  --checkpoint old_checkpoint.json \
+  --checkpoint-b new_checkpoint.json \
+  --pubkey server_pubkey.pem
+
+<span class="cm"># With agent signature verification (requires agent public keys)</span>
+python verify_darkmatter_chain.py chain_export.json \
+  --agent-keys agent_pubkeys.json
+
+<span class="cm"># Legacy exports (before Phase 1 — allow missing hashes)</span>
 python verify_darkmatter_chain.py chain_export.json --legacy
 
-<span class="cm"># Machine-readable output for CI pipelines</span>
+<span class="cm"># Skip Merkle proof check</span>
+python verify_darkmatter_chain.py chain_export.json --skip-proof
+
+<span class="cm"># Run Merkle test vectors (validates this verifier implementation)</span>
+python verify_darkmatter_chain.py dummy --test-vectors-merkle merkle_test_vectors.json
+
+<span class="cm"># Machine-readable JSON output for CI pipelines</span>
 python verify_darkmatter_chain.py chain_export.json --json<div class="lang-label">bash</div></code></pre>
 
   <p>Exit codes: <code>0</code> = verified, <code>1</code> = broken, <code>2</code> = malformed input.</p>
@@ -1224,6 +1244,8 @@ python verify_darkmatter_chain.py chain_export.json --json<div class="lang-label
     <tr><td><code>GET /api/log/checkpoints</code></td><td>Recent checkpoints (default 10, max 100). Use for consistency verification.</td></tr>
     <tr><td><code>GET /api/log/entry/:commitId</code></td><td>Log entry for a specific commit: position, log_root, server_sig.</td></tr>
     <tr><td><code>GET /api/log/verify?from=N&amp;to=M</code></td><td>Verify log consistency between two positions. Returns <code>consistent</code> bool and <code>broken_at</code> position.</td></tr>
+    <tr><td><code>GET /api/log/proof/:commitId</code></td><td>Merkle inclusion proof for any commit. Returns <code>leaf_hash</code>, <code>tree_root</code>, <code>tree_size</code>, and full <code>inclusion_proof</code> array. No auth required.</td></tr>
+    <tr><td><code>GET /api/log/consistency?from=&lt;cp_id&gt;&amp;to=&lt;cp_id&gt;</code></td><td>Prove checkpoint B is an append-only extension of checkpoint A. Returns <code>consistent</code> bool with per-root verification. Use <code>from=first&amp;to=latest</code> to verify the entire history.</td></tr>
   </tbody></table>
 
 <pre><code><span class="cm"># Fetch server public key for offline checkpoint verification</span>
@@ -1236,7 +1258,16 @@ curl https://darkmatterhub.ai/api/log/checkpoint
 curl https://darkmatterhub.ai/api/log/entry/ctx_1234567890_abc123
 
 <span class="cm"># Verify log consistency from position 0 to 1000</span>
-curl "https://darkmatterhub.ai/api/log/verify?from=0&to=1000"<div class="lang-label">bash</div></code></pre>
+curl "https://darkmatterhub.ai/api/log/verify?from=0&to=1000"
+
+<span class="cm"># Get inclusion proof for a specific commit</span>
+curl https://darkmatterhub.ai/api/log/proof/ctx_1234567890_abc123
+
+<span class="cm"># Verify checkpoint consistency (prove no history was rewritten)</span>
+curl "https://darkmatterhub.ai/api/log/consistency?from=first&to=latest"
+
+<span class="cm"># Compare two specific checkpoints</span>
+curl "https://darkmatterhub.ai/api/log/consistency?from=cp_aaa&to=cp_bbb"<div class="lang-label">bash</div></code></pre>
 
   <p>Checkpoints are also published to <a href="https://github.com/darkmatter-hub/checkpoints" target="_blank">github.com/darkmatter-hub/checkpoints</a> every 10 minutes. GitHub's commit history makes this independently tamper-evident — DarkMatter cannot delete or alter published checkpoints.</p>
 

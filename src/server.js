@@ -11,6 +11,7 @@ const {
 } = require('./integrity');
 const { appendToLog, getServerPublicKeyPem, verifyLogConsistency,
   generateProofForCommit, CHECKPOINT_SCHEMA_VERSION,
+  verifyCheckpointConsistency,
 } = require('./append-log');
 const {
   leafHash, buildLeafEnvelope, computeRoot,
@@ -1348,78 +1349,187 @@ app.get('/api/verify/:ctxId', requireApiKey, async (req, res) => {
   }
 });
 
-// ── GET /api/export/:ctxId ── portable proof artifact ─
+// ── GET /api/export/:ctxId ── self-sufficient proof bundle ──────────────────
+// Phase 3: includes per-commit inclusion proofs, checkpoint, server pubkey,
+// and verifier script reference. The bundle can be verified fully offline.
+//
+// Bundle structure:
+//   _spec           — bundle version + verification instructions
+//   metadata        — chain info
+//   integrity       — chain-level hashes
+//   checkpoint      — latest signed checkpoint covering this chain
+//   server_pubkey   — DarkMatter server Ed25519 public key (for checkpoint sig)
+//   commits         — ordered commits, each with _proof receipt
+//   export_hash     — SHA-256 of the entire bundle (uniquely identifies this export)
+//
 app.get('/api/export/:ctxId', requireApiKey, async (req, res) => {
   try {
     const { ctxId } = req.params;
-    const chain     = [];
-    let currentId   = ctxId;
 
-    while (currentId && chain.length < 50) {
+    // ── 1. Walk the chain ────────────────────────────────────────────────────
+    const chain = [];
+    let currentId = ctxId;
+    while (currentId && chain.length < 200) {
       const { data } = await supabaseService
-        .from('commits').select('*').eq('id', currentId).single();
+        .from('commits')
+        .select('*')
+        .eq('id', currentId)
+        .single();
       if (!data) break;
       chain.push(data);
       currentId = data.parent_id;
     }
     chain.reverse(); // root → tip
 
+    if (!chain.length) return res.status(404).json({ error: 'Chain not found' });
+
+    // ── 2. Per-commit inclusion proofs ───────────────────────────────────────
+    const commitIds      = chain.map(c => c.id);
+    const { data: logRows } = await supabaseService
+      .from('log_entries')
+      .select('commit_id, position, leaf_hash, tree_root, tree_size, integrity_hash, timestamp')
+      .in('commit_id', commitIds);
+
+    const logByCommit = {};
+    for (const row of (logRows || [])) logByCommit[row.commit_id] = row;
+
+    // Fetch all leaf hashes for proof generation (up to max tree size in this chain)
+    const maxTreeSize = Math.max(...Object.values(logByCommit).map(r => r.tree_size || 0), 0);
+    let allLeafHashes = [];
+    if (maxTreeSize > 0) {
+      const { data: allLeaves } = await supabaseService
+        .from('log_entries')
+        .select('position, leaf_hash')
+        .lte('position', maxTreeSize - 1)
+        .order('position', { ascending: true });
+      allLeafHashes = (allLeaves || []).map(l => l.leaf_hash);
+    }
+
+    // Build commits array with proof receipts
+    const commitsWithProofs = chain.map(c => {
+      const built    = buildContext(c);
+      const logEntry = logByCommit[c.id];
+      if (logEntry) {
+        let inclusionProof = null;
+        try {
+          const leavesForProof = allLeafHashes.slice(0, logEntry.tree_size);
+          if (leavesForProof.length > logEntry.position) {
+            inclusionProof = generateInclusionProof(leavesForProof, logEntry.position);
+          }
+        } catch {}
+        built._proof = {
+          log_position:    logEntry.position,
+          leaf_hash:       logEntry.leaf_hash,
+          tree_root:       logEntry.tree_root,
+          tree_size:       logEntry.tree_size,
+          accepted_at:     logEntry.timestamp,
+          inclusion_proof: inclusionProof,
+          proof_status:    c.proof_status || 'included',
+        };
+      }
+      return built;
+    });
+
+    // ── 3. Checkpoint covering this chain ────────────────────────────────────
+    const tipLogEntry = logByCommit[chain[chain.length - 1]?.id];
+    let checkpoint = null;
+    if (tipLogEntry) {
+      const { data: cp } = await supabaseService
+        .from('checkpoints')
+        .select('checkpoint_id, position, tree_root, tree_size, log_root, server_sig, timestamp, previous_cp_id, previous_tree_root, published, published_url')
+        .gte('position', tipLogEntry.position)
+        .order('position', { ascending: true })
+        .limit(1)
+        .single();
+      checkpoint = cp || null;
+    }
+    // If no checkpoint covers the tip yet, use the latest available
+    if (!checkpoint) {
+      const { data: latestCp } = await supabaseService
+        .from('checkpoints')
+        .select('checkpoint_id, position, tree_root, tree_size, log_root, server_sig, timestamp, previous_cp_id, previous_tree_root, published, published_url')
+        .order('position', { ascending: false })
+        .limit(1)
+        .single();
+      checkpoint = latestCp || null;
+    }
+
+    // ── 4. Chain-level integrity ─────────────────────────────────────────────
+    const root       = chain[0];
+    const tip        = chain[chain.length - 1];
+    const exportedAt = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
+
     let chainIntact = true;
     for (let i = 1; i < chain.length; i++) {
-      if (chain[i].parent_hash && chain[i-1].integrity_hash &&
-          chain[i].parent_hash !== chain[i-1].integrity_hash) {
+      const cur = chain[i]; const prev = chain[i - 1];
+      if (cur.parent_hash && prev.integrity_hash &&
+          cur.parent_hash.replace('sha256:', '') !== prev.integrity_hash.replace('sha256:', '')) {
         chainIntact = false; break;
       }
     }
 
-    const root       = chain[0];
-    const tip        = chain[chain.length - 1];
-    const exportedAt = new Date().toISOString();
+    const stableData = {
+      ctx_id:       ctxId,
+      chain_ids:    commitIds,
+      chain_length: chain.length,
+      root_hash:    root?.integrity_hash || null,
+      tip_hash:     tip?.integrity_hash  || null,
+    };
+    const chainHash = crypto.createHash('sha256')
+      .update(JSON.stringify(stableData, Object.keys(stableData).sort()))
+      .digest('hex');
 
-    const exportObj = {
+    // ── 5. Assemble self-sufficient bundle ───────────────────────────────────
+    const bundle = {
+      _spec: {
+        bundle_version:  '3.0',
+        spec_url:        'https://darkmatterhub.ai/docs#integrity-spec',
+        verifier_url:    'https://github.com/bengunvl/darkmatter/blob/main/github-template/verify_darkmatter_chain.py',
+        verify_command:  'python verify_darkmatter_chain.py this_file.json --checkpoint checkpoint.json --pubkey server_pubkey.pem',
+        checkpoint_repo: 'https://github.com/darkmatter-hub/checkpoints',
+        phases:          ['structure', 'agent_signatures', 'merkle_inclusion', 'checkpoint'],
+      },
       metadata: {
-        export_version: '1.0',
         ctx_id:         ctxId,
-        lineage_root:   root?.lineage_root || root?.id,
         chain_length:   chain.length,
+        lineage_root:   root?.lineage_root || root?.id,
+        trace_id:       tip?.trace_id || null,
         exported_at:    exportedAt,
         exported_by:    req.agent.agent_id,
       },
       integrity: {
         chain_intact:    chainIntact,
-        algorithm:       'sha256',
-        root_hash:       root?.integrity_hash ? 'sha256:' + root.integrity_hash : null,
-        tip_hash:        tip?.integrity_hash  ? 'sha256:' + tip.integrity_hash  : null,
+        algorithm:       'sha256-envelope',
+        root_hash:       root?.integrity_hash  ? 'sha256:' + root.integrity_hash.replace('sha256:', '')  : null,
+        tip_hash:        tip?.integrity_hash   ? 'sha256:' + tip.integrity_hash.replace('sha256:', '')   : null,
+        chain_hash:      'sha256:' + chainHash,
         timestamp_range: { from: root?.timestamp, to: tip?.timestamp },
       },
-      chain: chain.map(c => buildContext(c)),
+      checkpoint:    checkpoint ? {
+        ...checkpoint,
+        note: checkpoint.position >= (tipLogEntry?.position ?? -1)
+          ? 'This checkpoint covers the tip of this chain'
+          : 'Latest available checkpoint — tip may not yet be checkpointed',
+      } : null,
+      server_pubkey: {
+        algorithm:   'Ed25519',
+        public_key:  getServerPublicKeyPem(),
+        use:         'Verify checkpoint.server_sig',
+        pubkey_url:  'https://darkmatterhub.ai/api/log/pubkey',
+      },
+      commits: commitsWithProofs,
     };
 
-    // chain_hash = hash of stable data only (excludes exported_at, exported_by)
-    // This means two exports of the same unchanged chain produce the same chain_hash
-    const stableData = {
-      ctx_id:       ctxId,
-      lineage_root: exportObj.metadata.lineage_root,
-      chain_length: exportObj.metadata.chain_length,
-      root_hash:    exportObj.integrity.root_hash,
-      tip_hash:     exportObj.integrity.tip_hash,
-      chain_ids:    chain.map(c => c.id),
-    };
-    exportObj.integrity.chain_hash = 'sha256:' +
-      crypto.createHash('sha256')
-        .update(JSON.stringify(stableData, Object.keys(stableData).sort()))
-        .digest('hex');
+    // export_hash uniquely identifies this exact export instance
+    bundle.export_hash = 'sha256:' +
+      crypto.createHash('sha256').update(JSON.stringify(bundle)).digest('hex');
 
-    // export_hash includes everything (including timestamp) — uniquely identifies this export instance
-    exportObj.export_hash = 'sha256:' +
-      crypto.createHash('sha256').update(JSON.stringify(exportObj)).digest('hex');
-
-    // Return as JSON proof bundle (not ZIP — verifier.py reads the JSON directly)
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Content-Disposition',
-      `attachment; filename="darkmatter_proof_${ctxId.slice(-8)}.json"`);
-    res.json(exportObj);
+      `attachment; filename="darkmatter_proof_${ctxId.slice(-8)}_v3.json"`);
+    res.json(bundle);
   } catch (err) {
+    console.error('[export] error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
@@ -4033,6 +4143,82 @@ app.post('/api/log/checkpoint', requireAuth, async (req, res) => {
   try {
     const result = await publishCheckpoint(supabaseService);
     res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
+// ── GET /api/log/consistency ───────────────────────────────────────────────
+// Verify that checkpoint B is a valid append-only extension of checkpoint A.
+// Proves no log entries were deleted or rewritten between two snapshots.
+// No authentication required — verification material is public.
+//
+// Query params:
+//   from=<checkpoint_id>  — older checkpoint ID (or 'first' for earliest)
+//   to=<checkpoint_id>    — newer checkpoint ID (or 'latest' for most recent)
+//
+app.get('/api/log/consistency', async (req, res) => {
+  try {
+    const fromId = req.query.from;
+    const toId   = req.query.to;
+
+    // Resolve 'first' and 'latest' shortcuts
+    const { data: firstCp } = await supabaseService
+      .from('checkpoints')
+      .select('*')
+      .order('position', { ascending: true })
+      .limit(1)
+      .single();
+
+    const { data: latestCp } = await supabaseService
+      .from('checkpoints')
+      .select('*')
+      .order('position', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (!firstCp || !latestCp) {
+      return res.json({ consistent: null, message: 'No checkpoints yet' });
+    }
+
+    let cpA, cpB;
+
+    if (!fromId || fromId === 'first') {
+      cpA = firstCp;
+    } else {
+      const { data } = await supabaseService
+        .from('checkpoints').select('*').eq('checkpoint_id', fromId).single();
+      if (!data) return res.status(404).json({ error: `Checkpoint not found: ${fromId}` });
+      cpA = data;
+    }
+
+    if (!toId || toId === 'latest') {
+      cpB = latestCp;
+    } else {
+      const { data } = await supabaseService
+        .from('checkpoints').select('*').eq('checkpoint_id', toId).single();
+      if (!data) return res.status(404).json({ error: `Checkpoint not found: ${toId}` });
+      cpB = data;
+    }
+
+    if (cpA.position > cpB.position) {
+      return res.status(400).json({ error: 'from checkpoint must be older than to checkpoint' });
+    }
+
+    if (cpA.checkpoint_id === cpB.checkpoint_id) {
+      return res.json({ consistent: true, message: 'Same checkpoint', checkpoint: cpA.checkpoint_id });
+    }
+
+    const result = await verifyCheckpointConsistency(
+      supabaseService, cpA, cpB, getServerPublicKeyPem()
+    );
+
+    res.json({
+      ...result,
+      pubkey_url:  'https://darkmatterhub.ai/api/log/pubkey',
+      spec_url:    'https://darkmatterhub.ai/docs#integrity-spec',
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
