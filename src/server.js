@@ -1684,7 +1684,7 @@ app.get('/api/log/checkpoint/:checkpointId/witnesses', async (req, res) => {
 // ── POST /api/admin/witnesses (superuser only) ────────────────────────────────
 // Register a new witness. Superuser only.
 app.post('/api/admin/witnesses', requireApiKey, async (req, res) => {
-  if (req.agent?.email !== process.env.SUPERUSER_EMAIL) {
+  if (req.agent?.agent_id !== process.env.SUPERUSER_AGENT_ID && req.agent?.agent_name !== 'darkmatter-admin') {
     return res.status(403).json({ error: 'Superuser only' });
   }
   try {
@@ -3552,17 +3552,17 @@ app.get('/threat-model', (req, res) => res.sendFile(path.join(__dirname, '../pub
 
 // ═══════════════════════════════════════════════════
 // SUPERUSER ANALYTICS DASHBOARD
-// Only accessible to the account defined in SUPERUSER_EMAIL env var
+// Only accessible to the darkmatter-admin agent (or agent matching SUPERUSER_AGENT_ID)
 // ═══════════════════════════════════════════════════
 
 function requireSuperuser(req, res, next) {
-  const superEmail = process.env.SUPERUSER_EMAIL;
-  if (!superEmail) return res.status(403).json({ error: 'Not configured' });
-  // req.user is set by requireAuth from the JWT
-  const userEmail = req.user?.email || req.user?.user_metadata?.email || '';
-  if (!userEmail || userEmail.toLowerCase() !== superEmail.toLowerCase()) {
-    return res.status(403).json({ error: 'Forbidden' });
-  }
+  const superAgentId = process.env.SUPERUSER_AGENT_ID;
+  // Allow darkmatter-admin agent by name, or by SUPERUSER_AGENT_ID env var
+  const agentId   = req.agent?.agent_id;
+  const agentName = req.agent?.agent_name;
+  const isSuperuser = (superAgentId && agentId === superAgentId)
+    || agentName === 'darkmatter-admin';
+  if (!isSuperuser) return res.status(403).json({ error: 'Forbidden' });
   next();
 }
 
@@ -4426,7 +4426,7 @@ app.get('/api/log/entry/:commitId', async (req, res) => {
 // ── POST /api/log/checkpoint ───────────────────────────────────────────────
 // Manually trigger a checkpoint publish (admin/superuser only).
 app.post('/api/log/checkpoint', requireAuth, async (req, res) => {
-  if (req.agent?.email !== process.env.SUPERUSER_EMAIL) {
+  if (req.agent?.agent_id !== process.env.SUPERUSER_AGENT_ID && req.agent?.agent_name !== 'darkmatter-admin') {
     return res.status(403).json({ error: 'Superuser only' });
   }
   try {
@@ -4573,8 +4573,10 @@ app.get('/api/audit/checkpoint', async (req, res) => {
 
 app.post('/api/audit/checkpoint', requireAuth, async (req, res) => {
   // Admin only — creates and signs a new checkpoint
-  const adminEmail = process.env.SUPERUSER_EMAIL;
-  if (req.user?.email !== adminEmail) {
+  const adminAgentId = process.env.SUPERUSER_AGENT_ID;
+  const isSuperuser = (adminAgentId && req.agent?.agent_id === adminAgentId)
+    || req.agent?.agent_name === 'darkmatter-admin';
+  if (!isSuperuser) {
     return res.status(403).json({ error: 'Admin only' });
   }
   try {
