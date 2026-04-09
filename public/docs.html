@@ -6,7 +6,60 @@
 <title>Documentation - DarkMatter</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"/>
-<style>
+<style>/* ── NAV + FOOTER (canonical) ── */
+.dm-nav{
+  position:sticky;top:0;z-index:300;
+  height:60px;background:#fff;border-bottom:1px solid #e5e7eb;
+  display:flex;align-items:center;padding:0 40px;
+}
+.dm-nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none;flex-shrink:0;z-index:1;}
+.dm-nav-name{
+  font-family:'IBM Plex Mono','Courier New',monospace;
+  font-size:17px;font-weight:700;color:#111827;letter-spacing:-0.03em;
+}
+.dm-nav-links{
+  position:absolute;left:50%;transform:translateX(-50%);
+  display:flex;align-items:center;gap:4px;list-style:none;
+}
+.dm-nav-links a{
+  font-size:13.5px;color:#6b7280;padding:5px 10px;border-radius:6px;
+  text-decoration:none;transition:color .12s,background .12s;white-space:nowrap;
+}
+.dm-nav-links a:hover{color:#111827;background:#f3f4f6;}
+.dm-nav-links a.active{color:#111827;font-weight:500;}
+.dm-nav-right{margin-left:auto;display:flex;align-items:center;gap:10px;z-index:1;}
+.dm-nav-icon{
+  display:flex;align-items:center;justify-content:center;
+  width:34px;height:34px;border-radius:7px;color:#6b7280;
+  text-decoration:none;transition:color .12s,background .12s;
+}
+.dm-nav-icon:hover{color:#111827;background:#f3f4f6;}
+.dm-nav-icon svg{width:18px;height:18px;stroke-width:1.6;}
+.dm-nav-cta{
+  font-family:'IBM Plex Mono','Courier New',monospace;
+  font-size:12.5px;font-weight:700;background:#111827;color:#fff;
+  padding:8px 18px;border-radius:7px;text-decoration:none;transition:opacity .15s;
+}
+.dm-nav-cta:hover{opacity:.85;}
+@media(max-width:768px){
+  .dm-nav{padding:0 16px;}
+  .dm-nav-links{display:none;}
+}
+.dm-footer{
+  border-top:1px solid #e5e7eb;padding:28px 40px;
+  display:flex;align-items:center;flex-wrap:wrap;gap:16px;
+}
+.dm-footer-brand{display:flex;align-items:center;gap:8px;text-decoration:none;flex-shrink:0;}
+.dm-footer-name{
+  font-family:'IBM Plex Mono','Courier New',monospace;
+  font-size:14px;font-weight:700;color:#111827;letter-spacing:-0.02em;
+}
+.dm-footer-links{display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin-left:auto;}
+.dm-footer-links a{font-size:12.5px;color:#9ca3af;text-decoration:none;padding:3px 8px;transition:color .12s;}
+.dm-footer-links a:hover{color:#374151;}
+.dm-footer-copy{font-size:12px;color:#d1d5db;padding:3px 8px;}
+@media(max-width:768px){.dm-footer{padding:20px 16px;}.dm-footer-links{margin-left:0;}}
+
 :root{--brand:#7C3AED;--brand2:#2563EB;--brand3:#22D3EE;--gradient:linear-gradient(90deg,#7C3AED 0%,#2563EB 55%,#22D3EE 100%);--bg:#ffffff;--bg2:#f8f9fa;--bg3:#f1f3f5;--border:#e5e7eb;--border2:#d1d5db;--text:#111827;--text2:#4b5563;--text3:#9ca3af;--green:#059669;--amber:#d97706;--red:#dc2626;--display:"Space Grotesk",sans-serif;--sans:"Inter",sans-serif;--mono:"IBM Plex Mono",monospace;--sidebar-w:256px;--nav-h:56px;}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 body{background:var(--bg);color:var(--text);font-family:var(--sans);-webkit-font-smoothing:antialiased;font-size:15px;line-height:1.7;}
@@ -73,58 +126,20 @@ tr:hover td{background:var(--bg2);}
 .endpoint{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:0.9rem 1.1rem;margin:1rem 0;}
 .endpoint-title{display:flex;align-items:center;gap:0.5rem;font-family:var(--mono);font-size:0.8rem;font-weight:500;}
 
-/* ── SHARED NAV (darkmatterhub.ai standard) ── */
-.dm-nav{
-  position:sticky;top:0;z-index:300;
-  height:56px;background:#fff;border-bottom:1px solid #e5e7eb;
-  display:flex;align-items:center;padding:0 40px;gap:28px;
-}
-.dm-nav-logo{display:flex;align-items:center;gap:9px;text-decoration:none;flex-shrink:0;}
-.dm-nav-name{
-  font-family:'IBM Plex Mono','Courier New',monospace;
-  font-size:14px;font-weight:700;color:#111827;letter-spacing:-0.02em;
-}
-.dm-nav-links{display:flex;align-items:center;gap:4px;list-style:none;margin-left:4px;}
-.dm-nav-links a{
-  font-size:13.5px;color:#6b7280;padding:5px 9px;border-radius:6px;
-  text-decoration:none;transition:color .12s,background .12s;
-}
-.dm-nav-links a:hover{color:#111827;background:#f3f4f6;}
-.dm-nav-links a.active{color:#111827;font-weight:500;}
-.dm-nav-right{margin-left:auto;display:flex;align-items:center;gap:8px;}
-.dm-nav-signin{font-size:13.5px;color:#6b7280;text-decoration:none;padding:6px 12px;border-radius:6px;transition:color .12s;}
-.dm-nav-signin:hover{color:#111827;}
-.dm-nav-cta{
-  font-family:'IBM Plex Mono','Courier New',monospace;
-  font-size:12.5px;font-weight:700;background:#111827;color:#fff;
-  padding:8px 16px;border-radius:7px;text-decoration:none;transition:opacity .15s;
-}
-.dm-nav-cta:hover{opacity:.85;}
-@media(max-width:640px){.dm-nav{padding:0 16px;gap:12px;}.dm-nav-links{display:none;}}
+@media(max-width:640px){}
 
-/* ── SHARED FOOTER ── */
-.dm-footer{
-  border-top:1px solid #e5e7eb;padding:24px 40px;
-  display:flex;align-items:center;justify-content:space-between;
-  flex-wrap:wrap;gap:14px;background:#fff;
-}
-.dm-footer-brand{display:flex;align-items:center;gap:8px;text-decoration:none;}
-.dm-footer-name{
-  font-family:'IBM Plex Mono','Courier New',monospace;
-  font-size:13px;font-weight:700;color:#111827;letter-spacing:-0.02em;
-}
-.dm-footer-links{display:flex;gap:18px;flex-wrap:wrap;align-items:center;}
-.dm-footer-links a{font-size:12px;color:#9ca3af;text-decoration:none;transition:color .12s;}
-.dm-footer-links a:hover{color:#4b5563;}
-.dm-footer-copy{font-size:12px;color:#9ca3af;}
-@media(max-width:640px){.dm-footer{padding:20px;flex-direction:column;align-items:flex-start;}}
+@media(max-width:640px){}
+
+
+@media(max-width:768px){}
+@media(max-width:768px){}
 
 </style>
 </head>
 <body>
 <nav class="dm-nav">
   <a class="dm-nav-logo" href="/">
-    <svg class="nav-logo" style="width:28px;height:28px;flex-shrink:0;" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <svg style="width:28px;height:28px;flex-shrink:0;" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
   <defs><linearGradient id="dlg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#7C3AED"/><stop offset="55%" stop-color="#2563EB"/><stop offset="100%" stop-color="#0891b2"/></linearGradient></defs>
   <circle cx="20" cy="20" r="17" stroke="#e5e7eb" stroke-width="0.8" stroke-dasharray="2 3"/>
   <circle cx="20" cy="20" r="12" stroke="#d1d5db" stroke-width="0.5" opacity="0.6"/>
@@ -136,12 +151,18 @@ tr:hover td{background:var(--bg2);}
   <line x1="30" y1="27" x2="10" y2="27" stroke="#22D3EE"   stroke-width="0.6" opacity="0.4"/>
   <circle cx="20" cy="20" r="2.5" fill="url(#dlg)" opacity="0.6"/>
 </svg>
-    <span class="dm-nav-name" >Dark<span style="background:linear-gradient(90deg,#7C3AED,#2563EB,#0891b2);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Matter</span></span>
+    <span class="dm-nav-name">Dark<span style="background:linear-gradient(90deg,#7C3AED,#2563EB,#0891b2);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Matter</span></span>
   </a>
-  <ul class="dm-nav-links"><li><a href="/demo">Demo</a></li><li><a href="/docs" class="active">Docs</a></li><li><a href="/pricing">Pricing</a></li><li><a href="/compare">Compare</a></li><li><a href="/enterprise">Enterprise</a></li></ul>
+  <ul class="dm-nav-links">
+    <li><a href="/demo">Demo</a></li>
+    <li><a href="/docs">Docs</a></li>
+    <li><a href="/pricing">Pricing</a></li>
+    <li><a href="/compare">Compare</a></li>
+    <li><a href="/enterprise">Enterprise</a></li>
+  </ul>
   <div class="dm-nav-right">
-    <a href="/login" class="dm-nav-signin">Sign in</a>
-    <a href="/signup" class="dm-nav-cta" >Get API Key</a>
+    <a href="/login" class="dm-nav-icon" title="Sign in"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/></svg></a>
+    <a href="/signup" class="dm-nav-cta">Start free</a>
   </div>
 </nav>
 <div class="layout">
@@ -188,6 +209,8 @@ tr:hover td{background:var(--bg2);}
     <a class="sb-link" href="#context-object">Context object</a>
     <a class="sb-link" href="#event-types">Event types</a>
     <a class="sb-link" href="#integrity">Integrity model</a>
+    <a class="sb-link" href="#integrity-spec">Canonical spec &amp; vectors</a>
+    <a class="sb-link" href="#log-api">Log &amp; checkpoint API</a>
   </div>
   <div class="sb-group">
     <span class="sb-group-label">Enterprise</span>
@@ -983,7 +1006,8 @@ curl -X POST https://darkmatterhub.ai/api/agents/register \
 
   <h2 id="context-passport">Context Passport</h2>
   <p>The <strong>Context Passport</strong> is DarkMatter's proposed open standard for AI agent context handoffs. It is a structured, model-agnostic schema that any LLM or agent framework can produce and consume — making agent handoffs interoperable, verifiable, and auditable across systems.</p>
-  <p>The goal is for <code>schema_version: "1.0"</code> to mean something to any developer building multi-agent systems, the same way <code>Content-Type: application/json</code> means something to any HTTP client. Every context commit in DarkMatter is a Context Passport.</p>
+  <p>The goal is for <code>schema_version: "2"</code> to mean something to any developer building multi-agent systems, the same way <code>Content-Type: application/json</code> means something to any HTTP client. Every context commit in DarkMatter is a Context Passport.</p>
+  <div class="callout info"><div class="callout-title">Context Passport + integrity layer</div>The Context Passport defines <em>what</em> a commit contains. DarkMatter's integrity model defines <em>how</em> that content is hashed, signed, and made independently verifiable. Every Context Passport commit is cryptographically signed by the agent, hash-chained to its parent, and verifiable offline without contacting DarkMatter.</div>
 
   <h3>Why a standard schema matters</h3>
   <p>When Agent A hands work to Agent B today, the format is arbitrary — a string, a dict, or a JSON blob with no fixed shape. Agent B has to guess where the output is, who produced it, and whether it was tampered with. The Context Passport answers all of those questions in a consistent structure, regardless of which model or framework is on either end of the handoff.</p>
@@ -1089,16 +1113,134 @@ curl -X POST https://darkmatterhub.ai/api/agents/register \
   </tbody></table></div>
 
   <h2 id="integrity">Integrity model</h2>
-  <p>Each commit computes two hashes:</p>
-  <ul>
-    <li><strong>payload_hash</strong> = sha256(normalized JSON payload)</li>
-    <li><strong>integrity_hash</strong> = sha256(payload_hash + parent integrity_hash). For root commits, parent integrity_hash is the string <code>"root"</code>.</li>
-  </ul>
-  <p>Modifying any commit breaks every downstream hash. Use <code>GET /api/verify</code> to check <code>chain_intact</code> and find the exact break point.</p>
+
+  <p>DarkMatter's trust model is built on one principle: <strong>you should not need to trust DarkMatter to verify your chain.</strong> The integrity layer is designed so that even if DarkMatter's servers were compromised or acquired, tampering with stored records would be mathematically detectable by anyone holding a chain export.</p>
+
+  <div class="callout info"><div class="callout-title">One-line takeaway</div>We don't build a system that needs to be trusted. We build a system that can be verified without trust.</div>
+
+  <h3>How it works — four layers</h3>
+
+  <p><strong>Layer 1 — Client-side hashing.</strong> The SDK computes <code>payload_hash</code> and <code>integrity_hash</code> locally before transmission. The server recomputes both and flags any mismatch. DarkMatter cannot silently alter a payload without the client detecting it on the next read.</p>
+
+  <p><strong>Layer 2 — Envelope signing.</strong> Agents sign a canonical commit envelope with their Ed25519 private key before sending. The private key never leaves the agent's machine. The envelope binds: payload hash, parent integrity hash, agent ID, key ID, schema version, and timestamp. The operator cannot alter commit metadata while preserving a valid agent signature.</p>
+
+  <p><strong>Layer 3 — Append-only log.</strong> Every commit is appended to a sequential log. Each entry carries the running log root and a DarkMatter server signature. The log has no UPDATE or DELETE policies — enforced at the database layer. DarkMatter cannot silently remove a commit without the log root changing.</p>
+
+  <p><strong>Layer 4 — Public checkpoints.</strong> Every 10 minutes, the signed log root is published to a public GitHub repository (<a href="https://github.com/darkmatter-hub/checkpoints" target="_blank">darkmatter-hub/checkpoints</a>) that DarkMatter cannot unilaterally rewrite. Anyone holding a checkpoint from any point in time can verify all subsequent checkpoints are consistent — no deletions, no rewrites.</p>
+
+  <h3>Commit integrity hash</h3>
+
+  <p>Each commit produces two hashes, both computed by the SDK client-side:</p>
+
+<pre><code><span class="cm"># payload_hash = SHA-256( canonical(payload) )</span>
+payload_hash = sha256(canonicalize(payload))
+
+<span class="cm"># integrity_hash = SHA-256( canonical(envelope) )</span>
+<span class="cm"># where envelope = { schema_version, agent_id, key_id, timestamp,</span>
+<span class="cm">#                    payload_hash, parent_integrity_hash }</span>
+integrity_hash = sha256(canonicalize(envelope))<div class="lang-label">python</div></code></pre>
+
+  <p>The envelope construction means two commits with identical payloads and parents but different agents, keys, or timestamps produce different integrity hashes. This gives each commit a unique cryptographic identity.</p>
+
+  <h3>What "chain intact" means</h3>
+  <p>Modifying any commit breaks every downstream integrity hash. Use <code>GET /api/verify/:ctxId</code> to check <code>chain_intact</code> and locate the exact break point. The offline verifier (<code>verify_darkmatter_chain.py</code>) does the same check with zero network calls.</p>
+
   <div class="callout warning"><div class="callout-title">Broken chain policy</div>DarkMatter uses permissive mode. Commits are accepted on broken chains but flagged. Fork from the last valid node to start a clean branch.</div>
 
+  <h3>Verification trust levels</h3>
+  <table><thead><tr><th>Check</th><th>What it proves</th><th>Requires DarkMatter?</th></tr></thead><tbody>
+    <tr><td>Chain structure</td><td>Payload hashes and chain links are intact</td><td>No — offline</td></tr>
+    <tr><td>Agent signatures</td><td>Commits were signed by the claiming agent</td><td>No — offline</td></tr>
+    <tr><td>Log checkpoint</td><td>DarkMatter's server attested to this log root</td><td>No — offline with pubkey</td></tr>
+    <tr><td>Checkpoint publication</td><td>Checkpoint was published to GitHub</td><td>No — GitHub is public</td></tr>
+  </tbody></table>
 
-  <h2 id="search">Query and search</h2>
+  <h2 id="integrity-spec">Canonical serialization spec</h2>
+
+  <p>All SDKs (Python, TypeScript, any future language) must implement canonical serialization identically. A cross-language mismatch means the Python SDK and TypeScript SDK would produce different hashes for the same payload — breaking cross-language verification.</p>
+
+  <h3>Rules (version 1)</h3>
+  <ol>
+    <li>Object keys are sorted lexicographically (Unicode codepoint order)</li>
+    <li><code>null</code> values in objects are <strong>kept</strong> as <code>"null"</code> — <code>null</code> is not the same as a missing field</li>
+    <li><code>undefined</code> values in objects are dropped (JS only)</li>
+    <li>Arrays preserve element order</li>
+    <li>Strings use standard JSON encoding</li>
+    <li>Integers: decimal digits only, no decimal point, no exponent</li>
+    <li>Floats: non-finite values (NaN, Infinity, -Infinity) are <strong>rejected</strong> with an error</li>
+    <li>Floats: <code>toPrecision(17)</code> then strip trailing zeros, keeping at least one decimal digit</li>
+    <li>Boolean: <code>true</code> or <code>false</code></li>
+    <li><code>null</code> standalone: <code>"null"</code></li>
+  </ol>
+
+  <h3>Test vectors</h3>
+  <p>Every SDK must pass all 18 canonical serialization test vectors before release. Vectors are published at <a href="https://github.com/bengunvl/darkmatter/blob/main/github-template/integrity_test_vectors.json" target="_blank">github-template/integrity_test_vectors.json</a>.</p>
+
+<pre><code><span class="cm"># TypeScript</span>
+npm test   <span class="cm"># runs src/integrity.test.ts — must show: ✓ All 40 tests passed</span>
+
+<span class="cm"># Python</span>
+python verify_darkmatter_chain.py export.json --test-vectors integrity_test_vectors.json<div class="lang-label">bash</div></code></pre>
+
+  <p>Critical cross-language cases covered by the vectors:</p>
+  <table><thead><tr><th>Vector</th><th>What it tests</th></tr></thead><tbody>
+    <tr><td>C-004</td><td><code>null</code> value kept — not dropped (most common cross-language bug)</td></tr>
+    <tr><td>C-011</td><td>Special characters in strings (tab, newline)</td></tr>
+    <tr><td>C-013</td><td>Unicode / emoji handling</td></tr>
+    <tr><td>C-015</td><td>Arrays of objects — keys sorted within each element</td></tr>
+    <tr><td>C-017</td><td>Multiple null fields interleaved with non-null</td></tr>
+  </tbody></table>
+
+  <h3>Offline verification</h3>
+  <p>The standalone verifier works with zero DarkMatter dependencies. It is included in every chain export bundle.</p>
+
+<pre><code><span class="cm"># Basic — verify chain structure only</span>
+python verify_darkmatter_chain.py chain_export.json
+
+<span class="cm"># With agent signature verification</span>
+python verify_darkmatter_chain.py chain_export.json \
+  --agent-keys agent_pubkeys.json
+
+<span class="cm"># With log checkpoint verification (Phase 2)</span>
+python verify_darkmatter_chain.py chain_export.json \
+  --checkpoint checkpoint.json \
+  --pubkey server_pubkey.pem
+
+<span class="cm"># Legacy exports (before Phase 1 — missing hashes allowed)</span>
+python verify_darkmatter_chain.py chain_export.json --legacy
+
+<span class="cm"># Machine-readable output for CI pipelines</span>
+python verify_darkmatter_chain.py chain_export.json --json<div class="lang-label">bash</div></code></pre>
+
+  <p>Exit codes: <code>0</code> = verified, <code>1</code> = broken, <code>2</code> = malformed input.</p>
+
+  <h2 id="log-api">Log &amp; checkpoint API</h2>
+
+  <p>The append-only log and signed checkpoints are publicly accessible. No authentication required for read endpoints.</p>
+
+  <table><thead><tr><th>Endpoint</th><th>Description</th></tr></thead><tbody>
+    <tr><td><code>GET /api/log/pubkey</code></td><td>DarkMatter's Ed25519 server signing public key (PEM). Use this to verify checkpoint signatures independently.</td></tr>
+    <tr><td><code>GET /api/log/checkpoint</code></td><td>Latest signed checkpoint: position, log_root, server_sig, timestamp.</td></tr>
+    <tr><td><code>GET /api/log/checkpoints</code></td><td>Recent checkpoints (default 10, max 100). Use for consistency verification.</td></tr>
+    <tr><td><code>GET /api/log/entry/:commitId</code></td><td>Log entry for a specific commit: position, log_root, server_sig.</td></tr>
+    <tr><td><code>GET /api/log/verify?from=N&amp;to=M</code></td><td>Verify log consistency between two positions. Returns <code>consistent</code> bool and <code>broken_at</code> position.</td></tr>
+  </tbody></table>
+
+<pre><code><span class="cm"># Fetch server public key for offline checkpoint verification</span>
+curl https://darkmatterhub.ai/api/log/pubkey
+
+<span class="cm"># Get latest checkpoint</span>
+curl https://darkmatterhub.ai/api/log/checkpoint
+
+<span class="cm"># Get the log entry for a specific commit</span>
+curl https://darkmatterhub.ai/api/log/entry/ctx_1234567890_abc123
+
+<span class="cm"># Verify log consistency from position 0 to 1000</span>
+curl "https://darkmatterhub.ai/api/log/verify?from=0&to=1000"<div class="lang-label">bash</div></code></pre>
+
+  <p>Checkpoints are also published to <a href="https://github.com/darkmatter-hub/checkpoints" target="_blank">github.com/darkmatter-hub/checkpoints</a> every 10 minutes. GitHub's commit history makes this independently tamper-evident — DarkMatter cannot delete or alter published checkpoints.</p>
+
+<h2 id="search">Query and search</h2>
   <p>Search your execution history by model, provider, event type, trace ID, or full-text across payloads. Free on all plans.</p>
 
 <pre><code>import darkmatter as dm
@@ -1303,7 +1445,16 @@ def commit(dm_key, to_agent_id, payload, parent_id=None):
     <span class="dm-footer-name">Dark<span style="background:linear-gradient(90deg,#7C3AED,#2563EB,#0891b2);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Matter</span></span>
   </a>
   <div class="dm-footer-links">
-    <a href="/demo">Demo</a><a href="/docs">Docs</a><a href="/pricing">Pricing</a><a href="/why">Why</a><a href="/blog">Blog</a><a href="/enterprise">Enterprise</a><a href="/security">Security</a><a href="/compare">Compare</a><a href="https://contextpassport.com" target="_blank">Context Passport</a><a href="https://github.com/bengunvl/darkmatter" target="_blank">GitHub</a>
+    <a href="/demo">Demo</a>
+    <a href="/docs">Docs</a>
+    <a href="/pricing">Pricing</a>
+    <a href="/why">Why</a>
+    <a href="/blog">Blog</a>
+    <a href="/enterprise">Enterprise</a>
+    <a href="/security">Security</a>
+    <a href="/compare">Compare</a>
+    <a href="https://contextpassport.com" target="_blank">Context Passport</a>
+    <a href="https://github.com/bengunvl/darkmatter" target="_blank">GitHub</a>
     <span class="dm-footer-copy">© 2026 DarkMatter</span>
   </div>
 </footer>
