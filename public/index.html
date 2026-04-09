@@ -330,6 +330,48 @@ footer{background:var(--dark2);border-top:1px solid var(--dark-border);padding:4
 <!-- TRANSITION -->
 <div class="dark-to-light"></div>
 
+
+<!-- ── PROBLEMS — why DarkMatter exists ── -->
+<div style="background:#fff;padding:80px 40px;">
+  <div style="max-width:1100px;margin:0 auto;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--blue);margin-bottom:14px;">Why DarkMatter exists</div>
+    <h2 style="font-size:clamp(26px,3vw,38px);font-weight:700;letter-spacing:-.04em;color:var(--ink);line-height:1.1;margin-bottom:12px;">AI agents are making real decisions.<br>Nobody can prove what they actually did.</h2>
+    <p style="font-size:16px;color:var(--ink3);line-height:1.7;max-width:580px;margin-bottom:56px;">When something goes wrong — a bad loan decision, a flawed medical recommendation, a security breach introduced by an autonomous agent — you need more than logs. You need proof. Here are the three problems nobody else has solved.</p>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:24px;">
+
+      <!-- Problem 1 -->
+      <div style="background:var(--light);border:1px solid var(--light-border);border-radius:10px;padding:28px 28px 32px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:14px;">Problem 1</div>
+        <div style="font-size:18px;font-weight:700;letter-spacing:-.03em;color:var(--ink);margin-bottom:12px;line-height:1.2;">Agent outputs are unverifiable by design</div>
+        <p style="font-size:14.5px;color:var(--ink3);line-height:1.7;margin-bottom:16px;">Your agent logs live in your system. The model provider's logs live in theirs. When a regulator or client asks "prove what your agent did," every record was written by a party with an interest in the outcome. There is no independent, tamper-evident source of truth.</p>
+        <p style="font-size:13.5px;color:var(--ink3);line-height:1.7;border-top:1px solid var(--light-border);padding-top:14px;"><strong style="color:var(--ink2);">DarkMatter:</strong> Every commit is stored outside your infrastructure as a SHA-256 hash-linked record. Tampering breaks the chain. Verification requires no trust in us or you.</p>
+      </div>
+
+      <!-- Problem 2 -->
+      <div style="background:var(--light);border:1px solid var(--light-border);border-radius:10px;padding:28px 28px 32px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:14px;">Problem 2</div>
+        <div style="font-size:18px;font-weight:700;letter-spacing:-.03em;color:var(--ink);margin-bottom:12px;line-height:1.2;">Multi-agent pipelines have no chain of custody</div>
+        <p style="font-size:14.5px;color:var(--ink3);line-height:1.7;margin-bottom:16px;">When Agent A passes work to Agent B which passes it to Agent C, nothing records the chain of custody. If the final output is wrong, you cannot trace which handoff introduced the error — because the handoffs were never formally recorded.</p>
+        <p style="font-size:13.5px;color:var(--ink3);line-height:1.7;border-top:1px solid var(--light-border);padding-top:14px;"><strong style="color:var(--ink2);">DarkMatter:</strong> Every commit records its parent ID. You get a full lineage graph — walk from any output back to its root input, across any model, any framework, any language.</p>
+      </div>
+
+      <!-- Problem 3 -->
+      <div style="background:var(--light);border:1px solid var(--light-border);border-radius:10px;padding:28px 28px 32px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:14px;">Problem 3</div>
+        <div style="font-size:18px;font-weight:700;letter-spacing:-.03em;color:var(--ink);margin-bottom:12px;line-height:1.2;">You can't experiment on a live decision</div>
+        <p style="font-size:14.5px;color:var(--ink3);line-height:1.7;margin-bottom:16px;">To test what would have happened with a different model at step 3, you re-run the entire pipeline from scratch. You can't isolate the change. You can't guarantee the same conditions. And you can't compare the two outcomes in a structured way.</p>
+        <p style="font-size:13.5px;color:var(--ink3);line-height:1.7;border-top:1px solid var(--light-border);padding-top:14px;"><strong style="color:var(--ink2);">DarkMatter:</strong> Fork from any checkpoint. Run an alternative. Diff the two chains step by step. The same primitive that makes code experimentation safe makes agent experimentation reproducible.</p>
+      </div>
+
+    </div>
+
+    <div style="margin-top:32px;text-align:center;">
+      <a href="/blog-what-problems-darkmatter-solves" style="font-size:14px;color:var(--blue);text-decoration:none;font-family:'IBM Plex Mono',monospace;">Read the full explainer with real-world scenarios →</a>
+    </div>
+  </div>
+</div>
+
 <!-- FEATURES SECTION — LangChain-style nav + content -->
 <div class="light-section">
   <div class="container">
