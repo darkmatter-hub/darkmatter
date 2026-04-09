@@ -410,12 +410,23 @@ def validate_live(base_url, api_key):
             check("authenticated", False, f"status={r.status_code}")
             return
         me = r.json()
-        agent_id = me.get('agent_id') or me.get('id')
+        # /api/me may return nested agent object or flat
+        # /api/me returns camelCase: { agentId, agentName }
+        agent_id = (me.get('agentId')
+                    or me.get('agent_id')
+                    or me.get('id')
+                    or (me.get('agent') or {}).get('agent_id'))
         check("authenticated", True, f"agent_id={agent_id}")
 
-        # Make a test commit
-        payload = json.dumps({'toAgentId': agent_id,
-                              'payload': {'test': 'validate_phases', 'ts': str(time.time())}})
+        if not agent_id:
+            check("test commit", False, "could not determine agent_id from /api/me response")
+            return
+
+        # Make a test commit — send to self (agent commits to itself)
+        payload = json.dumps({
+            'toAgentId': agent_id,
+            'payload':   {'test': 'validate_phases', 'ts': str(time.time())}
+        })
         r = requests.post(f'{base_url}/api/commit', headers=headers,
                           data=payload, timeout=15)
         ok = r.ok and r.json().get('verified')
