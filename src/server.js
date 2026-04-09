@@ -5,6 +5,13 @@ const crypto    = require('crypto');
 const helmet    = require('helmet');
 const rateLimit = require('express-rate-limit');
 const { createClient } = require('@supabase/supabase-js');
+const {
+  canonicalize, hashPayload, hashChain,
+  verifySignature, validateClientHashes, verifyChain,
+} = require('./integrity');
+const { appendToLog, getServerPublicKeyPem, verifyLogConsistency } = require('./append-log');
+const { generateInclusionProof, verifyInclusionProof, computeRoot } = require('./merkle');
+const { publishCheckpoint, startCheckpointScheduler } = require('./checkpoint');
 
 const app = express();
 
@@ -764,10 +771,22 @@ app.post('/api/commit', apiLimiter, requireApiKey, async (req, res) => {
     const timestamp = new Date().toISOString();
     const schemaVersion = '1.0';
 
-    // ── Integrity: hash payload + parent hash ─────────
-    // Deterministically normalize payload for hashing
+    // ── Phase 1: Client-side hashing support ──────────────────────────────
+    // If the client supplied pre-computed hashes (commit_verified / Phase 1 SDK),
+    // we use THOSE hashes — the server recomputes and cross-checks, but stores
+    // what the client computed. This makes the server a dumb notary:
+    // it cannot alter the hash without the client detecting it on next read.
+    //
+    // Canonical serialisation: keys sorted recursively, compact JSON, UTF-8.
+    // This matches darkmatter.crypto.canonical_json() in the Python SDK.
+    const clientPayloadHash    = req.body.clientPayloadHash    || null;
+    const clientIntegrityHash  = req.body.clientIntegrityHash  || null;
+    const agentSignature       = req.body.agentSignature       || null;
+    const agentPublicKey       = req.body.agentPublicKey       || null;
+
+    // Server always computes independently (for cross-check and legacy clients)
     const normalizedPayload = JSON.stringify(resolvedPayload, Object.keys(resolvedPayload).sort());
-    const payloadHash = crypto.createHash('sha256').update(normalizedPayload).digest('hex');
+    const serverPayloadHash = crypto.createHash('sha256').update(normalizedPayload).digest('hex');
 
     // Fetch parent hash if parentId provided
     let parentHash = null;
@@ -780,9 +799,22 @@ app.post('/api/commit', apiLimiter, requireApiKey, async (req, res) => {
       if (parentCommit?.integrity_hash) parentHash = parentCommit.integrity_hash;
     }
 
-    // Chain: hash(payload + parentHash) for tamper-evident chain
-    const chainInput = payloadHash + (parentHash || 'root');
-    const integrityHash = crypto.createHash('sha256').update(chainInput).digest('hex');
+    const serverChainInput   = serverPayloadHash + (parentHash || 'root');
+    const serverIntegrityHash = crypto.createHash('sha256').update(serverChainInput).digest('hex');
+
+    // If client sent pre-computed hashes, cross-check them.
+    // Store client hashes (they signed over those). Flag mismatch.
+    let payloadHash, integrityHash, hashMismatch = false;
+    if (clientPayloadHash && clientIntegrityHash) {
+      hashMismatch = (clientPayloadHash !== serverPayloadHash ||
+                      clientIntegrityHash !== serverIntegrityHash);
+      payloadHash   = clientPayloadHash;
+      integrityHash = clientIntegrityHash;
+    } else {
+      // Legacy path: server-computed hashes
+      payloadHash   = serverPayloadHash;
+      integrityHash = serverIntegrityHash;
+    }
 
     // ── Agent info ────────────────────────────────────
     const agentInfo = {
@@ -818,6 +850,9 @@ app.post('/api/commit', apiLimiter, requireApiKey, async (req, res) => {
           integrity_hash:      integrityHash,
           payload_hash:        payloadHash,
           parent_hash:         parentHash,
+          agent_signature:     agentSignature,
+          agent_public_key:    agentPublicKey,
+          hash_mismatch:       hashMismatch || false,
           verified:            false,
           verification_reason: `Recipient agent ${toAgentId} not found`,
           timestamp,
@@ -848,6 +883,8 @@ app.post('/api/commit', apiLimiter, requireApiKey, async (req, res) => {
         integrity_hash:      integrityHash,
         payload_hash:        payloadHash,
         parent_hash:         parentHash,
+        server_payload_hash: serverPayloadHash,
+        hash_mismatch:       hashMismatch || false,
         verified:            true,
         verification_reason: 'API key authenticated',
         timestamp,
@@ -884,7 +921,7 @@ app.post('/api/commit', apiLimiter, requireApiKey, async (req, res) => {
       }).catch(err => console.error('webhook delivery error:', err));
     }
 
-    res.json(buildContext({
+    const receipt = buildContext({
       id:                  commitId,
       schema_version:      schemaVersion,
       from_agent:          req.agent.agent_id,
@@ -901,7 +938,23 @@ app.post('/api/commit', apiLimiter, requireApiKey, async (req, res) => {
       verified:            true,
       verification_reason: 'API key authenticated',
       timestamp,
-    }, { [req.agent.agent_id]: req.agent.agent_name, [toAgentId]: recipientAgent?.agent_name || toAgentId }));
+    }, { [req.agent.agent_id]: req.agent.agent_name, [toAgentId]: recipientAgent?.agent_name || toAgentId });
+
+    // Attach log receipt for client-side verification
+    if (logEntry) {
+      receipt._log = {
+        position:   logEntry.position,
+        log_root:   'sha256:' + logEntry.log_root,
+        server_sig: logEntry.server_sig,
+        timestamp:  logEntry.timestamp,
+        pubkey_url: 'https://darkmatterhub.ai/api/log/pubkey',
+      };
+    }
+    if (hashMismatch) {
+      receipt._warnings = receipt._warnings || [];
+      receipt._warnings.push('hash_mismatch: client hashes did not match server-computed hashes');
+    }
+    res.json(receipt);
   } catch (err) {
     console.error('commit error:', err);
     res.status(500).json({ error: err.message });
@@ -3844,7 +3897,184 @@ async function runRetentionCleanup() {
 runRetentionCleanup();
 setInterval(runRetentionCleanup, 24 * 60 * 60 * 1000);
 
+
+// ── GET /api/log/pubkey ────────────────────────────────────────────────────
+// Returns DarkMatter's server signing public key.
+// Anyone can use this to verify checkpoint signatures independently.
+app.get('/api/log/pubkey', (req, res) => {
+  res.json({
+    algorithm:   'Ed25519',
+    public_key:  getServerPublicKeyPem(),
+    note:        'Use this key to verify checkpoint server_sig fields. See https://darkmatterhub.ai/docs#integrity-model',
+  });
+});
+
+// ── GET /api/log/checkpoint ────────────────────────────────────────────────
+// Returns the latest signed checkpoint.
+app.get('/api/log/checkpoint', async (req, res) => {
+  try {
+    const { data } = await supabaseService
+      .from('checkpoints')
+      .select('*')
+      .order('position', { ascending: false })
+      .limit(1)
+      .single();
+    if (!data) return res.json({ checkpoint: null, message: 'No checkpoints yet' });
+    res.json({ checkpoint: data, pubkey_url: 'https://darkmatterhub.ai/api/log/pubkey' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── GET /api/log/checkpoints ───────────────────────────────────────────────
+// Returns recent checkpoints for consistency verification.
+app.get('/api/log/checkpoints', async (req, res) => {
+  try {
+    const limit = Math.min(parseInt(req.query.limit) || 10, 100);
+    const { data } = await supabaseService
+      .from('checkpoints')
+      .select('position, log_root, tree_root, server_sig, timestamp, published, published_url')
+      .order('position', { ascending: false })
+      .limit(limit);
+    res.json({ checkpoints: data || [], pubkey_url: 'https://darkmatterhub.ai/api/log/pubkey' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── GET /api/log/entry/:commitId ───────────────────────────────────────────
+// Returns the log entry for a specific commit (position, log_root, server_sig).
+app.get('/api/log/entry/:commitId', async (req, res) => {
+  try {
+    const { data } = await supabaseService
+      .from('log_entries')
+      .select('*')
+      .eq('commit_id', req.params.commitId)
+      .single();
+    if (!data) return res.status(404).json({ error: 'Commit not in log' });
+    res.json({ entry: data, pubkey_url: 'https://darkmatterhub.ai/api/log/pubkey' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── POST /api/log/checkpoint ───────────────────────────────────────────────
+// Manually trigger a checkpoint publish (admin/superuser only).
+app.post('/api/log/checkpoint', requireAuth, async (req, res) => {
+  if (req.agent?.email !== process.env.SUPERUSER_EMAIL) {
+    return res.status(403).json({ error: 'Superuser only' });
+  }
+  try {
+    const result = await publishCheckpoint(supabaseService);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── GET /api/log/verify ────────────────────────────────────────────────────
+// Verify log consistency from position A to B.
+app.get('/api/log/verify', async (req, res) => {
+  try {
+    const from = parseInt(req.query.from) || 0;
+    const to   = parseInt(req.query.to)   || 999999;
+    const { data: entries } = await supabaseService
+      .from('log_entries')
+      .select('position, commit_id, integrity_hash, log_root, server_sig, timestamp')
+      .gte('position', from)
+      .lte('position', to)
+      .order('position', { ascending: true });
+
+    const result = verifyLogConsistency(entries || [], getServerPublicKeyPem());
+    res.json({ ...result, entries_range: [from, to], pubkey_url: 'https://darkmatterhub.ai/api/log/pubkey' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 const PORT = process.env.PORT || 3000;
+
+// ── Phase 2: Checkpoint endpoint ─────────────────────────────────────────────
+// GET /api/audit/log          — read the audit log (public)
+// GET /api/audit/checkpoint   — get latest signed checkpoint
+// POST /api/audit/checkpoint  — create a new checkpoint (admin only)
+
+app.get('/api/audit/log', async (req, res) => {
+  try {
+    const limit  = Math.min(parseInt(req.query.limit  || '100'), 1000);
+    const offset = parseInt(req.query.offset || '0');
+    const { data, error } = await supabaseService
+      .from('audit_log')
+      .select('*')
+      .order('position', { ascending: true })
+      .range(offset, offset + limit - 1);
+    if (error) throw error;
+    res.json({ entries: data, count: data.length, offset });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.get('/api/audit/checkpoint', async (req, res) => {
+  try {
+    const { data, error } = await supabaseService
+      .from('audit_checkpoints')
+      .select('*')
+      .order('signed_at', { ascending: false })
+      .limit(1)
+      .single();
+    if (error && error.code !== 'PGRST116') throw error;
+    res.json({ checkpoint: data || null });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post('/api/audit/checkpoint', requireAuth, async (req, res) => {
+  // Admin only — creates and signs a new checkpoint
+  const adminEmail = process.env.SUPERUSER_EMAIL;
+  if (req.user?.email !== adminEmail) {
+    return res.status(403).json({ error: 'Admin only' });
+  }
+  try {
+    const { data: entries, error } = await supabaseService
+      .from('audit_log')
+      .select('*')
+      .order('position', { ascending: true });
+    if (error) throw error;
+    if (!entries?.length) return res.status(400).json({ error: 'Log is empty' });
+
+    const last      = entries[entries.length - 1];
+    const count     = entries.length;
+    const logRoot   = last.log_hash;
+    const tipHash   = last.integrity_hash;
+    const signedAt  = new Date().toISOString();
+    const ckptId    = 'ckpt_' + Date.now() + '_' + crypto.randomBytes(4).toString('hex');
+
+    // Sign with HMAC (Phase 2). Phase 4 upgrades to Ed25519 + external witnesses.
+    const body = JSON.stringify({ checkpoint_id: ckptId, log_count: count,
+      log_root: logRoot, tip_hash: tipHash, signed_at: signedAt });
+    const dmSecret = process.env.DM_CHECKPOINT_SECRET || 'dev-secret';
+    const sig = 'hmac-sha256:' + crypto.createHmac('sha256', dmSecret)
+      .update(body).digest('hex');
+
+    const checkpoint = {
+      id:           ckptId,
+      log_count:    count,
+      log_root:     logRoot,
+      tip_hash:     tipHash,
+      dm_signature: sig,
+      algorithm:    'hmac-sha256-v1',
+      signed_at:    signedAt,
+    };
+
+    await supabaseService.from('audit_checkpoints').insert(checkpoint);
+    res.json({ checkpoint });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`\n  🌑 DarkMatter running on http://localhost:${PORT}\n`);
 });

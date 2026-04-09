@@ -1,0 +1,262 @@
+{
+  "_spec": "DarkMatter Canonical Serialization v1 — Test Vectors",
+  "_doc": "All SDKs (JS, Python, future) MUST produce identical output for every vector. If any vector fails, the SDK cannot be used for cross-language verification.",
+  "_canonical_rules": [
+    "Object keys sorted by Unicode codepoint (lexicographic)",
+    "null values in objects KEPT as 'null' (not dropped — null != undefined)",
+    "undefined values in objects DROPPED (JS only)",
+    "Arrays preserve element order",
+    "Strings: standard JSON encoding",
+    "Integers: decimal digits only, no decimal point, no exponent",
+    "Floats: non-finite (NaN, Infinity, -Infinity) REJECTED with error",
+    "Floats: toPrecision(17) then strip trailing zeros, keep at least one decimal digit",
+    "Boolean: 'true' or 'false'",
+    "null: 'null'"
+  ],
+  "canonicalize_vectors": [
+    {
+      "id": "C-001",
+      "desc": "Empty object",
+      "input": {},
+      "expected": "{}"
+    },
+    {
+      "id": "C-002",
+      "desc": "Single string field",
+      "input": {
+        "a": "hello"
+      },
+      "expected": "{\"a\":\"hello\"}"
+    },
+    {
+      "id": "C-003",
+      "desc": "Keys sorted lexicographically",
+      "input": {
+        "z": 1,
+        "a": 2,
+        "m": 3
+      },
+      "expected": "{\"a\":2,\"m\":3,\"z\":1}"
+    },
+    {
+      "id": "C-004",
+      "desc": "null value KEPT (critical — not dropped)",
+      "input": {
+        "a": null,
+        "b": 1
+      },
+      "expected": "{\"a\":null,\"b\":1}"
+    },
+    {
+      "id": "C-005",
+      "desc": "Nested object with mixed types",
+      "input": {
+        "b": {
+          "d": 4,
+          "c": 3
+        },
+        "a": 1
+      },
+      "expected": "{\"a\":1,\"b\":{\"c\":3,\"d\":4}}"
+    },
+    {
+      "id": "C-006",
+      "desc": "Array preserves order",
+      "input": {
+        "arr": [
+          3,
+          1,
+          2
+        ]
+      },
+      "expected": "{\"arr\":[3,1,2]}"
+    },
+    {
+      "id": "C-007",
+      "desc": "Deeply nested",
+      "input": {
+        "x": {
+          "y": {
+            "z": "deep"
+          }
+        }
+      },
+      "expected": "{\"x\":{\"y\":{\"z\":\"deep\"}}}"
+    },
+    {
+      "id": "C-008",
+      "desc": "Integer zero",
+      "input": {
+        "n": 0
+      },
+      "expected": "{\"n\":0}"
+    },
+    {
+      "id": "C-009",
+      "desc": "Negative integer",
+      "input": {
+        "n": -42
+      },
+      "expected": "{\"n\":-42}"
+    },
+    {
+      "id": "C-010",
+      "desc": "Boolean true and false",
+      "input": {
+        "t": true,
+        "f": false
+      },
+      "expected": "{\"f\":false,\"t\":true}"
+    },
+    {
+      "id": "C-011",
+      "desc": "String with special chars",
+      "input": {
+        "s": "tab\there\nnewline"
+      },
+      "expected": "{\"s\":\"tab\\there\\nnewline\"}"
+    },
+    {
+      "id": "C-012",
+      "desc": "String with embedded double quotes",
+      "input": {
+        "s": "say \"hello\""
+      },
+      "expected": "{\"s\":\"say \\\"hello\\\"\"}"
+    },
+    {
+      "id": "C-013",
+      "desc": "Unicode string — emoji",
+      "input": {
+        "s": "rocket 🚀"
+      },
+      "expected": "{\"s\":\"rocket 🚀\"}"
+    },
+    {
+      "id": "C-014",
+      "desc": "Empty array",
+      "input": {
+        "a": []
+      },
+      "expected": "{\"a\":[]}"
+    },
+    {
+      "id": "C-015",
+      "desc": "Array of objects (keys sorted within each)",
+      "input": {
+        "items": [
+          {
+            "b": 2,
+            "a": 1
+          },
+          {
+            "d": 4,
+            "c": 3
+          }
+        ]
+      },
+      "expected": "{\"items\":[{\"a\":1,\"b\":2},{\"c\":3,\"d\":4}]}"
+    },
+    {
+      "id": "C-016",
+      "desc": "null as top-level — only for nested values",
+      "input": {
+        "nothing": null
+      },
+      "expected": "{\"nothing\":null}"
+    },
+    {
+      "id": "C-017",
+      "desc": "Multiple nulls and values interleaved",
+      "input": {
+        "c": null,
+        "a": 1,
+        "b": null
+      },
+      "expected": "{\"a\":1,\"b\":null,\"c\":null}"
+    },
+    {
+      "id": "C-018",
+      "desc": "Large integer",
+      "input": {
+        "n": 9007199254740991
+      },
+      "expected": "{\"n\":9007199254740991}"
+    }
+  ],
+  "hash_vectors": [
+    {
+      "id": "H-001",
+      "desc": "Hash of empty payload",
+      "payload": {},
+      "expected_payload_hash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+    },
+    {
+      "id": "H-002",
+      "desc": "Hash is key-order independent",
+      "payload_a": {
+        "output": "hello",
+        "model": "claude"
+      },
+      "payload_b": {
+        "model": "claude",
+        "output": "hello"
+      },
+      "expected": "both must produce the same hash"
+    },
+    {
+      "id": "H-003",
+      "desc": "null field changes hash vs missing field",
+      "payload_with_null": {
+        "output": "x",
+        "error": null
+      },
+      "payload_without": {
+        "output": "x"
+      },
+      "expected": "these must produce DIFFERENT hashes (null != missing)"
+    },
+    {
+      "id": "H-004",
+      "desc": "Root chain hash",
+      "payload_hash": "44136fa355ba77b9ad9648b98d359c2699cc173dde2c91a68e80cf7ae6c72b0e",
+      "parent_integrity_hash": null,
+      "_note": "parent_integrity_hash=null means use 'root' as parent in envelope"
+    }
+  ],
+  "envelope_vectors": [
+    {
+      "id": "E-001",
+      "desc": "Root commit envelope",
+      "envelope": {
+        "schema_version": "2",
+        "agent_id": "dm_test123",
+        "key_id": "default",
+        "timestamp": "2026-04-08T12:00:00Z",
+        "payload_hash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "parent_integrity_hash": "root"
+      },
+      "expected_canonical": "{\"agent_id\":\"dm_test123\",\"key_id\":\"default\",\"parent_integrity_hash\":\"root\",\"payload_hash\":\"44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a\",\"schema_version\":\"2\",\"timestamp\":\"2026-04-08T12:00:00Z\"}"
+    }
+  ],
+  "rejected_values": [
+    {
+      "id": "R-001",
+      "desc": "NaN rejected",
+      "value": "NaN",
+      "error": "non-finite number"
+    },
+    {
+      "id": "R-002",
+      "desc": "Infinity rejected",
+      "value": "Infinity",
+      "error": "non-finite number"
+    },
+    {
+      "id": "R-003",
+      "desc": "-Infinity rejected",
+      "value": "-Infinity",
+      "error": "non-finite number"
+    }
+  ]
+}
