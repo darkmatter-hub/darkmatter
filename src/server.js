@@ -4627,3 +4627,613 @@ app.listen(PORT, () => {
 });
 
 module.exports = app;
+// ═══════════════════════════════════════════════════════════════════════
+// WORKSPACE API — Team/Organization layer
+// ═══════════════════════════════════════════════════════════════════════
+
+const https = require('https');
+const http  = require('http');
+
+// ── Auth middleware for workspace routes ──────────────────────────────
+async function wsAuth(req, res, next) {
+  try {
+    const token = (req.headers.authorization || '').replace('Bearer ', '');
+    if (!token) return res.status(401).json({ error: 'No token' });
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+    if (error || !user) return res.status(401).json({ error: 'Invalid session' });
+    req.user = user;
+    next();
+  } catch(e) {
+    res.status(500).json({ error: 'Auth error' });
+  }
+}
+
+// ── Create workspace ──────────────────────────────────────────────────
+app.post('/api/workspace', wsAuth, async (req, res) => {
+  try {
+    const { name } = req.body;
+    if (!name?.trim()) return res.status(400).json({ error: 'Name required' });
+
+    const { data: ws, error } = await supabase
+      .from('workspaces')
+      .insert({ name: name.trim(), owner_user_id: req.user.id })
+      .select().single();
+    if (error) throw error;
+
+    // Add owner as admin member
+    const agentName = `${req.user.email}-admin`;
+    // Create an agent for this member
+    const agentId = 'dm_' + require('crypto').randomBytes(8).toString('hex');
+    const apiKey  = 'dm_sk_' + require('crypto').randomBytes(20).toString('hex');
+    const { data: agent } = await supabase.from('agents')
+      .insert({ agent_id: agentId, agent_name: agentName, api_key_hash: require('crypto').createHash('sha256').update(apiKey).digest('hex'), user_id: req.user.id })
+      .select().single();
+
+    await supabase.from('workspace_members').insert({
+      workspace_id: ws.id,
+      user_id: req.user.id,
+      email: req.user.email,
+      display_name: req.user.email.split('@')[0],
+      role: 'admin',
+      agent_id: agentId,
+    });
+
+    res.json({ workspace: ws, agentId, apiKey });
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ── Get my workspace ──────────────────────────────────────────────────
+app.get('/api/workspace', wsAuth, async (req, res) => {
+  try {
+    // Find workspace where user is a member
+    const { data: membership } = await supabase.from('workspace_members')
+      .select('workspace_id, role, agent_id, email, display_name, status')
+      .eq('user_id', req.user.id).single();
+
+    if (!membership) return res.json({ workspace: null });
+
+    const { data: ws } = await supabase.from('workspaces')
+      .select('*').eq('id', membership.workspace_id).single();
+
+    // Member count
+    const { count: memberCount } = await supabase.from('workspace_members')
+      .select('*', { count: 'exact', head: true })
+      .eq('workspace_id', ws.id).eq('status', 'active');
+
+    // Stats for this week
+    const weekAgo = new Date(Date.now() - 7*86400000).toISOString().slice(0,10);
+    const { data: stats } = await supabase.from('workspace_daily_stats')
+      .select('*').eq('workspace_id', ws.id).gte('stat_date', weekAgo);
+
+    const weekStats = (stats || []).reduce((acc, s) => ({
+      total:   acc.total   + s.total_commits,
+      ext:     acc.ext     + s.ext_commits,
+      proxy:   acc.proxy   + s.proxy_commits,
+      active:  Math.max(acc.active, s.members_active),
+      gaps:    acc.gaps    + s.gaps_detected,
+    }), { total: 0, ext: 0, proxy: 0, active: 0, gaps: 0 });
+
+    res.json({ workspace: ws, membership, memberCount, weekStats });
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ── Get workspace members (admin only) ────────────────────────────────
+app.get('/api/workspace/members', wsAuth, async (req, res) => {
+  try {
+    const { data: me } = await supabase.from('workspace_members')
+      .select('workspace_id, role').eq('user_id', req.user.id).single();
+    if (!me) return res.status(404).json({ error: 'Not in a workspace' });
+
+    const { data: members } = await supabase.from('workspace_members')
+      .select('*').eq('workspace_id', me.workspace_id)
+      .order('joined_at', { ascending: true });
+
+    // Get commit counts per member this week
+    const weekAgo = new Date(Date.now() - 7*86400000).toISOString();
+    const agentIds = members.map(m => m.agent_id).filter(Boolean);
+
+    const { data: recentCommits } = agentIds.length ? await supabase
+      .from('commits').select('agent_id')
+      .in('agent_id', agentIds)
+      .gte('accepted_at', weekAgo) : { data: [] };
+
+    const countByAgent = {};
+    (recentCommits || []).forEach(c => {
+      countByAgent[c.agent_id] = (countByAgent[c.agent_id] || 0) + 1;
+    });
+
+    const enriched = members.map(m => ({
+      ...m,
+      weekCommits: countByAgent[m.agent_id] || 0,
+    }));
+
+    res.json({ members: enriched, isAdmin: me.role === 'admin' });
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ── Invite member ─────────────────────────────────────────────────────
+app.post('/api/workspace/invite', wsAuth, async (req, res) => {
+  try {
+    const { email, role = 'member' } = req.body;
+    if (!email) return res.status(400).json({ error: 'Email required' });
+
+    const { data: me } = await supabase.from('workspace_members')
+      .select('workspace_id, role').eq('user_id', req.user.id).single();
+    if (!me || me.role !== 'admin') return res.status(403).json({ error: 'Admin only' });
+
+    const { data: inv, error } = await supabase.from('workspace_invitations')
+      .insert({ workspace_id: me.workspace_id, email, role, invited_by: req.user.id })
+      .select().single();
+    if (error) throw error;
+
+    const { data: ws } = await supabase.from('workspaces')
+      .select('name, join_code').eq('id', me.workspace_id).single();
+
+    const acceptUrl = `${process.env.APP_URL || 'https://darkmatterhub.ai'}/join?token=${inv.token}`;
+
+    // Send invite email via Resend if configured
+    if (process.env.RESEND_API_KEY) {
+      await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          from: 'DarkMatter <noreply@darkmatterhub.ai>',
+          to: [email],
+          subject: `You've been invited to ${ws.name} on DarkMatter`,
+          html: `<p>You've been invited to join <strong>${ws.name}</strong> on DarkMatter.</p>
+                 <p><a href="${acceptUrl}" style="background:#3b82f6;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;display:inline-block;">Accept invitation →</a></p>
+                 <p>Or use join code: <strong>${ws.join_code}</strong></p>
+                 <p style="color:#6b7280;font-size:12px;">This invitation expires in 7 days.</p>`
+        })
+      });
+    }
+
+    res.json({ invitation: inv, joinCode: ws.join_code, acceptUrl });
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ── Accept invitation ─────────────────────────────────────────────────
+app.post('/api/workspace/join', wsAuth, async (req, res) => {
+  try {
+    const { token, joinCode } = req.body;
+
+    let invitation;
+    if (token) {
+      const { data } = await supabase.from('workspace_invitations')
+        .select('*, workspaces(*)').eq('token', token)
+        .gt('expires_at', new Date().toISOString())
+        .is('accepted_at', null).single();
+      invitation = data;
+    } else if (joinCode) {
+      const { data: ws } = await supabase.from('workspaces')
+        .select('*').eq('join_code', joinCode.toUpperCase()).single();
+      if (ws) invitation = { workspace_id: ws.id, role: 'member', workspaces: ws };
+    }
+
+    if (!invitation) return res.status(404).json({ error: 'Invalid or expired invitation' });
+
+    // Check not already a member
+    const { data: existing } = await supabase.from('workspace_members')
+      .select('id').eq('workspace_id', invitation.workspace_id)
+      .eq('user_id', req.user.id).single();
+    if (existing) return res.status(409).json({ error: 'Already a member' });
+
+    // Create agent for new member
+    const agentId = 'dm_' + require('crypto').randomBytes(8).toString('hex');
+    const apiKey  = 'dm_sk_' + require('crypto').randomBytes(20).toString('hex');
+    const displayName = req.user.email.split('@')[0];
+
+    await supabase.from('agents').insert({
+      agent_id: agentId,
+      agent_name: `${displayName}-member`,
+      api_key_hash: require('crypto').createHash('sha256').update(apiKey).digest('hex'),
+      user_id: req.user.id,
+    });
+
+    await supabase.from('workspace_members').insert({
+      workspace_id: invitation.workspace_id,
+      user_id: req.user.id,
+      email: req.user.email,
+      display_name: displayName,
+      role: invitation.role || 'member',
+      agent_id: agentId,
+    });
+
+    if (token) {
+      await supabase.from('workspace_invitations')
+        .update({ accepted_at: new Date().toISOString() }).eq('token', token);
+    }
+
+    const { data: ws } = await supabase.from('workspaces')
+      .select('*').eq('id', invitation.workspace_id).single();
+
+    res.json({ workspace: ws, agentId, apiKey });
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ── Update workspace policy (admin) ───────────────────────────────────
+app.patch('/api/workspace/policy', wsAuth, async (req, res) => {
+  try {
+    const { data: me } = await supabase.from('workspace_members')
+      .select('workspace_id, role').eq('user_id', req.user.id).single();
+    if (!me || me.role !== 'admin') return res.status(403).json({ error: 'Admin only' });
+
+    const allowed = ['policy_can_delete','policy_capture_all','policy_allowed_llms','policy_export_permission','policy_retention_days'];
+    const updates = {};
+    allowed.forEach(k => { if (req.body[k] !== undefined) updates[k] = req.body[k]; });
+    updates.updated_at = new Date().toISOString();
+
+    const { data: ws } = await supabase.from('workspaces')
+      .update(updates).eq('id', me.workspace_id).select().single();
+
+    res.json({ workspace: ws });
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ── Update member role/status (admin) ────────────────────────────────
+app.patch('/api/workspace/members/:memberId', wsAuth, async (req, res) => {
+  try {
+    const { data: me } = await supabase.from('workspace_members')
+      .select('workspace_id, role').eq('user_id', req.user.id).single();
+    if (!me || me.role !== 'admin') return res.status(403).json({ error: 'Admin only' });
+
+    const { role, status } = req.body;
+    const updates = {};
+    if (role)   updates.role   = role;
+    if (status) updates.status = status;
+
+    const { data: member } = await supabase.from('workspace_members')
+      .update(updates)
+      .eq('id', req.params.memberId)
+      .eq('workspace_id', me.workspace_id)
+      .select().single();
+
+    res.json({ member });
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ── Get workspace commits (all members, for admin) ────────────────────
+app.get('/api/workspace/commits', wsAuth, async (req, res) => {
+  try {
+    const { data: me } = await supabase.from('workspace_members')
+      .select('workspace_id, role, agent_id').eq('user_id', req.user.id).single();
+    if (!me) return res.status(404).json({ error: 'Not in a workspace' });
+
+    const { data: members } = await supabase.from('workspace_members')
+      .select('agent_id, email, display_name').eq('workspace_id', me.workspace_id);
+
+    // Admin sees all, member sees own
+    const agentIds = me.role === 'admin'
+      ? members.map(m => m.agent_id).filter(Boolean)
+      : [me.agent_id].filter(Boolean);
+
+    if (!agentIds.length) return res.json([]);
+
+    const { data: commits } = await supabase.from('commits')
+      .select('id, trace_id, from_agent, agent_id, agent_info, payload, timestamp, event_type, verified, integrity_hash, payload_hash')
+      .or(agentIds.map(id => `from_agent.eq."${id}",agent_id.eq."${id}"`).join(','))
+      .order('timestamp', { ascending: false })
+      .limit(200);
+
+    // Enrich with member info — match on from_agent or agent_id
+    const memberByAgent = {};
+    members.forEach(m => { if (m.agent_id) memberByAgent[m.agent_id] = m; });
+
+    const enriched = (commits || []).map(c => ({
+      ...c,
+      agent_name: (memberByAgent[c.from_agent] || memberByAgent[c.agent_id])?.display_name
+                  || c.agent_info?.name || c.from_agent || '',
+      member: memberByAgent[c.from_agent] || memberByAgent[c.agent_id] || null,
+    }));
+
+    res.json(enriched);
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ── Proxy key management ──────────────────────────────────────────────
+app.post('/api/workspace/proxy-keys', wsAuth, async (req, res) => {
+  try {
+    const { provider, label } = req.body;
+    const { data: me } = await supabase.from('workspace_members')
+      .select('id, workspace_id').eq('user_id', req.user.id).single();
+    if (!me) return res.status(404).json({ error: 'Not in a workspace' });
+
+    const { data: pk, error } = await supabase.from('proxy_keys')
+      .insert({ workspace_id: me.workspace_id, member_id: me.id, target_provider: provider || 'openai', label: label || provider })
+      .select().single();
+    if (error) throw error;
+
+    res.json({ proxyKey: pk.proxy_key, id: pk.id, label: pk.label, provider: pk.target_provider });
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.get('/api/workspace/proxy-keys', wsAuth, async (req, res) => {
+  try {
+    const { data: me } = await supabase.from('workspace_members')
+      .select('id, workspace_id, role').eq('user_id', req.user.id).single();
+    if (!me) return res.status(404).json({ error: 'Not in a workspace' });
+
+    const query = supabase.from('proxy_keys').select('id, proxy_key, target_provider, label, is_active, last_used_at, real_key_hint');
+    if (me.role === 'admin') {
+      query.eq('workspace_id', me.workspace_id);
+    } else {
+      query.eq('member_id', me.id);
+    }
+    const { data: keys } = await query.order('created_at', { ascending: false });
+    res.json(keys || []);
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+// PROXY — Phase 1 middleware for LLM API calls
+// Base URL: https://darkmatterhub.ai/proxy/{provider}/...
+// Usage: replace api.openai.com with darkmatterhub.ai/proxy/openai
+// ═══════════════════════════════════════════════════════════════════════
+
+// Provider routing table
+const PROXY_TARGETS = {
+  openai:    { host: 'api.openai.com',                  pathPrefix: '' },
+  anthropic: { host: 'api.anthropic.com',               pathPrefix: '' },
+  google:    { host: 'generativelanguage.googleapis.com', pathPrefix: '' },
+  groq:      { host: 'api.groq.com',                    pathPrefix: '' },
+  mistral:   { host: 'api.mistral.ai',                  pathPrefix: '' },
+};
+
+// Auth via proxy key
+async function proxyAuth(req, res, next) {
+  try {
+    const proxyKey = (req.headers['x-dm-key'] || req.headers['authorization'] || '')
+      .replace('Bearer ', '').trim();
+
+    if (!proxyKey.startsWith('dmp_')) {
+      return res.status(401).json({ error: 'Invalid proxy key. Use your DarkMatter proxy key in Authorization header or X-DM-Key header.' });
+    }
+
+    const { data: pk } = await supabase.from('proxy_keys')
+      .select('*, workspace_members(*, workspaces(*))')
+      .eq('proxy_key', proxyKey).eq('is_active', true).single();
+
+    if (!pk) return res.status(401).json({ error: 'Proxy key not found or inactive' });
+
+    req.proxyKey   = pk;
+    req.member     = pk.workspace_members;
+    req.workspace  = pk.workspace_members?.workspaces;
+
+    // Update last used
+    await supabase.from('proxy_keys').update({ last_used_at: new Date().toISOString() }).eq('id', pk.id);
+    next();
+  } catch(e) {
+    res.status(500).json({ error: 'Proxy auth error: ' + e.message });
+  }
+}
+
+// Core proxy handler — captures request + response, commits to DarkMatter
+app.all('/proxy/:provider/*', proxyAuth, async (req, res) => {
+  const provider = req.params.provider;
+  const target   = PROXY_TARGETS[provider];
+
+  if (!target) {
+    return res.status(400).json({
+      error: `Unknown provider "${provider}". Supported: ${Object.keys(PROXY_TARGETS).join(', ')}`
+    });
+  }
+
+  const upstreamPath = req.path.replace(`/proxy/${provider}`, '') || '/';
+  const member       = req.member;
+  const workspace    = req.workspace;
+
+  // Capture raw request body
+  const requestBody  = req.body;
+  const requestStart = Date.now();
+  const clientTs     = new Date().toISOString();
+
+  // Build upstream request
+  const upstreamOptions = {
+    hostname: target.host,
+    path:     upstreamPath + (req.url.includes('?') ? '?' + req.url.split('?')[1] : ''),
+    method:   req.method,
+    headers:  {
+      'Content-Type':  'application/json',
+      'User-Agent':    'DarkMatter-Proxy/1.0',
+    },
+  };
+
+  // Forward real API key — either from proxy_key record or from request header
+  // Priority: stored key > forwarded key (with dm-forward- prefix)
+  const forwardedKey = req.headers['x-dm-forward-key'];
+  if (forwardedKey) {
+    // Client provided real key — never stored on DarkMatter servers
+    upstreamOptions.headers['Authorization'] = `Bearer ${forwardedKey}`;
+  } else {
+    return res.status(400).json({
+      error: 'Include your real API key in X-DM-Forward-Key header. DarkMatter never stores your real key.',
+      example: 'X-DM-Forward-Key: sk-...'
+    });
+  }
+
+  // Provider-specific header adjustments
+  if (provider === 'anthropic') {
+    upstreamOptions.headers['anthropic-version'] = req.headers['anthropic-version'] || '2023-06-01';
+    upstreamOptions.headers['x-api-key']         = forwardedKey;
+    delete upstreamOptions.headers['Authorization'];
+  }
+
+  const isStreaming = requestBody?.stream === true;
+
+  if (isStreaming) {
+    // ── Streaming response ─────────────────────────────────────────
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Transfer-Encoding', 'chunked');
+
+    let fullResponseBuffer = '';
+
+    const upstream = https.request(upstreamOptions, (upstreamRes) => {
+      res.writeHead(upstreamRes.statusCode, upstreamRes.headers);
+      upstreamRes.on('data', (chunk) => {
+        res.write(chunk);                          // pipe to client immediately
+        fullResponseBuffer += chunk.toString();    // buffer for DarkMatter
+      });
+      upstreamRes.on('end', async () => {
+        res.end();
+        // Commit after streaming completes — zero impact on client
+        await commitProxyInteraction({
+          provider, upstreamPath, requestBody, responseText: fullResponseBuffer,
+          statusCode: upstreamRes.statusCode, latencyMs: Date.now() - requestStart,
+          member, workspace, clientTs, isStreaming: true,
+        });
+      });
+    });
+
+    upstream.on('error', (e) => { res.end(); console.error('Proxy upstream error:', e.message); });
+    if (requestBody) upstream.write(JSON.stringify(requestBody));
+    upstream.end();
+
+  } else {
+    // ── Non-streaming response ─────────────────────────────────────
+    const upstream = https.request(upstreamOptions, (upstreamRes) => {
+      let responseBuffer = '';
+      upstreamRes.on('data', (chunk) => { responseBuffer += chunk.toString(); });
+      upstreamRes.on('end', async () => {
+        // Send response to client first
+        res.status(upstreamRes.statusCode).set(upstreamRes.headers).send(responseBuffer);
+        // Then commit — fire and forget
+        await commitProxyInteraction({
+          provider, upstreamPath, requestBody, responseText: responseBuffer,
+          statusCode: upstreamRes.statusCode, latencyMs: Date.now() - requestStart,
+          member, workspace, clientTs, isStreaming: false,
+        });
+      });
+    });
+
+    upstream.on('error', (e) => { res.status(502).json({ error: 'Upstream error: ' + e.message }); });
+    if (requestBody) upstream.write(JSON.stringify(requestBody));
+    upstream.end();
+  }
+});
+
+// ── Commit a proxied interaction to DarkMatter ────────────────────────
+async function commitProxyInteraction({ provider, upstreamPath, requestBody, responseText, statusCode, latencyMs, member, workspace, clientTs, isStreaming }) {
+  try {
+    // Extract the meaningful parts of request/response
+    const model    = requestBody?.model || 'unknown';
+    const messages = requestBody?.messages || [];
+    const lastMsg  = messages[messages.length - 1];
+    const inputText = typeof lastMsg?.content === 'string' ? lastMsg.content : JSON.stringify(lastMsg?.content || '');
+
+    let outputText = '';
+    try {
+      const parsed = JSON.parse(responseText);
+      // OpenAI format
+      outputText = parsed?.choices?.[0]?.message?.content
+        || parsed?.choices?.[0]?.text
+        // Anthropic format
+        || parsed?.content?.[0]?.text
+        || parsed?.completion
+        || '';
+    } catch(e) {
+      // Streaming SSE — extract last complete data line
+      const lines = responseText.split('\n').filter(l => l.startsWith('data: ') && l !== 'data: [DONE]');
+      const lastLine = lines[lines.length - 1];
+      if (lastLine) {
+        try {
+          const d = JSON.parse(lastLine.replace('data: ', ''));
+          outputText = d?.choices?.[0]?.delta?.content || d?.delta?.text || '';
+        } catch(e2) {}
+      }
+    }
+
+    const payload = {
+      _source:     'proxy',
+      _provider:   provider,
+      _model:      model,
+      _path:       upstreamPath,
+      _latency_ms: latencyMs,
+      _status:     statusCode,
+      _streaming:  isStreaming,
+      role:        'assistant',
+      prompt:      inputText.slice(0, 2000),    // truncate for storage
+      output:      outputText.slice(0, 10000),  // truncate for storage
+      input_messages: messages.length,
+    };
+
+    // Use member's agent_id for signing/attribution
+    const agentId = member?.agent_id;
+    if (!agentId) return;
+
+    // Get agent API key for this member
+    const { data: agent } = await supabase.from('agents')
+      .select('api_key_hash, agent_name').eq('agent_id', agentId).single();
+    if (!agent) return;
+
+    // Build the commit directly (internal commit path)
+    const { createCommit } = require('./integrity');
+    const parentRes = await supabase.from('commits')
+      .select('id, integrity_hash')
+      .or(`from_agent.eq."${agentId}",agent_id.eq."${agentId}"`)
+      .order('timestamp', { ascending: false }).limit(1).single();
+
+    const parentHash = parentRes?.data?.integrity_hash || 'root';
+    const payloadHash = require('crypto').createHash('sha256')
+      .update(JSON.stringify(payload)).digest('hex');
+
+    await supabase.from('commits').insert({
+      id:               'ctx_' + Date.now() + '_' + require('crypto').randomBytes(4).toString('hex'),
+      trace_id:         'proxy_' + Date.now(),
+      from_agent:       agentId,
+      agent_id:         agentId,  // v13+ column
+      agent_info:       { name: member?.display_name || agent.agent_name, source: 'proxy', provider },
+      payload,
+      payload_hash:     payloadHash,
+      parent_hash:      parentHash,
+      integrity_hash:   require('crypto').createHash('sha256')
+                          .update(payloadHash + parentHash).digest('hex'),
+      timestamp:        clientTs,
+      event_type:       'commit',
+      branch_key:       'main',
+      verified:         true,
+      verification_reason: 'Proxy capture',
+    });
+
+  } catch(e) {
+    console.error('[DarkMatter Proxy] Commit error:', e.message);
+    // Never surface this to the user — proxy transparency is paramount
+  }
+}
+
+// ── Proxy status/test endpoint ────────────────────────────────────────
+app.get('/proxy/status', proxyAuth, (req, res) => {
+  res.json({
+    status:    'connected',
+    member:    req.member?.display_name || req.member?.email,
+    workspace: req.workspace?.name,
+    providers: Object.keys(PROXY_TARGETS),
+    message:   'Your DarkMatter proxy is working. All API calls through this proxy are automatically recorded.',
+  });
+});
+
+// ── Join page (for invite links) ──────────────────────────────────────
+app.get('/join', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/join.html'));
+});
+
