@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>DarkMatter Settings</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{background:#0a0e1a;color:rgba(232,237,245,.9);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;-webkit-font-smoothing:antialiased;min-height:100vh;padding:40px;}
+.wrap{max-width:520px;margin:0 auto;}
+.logo{font-family:'SF Mono','Courier New',monospace;font-size:18px;font-weight:700;background:linear-gradient(90deg,#7C3AED,#2563EB,#0891b2);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:32px;display:block;}
+h2{font-size:16px;font-weight:600;color:rgba(232,237,245,.9);margin-bottom:6px;}
+.sub{font-size:13px;color:rgba(232,237,245,.4);line-height:1.6;margin-bottom:20px;}
+.card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:20px;margin-bottom:20px;}
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:11px;font-weight:600;color:rgba(232,237,245,.4);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;}
+.field input{width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:7px;padding:9px 12px;font-size:13.5px;color:rgba(232,237,245,.9);outline:none;transition:border-color .15s;font-family:inherit;}
+.field input:focus{border-color:#3b82f6;}
+.field input::placeholder{color:rgba(232,237,245,.25);}
+.btn{display:inline-block;padding:9px 20px;border-radius:8px;border:none;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:opacity .15s;}
+.btn-primary{background:#3b82f6;color:#fff;}
+.btn-primary:hover{opacity:.9;}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed;}
+.msg{font-size:13px;margin-top:10px;line-height:1.5;}
+.msg.ok{color:#10b981;} .msg.err{color:#ef4444;}
+.current-account{display:flex;align-items:center;gap:10px;padding:12px;background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.15);border-radius:8px;margin-bottom:14px;}
+.ca-icon{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#8b5cf6,#3b82f6);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;}
+.ca-email{font-size:13px;color:rgba(232,237,245,.7);}
+.ca-ws{font-size:11.5px;color:#3b82f6;margin-top:2px;}
+a{color:#60a5fa;text-decoration:none;}
+a:hover{text-decoration:underline;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <span class="logo">DarkMatter</span>
+
+  <div id="current-account-wrap" style="display:none;">
+    <div class="current-account">
+      <div class="ca-icon" id="ca-icon">?</div>
+      <div>
+        <div class="ca-email" id="ca-email"></div>
+        <div class="ca-ws" id="ca-ws" style="display:none;"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Join your team workspace</h2>
+    <p class="sub">Your admin will give you a join code or invitation link. Enter it below to connect your recording to your firm's account.</p>
+    <div class="field">
+      <label>Join code or invite token</label>
+      <input type="text" id="join-code-inp" placeholder="e.g. SMITH2026 or paste your invite link"/>
+    </div>
+    <button class="btn btn-primary" id="join-btn">Join workspace</button>
+    <div class="msg" id="join-msg"></div>
+  </div>
+
+  <div class="card">
+    <h2>Already have an account?</h2>
+    <p class="sub">Sign in at DarkMatter and your extension will connect automatically.</p>
+    <a href="https://darkmatterhub.ai/login?ext=1" target="_blank" class="btn btn-primary">Sign in →</a>
+  </div>
+
+  <p style="font-size:12px;color:rgba(232,237,245,.25);margin-top:20px;">
+    Questions? <a href="https://darkmatterhub.ai/docs">Read the docs</a> or email <a href="mailto:hello@darkmatterhub.ai">hello@darkmatterhub.ai</a>
+  </p>
+</div>
+<script src="options.js"></script>
+</body>
+</html>

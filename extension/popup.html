@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>DarkMatter</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{
+  width:300px;background:#0a0e1a;color:rgba(232,237,245,.9);
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  font-size:13px;-webkit-font-smoothing:antialiased;
+}
+.header{
+  padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.08);
+  display:flex;align-items:center;gap:8px;
+}
+.logo{font-family:'SF Mono','Courier New',monospace;font-size:14px;font-weight:700;
+  background:linear-gradient(90deg,#7C3AED,#2563EB,#0891b2);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.status-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-left:auto;}
+.status-dot.active{background:#10b981;box-shadow:0 0 6px rgba(16,185,129,.5);}
+.status-dot.inactive{background:#374151;}
+.status-dot.pending{background:#f59e0b;}
+
+/* Sign in state */
+.signin-wrap{padding:20px 16px;text-align:center;}
+.signin-title{font-size:15px;font-weight:600;margin-bottom:6px;}
+.signin-sub{font-size:12px;color:rgba(232,237,245,.45);line-height:1.5;margin-bottom:16px;}
+.btn{
+  display:block;width:100%;padding:9px;border-radius:8px;border:none;
+  font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;
+  transition:opacity .15s;text-decoration:none;text-align:center;
+}
+.btn-primary{background:#3b82f6;color:#fff;}
+.btn-primary:hover{opacity:.9;}
+.btn-ghost{background:rgba(255,255,255,.06);color:rgba(232,237,245,.6);margin-top:8px;}
+.btn-ghost:hover{background:rgba(255,255,255,.1);}
+
+/* Signed in state */
+.user-info{padding:12px 16px;display:flex;align-items:center;gap:8px;border-bottom:1px solid rgba(255,255,255,.06);}
+.avatar{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#8b5cf6,#3b82f6);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;}
+.user-details{flex:1;min-width:0;}
+.user-email{font-size:12px;color:rgba(232,237,245,.5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.user-workspace{font-size:11px;color:#3b82f6;margin-top:1px;}
+
+/* Stats row */
+.stats{padding:10px 16px;display:flex;gap:0;border-bottom:1px solid rgba(255,255,255,.06);}
+.stat{flex:1;text-align:center;padding:4px 0;}
+.stat:not(:last-child){border-right:1px solid rgba(255,255,255,.06);}
+.stat-num{font-size:18px;font-weight:700;color:rgba(232,237,245,.9);line-height:1;}
+.stat-label{font-size:10px;color:rgba(232,237,245,.3);margin-top:3px;text-transform:uppercase;letter-spacing:.04em;}
+.stat-num.pending-num{color:#f59e0b;}
+
+/* Toggle */
+.toggle-row{padding:10px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,.06);}
+.toggle-label{font-size:12.5px;color:rgba(232,237,245,.7);}
+.toggle{position:relative;width:36px;height:20px;flex-shrink:0;}
+.toggle input{opacity:0;width:0;height:0;}
+.toggle-slider{position:absolute;inset:0;background:rgba(255,255,255,.12);border-radius:20px;cursor:pointer;transition:background .2s;}
+.toggle input:checked + .toggle-slider{background:#10b981;}
+.toggle-slider::before{content:'';position:absolute;width:14px;height:14px;border-radius:50%;background:#fff;top:3px;left:3px;transition:transform .2s;}
+.toggle input:checked + .toggle-slider::before{transform:translateX(16px);}
+
+/* Platform list */
+.platforms{padding:8px 16px 4px;}
+.platforms-label{font-size:10px;color:rgba(232,237,245,.3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;}
+.plat-row{display:flex;align-items:center;justify-content:space-between;padding:4px 0;}
+.plat-name{font-size:12px;color:rgba(232,237,245,.6);}
+.plat-status{font-size:10px;}
+.plat-status.on{color:#10b981;}
+.plat-status.off{color:rgba(232,237,245,.25);}
+
+/* Footer */
+.footer{padding:10px 16px;display:flex;gap:6px;border-top:1px solid rgba(255,255,255,.06);}
+.footer-link{font-size:11px;color:rgba(232,237,245,.3);text-decoration:none;cursor:pointer;background:none;border:none;font-family:inherit;padding:0;}
+.footer-link:hover{color:rgba(232,237,245,.6);}
+.footer-sep{color:rgba(255,255,255,.1);}
+.signout-btn{margin-left:auto;}
+
+/* Pending notice */
+.pending-notice{margin:10px 16px;padding:8px 10px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.15);border-radius:6px;font-size:11.5px;color:#f59e0b;line-height:1.5;}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <span class="logo">DarkMatter</span>
+  <div class="status-dot inactive" id="status-dot"></div>
+</div>
+
+<!-- SIGN IN STATE -->
+<div id="signin-state" class="signin-wrap">
+  <div class="signin-title">Record your AI work</div>
+  <div class="signin-sub">Every conversation is automatically signed and saved. Nothing can be changed after the fact.</div>
+  <a class="btn btn-primary" href="https://darkmatterhub.ai/login?ext=1" target="_blank" id="signin-btn">Sign in to start recording →</a>
+  <a class="btn btn-ghost" href="https://darkmatterhub.ai/signup?ext=1" target="_blank">Create free account</a>
+</div>
+
+<!-- SIGNED IN STATE -->
+<div id="signedin-state" style="display:none;">
+  <div class="user-info">
+    <div class="avatar" id="avatar">?</div>
+    <div class="user-details">
+      <div id="user-email" class="user-email"></div>
+      <div id="user-workspace" class="user-workspace" style="display:none;"></div>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-num" id="stat-today">—</div>
+      <div class="stat-label">Today</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num" id="stat-week">—</div>
+      <div class="stat-label">This week</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num pending-num" id="stat-pending">—</div>
+      <div class="stat-label">Saving…</div>
+    </div>
+  </div>
+
+  <div id="pending-notice" class="pending-notice" style="display:none;">
+    Saving conversations to your account…
+  </div>
+
+  <div class="toggle-row">
+    <span class="toggle-label">Recording</span>
+    <label class="toggle">
+      <input type="checkbox" id="enabled-toggle" checked/>
+      <span class="toggle-slider"></span>
+    </label>
+  </div>
+
+  <div class="platforms">
+    <div class="platforms-label">Platforms</div>
+    <div class="plat-row"><span class="plat-name">Claude</span><span class="plat-status on" id="p-claude">● Active</span></div>
+    <div class="plat-row"><span class="plat-name">ChatGPT</span><span class="plat-status on" id="p-chatgpt">● Active</span></div>
+    <div class="plat-row"><span class="plat-name">Grok</span><span class="plat-status on" id="p-grok">● Active</span></div>
+    <div class="plat-row"><span class="plat-name">Gemini</span><span class="plat-status on" id="p-gemini">● Active</span></div>
+    <div class="plat-row"><span class="plat-name">Perplexity</span><span class="plat-status on" id="p-perplexity">● Active</span></div>
+  </div>
+
+  <div class="footer">
+    <a class="footer-link" href="https://darkmatterhub.ai/dashboard" target="_blank">Open dashboard →</a>
+    <span class="footer-sep">·</span>
+    <button class="footer-link signout-btn" id="signout-btn">Sign out</button>
+  </div>
+</div>
+
+<script src="popup.js"></script>
+</body>
+</html>
