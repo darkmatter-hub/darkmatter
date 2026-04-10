@@ -406,6 +406,26 @@ pre:hover .code-lang{display:none;}
 @keyframes fadeup{from{opacity:0;transform:translateX(-50%) translateY(6px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
 
 @media(max-width:760px){:root{--sb:0px;}.sb{display:none;}}
+
+/* ── TEAM VIEW TAB SYSTEM ────────────────────────────────── */
+.team-tab-row{
+  display:flex;gap:2px;padding:0 24px;
+  background:#fff;border-bottom:1px solid var(--border);flex-shrink:0;
+}
+.ttab{
+  font-size:13px;padding:10px 12px;cursor:pointer;border:none;background:none;
+  color:var(--ink3);font-family:var(--sans);
+  border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .12s,border-color .12s;
+}
+.ttab:hover{color:var(--ink2);}
+.ttab.on{color:var(--blue);border-bottom-color:var(--blue);font-weight:500;}
+
+/* tpanel — each sub-tab panel, scrollable */
+.tpanel{display:none;overflow-y:auto;padding:20px 24px 40px;background:var(--bg2);flex:1;-webkit-overflow-scrolling:touch;}
+.tpanel.on{display:block;}
+.sc{background:#fff;border:1px solid var(--border);border-radius:8px;padding:18px 20px;margin-bottom:14px;}
+.sc-t{font-size:14px;font-weight:700;color:var(--ink);margin-bottom:5px;letter-spacing:-.02em;}
+.sc-s{font-size:13px;color:var(--ink3);line-height:1.65;margin-bottom:14px;}
 </style>
 </head>
 <body>
@@ -517,7 +537,7 @@ pre:hover .code-lang{display:none;}
       </div>
     </div>
 
-    <div id="view-workspace" style="display:none;flex-direction:column;overflow:hidden;">
+    <div id="view-workspace" style="display:none;">
       <!-- Sub-tab bar -->
       <div class="team-tab-row">
         <button class="ttab on" data-tt="team"     onclick="switchTeamTab('team')">Team</button>
@@ -953,8 +973,10 @@ function searchScore(t,q){
 
 // ── VIEW / TAB SWITCHING ─────────────────────────────────────
 function showView(v){
-  ['records','workspace','agents'].forEach(x=>{
-    document.getElementById('view-'+x).style.display=x===v?'':'none';
+  // Explicit display values — CSS has display:none on these, so '' would re-apply it
+  var dm={records:'flex',workspace:'flex',agents:'flex'};
+  ['records','workspace','agents'].forEach(function(x){
+    document.getElementById('view-'+x).style.display=x===v?dm[x]:'none';
   });
   document.querySelectorAll('.hl').forEach(l=>l.classList.remove('on'));
   const nl=document.getElementById('nav-'+v);if(nl)nl.classList.add('on');
@@ -1727,6 +1749,7 @@ function setRefreshStatus(state){
 }
 
 async function init(){
+  showView('records'); // set inline display explicitly
   loadThreads();
   try{
     const h=await authH();
