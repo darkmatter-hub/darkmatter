@@ -5148,7 +5148,7 @@ const PROXY_TARGETS = {
 };
 
 // Auth via proxy key
-async async function proxyAuth(req, res, next) {
+async function proxyAuth(req, res, next) {
   try {
     const proxyKey = (req.headers['x-dm-key'] || req.headers['authorization'] || '')
       .replace('Bearer ', '').trim();
