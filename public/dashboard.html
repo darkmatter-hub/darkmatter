@@ -32,7 +32,7 @@ header{position:fixed;inset:0 0 auto 0;z-index:200;height:var(--hh);
   background:rgba(10,14,26,.92);border-bottom:1px solid var(--border);
   backdrop-filter:blur(12px);display:flex;align-items:center;padding:0 20px;gap:0;}
 .logo{display:flex;align-items:center;gap:9px;text-decoration:none;flex-shrink:0;margin-right:28px;}
-.logo-name{font-family:var(--mono);font-size:15px;font-weight:600;color:var(--text);letter-spacing:-.03em;}
+.logo-name{font-family:var(--mono);font-size:15px;font-weight:600;color:var(--ink);letter-spacing:-.03em;}
 .logo-grad{background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
 .h-nav{display:flex;align-items:center;gap:1px;flex:1;}
 .hl{font-size:13px;color:var(--text3);background:none;border:none;cursor:pointer;
@@ -145,9 +145,11 @@ header{position:fixed;inset:0 0 auto 0;z-index:200;height:var(--hh);
 .tp{display:none;flex:1;overflow:hidden;}
 .tp.on{display:flex;flex-direction:column;min-height:0;}
 #view-records{display:flex;flex-direction:column;flex:1;overflow:hidden;min-height:0;}
+#view-workspace{display:none;flex-direction:column;flex:1;overflow:hidden;min-height:0;}
+#view-agents{display:none;flex-direction:column;flex:1;overflow:hidden;min-height:0;}
 
 /* CONVERSATION */
-.conv-scroll{flex:1;overflow-y:auto;padding:20px 24px 20px;background:#f8f9fc;min-height:0;}
+.conv-scroll{flex:1;overflow-y:auto;padding:20px 24px 28px;background:#f4f6fb;min-height:0;}
 .mw{max-width:720px;margin:0 auto;width:100%;}
 .mg{margin-bottom:12px;clear:both;}
 .mu{display:flex;flex-direction:column;align-items:flex-end;}
@@ -225,7 +227,7 @@ pre:hover .code-lang{display:none;}
 .pc-ic.ok{color:var(--green);}
 .pc-ic.skip{color:var(--text4);}
 .pc-ic.warn{color:var(--amber);}
-.pc-title{font-size:12.5px;font-weight:600;color:var(--text);}
+.pc-title{font-size:12.5px;font-weight:600;color:var(--ink);}
 .pc-body{font-size:12px;color:var(--text3);line-height:1.6;}
 .pc-mono{font-family:var(--mono);font-size:9.5px;color:var(--text4);margin-top:4px;word-break:break-all;}
 .pab{background:rgba(59,130,246,.05);border:1px solid rgba(59,130,246,.15);border-radius:10px;padding:18px 20px;}
@@ -246,42 +248,42 @@ pre:hover .code-lang{display:none;}
 .sdl:hover{background:rgba(16,185,129,.12);}
 
 /* TEAM VIEW */
-.team-scroll{flex:1;overflow-y:auto;padding:24px;}
+.team-scroll{flex:1;overflow-y:auto;padding:20px 24px;background:var(--bg2);}
 .team-hd{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;gap:12px;flex-wrap:wrap;}
-.team-title{font-size:18px;font-weight:700;color:var(--text);letter-spacing:-.03em;}
-.team-sub{font-size:13px;color:var(--text3);margin-top:4px;line-height:1.6;}
+.team-title{font-size:18px;font-weight:700;color:var(--ink);letter-spacing:-.03em;}
+.team-sub{font-size:13px;color:var(--ink3);margin-top:4px;line-height:1.6;}
 .cov-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;}
-.cov-card{background:var(--dark3);border:1px solid var(--border);border-radius:10px;padding:16px;}
+.cov-card{background:#fff;border:1px solid var(--border);border-radius:8px;padding:16px;}
 .cov-hd{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
 .cov-ic{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
 .cov-ic.ext{background:rgba(139,92,246,.12);}
 .cov-ic.proxy{background:rgba(59,130,246,.12);}
-.cov-label{font-size:13px;font-weight:600;color:var(--text);}
-.cov-sub{font-size:11px;color:var(--text3);margin-top:1px;}
-.cov-num{font-size:26px;font-weight:700;color:var(--text);line-height:1;}
-.cov-det{font-size:11.5px;color:var(--text3);margin-top:4px;}
-.cov-lnk{font-size:12px;color:var(--blue2);background:none;border:none;cursor:pointer;font-family:var(--sans);padding:0;margin-top:8px;display:block;}
+.cov-label{font-size:13px;font-weight:600;color:var(--ink);}
+.cov-sub{font-size:11px;color:var(--ink3);margin-top:1px;}
+.cov-num{font-size:26px;font-weight:700;color:var(--ink);line-height:1;}
+.cov-det{font-size:11.5px;color:var(--ink3);margin-top:4px;}
+.cov-lnk{font-size:12px;color:var(--blue);background:none;border:none;cursor:pointer;font-family:var(--sans);padding:0;margin-top:8px;display:block;}
 .ws-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px;}
-.ws-stat{background:var(--dark3);border:1px solid var(--border);border-radius:9px;padding:14px;text-align:center;}
-.ws-stat-n{font-size:22px;font-weight:700;color:var(--text);}
-.ws-stat-l{font-size:10px;color:var(--text3);margin-top:4px;text-transform:uppercase;letter-spacing:.05em;}
-.members-card{background:var(--dark3);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:16px;}
+.ws-stat{background:#fff;border:1px solid var(--border);border-radius:8px;padding:14px;text-align:center;}
+.ws-stat-n{font-size:22px;font-weight:700;color:var(--ink);}
+.ws-stat-l{font-size:10px;color:var(--text3);margin-top:4px;text-transform:uppercase;letter-spacing:.05em;font-family:var(--mono);}
+.members-card{background:#fff;border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:14px;}
 .members-hd{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border-bottom:1px solid var(--border);}
-.members-hd-t{font-size:13px;font-weight:600;color:var(--text);}
+.members-hd-t{font-size:13px;font-weight:600;color:var(--ink);}
 .members-jc{font-family:var(--mono);font-size:11px;color:var(--text3);}
 .mt{width:100%;border-collapse:collapse;}
 .mt th{font-size:10px;font-weight:600;color:var(--text4);text-transform:uppercase;letter-spacing:.06em;padding:8px 16px;text-align:left;border-bottom:1px solid var(--border);}
 .mt td{padding:10px 16px;border-bottom:1px solid rgba(255,255,255,.04);font-size:13px;color:var(--text2);}
 .mt tr:last-child td{border-bottom:none;}
 .mn{font-weight:500;color:var(--text);}
-.me{font-size:11px;color:var(--text3);margin-top:1px;}
+.me{font-size:11px;color:var(--ink3);margin-top:1px;}
 .mrole{font-family:var(--mono);font-size:10px;padding:2px 7px;border-radius:4px;}
 .mrole.admin{background:var(--abg);color:var(--amber);}
 .mrole.member{background:rgba(255,255,255,.05);color:var(--text3);}
 .msd{width:6px;height:6px;border-radius:50%;display:inline-block;}
 .msd.active{background:var(--green);}
 .msd.inactive{background:var(--text4);}
-.sec-card{background:var(--dark3);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px;}
+.sec-card{background:#fff;border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:16px;}
 .sc-t{font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px;}
 .sc-s{font-size:12px;color:var(--text3);line-height:1.65;margin-bottom:12px;}
 .inv-row{display:flex;gap:8px;}
@@ -325,7 +327,7 @@ pre:hover .code-lang{display:none;}
 .ag-card{background:var(--dark3);border:1px solid var(--border);border-radius:10px;padding:14px 16px;}
 .ag-hd{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
 .ag-dot{width:7px;height:7px;border-radius:50%;background:var(--green);}
-.ag-name{font-size:14px;font-weight:600;color:var(--text);}
+.ag-name{font-size:14px;font-weight:600;color:var(--ink);}
 .ag-row{display:flex;align-items:center;gap:6px;margin-bottom:6px;}
 .ag-id{font-family:var(--mono);font-size:11px;color:var(--text3);}
 .ag-kv{font-family:var(--mono);font-size:11px;color:var(--text2);background:rgba(255,255,255,.04);padding:3px 8px;border-radius:4px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
@@ -584,7 +586,7 @@ pre:hover .code-lang{display:none;}
             </div></div>
             <div class="px-step"><div class="px-num">3</div><div class="px-b">
               <div class="px-t">Enter your workspace join code when prompted</div>
-              <div class="px-code"><span class="px-ct" id="ext-join-code-display">Loading...</span><button class="px-cp" onclick="copyJoinCode()">Copy</button></div>
+              <div class="px-code"><span class="px-ct" id="ext-join-code-display">—</span><button class="px-cp" onclick="copyJoinCode()">Copy</button></div>
             </div></div>
             <div class="px-step"><div class="px-num">4</div><div class="px-b">
               <div class="px-t">Done. Open any AI tool and start a conversation.</div>
@@ -620,7 +622,7 @@ pre:hover .code-lang{display:none;}
             <div class="px-step"><div class="px-num">1</div><div class="px-b">
               <div class="px-t">Your proxy key</div>
               <div class="px-d">Use this in Authorization. Keep it private.</div>
-              <div class="px-code"><span class="px-ct" id="proxy-key-txt">Loading...</span><button class="px-cp" onclick="copyProxyKey()">Copy</button></div>
+              <div class="px-code"><span class="px-ct" id="proxy-key-txt">—</span><button class="px-cp" onclick="copyProxyKey()">Copy</button></div>
             </div></div>
             <div class="px-step"><div class="px-num">2</div><div class="px-b">
               <div class="px-t">Change the API base URL in your tool</div>
@@ -837,19 +839,37 @@ function fmtDate(iso){if(!iso)return'';return new Date(iso).toLocaleDateString('
 function fmtDateTime(iso){
   if(!iso)return'';
   const d=new Date(iso);
-  const local=d.toLocaleString(undefined,{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false});
-  const utc=d.toLocaleString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',timeZone:'UTC',hour12:false});
-  // If local and UTC produce the same string, just show it once with UTC label
-  const utcStr=utc+' UTC';
-  if(local===utc)return utcStr;
-  return local+' ('+utcStr+')';
+  // Primary: local time in user's locale (no timezone suffix)
+  const local=d.toLocaleString(undefined,{month:'short',day:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false});
+  // UTC string for tooltip
+  const utc=d.toLocaleString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',timeZone:'UTC',hour12:false})+' UTC';
+  // Offset label: e.g. "+4h UTC" or "-5h UTC"
+  const offsetMin=-(d.getTimezoneOffset());
+  const offsetH=Math.round(offsetMin/60);
+  const offLabel=(offsetH>=0?'+':'')+offsetH+'h UTC';
+  return local;  // just return local — UTC shown in .mts detail panel and title attrs
+}
+function fmtDateTimeUTC(iso){
+  if(!iso)return'';
+  return new Date(iso).toLocaleString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',timeZone:'UTC',hour12:false})+' UTC';
+}
+function fmtDateTimeFull(iso){
+  // Returns HTML: local time + clickable UTC offset
+  if(!iso)return'';
+  const d=new Date(iso);
+  const local=d.toLocaleString(undefined,{month:'short',day:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false});
+  const utc=d.toLocaleString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',timeZone:'UTC',hour12:false})+' UTC';
+  const offsetMin=-(d.getTimezoneOffset());
+  const offsetH=Math.round(offsetMin/60);
+  const offLabel=(offsetH>=0?'+':'')+offsetH+'h UTC';
+  return local+'<span class="ts-utc-pill" title="'+utc+'" onclick="this.textContent=this.textContent===''+offLabel+''?''+utc+'':''+offLabel+''">'+offLabel+'</span>';
 }
 function fmtTime(iso){
   if(!iso)return'';
   const d=new Date(iso);
   const local=d.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
   const utc=d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit',timeZone:'UTC',hour12:false})+' UTC';
-  return local+' ('+utc+')';
+  return local+' · '+utc;
 }
 function relGroup(ts){
   if(!ts)return'Older';
@@ -999,6 +1019,9 @@ function processCommits(commits){
     if(ts(c)>t.latest)t.latest=ts(c);
   }
   allThreads=[...map.values()].sort((a,b)=>b.latest.localeCompare(a.latest));
+  // Update total count immediately from local data
+  const totEl=document.getElementById('ws-total');
+  if(totEl&&allThreads.length>0)totEl.textContent=allThreads.length;
 }
 
 function showSkeletons(){
@@ -1016,7 +1039,7 @@ function showError(msg){
   document.getElementById('sb-skeleton').style.display='none';
   document.getElementById('sb-content').style.display='none';
   const el=document.getElementById('sb-error');el.style.display='';
-  el.innerHTML='<div class="sb-grp" style="color:var(--red)">'+esc(msg)+'</div><button onclick="loadThreads()" style="font-size:11.5px;color:var(--blue2);background:none;border:none;cursor:pointer;padding:4px 8px;font-family:var(--sans);">Retry</button>';
+  el.innerHTML='<div class="sb-grp" style="color:var(--red)">'+esc(msg)+'</div><button onclick="loadThreads()" style="font-size:11.5px;color:var(--blue);background:none;border:none;cursor:pointer;padding:4px 8px;font-family:var(--sans);">Retry</button>';
 }
 function showSessionExpired(){
   document.getElementById('sb-skeleton').style.display='none';
@@ -1180,14 +1203,14 @@ function renderConversation(thread){
       g.innerHTML='<div class="mu">'
         +'<div class="msg-role-label user">You'+(srcLabel?' &middot; '+srcLabel:'')+'</div>'
         +'<div class="bu">'+esc(text)+'</div>'
-        +'<div class="mfoot r"><span class="mtime">'+fmtDateTime(clientTs)+'</span>'+detBtn+'</div>'
+        +'<div class="mfoot r"><span class="mtime">'+fmtDateTimeFull(clientTs)+'</span>'+detBtn+'</div>'
         +tsDetail+'</div>';
     }else{
       const agentLabel=esc((c.payload&&c.payload.platform)||'AI');
       g.innerHTML='<div class="ma">'
         +'<div class="msg-role-label agent">'+agentLabel+'</div>'
         +'<div class="ba">'+renderMarkdown(text)+'</div>'
-        +'<div class="mfoot"><span class="mtime">'+fmtDateTime(clientTs)+'</span>'+detBtn+'</div>'
+        +'<div class="mfoot"><span class="mtime">'+fmtDateTimeFull(clientTs)+'</span>'+detBtn+'</div>'
         +tsDetail+'</div>';
     }
     wrap.appendChild(g);
@@ -1480,10 +1503,32 @@ async function loadWorkspace(){
         myProxyKey=cd.proxyKey||cd.proxy_key||null;
       }catch(e){console.warn('proxy key create failed:',e);}
     }
-    // Update all proxy key display elements
+    // Update all proxy key display elements immediately
     const pkEl=document.getElementById('proxy-key-txt');
-    if(pkEl)pkEl.textContent=myProxyKey||'(none — contact support)';
+    if(pkEl)pkEl.textContent=myProxyKey||'Could not load — try refreshing';
+    // Also update join code display (in Setup tab)
+    const jc2=document.getElementById('ext-join-code-display');
+    if(jc2&&wsData)jc2.textContent=wsData.join_code||'—';
   }catch(e){console.error('Workspace:',e);}
+}
+
+async function refreshWorkspaceStats(){
+  // Lightweight re-fetch of just workspace stats — called by auto-poll
+  if(!wsData)return;
+  try{
+    const h=await authH();
+    const r=await fetch('/api/workspace',{headers:h});
+    const data=await r.json();
+    if(!data.workspace)return;
+    const el=(id)=>document.getElementById(id);
+    const ws=data.weekStats||{};
+    if(el('ws-total'))el('ws-total').textContent=ws.total||allThreads.length||'0';
+    if(el('ws-week'))el('ws-week').textContent=ws.total||'0';
+    if(el('ws-members'))el('ws-members').textContent=data.memberCount||'1';
+    if(el('ws-gaps'))el('ws-gaps').textContent=ws.gaps||'0';
+    if(el('cov-ext'))el('cov-ext').textContent=ws.ext||'0';
+    if(el('cov-proxy'))el('cov-proxy').textContent=ws.proxy||'0';
+  }catch(e){}
 }
 
 function renderMembers(){
@@ -1521,6 +1566,7 @@ async function sendInvite(){
   const btn=document.getElementById('inv-btn');btn.disabled=true;btn.textContent='Sending...';
   const msg=document.getElementById('inv-msg');msg.textContent='';
   try{
+    await refreshSession(); // force refresh before auth-gated call
     const h=await authH();
     const r=await fetch('/api/workspace/invite',{method:'POST',headers:h,body:JSON.stringify({email:email,role:'member'})});
     const d=await r.json();
@@ -1692,6 +1738,7 @@ function startPoll(){
   _pollTimer = setInterval(function(){
     if(document.visibilityState === 'hidden') return;
     fetchRecords().catch(function(){});
+    refreshWorkspaceStats().catch(function(){});
   }, 30000);
 }
 document.addEventListener('visibilitychange', function(){

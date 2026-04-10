@@ -3535,10 +3535,13 @@ app.get('/r/:traceId', async (req, res) => {
       .order('timestamp', { ascending: true });
 
     if (error || !commits?.length) {
-      return res.status(404).json({ error: 'Record not found or has been removed.' });
+      // Return clean 404 page
+      return res.status(404).send(`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><title>Record not found — DarkMatter</title>
+<style>*{box-sizing:border-box;margin:0;padding:0;}body{font-family:"IBM Plex Sans",system-ui,sans-serif;background:#f4f6fb;color:#0a0e1a;display:flex;align-items:center;justify-content:center;min-height:100vh;}.card{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:40px;max-width:400px;text-align:center;}.title{font-size:18px;font-weight:700;margin-bottom:8px;letter-spacing:-.02em;}.sub{font-size:13px;color:#5a6480;line-height:1.6;}</style>
+</head><body><div class="card"><div style="font-size:2rem;margin-bottom:16px;opacity:.2;">🌑</div><div class="title">Record not found</div><div class="sub">This record may have been removed, or the link may be incorrect.<br/><br/><a href="/" style="color:#3b82f6;">Back to DarkMatter →</a></div></div></body></html>`);
     }
 
-    // Verify chain integrity server-side
+    // Verify chain integrity
     let chainIntact = true;
     for (let i = 1; i < commits.length; i++) {
       if (commits[i].parent_hash && commits[i].parent_hash !== commits[i-1].integrity_hash) {
@@ -3546,40 +3549,401 @@ app.get('/r/:traceId', async (req, res) => {
       }
     }
 
-    // Strip any private fields from payload
-    const safe = commits.map(c => ({
-      id:               c.id,
-      trace_id:         c.trace_id,
-      timestamp:        c.client_timestamp || c.timestamp,
-      recorded_at:      c.timestamp,
-      event_type:       c.event_type,
-      integrity_hash:   c.integrity_hash,
-      parent_hash:      c.parent_hash,
-      verified:         c.verified,
-      payload: {
-        role:       c.payload?.role,
-        text:       c.payload?.text,
-        output:     c.payload?.output,
-        summary:    c.payload?.summary,
-        prompt:     c.payload?.prompt,
-        convTitle:  c.payload?.convTitle,
-        platform:   c.payload?.platform,
-        _source:    c.payload?._source,
-      },
-    }));
+    const accept = req.headers['accept'] || '';
+    const wantsJSON = accept.includes('application/json') || req.query.format === 'json';
 
-    res.json({
-      trace_id:     traceId,
-      chain_intact: chainIntact,
-      step_count:   commits.length,
-      commits:      safe,
-      verified_at:  new Date().toISOString(),
-      verify_url:   `${process.env.APP_URL || 'https://darkmatterhub.ai'}/r/${traceId}`,
+    if (wantsJSON) {
+      // JSON API response
+      const safe = commits.map(c => ({
+        id: c.id, trace_id: c.trace_id,
+        timestamp: c.client_timestamp || c.timestamp,
+        recorded_at: c.timestamp,
+        event_type: c.event_type,
+        integrity_hash: c.integrity_hash,
+        parent_hash: c.parent_hash,
+        verified: c.verified,
+        payload: { role: c.payload?.role, text: c.payload?.text, output: c.payload?.output,
+          summary: c.payload?.summary, prompt: c.payload?.prompt,
+          convTitle: c.payload?.convTitle, platform: c.payload?.platform, _source: c.payload?._source },
+      }));
+      return res.json({ trace_id: traceId, chain_intact: chainIntact, step_count: commits.length, commits: safe, verify_url: `${process.env.APP_URL || 'https://darkmatterhub.ai'}/r/${traceId}` });
+    }
+
+    // Build conversation for HTML render
+    const title = commits.find(c => c.payload?.convTitle)?.payload?.convTitle
+      || commits.find(c => (c.payload?.role === 'user') && c.payload?.text)?.payload?.text?.slice(0, 60)
+      || 'AI Conversation Record';
+    const platform = commits[0]?.payload?.platform || 'AI';
+    const source = commits[0]?.payload?._source || 'extension';
+    const firstTs = commits[0]?.client_timestamp || commits[0]?.timestamp || '';
+    const lastTs  = commits[commits.length-1]?.client_timestamp || commits[commits.length-1]?.timestamp || '';
+    const stepCount = commits.length;
+
+    const statusColor = chainIntact ? '#10b981' : '#ef4444';
+    const statusText  = chainIntact ? '✓ Record intact' : '✗ Mismatch detected';
+    const statusBg    = chainIntact ? 'rgba(16,185,129,.06)' : 'rgba(239,68,68,.06)';
+    const statusBd    = chainIntact ? 'rgba(16,185,129,.2)' : 'rgba(239,68,68,.2)';
+
+    // Render messages
+    let messagesHTML = '';
+    commits.forEach((c, i) => {
+      const p = c.payload || {};
+      const role = p.role || (i % 2 === 0 ? 'user' : 'assistant');
+      const text = p.text || p.output || p.summary || p.prompt || '';
+      if (!text.trim()) return;
+      const ts = c.client_timestamp || c.timestamp || '';
+      const tsStr = ts ? new Date(ts).toLocaleString('en-GB', { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit', timeZone:'UTC' }) + ' UTC' : '';
+      const isUser = role === 'user';
+      const roleLabel = isUser ? 'You' : (p.platform || 'AI').toUpperCase();
+
+      if (isUser) {
+        messagesHTML += `<div class="msg-grp"><div class="role-label user">${escHtml(roleLabel)}</div><div class="bubble user">${escHtml(text)}</div><div class="msg-time user">${tsStr}</div></div>`;
+      } else {
+        // Basic markdown for agent responses
+        const rendered = simpleMarkdown(text);
+        messagesHTML += `<div class="msg-grp"><div class="role-label agent">${escHtml(roleLabel)}</div><div class="bubble agent">${rendered}</div><div class="msg-time agent">${tsStr}</div></div>`;
+      }
     });
+
+    function escHtml(s) {
+      return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function simpleMarkdown(text) {
+      const blocks = [];
+      let t = text.replace(/```([a-zA-Z0-9]*)\n?([\s\S]*?)```/g, (_, lang, code) => {
+        blocks.push({ lang: lang.trim(), code });
+        return `\x00BLK${blocks.length - 1}\x00`;
+      });
+      t = t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      t = t.replace(/`([^`\n]+)`/g,'<code>$1</code>');
+      t = t.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+      t = t.replace(/\*([^*\n]+)\*/g,'<em>$1</em>');
+      t = t.replace(/^### (.+)$/gm,'<h4>$1</h4>').replace(/^## (.+)$/gm,'<h3>$1</h3>').replace(/^# (.+)$/gm,'<h2>$1</h2>');
+      t = t.replace(/^[-*] (.+)$/gm,'<li>$1</li>');
+      t = t.replace(/(<li>[\s\S]*?<\/li>\n?)+/g, m => `<ul>${m}</ul>`);
+      t = t.split(/\n\n+/).map(para => {
+        para = para.trim(); if (!para) return '';
+        if (/^<(h[2-4]|ul|ol|\x00BLK)/.test(para)) return para;
+        return '<p>' + para.replace(/\n/g,'<br>') + '</p>';
+      }).join('');
+      t = t.replace(/\x00BLK(\d+)\x00/g, (_, i) => {
+        const { lang, code } = blocks[+i];
+        const ec = code.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        return `<pre${lang ? ` data-lang="${lang}"` : ''}><code>${ec}</code></pre>`;
+      });
+      return t;
+    }
+
+    const verifyUrl = `${process.env.APP_URL || 'https://darkmatterhub.ai'}/r/${traceId}`;
+    const jsonUrl   = `${verifyUrl}?format=json`;
+
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta property="og:title" content="${escHtml(title)} — DarkMatter Record"/>
+<meta property="og:description" content="Verifiable AI conversation record. ${stepCount} steps. ${chainIntact ? 'Chain intact.' : 'Verification required.'}"/>
+<title>${escHtml(title)} — DarkMatter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --ink:#0a0e1a;--ink2:#2d3552;--ink3:#5a6480;--ink4:#9199b0;
+  --bg:#f4f6fb;--bg2:#eceef5;--border:#e5e7eb;--border2:#dde1ed;
+  --blue:#3b82f6;--green:#10b981;--red:#ef4444;
+  --mono:"IBM Plex Mono","Courier New",monospace;
+  --sans:"IBM Plex Sans",sans-serif;
+  --grad:linear-gradient(90deg,#7C3AED,#2563EB,#0891b2);
+}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased;font-size:14px;}
+
+/* NAV */
+.nav{height:56px;background:#fff;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:12px;position:sticky;top:0;z-index:100;}
+.nav-logo{display:flex;align-items:center;gap:8px;text-decoration:none;}
+.nav-name{font-family:var(--mono);font-size:15px;font-weight:700;color:var(--ink);letter-spacing:-.03em;}
+.nav-grad{background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.nav-right{margin-left:auto;display:flex;align-items:center;gap:8px;}
+.nav-link{font-size:12px;color:var(--ink3);text-decoration:none;padding:4px 8px;border-radius:5px;transition:all .12s;}
+.nav-link:hover{background:var(--bg2);color:var(--ink);}
+.nav-cta{font-family:var(--mono);font-size:11.5px;font-weight:700;background:var(--ink);color:#fff;padding:6px 14px;border-radius:6px;text-decoration:none;transition:opacity .15s;}
+.nav-cta:hover{opacity:.85;}
+
+/* PAGE */
+.page{max-width:800px;margin:0 auto;padding:28px 20px 60px;}
+
+/* RECORD HEADER */
+.rec-head{background:#fff;border:1px solid var(--border);border-radius:8px;padding:18px 20px;margin-bottom:16px;}
+.rec-title{font-size:18px;font-weight:700;color:var(--ink);letter-spacing:-.03em;margin-bottom:10px;line-height:1.25;}
+.rec-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.status-badge{font-family:var(--mono);font-size:11px;font-weight:600;padding:3px 10px;border-radius:4px;background:${statusBg};color:${statusColor};border:1px solid ${statusBd};}
+.meta-chip{font-size:12px;color:var(--ink3);}
+.meta-sep{color:var(--border2);}
+
+/* VIEW SWITCHER */
+.view-switcher{display:flex;gap:4px;margin-bottom:16px;background:#fff;border:1px solid var(--border);border-radius:7px;padding:3px;width:fit-content;}
+.vs-btn{font-size:12px;padding:5px 12px;border-radius:5px;border:none;background:none;cursor:pointer;color:var(--ink3);font-family:var(--sans);transition:all .12s;}
+.vs-btn.on{background:var(--ink);color:#fff;font-weight:600;}
+.vs-btn:hover:not(.on){background:var(--bg2);color:var(--ink);}
+
+/* VIEWS */
+.view{display:none;} .view.on{display:block;}
+
+/* CONVERSATION VIEW */
+.conv-area{display:flex;flex-direction:column;gap:12px;}
+.msg-grp{clear:both;}
+.role-label{font-family:var(--mono);font-size:9.5px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--ink4);margin-bottom:4px;}
+.role-label.user{text-align:right;}
+.bubble{border-radius:3px;padding:10px 14px;font-size:14px;line-height:1.65;word-break:break-word;max-width:88%;display:inline-block;}
+.bubble.user{background:var(--ink);color:rgba(232,237,245,.92);border:1px solid rgba(0,0,0,.15);border-radius:3px 3px 1px 3px;float:right;clear:both;}
+.bubble.agent{background:#fff;border:1px solid var(--border);border-radius:1px 3px 3px 3px;float:left;clear:both;}
+.bubble.agent p{margin-bottom:.65em;} .bubble.agent p:last-child{margin-bottom:0;}
+.bubble.agent h2,.bubble.agent h3,.bubble.agent h4{font-weight:600;margin:10px 0 4px;}
+.bubble.agent code{font-family:var(--mono);font-size:12px;background:var(--bg2);padding:2px 5px;border-radius:3px;}
+.bubble.agent pre{background:#0f1629;border:1px solid #1a2440;border-radius:6px;padding:12px 14px;overflow-x:auto;margin:8px 0;}
+.bubble.agent pre code{background:none;color:rgba(232,237,245,.8);font-size:12px;}
+.bubble.agent ul,.bubble.agent ol{margin:4px 0 4px 18px;}
+.bubble.agent li{margin-bottom:2px;}
+.bubble.agent blockquote{border-left:3px solid var(--border2);padding:4px 10px;color:var(--ink3);margin:6px 0;}
+.bubble.agent strong{font-weight:600;} .bubble.agent em{font-style:italic;}
+.msg-time{font-size:10px;color:var(--ink4);font-family:var(--mono);margin-top:4px;clear:both;}
+.msg-time.user{text-align:right;}
+.clearfix{clear:both;height:0;}
+
+/* TIMELINE VIEW */
+.timeline{display:flex;flex-direction:column;gap:0;}
+.tl-step{display:flex;gap:14px;padding-bottom:16px;}
+.tl-step:last-child{padding-bottom:0;}
+.tl-line{display:flex;flex-direction:column;align-items:center;flex-shrink:0;}
+.tl-dot{width:10px;height:10px;border-radius:50%;border:2px solid var(--green);background:#fff;flex-shrink:0;margin-top:2px;}
+.tl-dot.user{border-color:var(--ink);}
+.tl-conn{flex:1;width:1px;background:var(--border);margin:3px 0;}
+.tl-step:last-child .tl-conn{display:none;}
+.tl-info{flex:1;min-width:0;background:#fff;border:1px solid var(--border);border-radius:7px;padding:11px 14px;}
+.tl-head{display:flex;align-items:baseline;gap:8px;margin-bottom:6px;}
+.tl-step-n{font-family:var(--mono);font-size:9px;color:var(--ink4);}
+.tl-actor{font-size:12.5px;font-weight:600;color:var(--ink2);}
+.tl-time{font-size:10px;color:var(--ink4);margin-left:auto;font-family:var(--mono);}
+.tl-text{font-size:13.5px;color:var(--ink);line-height:1.6;}
+.tl-hash{font-family:var(--mono);font-size:9.5px;color:var(--ink4);margin-top:6px;word-break:break-all;}
+
+/* PROOF VIEW */
+.proof-area{display:flex;flex-direction:column;gap:12px;}
+.proof-banner{background:#fff;border:1px solid;border-radius:8px;padding:16px 18px;}
+.proof-banner-title{font-size:14px;font-weight:700;margin-bottom:6px;}
+.proof-banner-body{font-size:13px;line-height:1.65;color:var(--ink2);}
+.proof-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+@media(max-width:600px){.proof-grid{grid-template-columns:1fr;}}
+.pcard{background:#fff;border:1px solid var(--border);border-radius:8px;padding:14px 16px;}
+.pcard.ok{background:rgba(16,185,129,.04);border-color:rgba(16,185,129,.2);}
+.pcard.skip{opacity:.7;}
+.pcard-top{display:flex;align-items:center;gap:7px;margin-bottom:5px;}
+.pcard-ic{font-size:13px;}
+.pcard-ic.ok{color:#065f46;}
+.pcard-ic.skip{color:var(--ink4);}
+.pcard-title{font-size:12.5px;font-weight:600;color:var(--ink);}
+.pcard-body{font-size:12px;color:var(--ink3);line-height:1.6;}
+.pcard-mono{font-family:var(--mono);font-size:9px;color:var(--ink4);margin-top:4px;word-break:break-all;}
+
+/* JSON VIEW */
+.json-area{background:#0f1629;border-radius:8px;padding:20px;overflow-x:auto;}
+.json-area pre{font-family:var(--mono);font-size:11.5px;line-height:1.7;color:rgba(232,237,245,.8);}
+
+/* ACTION BAR */
+.action-bar{background:#fff;border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.ab-title{font-size:13px;font-weight:600;color:var(--ink);flex:1;min-width:180px;}
+.ab-sub{font-size:12px;color:var(--ink3);}
+.ab-btn{font-size:12px;padding:6px 14px;border-radius:6px;border:1px solid var(--border2);background:#fff;color:var(--ink2);cursor:pointer;font-family:var(--sans);text-decoration:none;display:inline-block;transition:all .12s;}
+.ab-btn:hover{border-color:var(--blue);color:var(--blue);}
+.ab-btn.p{background:var(--ink);color:#fff;border-color:transparent;font-family:var(--mono);font-weight:700;}
+.ab-btn.p:hover{opacity:.85;}
+
+/* FOOTER */
+.page-footer{text-align:center;padding:24px 0;font-size:12px;color:var(--ink4);}
+.page-footer a{color:var(--ink3);text-decoration:none;}
+.page-footer a:hover{color:var(--ink2);}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a class="nav-logo" href="/">
+    <svg style="width:24px;height:24px;flex-shrink:0;" viewBox="0 0 40 40" fill="none">
+      <defs><linearGradient id="dlg-r" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#7C3AED"/><stop offset="55%" stop-color="#2563EB"/><stop offset="100%" stop-color="#0891b2"/></linearGradient></defs>
+      <circle cx="20" cy="20" r="17" stroke="#e5e7eb" stroke-width="0.8" stroke-dasharray="2 3"/>
+      <circle cx="20" cy="5" r="3.2" fill="#7C3AED" opacity="0.95"/>
+      <circle cx="33" cy="28" r="2.6" fill="#2563EB" opacity="0.95"/>
+      <circle cx="7" cy="28" r="2.2" fill="#22D3EE" opacity="0.9"/>
+      <line x1="20" y1="8" x2="31" y2="26" stroke="url(#dlg-r)" stroke-width="0.6" opacity="0.5"/>
+      <line x1="20" y1="8" x2="9" y2="26" stroke="#7C3AED" stroke-width="0.6" opacity="0.4"/>
+      <line x1="30" y1="27" x2="10" y2="27" stroke="#22D3EE" stroke-width="0.6" opacity="0.4"/>
+      <circle cx="20" cy="20" r="2.5" fill="url(#dlg-r)" opacity="0.6"/>
+    </svg>
+    <span class="nav-name">Dark<span class="nav-grad">Matter</span></span>
+  </a>
+  <div class="nav-right">
+    <a href="/docs" class="nav-link">Docs</a>
+    <a href="/login" class="nav-link">Sign in</a>
+    <a href="/signup" class="nav-cta">Start free</a>
+  </div>
+</nav>
+
+<div class="page">
+
+  <!-- Record header -->
+  <div class="rec-head">
+    <div class="rec-title">${escHtml(title)}</div>
+    <div class="rec-meta">
+      <span class="status-badge">${statusText}</span>
+      <span class="meta-sep">·</span>
+      <span class="meta-chip">${stepCount} step${stepCount !== 1 ? 's' : ''}</span>
+      <span class="meta-sep">·</span>
+      <span class="meta-chip">${escHtml(platform)}</span>
+      ${firstTs ? `<span class="meta-sep">·</span><span class="meta-chip">${new Date(firstTs).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}</span>` : ''}
+    </div>
+  </div>
+
+  <!-- Action bar -->
+  <div class="action-bar">
+    <div>
+      <div class="ab-title">Anyone can verify this record</div>
+      <div class="ab-sub">Nothing can be changed after it was recorded. Share this link — no account required.</div>
+    </div>
+    <button class="ab-btn p" onclick="copyLink()">Copy link</button>
+    <a class="ab-btn" href="${jsonUrl}">Raw JSON</a>
+  </div>
+
+  <!-- View switcher -->
+  <div class="view-switcher">
+    <button class="vs-btn on" onclick="switchView('conv',this)">Conversation</button>
+    <button class="vs-btn" onclick="switchView('timeline',this)">Timeline</button>
+    <button class="vs-btn" onclick="switchView('proof',this)">Proof</button>
+    <button class="vs-btn" onclick="switchView('json',this)">Raw JSON</button>
+  </div>
+
+  <!-- CONVERSATION VIEW (default) -->
+  <div class="view on" id="view-conv">
+    <div class="conv-area">
+${messagesHTML}
+    </div>
+    <div class="clearfix"></div>
+  </div>
+
+  <!-- TIMELINE VIEW -->
+  <div class="view" id="view-timeline">
+    <div class="timeline">
+${commits.map((c, i) => {
+  const p = c.payload || {};
+  const role = p.role || (i % 2 === 0 ? 'user' : 'assistant');
+  const text = (p.text || p.output || p.summary || p.prompt || '').trim().slice(0, 300);
+  const ts = c.client_timestamp || c.timestamp || '';
+  const tsStr = ts ? new Date(ts).toLocaleString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit',timeZone:'UTC',hour12:false})+' UTC' : '';
+  const isUser = role === 'user';
+  const actor = isUser ? 'User' : (p.platform || 'AI');
+  return `      <div class="tl-step">
+        <div class="tl-line"><div class="tl-dot${isUser?' user':''}"></div><div class="tl-conn"></div></div>
+        <div class="tl-info">
+          <div class="tl-head"><span class="tl-step-n">Step ${i+1}</span><span class="tl-actor">${escHtml(actor)}</span><span class="tl-time">${tsStr}</span></div>
+          <div class="tl-text">${escHtml(text)}${text.length >= 300 ? '…' : ''}</div>
+          ${c.integrity_hash ? `<div class="tl-hash">${c.integrity_hash.slice(0,16)}…</div>` : ''}
+        </div>
+      </div>`;
+}).join('\n')}
+    </div>
+  </div>
+
+  <!-- PROOF VIEW -->
+  <div class="view" id="view-proof">
+    <div class="proof-area">
+      <div class="proof-banner" style="border-color:${statusBd};background:${statusBg};">
+        <div class="proof-banner-title" style="color:${statusColor};">${chainIntact ? '✓ This record is intact' : '✗ Mismatch detected'}</div>
+        <div class="proof-banner-body">${chainIntact
+          ? `The ${stepCount} steps shown are exactly what was captured. The hash chain has been verified — nothing has been added, removed, or altered. This record can be independently verified using the proof file or the verification tool.`
+          : 'The record does not match its original hash. This may indicate tampering or a recording error. Download the proof file for independent investigation.'
+        }</div>
+      </div>
+      <div class="proof-grid">
+        <div class="pcard ${chainIntact?'ok':''}">
+          <div class="pcard-top"><span class="pcard-ic ${chainIntact?'ok':'skip'}">${chainIntact?'✓':'—'}</span><span class="pcard-title">Hash chain</span></div>
+          <div class="pcard-body">${chainIntact ? stepCount+' steps verified — each step matches the previous' : 'Chain verification failed'}</div>
+        </div>
+        <div class="pcard skip">
+          <div class="pcard-top"><span class="pcard-ic skip">—</span><span class="pcard-title">Log inclusion</span></div>
+          <div class="pcard-body">Inclusion proof generated at next checkpoint. Download the proof file to verify.</div>
+        </div>
+        <div class="pcard skip">
+          <div class="pcard-top"><span class="pcard-ic skip">—</span><span class="pcard-title">Checkpoint signed</span></div>
+          <div class="pcard-body">Available in the downloaded proof file.</div>
+        </div>
+        <div class="pcard skip">
+          <div class="pcard-top"><span class="pcard-ic skip">—</span><span class="pcard-title">Independent witness</span></div>
+          <div class="pcard-body">Download the proof file to check witness signatures.</div>
+        </div>
+      </div>
+      <div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:16px 18px;">
+        <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:4px;">Verify independently</div>
+        <div style="font-size:12px;color:var(--ink3);margin-bottom:12px;">No account required. The proof file is self-contained — your recipient can verify it offline.</div>
+        <div style="font-family:var(--mono);font-size:11px;background:#f4f6fb;border:1px solid var(--border);border-radius:5px;padding:7px 10px;color:var(--ink2);margin-bottom:10px;">python verify_darkmatter_chain.py bundle.json</div>
+        <a href="${jsonUrl}" class="ab-btn" style="margin-right:8px;">Download proof file (JSON)</a>
+        <a href="/integrity#spec" class="ab-btn">Integrity Spec →</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- RAW JSON VIEW -->
+  <div class="view" id="view-json">
+    <div class="json-area">
+      <pre id="json-pre">Loading...</pre>
+    </div>
+  </div>
+
+  <div class="page-footer">
+    Recorded and verified by <a href="/">DarkMatter</a> · <a href="/integrity">Integrity Spec</a> · <a href="/docs">Documentation</a>
+  </div>
+
+</div>
+
+<script>
+const TRACE_ID = '${traceId}';
+let jsonLoaded = false;
+
+function switchView(name, btn) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('on'));
+  document.querySelectorAll('.vs-btn').forEach(b => b.classList.remove('on'));
+  document.getElementById('view-'+name).classList.add('on');
+  btn.classList.add('on');
+  // Lazy-load JSON
+  if (name === 'json' && !jsonLoaded) {
+    fetch('?format=json')
+      .then(r => r.json())
+      .then(data => {
+        document.getElementById('json-pre').textContent = JSON.stringify(data, null, 2);
+        jsonLoaded = true;
+      })
+      .catch(() => { document.getElementById('json-pre').textContent = 'Failed to load JSON.'; });
+  }
+}
+
+function copyLink() {
+  navigator.clipboard.writeText(location.href).then(() => {
+    const btn = document.querySelector('.ab-btn.p');
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy link', 1800);
+  });
+}
+</script>
+</body>
+</html>`;
+
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.send(html);
   } catch(e) {
+    console.error('/r/:traceId error:', e.message);
     res.status(500).json({ error: e.message });
   }
-});
+});;
 
 // ═══════════════════════════════════════════════════
 // POLICIES API
