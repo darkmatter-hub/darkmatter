@@ -3594,14 +3594,17 @@ app.get('/r/:traceId', async (req, res) => {
       const ts = c.client_timestamp || c.timestamp || '';
       const tsStr = ts ? new Date(ts).toLocaleString('en-GB', { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit', timeZone:'UTC' }) + ' UTC' : '';
       const isUser = role === 'user';
-      const roleLabel = isUser ? 'You' : (p.platform || 'AI').toUpperCase();
+      // Provider-agnostic labels — YOU / AGENT, platform as quiet secondary
+      const platformHint = p.platform ? `<span style="font-weight:400;opacity:.5;margin-left:5px;">${escHtml(p.platform)}</span>` : '';
+      const agentName = p.agentName || p.agent_name || null;
+      const userLabel  = 'YOU';
+      const agentLabel = agentName ? escHtml(agentName) : 'AGENT';
 
       if (isUser) {
-        messagesHTML += `<div class="msg-grp"><div class="role-label user">${escHtml(roleLabel)}</div><div class="bubble user">${escHtml(text)}</div><div class="msg-time user">${tsStr}</div></div>`;
+        messagesHTML += `<div class="msg-grp"><div class="role-label user">${userLabel}${platformHint}</div><div class="bubble user">${escHtml(text)}</div><div class="msg-time user">${tsStr}</div></div>`;
       } else {
-        // Basic markdown for agent responses
         const rendered = simpleMarkdown(text);
-        messagesHTML += `<div class="msg-grp"><div class="role-label agent">${escHtml(roleLabel)}</div><div class="bubble agent">${rendered}</div><div class="msg-time agent">${tsStr}</div></div>`;
+        messagesHTML += `<div class="msg-grp"><div class="role-label agent">${agentLabel}${platformHint}</div><div class="bubble agent">${rendered}</div><div class="msg-time agent">${tsStr}</div></div>`;
       }
     });
 
@@ -3841,7 +3844,7 @@ ${commits.map((c, i) => {
   const ts = c.client_timestamp || c.timestamp || '';
   const tsStr = ts ? new Date(ts).toLocaleString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit',timeZone:'UTC',hour12:false})+' UTC' : '';
   const isUser = role === 'user';
-  const actor = isUser ? 'User' : (p.platform || 'AI');
+  const actor = isUser ? 'You' : (p.agentName || p.agent_name || 'Agent');
   return `      <div class="tl-step">
         <div class="tl-line"><div class="tl-dot${isUser?' user':''}"></div><div class="tl-conn"></div></div>
         <div class="tl-info">

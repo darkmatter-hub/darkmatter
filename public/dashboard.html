@@ -44,6 +44,7 @@ header{position:fixed;inset:0 0 auto 0;z-index:200;height:var(--hh);
 .h-ws{font-family:var(--mono);font-size:10px;padding:3px 8px;border-radius:20px;
   background:rgba(139,92,246,.1);border:1px solid rgba(139,92,246,.2);color:#a78bfa;
   max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.refresh-ind{font-family:var(--mono);font-size:10px;color:var(--ink4);letter-spacing:.03em;white-space:nowrap;transition:opacity .4s;}
 .avatar{width:28px;height:28px;border-radius:50%;background:var(--grad);
   display:flex;align-items:center;justify-content:center;font-size:11px;
   color:#fff;font-weight:700;cursor:pointer;border:none;flex-shrink:0;}
@@ -433,6 +434,7 @@ pre:hover .code-lang{display:none;}
     <button class="hl"     id="nav-settings"   onclick="openModal('settings-modal')">Settings</button>
   </nav>
   <div class="h-right">
+    <span class="refresh-ind" id="refresh-ind"></span>
     <span class="h-ws" id="h-ws" style="display:none;"></span>
     <button class="avatar" id="useravatar" onclick="openModal('settings-modal')">?</button>
   </div>
@@ -974,8 +976,11 @@ function loadThreads(rc){
   fetchRecords(rc);
 }
 
+let _fetchSeq=0;
 async function fetchRecords(rc){
   rc=rc||0;
+  var mySeq=++_fetchSeq;
+  setRefreshStatus('checking');
   try{
     const ctrl=new AbortController();
     const to=setTimeout(()=>ctrl.abort(),10000);
@@ -989,12 +994,16 @@ async function fetchRecords(rc){
     }
     if(!r.ok)throw new Error('HTTP '+r.status);
     const commits=await r.json();
+    if(mySeq!==_fetchSeq)return; // newer request won — discard stale response
     sessionStorage.setItem('dm_records_v5',JSON.stringify(commits));
     processCommits(commits);showList();
     document.getElementById('conn-banner').classList.remove('show');
+    setRefreshStatus('done');
     const tp=new URLSearchParams(location.search).get('t');
     if(tp){const f=allThreads.find(t=>t.id===tp);if(f)selectThread(f.id);}
   }catch(e){
+    if(mySeq!==_fetchSeq)return;
+    setRefreshStatus('error');
     if(!allThreads.length){
       e.name==='AbortError'?showError('Request timed out.'):showError("Couldn't load records.");
     }else{
@@ -1151,15 +1160,14 @@ function selectThread(id){
   const memberChip=selThread.member?'<span class="mc strong">'+esc(selThread.member.display_name||selThread.member.email)+'</span><span class="msep">&#183;</span>':'';
   const agentChip=(selThread.agentName&&!selThread.member)?'<span class="mc">'+esc(selThread.agentName)+'</span><span class="msep">&#183;</span>':'';
 
+  // ONE status badge + member + date + steps. No source label noise.
   document.getElementById('rec-meta').innerHTML=
     (badges[status]||badges.none)
     +'<span class="msep">&#183;</span>'
     +memberChip+agentChip
     +'<span class="mc">'+fmtDateTime(selThread.latest)+'</span>'
     +'<span class="msep">&#183;</span>'
-    +'<span class="mc">'+steps+' step'+(steps!==1?'s':'')+'</span>'
-    +'<span class="msep">&#183;</span>'
-    +'<span class="mc">'+srcLabel+'</span>';
+    +'<span class="mc">'+steps+' step'+(steps!==1?'s':'')+'</span>';
 
   document.getElementById('rec-actions').style.display='flex';
   document.getElementById('rec-tabs').style.display='flex';
@@ -1198,17 +1206,21 @@ function renderConversation(thread){
     const detBtn='<button class="mdet-btn" onclick="document.getElementById(\''+tsId+'\').classList.toggle(\'open\')">&#8943;</button>';
 
     const g=document.createElement('div');g.className='mg';
-    const srcLabel=(c.payload&&c.payload.platform)?esc(c.payload.platform):'';
+    // Provider-agnostic: YOU for user, AGENT (or named agent) for assistant
+    const plat=c.payload&&c.payload.platform?c.payload.platform:'';
+    const platHint=plat?'<span style="font-weight:400;opacity:.5;margin-left:5px;">'+esc(plat)+'</span>':'';
     if(isUser){
       g.innerHTML='<div class="mu">'
-        +'<div class="msg-role-label user">You'+(srcLabel?' &middot; '+srcLabel:'')+'</div>'
+        +'<div class="msg-role-label user">YOU'+platHint+'</div>'
         +'<div class="bu">'+esc(text)+'</div>'
         +'<div class="mfoot r"><span class="mtime">'+fmtDateTimeFull(clientTs)+'</span>'+detBtn+'</div>'
         +tsDetail+'</div>';
     }else{
-      const agentLabel=esc((c.payload&&c.payload.platform)||'AI');
+      const aName=c.payload&&(c.payload.agentName||c.payload.agent_name);
+      const aLabel=aName?esc(aName):'AGENT';
+      const aHint=(!aName&&plat)?platHint:'';
       g.innerHTML='<div class="ma">'
-        +'<div class="msg-role-label agent">'+agentLabel+'</div>'
+        +'<div class="msg-role-label agent">'+aLabel+aHint+'</div>'
         +'<div class="ba">'+renderMarkdown(text)+'</div>'
         +'<div class="mfoot"><span class="mtime">'+fmtDateTimeFull(clientTs)+'</span>'+detBtn+'</div>'
         +tsDetail+'</div>';
@@ -1702,6 +1714,18 @@ function closeModal(id){document.getElementById(id).classList.remove('open');}
 function closeBg(id,e){if(e.target===document.getElementById(id))closeModal(id);}
 
 // ── INIT ───────────────────────────────────────────────────────
+var _rTimer=null;
+function setRefreshStatus(state){
+  var el=document.getElementById('refresh-ind');
+  if(!el)return;
+  clearTimeout(_rTimer);
+  if(state==='checking'){el.textContent='Checking…';el.style.opacity='1';}
+  else if(state==='done'){
+    el.textContent='Updated just now';el.style.opacity='1';
+    _rTimer=setTimeout(function(){el.style.opacity='0';setTimeout(function(){el.textContent='';},400);},3000);
+  }else{el.textContent='';el.style.opacity='0';}
+}
+
 async function init(){
   loadThreads();
   try{
