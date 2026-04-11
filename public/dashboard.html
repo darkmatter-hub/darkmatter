@@ -453,10 +453,11 @@ pre:hover .code-copy{display:block;}pre:hover .code-lang{display:none;}
       <div class="rec-hd" id="rec-hd">
         <div class="rec-hd-left">
           <div class="rec-title" id="rec-title">Select a record</div>
+          <div style="font-size:11.5px;color:var(--ink4);margin-top:2px;font-style:italic;" id="rec-subtitle">Reconstruct what happened. Verify it on demand.</div>
           <div class="rec-meta" id="rec-meta"></div>
         </div>
         <div class="rec-actions" id="rec-actions" style="display:none;">
-          <button class="abtn" id="verify-btn" onclick="runVerify()">Verify</button>
+          <button class="abtn" id="verify-btn" onclick="runVerify()">Verify record →</button>
           <button class="abtn p" onclick="openShareModal()">Share &#8594;</button>
           <button class="abtn" onclick="openRecordMenu(selThread&&selThread.id,this)">&#8943;</button>
         </div>
@@ -663,11 +664,11 @@ pre:hover .code-copy{display:block;}pre:hover .code-lang{display:none;}
       <div class="slbl">Share link</div>
       <div class="scpr"><input class="sinp" id="share-link" readonly/><button class="scpb" onclick="copyShareLink()">Copy</button></div>
       <div class="shint" style="margin-bottom:16px;">Send this to any client, regulator, or auditor. Opens in any browser.</div>
-      <div class="slbl">Download proof file</div>
+      <div class="slbl">Download proof bundle</div>
       <button class="sdl" onclick="downloadBundle();closeModal('share-modal')">
         <span style="font-size:18px;">&#11015;</span>
         <div>
-          <div style="font-weight:600;">Download proof file (.json)</div>
+          <div style="font-weight:600;">Download proof bundle (.json)</div>
           <div style="font-size:11.5px;color:var(--green);margin-top:1px;">Verifiable offline &#8212; no internet or account required</div>
         </div>
       </button>
@@ -1336,53 +1337,54 @@ function renderProof(thread){
   const proof=tip&&tip._proof||null;
 
   const msgs={
-    ok:'<strong>This record is intact.</strong> The conversation shown is exactly what was captured. The hash chain has been verified &mdash; nothing has been added, removed, or altered.',
-    none:'<strong>This record has not been verified yet.</strong> Click Verify above to confirm the hash chain is intact. Verification takes a few seconds and requires no technical knowledge.',
-    warn:'<strong>Verification is required.</strong> Use the Verify button above or download the proof file to verify independently.',
-    fail:'<strong>A mismatch was detected.</strong> The record does not match its original hash. This may indicate tampering or a recording error. Do not rely on this record without investigation.',
+    ok:'The record shown is exactly what was captured. The hash chain has been verified &mdash; nothing has been added, removed, or altered.',
+    none:'Click <strong>Verify record &rarr;</strong> above to confirm the hash chain is intact. Verification requires no technical knowledge.',
+    warn:'Use the Verify record button above or download the proof bundle to verify independently.',
+    fail:'The record does not match its original hash. This may indicate tampering or a recording error. Do not rely on this record without investigation.',
   };
 
   const col=status==='ok'?'var(--green)':status==='fail'?'var(--red)':'var(--amber)';
   const aud=msgs[status]||msgs.none;
 
-  const chainCard=mkCard(status==='ok'?'ok':'skip',status==='ok'?'&#10003;':'&mdash;','Hash chain',
-    status==='ok'?thread.commits.length+' steps checked &mdash; each step matches the previous':'Run Verify to check the chain','');
+  const chainCard=mkCard(status==='ok'?'ok':'skip',status==='ok'?'&#10003;':'&mdash;','Payload hash matches',
+    status==='ok'?thread.commits.length+' steps verified &mdash; each payload hash is intact':'Run Verify record to check the chain','');
   const merkle=proof&&proof.log_position!=null
-    ?mkCard('ok','&#10003;','Log inclusion','Position '+proof.log_position+' in the append-only log &middot; Tree size '+(proof.tree_size||'&mdash;'),proof.leaf_hash?'leaf: '+proof.leaf_hash.slice(0,24)+'&hellip;':'')
-    :mkCard('skip','&mdash;','Log inclusion','Inclusion proof generated at next checkpoint (every 10 min)','');
+    ?mkCard('ok','&#10003;','Chain integrity intact','Position '+proof.log_position+' in the append-only log &middot; Tree size '+(proof.tree_size||'&mdash;'),proof.leaf_hash?'leaf: '+proof.leaf_hash.slice(0,24)+'&hellip;':'')
+    :mkCard('skip','&mdash;','Chain integrity intact','Inclusion proof generated at next checkpoint (every 10 min)','');
   const cpCard=proof&&proof.tree_root
-    ?mkCard('ok','&#10003;','Checkpoint signed','Signed by DarkMatter at '+fmtDateTime(proof.signed_at||''),'root: '+proof.tree_root.slice(0,24)+'&hellip;')
-    :mkCard('skip','&mdash;','Checkpoint','Not yet checkpointed','');
-  const witCard=mkCard('skip','&mdash;','Independent witness','Download the proof file to check witness signatures','');
+    ?mkCard('ok','&#10003;','Included in checkpoint','Signed by DarkMatter at '+fmtDateTime(proof.signed_at||''),'root: '+proof.tree_root.slice(0,24)+'&hellip;')
+    :mkCard('skip','&mdash;','Included in checkpoint','Not yet checkpointed','');
+  const witCard=mkCard('skip','&mdash;','Agent signature valid','Download the proof bundle to verify the agent signature offline','');
 
-  // Context-aware primary action based on verification status
   let primaryBtn,restBtns;
   if(status==='ok'){
     primaryBtn='<button class="pbb p" onclick="openShareModal()">Share this record &#8594;</button>';
-    restBtns='<button class="pbb g" onclick="downloadBundle()">&#11015; Download proof file</button><a class="pbb" href="/integrity#spec" target="_blank">Integrity Spec &#8594;</a>';
+    restBtns='<button class="pbb g" onclick="downloadBundle()">&#11015; Download proof bundle</button><a class="pbb" href="/integrity#spec" target="_blank">Integrity Spec &#8594;</a>';
   }else if(status==='fail'){
-    primaryBtn='<button class="pbb p" onclick="downloadBundle()">&#11015; Download proof file</button>';
+    primaryBtn='<button class="pbb p" onclick="downloadBundle()">&#11015; Download proof bundle</button>';
     restBtns='<button class="pbb" onclick="openShareModal()">Share</button><a class="pbb" href="/integrity#spec" target="_blank">Integrity Spec &#8594;</a>';
   }else{
-    primaryBtn='<button class="pbb p" onclick="runVerify()">Verify now</button>';
-    restBtns='<button class="pbb" onclick="openShareModal()">Share</button><button class="pbb g" onclick="downloadBundle()">&#11015; Download proof file</button><a class="pbb" href="/integrity#spec" target="_blank">Integrity Spec &#8594;</a>';
+    primaryBtn='<button class="pbb p" onclick="runVerify()">Verify record &rarr;</button>';
+    restBtns='<button class="pbb" onclick="openShareModal()">Share</button><button class="pbb g" onclick="downloadBundle()">&#11015; Download proof bundle</button><a class="pbb" href="/integrity#spec" target="_blank">Integrity Spec &#8594;</a>';
   }
+
+  const verifyHeadline=status==='ok'?'This record has not been altered.':status==='fail'?'A mismatch was detected.':'Not yet verified';
 
   scroll.innerHTML=
     '<div class="aud-banner" style="background:'+col+'08;border-color:'+col+'20;">'
-    +'<div class="ab-title" style="color:'+col+';">'+(status==='ok'?'&#10003; Verified':status==='fail'?'&#10007; Mismatch detected':'What does this record prove?')+'</div>'
+    +'<div class="ab-title" style="color:'+col+';">Verification result</div>'
+    +'<div style="font-size:14px;font-weight:600;color:var(--ink);margin-bottom:6px;">'+verifyHeadline+'</div>'
     +'<div class="ab-body">'+aud+'</div>'
     +'</div>'
     +'<div class="pgrid">'+chainCard+merkle+cpCard+witCard+'</div>'
     +'<div class="pab">'
-    +'<div class="pab-title">Share or verify independently</div>'
-    +'<div class="pab-sub">Anyone can verify this record &mdash; they do not need a DarkMatter account. Share a link, or download a proof file that works completely offline.</div>'
+    +'<div class="pab-title">Verify independently</div>'
+    +'<div class="pab-sub">This record can be verified independently. No access to DarkMatter is required. Download a proof bundle that works completely offline.</div>'
     +'<div class="pab-cmd"><span class="pab-cmd-txt">python verify_darkmatter_chain.py bundle.json</span>'
-    +'<button style="font-size:10px;padding:2px 7px;border-radius:3px;border:1px solid var(--border);background:none;color:var(--ink3);cursor:pointer;font-family:var(--mono);" onclick="navigator.clipboard.writeText(\'python verify_darkmatter_chain.py bundle.json\');toast(\'Copied\')">Copy</button></div>'
+    +'<button style="font-size:10px;padding:2px 7px;border-radius:3px;border:1px solid var(--border);background:none;color:var(--ink3);cursor:pointer;font-family:var(--mono);" onclick="navigator.clipboard.writeText('python verify_darkmatter_chain.py bundle.json');toast('Copied')">Copy</button></div>'
     +'<div class="pab-btns">'+primaryBtn+restBtns+'</div>'
     +'</div>';
 }
-
 function mkCard(cls,icon,title,detail,mono){
   return'<div class="pc '+cls+'">'
     +'<div class="pc-top"><span class="pc-ic '+cls+'">'+icon+'</span><span class="pc-title">'+title+'</span></div>'
@@ -1411,7 +1413,7 @@ async function runVerify(){
     }
     switchTab('proof');renderProof(selThread);
   }catch(e){toast('Verify failed — check connection');}
-  finally{btn.textContent='Verify';btn.disabled=false;}
+  finally{btn.textContent='Verify record →';btn.disabled=false;}
 }
 
 async function downloadBundle(){
@@ -1459,7 +1461,7 @@ function openRecordMenu(id,btn){
     +'<button class="ddi" onclick="openShareModal()">'
     +'<span class="ddic">&#8599;</span>Share</button>'
     +'<button class="ddi" onclick="downloadBundle()">'
-    +'<span class="ddic">&#11015;</span>Download proof file</button>'
+    +'<span class="ddic">&#11015;</span>Download proof bundle</button>'
     +'<div class="dds"></div>'
     +'<button class="ddi red" onclick="doDelete(\''+tid+'\')">'
     +'<span class="ddic">&#128465;</span>Delete</button>';

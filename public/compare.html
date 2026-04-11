@@ -175,6 +175,10 @@ footer{border-top:1px solid var(--rule);padding:28px 48px;}
   <div class="eye">Comparison</div>
   <h1 class="h1">DarkMatter vs LangSmith vs MLflow</h1>
   <p class="lead">These are different tools solving different problems. The honest answer is: you might use more than one. This page explains what each tool is actually for — and where DarkMatter is the wrong choice. One upfront summary: DarkMatter is an execution record you can verify without trusting DarkMatter. LangSmith is an observability platform. MLflow is an experiment tracker. Different problems.</p>
+  <div style="background:#f4f6fb;border:1px solid #e5e7eb;border-left:3px solid #3b82f6;border-radius:6px;padding:16px 20px;margin-bottom:32px;font-size:14px;line-height:1.75;color:#2d3552;">
+    Most tools help you observe AI systems.<br>
+    DarkMatter helps you prove three things: who made the decision, what happened, and whether the record can be trusted.
+  </div>
 
   <div class="note">
     <strong>Disclosure:</strong> This comparison is written by DarkMatter. We've tried to be accurate, but you should verify claims against each tool's own documentation. If you find something incorrect, email us and we'll fix it.
@@ -195,7 +199,7 @@ footer{border-top:1px solid var(--rule);padding:28px 48px;}
   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:var(--rule);border:1px solid var(--rule);margin:20px 0 32px;">
     <div style="background:var(--trust-bg);padding:22px 20px;">
       <div style="font-family:var(--mono);font-size:11px;font-weight:600;color:var(--trust);margin-bottom:8px;letter-spacing:.06em;">DARKMATTER</div>
-      <div style="font-size:13.5px;color:var(--ink-2);line-height:1.65;">An <strong style="color:var(--ink)">independent execution record</strong>. Your agent hashes each step client-side, signs it with its own Ed25519 key, and commits it to an independent log. Tamper-evident, verifiable offline, and designed for proof — not real-time monitoring.</div>
+      <div style="font-size:13.5px;color:var(--ink-2);line-height:1.65;"><strong style="color:var(--ink)">Independent execution record.</strong> Each step is hashed client-side, signed by the agent, and committed to a tamper-evident chain. Verification works offline. No trust in the system operator is required.</div>
     </div>
     <div style="background:var(--paper-1);padding:22px 20px;">
       <div style="font-family:var(--mono);font-size:11px;font-weight:600;color:var(--ink-3);margin-bottom:8px;letter-spacing:.06em;">LANGSMITH</div>

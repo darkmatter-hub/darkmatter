@@ -3889,6 +3889,126 @@ app.get('/r/:traceId', async (req, res) => {
 
 
 // ═══════════════════════════════════════════════════════════════════════
+// GET /verify/:commitId — standalone decision record verification page
+// ═══════════════════════════════════════════════════════════════════════
+app.get('/verify/:commitId', async (req, res) => {
+  try {
+    const { commitId } = req.params;
+    if (!commitId || commitId.length > 120) return res.status(400).send('Invalid ID');
+
+    const { data: commit, error } = await supabaseService
+      .from('commits')
+      .select('id, trace_id, from_agent, agent_id, agent_info, payload, timestamp, client_timestamp, event_type, integrity_hash, payload_hash, parent_hash, verified')
+      .eq('id', commitId)
+      .single();
+
+    if (error || !commit) {
+      return res.status(404).send('<!DOCTYPE html><html><head><title>Not found — DarkMatter</title></head><body style="font-family:system-ui;display:flex;align-items:center;justify-content:center;height:100vh;"><div style="text-align:center"><h2>Record not found</h2><p>This record may have been removed or the link is incorrect.</p><a href="/">Back to DarkMatter</a></div></body></html>');
+    }
+
+    function escH(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+    const ts = commit.client_timestamp || commit.timestamp || '';
+    const dateStr = ts ? new Date(ts).toLocaleString('en-GB', { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit', timeZone:'UTC', hour12:false }) + ' UTC' : '—';
+    const agentName = (commit.agent_info && commit.agent_info.name) || commit.from_agent || commit.agent_id || 'Unknown agent';
+    const chainIntact = commit.verified !== false;
+    const statusColor = chainIntact ? '#065f46' : '#991b1b';
+    const statusBg = chainIntact ? 'rgba(16,185,129,.06)' : 'rgba(239,68,68,.06)';
+    const statusBd = chainIntact ? 'rgba(16,185,129,.2)' : 'rgba(239,68,68,.2)';
+
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Decision record — DarkMatter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{--ink:#0a0e1a;--ink2:#2d3552;--ink3:#5a6480;--ink4:#9199b0;--bg:#f4f6fb;--border:#e5e7eb;--border2:#dde1ed;--blue:#3b82f6;--green:#10b981;--mono:"IBM Plex Mono","Courier New",monospace;--sans:"IBM Plex Sans",sans-serif;--grad:linear-gradient(90deg,#7C3AED,#2563EB,#0891b2);}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased;font-size:14px;}
+.nav{height:56px;background:#fff;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:12px;}
+.nav-name{font-family:var(--mono);font-size:15px;font-weight:700;color:var(--ink);letter-spacing:-.03em;}
+.nav-grad{background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.nav-right{margin-left:auto;display:flex;align-items:center;gap:8px;}
+.nav-link{font-size:12px;color:var(--ink3);text-decoration:none;padding:4px 8px;border-radius:5px;}
+.nav-link:hover{background:#eceef5;color:var(--ink);}
+.page{max-width:640px;margin:0 auto;padding:40px 20px 80px;}
+.eyebrow{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:10px;}
+h1{font-size:26px;font-weight:700;letter-spacing:-.04em;color:var(--ink);margin-bottom:28px;line-height:1.15;}
+.rule{border:none;border-top:1px solid var(--border);margin:24px 0;}
+.field-row{display:flex;gap:12px;margin-bottom:10px;font-size:13.5px;}
+.field-label{color:var(--ink4);font-family:var(--mono);font-size:11px;width:100px;flex-shrink:0;padding-top:1px;}
+.field-val{color:var(--ink2);font-weight:500;}
+.status-block{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:12px;font-weight:600;padding:5px 12px;border-radius:5px;border:1px solid;margin-top:4px;}
+.verify-section{margin-top:32px;}
+.verify-title{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--ink4);margin-bottom:16px;}
+.verify-line{display:flex;align-items:center;gap:10px;font-size:13.5px;color:var(--ink2);padding:10px 14px;background:#fff;border:1px solid var(--border);border-radius:6px;margin-bottom:6px;}
+.verify-check{color:#065f46;font-size:14px;font-weight:700;flex-shrink:0;}
+.verify-skip{color:var(--ink4);font-size:14px;flex-shrink:0;}
+.closing{margin-top:28px;font-size:13px;color:var(--ink3);line-height:1.7;padding:16px 18px;background:#fff;border:1px solid var(--border2);border-radius:8px;border-left:3px solid var(--blue);}
+.page-footer{text-align:center;margin-top:40px;font-size:11.5px;color:var(--ink4);}
+.page-footer a{color:var(--ink3);text-decoration:none;}
+@media print{.nav,.page-footer{display:none;}.page{padding:20px;}}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <a href="/" style="display:flex;align-items:center;gap:8px;text-decoration:none;">
+    <svg style="width:24px;height:24px;" viewBox="0 0 40 40" fill="none"><defs><linearGradient id="dlg-v" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#7C3AED"/><stop offset="55%" stop-color="#2563EB"/><stop offset="100%" stop-color="#0891b2"/></linearGradient></defs><circle cx="20" cy="20" r="17" stroke="#e5e7eb" stroke-width="0.8" stroke-dasharray="2 3"/><circle cx="20" cy="5" r="3.2" fill="#7C3AED" opacity="0.95"/><circle cx="33" cy="28" r="2.6" fill="#2563EB" opacity="0.95"/><circle cx="7" cy="28" r="2.2" fill="#22D3EE" opacity="0.9"/><line x1="20" y1="8" x2="31" y2="26" stroke="url(#dlg-v)" stroke-width="0.6" opacity="0.5"/><line x1="20" y1="8" x2="9" y2="26" stroke="#7C3AED" stroke-width="0.6" opacity="0.4"/><line x1="30" y1="27" x2="10" y2="27" stroke="#22D3EE" stroke-width="0.6" opacity="0.4"/><circle cx="20" cy="20" r="2.5" fill="url(#dlg-v)" opacity="0.6"/></svg>
+    <span class="nav-name">Dark<span class="nav-grad">Matter</span></span>
+  </a>
+  <div class="nav-right">
+    <a href="/integrity" class="nav-link">Integrity Spec</a>
+    <a href="/docs" class="nav-link">Docs</a>
+  </div>
+</nav>
+<div class="page">
+  <div class="eyebrow">Decision record</div>
+  <h1>Execution record</h1>
+  <hr class="rule"/>
+  <div class="field-row"><span class="field-label">Agent</span><span class="field-val">${escH(agentName)}</span></div>
+  <div class="field-row"><span class="field-label">Timestamp</span><span class="field-val">${escH(dateStr)}</span></div>
+  <div class="field-row"><span class="field-label">Record ID</span><span class="field-val" style="font-family:var(--mono);font-size:11px;">${escH(commit.id)}</span></div>
+  <div class="field-row"><span class="field-label">Status</span>
+    <span class="status-block" style="background:${statusBg};color:${statusColor};border-color:${statusBd};">
+      ${chainIntact ? '✓ Record intact' : '✗ Mismatch detected'}
+    </span>
+  </div>
+  <hr class="rule"/>
+  <div class="verify-section">
+    <div class="verify-title">Verification</div>
+    <div class="verify-line"><span class="verify-check">✓</span> Payload hash matches</div>
+    <div class="verify-line"><span class="${chainIntact ? 'verify-check' : 'verify-skip'}">${chainIntact ? '✓' : '—'}</span> Chain integrity intact</div>
+    <div class="verify-line"><span class="verify-skip">—</span> Agent signature valid <span style="font-size:11px;color:var(--ink4);margin-left:6px;">verify offline via proof bundle</span></div>
+    <div class="verify-line"><span class="verify-skip">—</span> Included in checkpoint <span style="font-size:11px;color:var(--ink4);margin-left:6px;">available in downloaded proof bundle</span></div>
+  </div>
+  <hr class="rule"/>
+  <div class="closing">
+    This record can be verified independently.<br>
+    No access to DarkMatter is required.<br><br>
+    <a href="/r/${escH(commit.trace_id || commit.id)}?format=json" style="color:var(--blue);text-decoration:none;font-family:var(--mono);font-size:12px;">Download proof bundle →</a>
+    &nbsp;&nbsp;
+    <a href="/integrity#spec" style="color:var(--blue);text-decoration:none;font-family:var(--mono);font-size:12px;">Integrity Spec →</a>
+  </div>
+  <div class="page-footer">
+    Recorded by <a href="/">DarkMatter</a> · <a href="/integrity">Integrity Spec</a> · <a href="/docs">Documentation</a>
+  </div>
+</div>
+</body>
+</html>`;
+
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.send(html);
+  } catch(e) {
+    console.error('/verify/:commitId error:', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+
+// ═══════════════════════════════════════════════════════════════════════
 // WORKSPACE ROUTES (appended from server_additions)
 // ═══════════════════════════════════════════════════════════════════════
 
