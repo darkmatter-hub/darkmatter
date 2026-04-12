@@ -4131,6 +4131,34 @@ app.get('/ext/claude/status', claudeProxyAuth, (req, res) => {
   });
 });
 
+// ── GET /api/recording-keys/test/:provider — verify a stored key works ─
+app.get('/api/recording-keys/test/:provider', requireAuth, async (req, res) => {
+  try {
+    const { provider } = req.params;
+    const { data: rk } = await supabaseService.from('user_recording_keys')
+      .select('encrypted_key, recording_enabled')
+      .eq('user_id', req.user.id)
+      .eq('provider', provider)
+      .single();
+
+    if (!rk) return res.status(404).json({ error: 'No key found for ' + provider });
+    if (!rk.recording_enabled) return res.json({ status: 'paused', message: 'Recording is paused for this provider' });
+
+    // Quick test — just verify the key format, don't make a live API call
+    const key = rk.encrypted_key || '';
+    const valid = provider === 'anthropic' ? key.startsWith('sk-') :
+                  provider === 'openai'    ? key.startsWith('sk-') :
+                  provider === 'google'    ? key.startsWith('AIza') : true;
+
+    res.json({
+      status:    valid ? 'connected' : 'invalid_key',
+      provider,
+      recording: rk.recording_enabled,
+      message:   valid ? 'Key stored and recording enabled' : 'Key format looks incorrect',
+    });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
 // ── GET/POST/DELETE /ext/claude/v1/agents ── Managed Agents passthrough ─
 // ── GET/POST /ext/claude/v1/sessions ─────────────────────────────────
 // ── ALL /ext/claude/* — full Claude API passthrough with recording ─────

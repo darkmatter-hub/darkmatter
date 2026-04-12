@@ -865,42 +865,47 @@ pre:hover .code-copy{display:block;}pre:hover .code-lang{display:none;}
         <div class="srow"><div><div class="slabel">Export all records</div><div class="sdesc">Download your complete history as JSON</div></div><div><button class="sbtn" onclick="exportAll()">Export</button></div></div>
         <div class="srow"><div><div class="slabel">Refresh</div><div class="sdesc">Reload records from server</div></div><div><button class="sbtn" onclick="fetchRecords();toast('Refreshing...')">Refresh</button></div></div>
       </div>
-      <div class="ssec" id="claude-recording-section">
-        <div class="ssec-t">Claude Recording</div>
-        <div id="claude-key-status" style="font-size:11.5px;color:var(--ink3);margin-bottom:10px;line-height:1.6;">
-          Loading...
+      <div class="ssec" id="connected-models-section">
+        <div class="ssec-t">Connected models</div>
+        <div style="font-size:11.5px;color:var(--ink3);margin-bottom:12px;line-height:1.6;">
+          Add API keys to enable proxy recording. Calls route through DarkMatter and are committed as records.
+          <a href="/docs#proxy" style="color:var(--blue);text-decoration:none;"> Learn about trust tiers →</a>
         </div>
-        <div id="claude-key-form">
+
+        <!-- Provider table -->
+        <div id="connected-models-table" style="display:flex;flex-direction:column;gap:1px;background:var(--border);border:1px solid var(--border);border-radius:7px;overflow:hidden;">
+          <!-- Loading state -->
+          <div style="padding:14px;font-size:12px;color:var(--ink3);background:#fff;" id="models-loading">Loading...</div>
+        </div>
+
+        <!-- Add key form (hidden by default) -->
+        <div id="add-key-form" style="display:none;margin-top:12px;background:var(--bg2);border:1px solid var(--border);border-radius:7px;padding:14px;">
+          <div style="font-size:12.5px;font-weight:600;color:var(--ink);margin-bottom:10px;" id="add-key-title">Add API key</div>
           <div class="field">
-            <label>Anthropic API Key</label>
-            <input type="password" id="claude-api-key-inp" placeholder="sk-ant-api03-..." autocomplete="off" style="font-family:var(--mono);font-size:11px;"/>
+            <label id="add-key-label-field">API Key</label>
+            <input type="password" id="add-api-key-inp" placeholder="" autocomplete="off" style="font-family:var(--mono);font-size:11px;"/>
           </div>
           <div class="field">
             <label>Label (optional)</label>
-            <input type="text" id="claude-key-label-inp" placeholder="e.g. production" autocomplete="off"/>
+            <input type="text" id="add-key-label-inp" placeholder="e.g. production" autocomplete="off"/>
           </div>
+          <input type="hidden" id="add-key-provider" value="anthropic"/>
           <div style="display:flex;gap:6px;margin-top:4px;">
-            <button class="mfbtn mfo" onclick="saveClaudeKey()" style="font-size:11px;padding:5px 12px;">Save key</button>
-            <button class="mfbtn mfc" onclick="cancelClaudeKey()" id="claude-cancel-btn" style="display:none;font-size:11px;padding:5px 12px;">Cancel</button>
+            <button class="mfbtn mfo" onclick="saveProviderKey()" style="font-size:11px;padding:5px 12px;">Save key</button>
+            <button class="mfbtn mfc" onclick="hideAddKeyForm()" style="font-size:11px;padding:5px 12px;">Cancel</button>
           </div>
         </div>
-        <div id="claude-key-saved" style="display:none;">
-          <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--bg3);">
-            <div>
-              <div class="slabel" id="claude-key-display" style="font-family:var(--mono);font-size:11px;color:var(--ink2);"></div>
-              <div class="sdesc">Anthropic API key — used for Claude proxy recording</div>
-            </div>
-            <div style="display:flex;gap:5px;align-items:center;">
-              <label class="tog" title="Enable/disable recording">
-                <input type="checkbox" id="claude-recording-toggle" onchange="toggleClaudeRecording(this.checked)"/>
-                <span class="togs"></span>
-              </label>
-            </div>
-          </div>
-          <div style="padding:8px 0;display:flex;gap:5px;flex-wrap:wrap;">
-            <button class="sbtn" onclick="showClaudeKeyForm()">Replace key</button>
-            <button class="sbtn dng" onclick="deleteClaudeKey()">Remove</button>
-          </div>
+
+        <!-- Hidden elements kept for backward compat with existing JS -->
+        <div style="display:none;">
+          <div id="claude-key-status"></div>
+          <div id="claude-key-form"></div>
+          <div id="claude-key-saved"></div>
+          <div id="claude-key-display"></div>
+          <input id="claude-api-key-inp"/>
+          <input id="claude-key-label-inp"/>
+          <input id="claude-recording-toggle" type="checkbox"/>
+          <button id="claude-cancel-btn"></button>
         </div>
       </div>
       <div class="ssec">
@@ -1145,7 +1150,15 @@ function recordStatus(t){
   return'none';
 }
 function captureSource(t){
-  return(t.commits[0]&&t.commits[0].payload&&(t.commits[0].payload._source||t.commits[0].payload.source))||'sdk';
+  const src=(t.commits[0]&&t.commits[0].payload&&(t.commits[0].payload._source||t.commits[0].payload.source))||'sdk';
+  return src;
+}
+function sourceLabel(src){
+  if(src==='extension')     return{label:'Browser extension',   trust:'client'};
+  if(src==='claude_proxy')  return{label:'Claude proxy',        trust:'proxy'};
+  if(src==='proxy')         return{label:'API proxy',           trust:'proxy'};
+  if(src==='sdk')           return{label:'SDK',                 trust:'client'};
+  return{label:src||'SDK', trust:'client'};
 }
 
 // ── SEARCH (ranked, content-aware) ──────────────────────────
@@ -1390,13 +1403,17 @@ function selectThread(id){
     fail:'<span class="sbadge fail">&#10007; Record mismatch</span>',
     none:'<span class="sbadge none">Not yet verified</span>',
   };
-  const srcLabel=src==='extension'?'Captured via browser':src==='proxy'?'Captured via API proxy':'SDK';
+  const si=sourceLabel(src);
+  const trustBadge=si.trust==='proxy'
+    ?'<span class="sbadge" style="background:rgba(245,158,11,.08);color:#92400e;border:1px solid rgba(245,158,11,.25);">⇄ proxy</span>'
+    :'<span class="sbadge" style="background:rgba(16,185,129,.06);color:#065f46;border:1px solid rgba(16,185,129,.2);">✦ client-signed</span>';
   const memberChip=selThread.member?'<span class="mc strong">'+esc(selThread.member.display_name||selThread.member.email)+'</span><span class="msep">&#183;</span>':'';
   const agentChip=(selThread.agentName&&!selThread.member)?'<span class="mc">'+esc(selThread.agentName)+'</span><span class="msep">&#183;</span>':'';
 
-  // ONE status badge + member + date + steps. No source label noise.
   document.getElementById('rec-meta').innerHTML=
     (badges[status]||badges.none)
+    +'<span class="msep">&#183;</span>'
+    +trustBadge
     +'<span class="msep">&#183;</span>'
     +memberChip+agentChip
     +'<span class="mc">'+fmtDateTime(selThread.latest)+'</span>'
@@ -1589,8 +1606,16 @@ function renderProof(thread){
 
   const verifyHeadline=status==='ok'?'This record has not been altered.':status==='fail'?'A mismatch was detected.':'Not yet verified';
 
+  // Trust note for proxy-captured records
+  const threadSrc=selThread?captureSource(selThread):'sdk';
+  const proxyNote=(threadSrc==='proxy'||threadSrc==='claude_proxy')
+    ?'<div style="font-size:11.5px;color:#92400e;background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.2);border-radius:6px;padding:8px 12px;margin-bottom:12px;">'+
+      '<strong>Proxy-captured record.</strong> Payload hashing occurred server-side. The hash chain is intact, but full client-side independence requires the SDK or browser extension.</div>'
+    :'';
+
   scroll.innerHTML=
-    '<div class="aud-banner" style="background:'+col+'08;border-color:'+col+'20;">'
+    proxyNote
+    +'<div class="aud-banner" style="background:'+col+'08;border-color:'+col+'20;">'
     +'<div class="ab-title" style="color:'+col+';">Verification result</div>'
     +'<div style="font-size:14px;font-weight:600;color:var(--ink);margin-bottom:6px;">'+verifyHeadline+'</div>'
     +'<div class="ab-body">'+aud+'</div>'
@@ -2183,6 +2208,161 @@ async function testClaudeProxy() {
   }
 }
 
+
+
+// ── UNIFIED CONNECTED MODELS ──────────────────────────────────────────
+const PROVIDERS = [
+  { id:'anthropic', name:'Anthropic Claude', placeholder:'sk-ant-api03-...', prefix:'sk-',  proxyPath:'ext/claude'      },
+  { id:'openai',    name:'OpenAI',           placeholder:'sk-...',           prefix:'sk-',  proxyPath:'proxy/openai'    },
+  { id:'google',    name:'Google Gemini',    placeholder:'AIza...',          prefix:'AIza', proxyPath:'proxy/google'    },
+];
+
+let allRecordingKeys = [];
+
+async function loadConnectedModels() {
+  const tableEl   = document.getElementById('connected-models-table');
+  const loadingEl = document.getElementById('models-loading');
+  if (!tableEl) return;
+
+  try {
+    const s = await refreshSession() || session;
+    const h = { 'Content-Type':'application/json', 'Authorization':'Bearer '+s.access_token };
+    if (s.refresh_token) h['X-Refresh-Token'] = s.refresh_token;
+
+    const r = await fetch('/api/recording-keys', { headers: h });
+    if (!r.ok) {
+      if (loadingEl) loadingEl.textContent = 'Error loading keys: ' + r.status;
+      return;
+    }
+    allRecordingKeys = await r.json() || [];
+
+    // Render table rows
+    tableEl.innerHTML = PROVIDERS.map(p => {
+      const key = allRecordingKeys.find(k => k.provider === p.id);
+      return renderProviderRow(p, key);
+    }).join('');
+
+    // Also update legacy claude UI elements for backward compat
+    const claudeKey = allRecordingKeys.find(k => k.provider === 'anthropic');
+    if (claudeKey) claudeKeyId = claudeKey.id;
+
+  } catch(e) {
+    if (tableEl) tableEl.innerHTML = '<div style="padding:14px;font-size:12px;color:var(--red);background:#fff;">Could not load: ' + e.message + '</div>';
+    console.error('[DM] loadConnectedModels:', e);
+  }
+}
+
+function renderProviderRow(provider, key) {
+  const connected = !!key;
+  const enabled   = connected && key.recording_enabled;
+  const keyId     = key ? key.id : '';
+  const hint      = key ? (key.key_hint || '...') : '';
+
+  return '<div style="display:flex;align-items:center;gap:10px;padding:11px 14px;background:#fff;">'
+    // Provider name + status dot
+    + '<div style="width:9px;height:9px;border-radius:50%;flex-shrink:0;background:'+(connected?(enabled?'var(--green)':'var(--amber)'):'var(--border3)')+'"></div>'
+    + '<div style="flex:1;min-width:0;">'
+    +   '<div style="font-size:12.5px;font-weight:500;color:var(--ink);">'+esc(provider.name)+'</div>'
+    +   (connected
+          ? '<div style="font-family:var(--mono);font-size:10px;color:var(--ink3);">'+esc(hint)+'&nbsp;&nbsp;·&nbsp;&nbsp;'+(enabled?'Recording on':'Paused')+'</div>'
+          : '<div style="font-size:11px;color:var(--ink4);">Not connected</div>')
+    + '</div>'
+    // Actions
+    + '<div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">'
+    + (connected
+        ? '<label class="tog" title="'+(enabled?'Pause':'Resume')+' recording" style="margin:0;">'
+          + '<input type="checkbox" '+(enabled?'checked':'')+' onchange="toggleProviderKey(''+esc(keyId)+'',this.checked)"/>'
+          + '<span class="togs"></span></label>'
+          + '<button class="sbtn" style="font-size:10.5px;padding:2px 8px;" onclick="showAddKeyForm(''+esc(provider.id)+'')">Replace</button>'
+          + '<button class="sbtn dng" style="font-size:10.5px;padding:2px 8px;" onclick="deleteProviderKey(''+esc(keyId)+'')">Remove</button>'
+        : '<button class="sbtn" style="font-size:10.5px;padding:3px 9px;border-color:var(--blue);color:var(--blue);" onclick="showAddKeyForm(''+esc(provider.id)+'')">Connect</button>')
+    + '</div>'
+    + '</div>';
+}
+
+function showAddKeyForm(providerId) {
+  const p = PROVIDERS.find(x => x.id === providerId);
+  if (!p) return;
+  const titleEl    = document.getElementById('add-key-title');
+  const labelEl    = document.getElementById('add-key-label-field');
+  const inpEl      = document.getElementById('add-api-key-inp');
+  const providerEl = document.getElementById('add-key-provider');
+  const formEl     = document.getElementById('add-key-form');
+  if (titleEl)    titleEl.textContent = 'Connect ' + p.name;
+  if (labelEl)    labelEl.textContent = p.name + ' API key';
+  if (inpEl)      { inpEl.placeholder = p.placeholder; inpEl.value = ''; }
+  if (providerEl) providerEl.value = p.id;
+  if (formEl)     formEl.style.display = '';
+  setTimeout(() => inpEl && inpEl.focus(), 50);
+}
+
+function hideAddKeyForm() {
+  const formEl = document.getElementById('add-key-form');
+  if (formEl) formEl.style.display = 'none';
+}
+
+async function saveProviderKey() {
+  const inpEl      = document.getElementById('add-api-key-inp');
+  const labelInp   = document.getElementById('add-key-label-inp');
+  const providerEl = document.getElementById('add-key-provider');
+  const apiKey     = inpEl?.value?.trim();
+  const provider   = providerEl?.value || 'anthropic';
+  const p          = PROVIDERS.find(x => x.id === provider);
+
+  if (!apiKey) return toast('Enter your API key');
+  if (p && !apiKey.startsWith(p.prefix)) return toast('Key should start with ' + p.placeholder.slice(0, 6) + '...');
+
+  try {
+    const s = await refreshSession() || session;
+    const h = { 'Content-Type':'application/json', 'Authorization':'Bearer '+s.access_token };
+    if (s.refresh_token) h['X-Refresh-Token'] = s.refresh_token;
+
+    const r = await fetch('/api/recording-keys', {
+      method: 'POST',
+      headers: h,
+      body: JSON.stringify({ provider, apiKey, label: labelInp?.value?.trim() || null }),
+    });
+    const d = await r.json();
+    if (!r.ok) { console.error('[DM] saveProviderKey:', d); return toast('Error: ' + (d.error || 'Save failed')); }
+
+    if (inpEl) inpEl.value = '';
+    hideAddKeyForm();
+    toast(p.name + ' key saved — recording enabled');
+    await loadConnectedModels();
+  } catch(e) {
+    console.error('[DM] saveProviderKey exception:', e);
+    toast('Save failed: ' + e.message);
+  }
+}
+
+async function toggleProviderKey(keyId, enabled) {
+  try {
+    const s = await refreshSession() || session;
+    const h = { 'Content-Type':'application/json', 'Authorization':'Bearer '+s.access_token };
+    await fetch('/api/recording-keys/' + keyId, {
+      method: 'PATCH', headers: h,
+      body: JSON.stringify({ recording_enabled: enabled }),
+    });
+    toast('Recording ' + (enabled ? 'enabled' : 'paused'));
+    await loadConnectedModels();
+  } catch(e) { toast('Toggle failed'); }
+}
+
+async function deleteProviderKey(keyId) {
+  if (!confirm('Remove this API key? Recording will stop for this provider.')) return;
+  try {
+    const s = await refreshSession() || session;
+    const h = { 'Content-Type':'application/json', 'Authorization':'Bearer '+s.access_token };
+    await fetch('/api/recording-keys/' + keyId, { method: 'DELETE', headers: h });
+    toast('Key removed');
+    await loadConnectedModels();
+  } catch(e) { toast('Delete failed'); }
+}
+
+// Override loadClaudeKey to call the unified loader
+// (keeps backward compat with openModal hook)
+const _origLoadClaudeKey = loadClaudeKey;
+loadClaudeKey = loadConnectedModels;
 
 function copyVerifyCmd(btn){navigator.clipboard.writeText('python verify_darkmatter_chain.py bundle.json').then(function(){var t=btn.textContent;btn.textContent='Copied!';setTimeout(function(){btn.textContent=t;},1500);});}
 
