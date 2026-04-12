@@ -1420,10 +1420,27 @@ function selectThread(id){
   const memberChip=selThread.member?'<span class="mc strong">'+esc(selThread.member.display_name||selThread.member.email)+'</span><span class="msep">&#183;</span>':'';
   const agentChip=(selThread.agentName&&!selThread.member)?'<span class="mc">'+esc(selThread.agentName)+'</span><span class="msep">&#183;</span>':'';
 
+  // Verification level — legal-friendly translation of capture_mode
+  const verLevelMap = {
+    client_signed:   {label:'Independent',         tip:'Verifiable without DarkMatter — hashed and signed client-side'},
+    proxy_forwarded: {label:'Recorded',             tip:'Recorded by DarkMatter in transit — key not stored'},
+    proxy_stored:    {label:'Recorded + managed',   tip:'Recorded by DarkMatter — key stored in dashboard'},
+  };
+  const verLevel = verLevelMap[mode] || verLevelMap.client_signed;
+  const verLevelChip = '<span class="mc" style="cursor:help;border-bottom:1px dashed var(--border3);" title="'+esc(verLevel.tip)+'">Verification: '+esc(verLevel.label)+'</span>';
+
+  // Upgrade CTA in header for proxy records
+  const upgradeCTA = si.trust==='proxy'
+    ? '<a href="/docs#sdk" style="font-size:10.5px;font-family:var(--mono);color:var(--blue);text-decoration:none;padding:2px 7px;border:1px solid var(--blue2);border-radius:4px;white-space:nowrap;">Upgrade to independent →</a>'
+    : '';
+
   document.getElementById('rec-meta').innerHTML=
     (badges[status]||badges.none)
     +'<span class="msep">&#183;</span>'
     +trustBadge
+    +'<span class="msep">&#183;</span>'
+    +verLevelChip
+    +(upgradeCTA?'<span class="msep">&#183;</span>'+upgradeCTA:'')
     +'<span class="msep">&#183;</span>'
     +memberChip+agentChip
     +'<span class="mc">'+fmtDateTime(selThread.latest)+'</span>'

@@ -3833,7 +3833,7 @@ app.get('/r/:traceId', async (req, res) => {
       + '  <div class="fs-integrity">' + (chainIntact ? 'This record has been cryptographically verified. Nothing has been added, removed, or altered since it was captured.' : 'This record could not be fully verified. Download the proof file for independent investigation.') + '</div>\n'
       + '  <div class="fs-actions">\n'
       + '    <button class="fs-btn-p" onclick="copyLink()">Copy link</button>\n'
-      + '    <a class="fs-btn-s" href="' + escH(jsonUrl) + '">Download proof (.json)</a>\n'
+      + '    <a class="fs-btn-s" href="' + escH(jsonUrl) + '">Download proof bundle (.json)</a>\n'
       + '    <button class="fs-btn-s" onclick="switchView(this.dataset.v,this)" data-v="proof">View verification &rarr;</button>\n'
       + '  </div>\n'
       + '</div>\n'

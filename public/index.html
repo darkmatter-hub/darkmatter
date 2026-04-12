@@ -330,17 +330,20 @@ footer{background:var(--dark2);border-top:1px solid var(--dark-border);padding:4
 
 <!-- HERO -->
 <div class="hero">
+  <div class="hero-eyebrow">Independent verification layer for AI systems</div>
   <h1 class="hero-h1">
-    AI systems make decisions.<br><span class="accent">DarkMatter makes them provable.</span>
+    AI decisions are easy to make.<br><span class="accent">Proving them is the hard part.</span>
   </h1>
-  <p class="hero-sub" style="font-size:1.1rem;line-height:1.8;max-width:580px;margin:0 auto 12px;">
-    The independent audit layer for AI agents —<br>
-    whether they run on Claude, OpenAI, or your own infrastructure.
+  <p class="hero-sub" style="font-size:1.05rem;line-height:1.8;max-width:600px;margin:0 auto 12px;">
+    DarkMatter turns every agent action into a record that can be independently verified —<br>
+    without relying on DarkMatter, the model provider, or your infrastructure.
   </p>
-  <p class="hero-mech">Each step is hashed client-side, signed with its own key, and committed to an independent append-only log.</p>
   <div class="hero-actions">
-    <a href="/demo" class="btn-p">Run demo →</a>
-    <a href="/signup" class="btn-o">Start free</a>
+    <a href="/signup" class="btn-p">Start recording →</a>
+    <a href="/r/demo" class="btn-o">View example record</a>
+  </div>
+  <div style="font-family:var(--mono);font-size:11px;color:var(--dark-text3);margin-top:10px;position:relative;z-index:2;">
+    <a href="/verify/demo" style="color:var(--dark-text3);text-decoration:underline;text-underline-offset:3px;">Verify without an account →</a>
   </div>
 
   <!-- Verification card -->
@@ -375,38 +378,91 @@ footer{background:var(--dark2);border-top:1px solid var(--dark-border);padding:4
 <div class="dark-to-light"></div>
 
 
-<!-- THREE QUESTIONS STRIP -->
-<div style="background:#fff;border-bottom:1px solid #e5e7eb;padding:40px;">
-  <div style="max-width:900px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:0;">
-    <div style="padding:24px 32px;border-right:1px solid #e5e7eb;">
-      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--blue);margin-bottom:10px;">What happened?</div>
-      <div style="font-size:15px;font-weight:600;color:var(--ink);margin-bottom:6px;letter-spacing:-.02em;">Reconstruct every step</div>
-      <div style="font-size:13.5px;color:var(--ink3);line-height:1.65;">Every input and output is preserved in order. See the exact sequence of decisions.</div>
-    </div>
-    <div style="padding:24px 32px;border-right:1px solid #e5e7eb;">
-      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--blue);margin-bottom:10px;">Who made the decision?</div>
-      <div style="font-size:15px;font-weight:600;color:var(--ink);margin-bottom:6px;letter-spacing:-.02em;">Bind each step to an identity</div>
-      <div style="font-size:13.5px;color:var(--ink3);line-height:1.65;">Every step is signed by the agent that produced it. Ownership is provable, not assumed.</div>
-    </div>
-    <div style="padding:24px 32px;">
-      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--blue);margin-bottom:10px;">Can the record be trusted?</div>
-      <div style="font-size:15px;font-weight:600;color:var(--ink);margin-bottom:6px;letter-spacing:-.02em;">Verify hashes and signatures</div>
-      <div style="font-size:13.5px;color:var(--ink3);line-height:1.65;">Tamper detection is cryptographic. Verification works offline, without trusting DarkMatter.</div>
-    </div>
+<!-- WORKS WITH STRIP -->
+<div style="background:#fff;border-bottom:1px solid #e5e7eb;padding:16px 40px;text-align:center;">
+  <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--ink4);letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px;">Works with</div>
+  <div style="display:flex;align-items:center;justify-content:center;gap:28px;flex-wrap:wrap;">
+    <span style="font-size:13px;font-weight:600;color:var(--ink3);">Claude</span>
+    <span style="color:var(--light-border);">·</span>
+    <span style="font-size:13px;font-weight:600;color:var(--ink3);">OpenAI</span>
+    <span style="color:var(--light-border);">·</span>
+    <span style="font-size:13px;font-weight:600;color:var(--ink3);">Gemini</span>
+    <span style="color:var(--light-border);">·</span>
+    <span style="font-size:13px;font-weight:600;color:var(--ink3);">Custom agents</span>
+    <span style="color:var(--light-border);">·</span>
+    <span style="font-size:13px;font-weight:600;color:var(--ink3);">Internal systems</span>
   </div>
 </div>
 
-<!-- ── PROBLEMS — why DarkMatter exists ── -->
-<div style="background:#fff;padding:80px 40px;">
+<!-- PROBLEM SECTION -->
+<div style="background:#fff;padding:72px 40px 64px;">
+  <div style="max-width:780px;margin:0 auto;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--blue);margin-bottom:14px;">The problem</div>
+    <h2 style="font-size:clamp(24px,3vw,36px);font-weight:700;letter-spacing:-.04em;color:var(--ink);line-height:1.15;margin-bottom:20px;">AI systems are being deployed faster than they are governed.</h2>
+    <p style="font-size:16px;color:var(--ink3);line-height:1.8;margin-bottom:12px;">When something goes wrong, most organizations cannot answer:</p>
+    <div style="border-left:3px solid var(--light-border);padding:12px 24px;margin-bottom:32px;">
+      <div style="font-size:16px;color:var(--ink2);line-height:2;">
+        What exactly happened?<br>
+        Who or what made the decision?<br>
+        Has the record been altered?
+      </div>
+    </div>
+    <p style="font-size:15px;color:var(--ink3);line-height:1.75;">DarkMatter is the layer that answers all three — with cryptographic proof, not operator claims.</p>
+  </div>
+</div>
+
+<!-- WHO CONTROLS WHAT -->
+<div style="background:#fff;padding:72px 40px;">
+  <div style="max-width:900px;margin:0 auto;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--blue);margin-bottom:14px;">Trust model</div>
+    <h2 style="font-size:clamp(24px,3vw,36px);font-weight:700;letter-spacing:-.04em;color:var(--ink);line-height:1.15;margin-bottom:12px;">Who controls what.</h2>
+    <p style="font-size:15px;color:var(--ink3);line-height:1.75;max-width:560px;margin-bottom:36px;">DarkMatter does not execute your agents. It proves what they did — independently of the system that ran them.</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;border:1px solid var(--light-border);border-radius:10px;overflow:hidden;margin-bottom:32px;">
+      <div style="padding:22px 24px;border-right:1px solid var(--light-border);">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:8px;">Agent execution</div>
+        <div style="font-size:16px;font-weight:700;color:var(--ink);margin-bottom:4px;">You / provider</div>
+        <div style="font-size:12.5px;color:var(--ink3);line-height:1.6;">Claude, OpenAI, or your own infrastructure</div>
+      </div>
+      <div style="padding:22px 24px;border-right:1px solid var(--light-border);">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:8px;">Infrastructure logs</div>
+        <div style="font-size:16px;font-weight:700;color:var(--ink);margin-bottom:4px;">Operator-owned</div>
+        <div style="font-size:12.5px;color:var(--ink3);line-height:1.6;">Written by the party running the system — trust-based</div>
+      </div>
+      <div style="padding:22px 24px;background:rgba(16,185,129,.04);border-color:rgba(16,185,129,.2);">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-bottom:8px;">Verification record</div>
+        <div style="font-size:16px;font-weight:700;color:#065f46;margin-bottom:4px;">DarkMatter</div>
+        <div style="font-size:12.5px;color:var(--ink3);line-height:1.6;">Independent, cryptographic, verifiable offline — no trust required</div>
+      </div>
+    </div>
+
+    <!-- Capture modes on homepage -->
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--ink4);margin-bottom:16px;">Not all records are equal — and we show you the difference</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:10px;">
+      <div style="border:1px solid rgba(16,185,129,.25);background:rgba(16,185,129,.03);border-radius:8px;padding:16px 18px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:#065f46;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.2);padding:2px 8px;border-radius:3px;display:inline-block;margin-bottom:10px;">✦ Client-signed</div>
+        <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:4px;">Independently verifiable</div>
+        <div style="font-size:12px;color:var(--ink3);line-height:1.6;">Hashed and signed on your machine before reaching DarkMatter.</div>
+      </div>
+      <div style="border:1px solid var(--light-border);border-radius:8px;padding:16px 18px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:#92400e;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);padding:2px 8px;border-radius:3px;display:inline-block;margin-bottom:10px;">⇄ Proxy · forwarded</div>
+        <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:4px;">Recorded by DarkMatter</div>
+        <div style="font-size:12px;color:var(--ink3);line-height:1.6;">Captured in transit. Key forwarded per-call, never stored.</div>
+      </div>
+      <div style="border:1px solid var(--light-border);border-radius:8px;padding:16px 18px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:#92400e;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);padding:2px 8px;border-radius:3px;display:inline-block;margin-bottom:10px;">⇄ Proxy · stored key</div>
+        <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:4px;">Recorded + key managed</div>
+        <div style="font-size:12px;color:var(--ink3);line-height:1.6;">Convenient for development. Upgrade to client-signed for production.</div>
+      </div>
+    </div>
+    <p style="font-size:12.5px;color:var(--ink4);line-height:1.6;">Every record in your dashboard explicitly shows how it was captured. Nothing is hidden.</p>
+  </div>
+</div>
+
+<!-- ── PROBLEMS (condensed) ── -->
+<div style="background:var(--light);padding:72px 40px;">
   <div style="max-width:1100px;margin:0 auto;">
     <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--blue);margin-bottom:14px;">Why DarkMatter exists</div>
-    <h2 style="font-size:clamp(26px,3vw,38px);font-weight:700;letter-spacing:-.04em;color:var(--ink);line-height:1.1;margin-bottom:12px;">When something goes wrong, three questions matter immediately.</h2>
-    <div style="font-size:16px;color:var(--ink3);line-height:1.9;max-width:520px;margin-bottom:16px;">
-      Who made this decision?<br>
-      What exactly happened?<br>
-      Can this record be trusted?
-    </div>
-    <p style="font-size:16px;color:var(--ink3);line-height:1.7;max-width:580px;margin-bottom:56px;">DarkMatter answers all three — with proof. Here are the three problems nobody else has solved.</p>
+    <h2 style="font-size:clamp(24px,3vw,36px);font-weight:700;letter-spacing:-.04em;color:var(--ink);line-height:1.1;margin-bottom:40px;">Three problems nobody else has solved.</h2>
 
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:24px;">
 
