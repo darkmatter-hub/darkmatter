@@ -1381,7 +1381,7 @@ function renderProof(thread){
     +'<div class="pab-title">Verify independently</div>'
     +'<div class="pab-sub">This record can be verified independently. No access to DarkMatter is required. Download a proof bundle that works completely offline.</div>'
     +'<div class="pab-cmd"><span class="pab-cmd-txt">python verify_darkmatter_chain.py bundle.json</span>'
-    +'<button style="font-size:10px;padding:2px 7px;border-radius:3px;border:1px solid var(--border);background:none;color:var(--ink3);cursor:pointer;font-family:var(--mono);" onclick="navigator.clipboard.writeText('python verify_darkmatter_chain.py bundle.json');toast('Copied')">Copy</button></div>'
+    +'<button style="font-size:10px;padding:2px 7px;border-radius:3px;border:1px solid var(--border);background:none;color:var(--ink3);cursor:pointer;font-family:var(--mono);" onclick="navigator.clipboard.writeText('python verify_darkmatter_chain.py bundle.json').then(function(){toast('Copied')})">Copy</button></div>'
     +'<div class="pab-btns">'+primaryBtn+restBtns+'</div>'
     +'</div>';
 }

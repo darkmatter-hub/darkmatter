@@ -1141,7 +1141,7 @@ curl -X POST https://darkmatterhub.ai/api/agents/register \
 
   <p><strong>Layer 3 — Append-only log.</strong> Every commit is appended to a sequential log. Each entry carries the running log root and a DarkMatter server signature. The log has no UPDATE or DELETE policies — enforced at the database layer. DarkMatter cannot silently remove a commit without the log root changing.</p>
 
-  <p><strong>Layer 4 — Public checkpoints.</strong> Every 10 minutes, the signed log root is published to a public GitHub repository (<a href="https://github.com/darkmatter-hub/checkpoints" target="_blank">darkmatter-hub/checkpoints</a>) that DarkMatter cannot unilaterally rewrite. Anyone holding a checkpoint from any point in time can verify all subsequent checkpoints are consistent — no deletions, no rewrites.</p>
+  <p><strong>Layer 4 — Public checkpoints.</strong> Every 10 minutes, the signed log root is published to a public GitHub repository () that DarkMatter cannot unilaterally rewrite. Anyone holding a checkpoint from any point in time can verify all subsequent checkpoints are consistent — no deletions, no rewrites.</p>
 
   <h3>Commit integrity hash</h3>
 
@@ -1284,7 +1284,7 @@ curl "https://darkmatterhub.ai/api/log/consistency?from=first&to=latest"
 <span class="cm"># Compare two specific checkpoints</span>
 curl "https://darkmatterhub.ai/api/log/consistency?from=cp_aaa&to=cp_bbb"<div class="lang-label">bash</div></code></pre>
 
-  <p>Checkpoints are also published to <a href="https://github.com/darkmatter-hub/checkpoints" target="_blank">github.com/darkmatter-hub/checkpoints</a> every 10 minutes. GitHub's commit history makes this independently tamper-evident — DarkMatter cannot delete or alter published checkpoints.</p>
+  <p>Checkpoints are also published toevery 10 minutes. GitHub's commit history makes this independently tamper-evident — DarkMatter cannot delete or alter published checkpoints.</p>
 
 <h2 id="search">Query and search</h2>
   <p>Search your execution history by model, provider, event type, trace ID, or full-text across payloads. Free on all plans.</p>
@@ -1517,8 +1517,6 @@ def commit(dm_key, to_agent_id, payload, parent_id=None):
   </div>
   <div class="dm-footer-bottom">
     <span>© 2026 DarkMatter</span>
-    <span>·</span>
-    <a href="https://github.com/darkmatter-hub/checkpoints" target="_blank">Public checkpoints ↗</a>
     <span>·</span>
     <a href="/integrity#spec">Integrity Spec v1.0</a>
   </div>
