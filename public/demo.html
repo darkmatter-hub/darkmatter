@@ -96,6 +96,7 @@ nav { position: sticky; top: 0; z-index: 100; background: rgba(255,255,255,0.96)
 /* RECORD APPEARS */
 .record-card { border: 1.5px solid var(--brd); border-radius: 8px; background: var(--bg); overflow: hidden; opacity: 0; transform: translateY(6px); transition: all .4s ease; }
 .record-card.appeared { opacity: 1; transform: translateY(0); }
+.record-card.record-verified { border-color: var(--grn-brd); background: rgba(15,123,77,0.02); transition: border-color .4s ease, background .4s ease; }
 .rc-header { padding: 14px 18px; border-bottom: 1px solid var(--brd); display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .rc-proof { flex: 1; }
 .rc-proof-label { font-family: var(--mono); font-size: 9.5px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--t3); margin-bottom: 6px; }
@@ -132,7 +133,8 @@ nav { position: sticky; top: 0; z-index: 100; background: rgba(255,255,255,0.96)
 .vr-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
 .vr-title { font-family: var(--mono); font-size: 12.5px; font-weight: 600; color: var(--grn); margin-bottom: 3px; }
 .vr-body { font-size: 13px; color: var(--t2); line-height: 1.55; }
-.vr-detail { margin-top: 8px; font-family: var(--mono); font-size: 10.5px; color: var(--t3); }
+.vr-detail { margin-top: 8px; font-family: var(--mono); font-size: 10.5px; color: var(--t2); font-weight: 500; }
+.vr-buyer-moment { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--grn-brd); font-size: 13.5px; color: var(--t1); font-style: italic; line-height: 1.55; }
 
 /* PROOF LEVEL EXPLAINER — step 3 */
 .proof-explainer { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 28px; }
@@ -147,12 +149,48 @@ nav { position: sticky; top: 0; z-index: 100; background: rgba(255,255,255,0.96)
 .pe-active-note { padding: 12px 16px; background: rgba(107,79,187,0.05); border: 1px solid rgba(107,79,187,0.15); border-radius: 6px; font-size: 13px; color: var(--t1); line-height: 1.6; display: flex; align-items: flex-start; gap: 10px; }
 .pe-active-note .pe-arrow { font-family: var(--mono); color: var(--purple); flex-shrink: 0; font-size: 12px; }
 
-/* NEXT STEP BUTTON */
+/* VERBOSE VERIFY LOG */
+.verify-log { margin-bottom: 12px; border: 1px solid var(--brd); border-radius: 6px; background: var(--bg-0); overflow: hidden; }
+.vl-lines { padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; }
+.vl-line { font-family: var(--mono); font-size: 11.5px; color: var(--t3); opacity: 0; transform: translateX(-4px); transition: all .25s ease; display: flex; align-items: center; gap: 8px; }
+.vl-line.appeared { opacity: 1; transform: translateX(0); }
+.vl-line.done { color: var(--grn); }
+.vl-line.active { color: var(--t1); }
+.vl-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; background: currentColor; }
+.indep-verify { margin-top: 16px; border: 1px solid var(--brd); border-radius: 6px; overflow: hidden; opacity: 0; transform: translateY(4px); transition: all .35s ease; }
+.indep-verify.appeared { opacity: 1; transform: translateY(0); }
+.iv-header { padding: 10px 16px; background: var(--bg-1); border-bottom: 1px solid var(--brd); display: flex; align-items: center; justify-content: space-between; }
+.iv-title { font-family: var(--mono); font-size: 10.5px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--t1); }
+.iv-note { font-family: var(--mono); font-size: 10px; color: var(--t3); }
+.iv-body { padding: 14px 16px; }
+.iv-intro { font-size: 13.5px; color: var(--t2); line-height: 1.6; margin-bottom: 14px; }
+.iv-paths { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.iv-paths-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; }
+.iv-path { border: 1px solid var(--brd); border-radius: 5px; padding: 12px 14px; }
+.iv-path-independent { border-color: rgba(107,79,187,0.25); background: rgba(107,79,187,0.03); }
+.iv-path-num { font-family: var(--mono); font-size: 9.5px; font-weight: 600; color: var(--purple); letter-spacing: .08em; text-transform: uppercase; margin-bottom: 4px; }
+.iv-path-title { font-size: 13px; font-weight: 600; color: var(--t0); margin-bottom: 4px; }
+.iv-path-body { font-size: 12px; color: var(--t2); line-height: 1.5; }
+.iv-independent-note { margin-top: 8px; font-family: var(--mono); font-size: 10.5px; color: var(--purple); font-style: italic; }
+.iv-code { background: var(--bg-0); border: 1px solid var(--brd); border-radius: 4px; padding: 8px 12px; font-family: var(--mono); font-size: 11px; color: var(--t1); }
+.iv-methods { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+.iv-method { border: 1px solid var(--brd); border-radius: 4px; padding: 10px 12px; }
+.iv-method-label { font-family: var(--mono); font-size: 10px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--t3); margin-bottom: 5px; }
+.iv-method-note { font-family: var(--mono); font-size: 10.5px; color: var(--t3); margin-top: 5px; }
+.iv-bundle { border: 1px solid var(--brd); border-radius: 5px; overflow: hidden; margin-bottom: 16px; }
+.iv-bundle-header { padding: 8px 12px; background: var(--bg-1); border-bottom: 1px solid var(--brd); display: flex; align-items: center; justify-content: space-between; }
+.iv-bundle-label { font-family: var(--mono); font-size: 10.5px; font-weight: 600; color: var(--t1); }
+.iv-bundle-copy { font-family: var(--mono); font-size: 10px; font-weight: 600; background: none; border: 1px solid var(--brd-mid); color: var(--t2); padding: 3px 10px; border-radius: 3px; cursor: pointer; transition: all .15s; }
+.iv-bundle-copy:hover { border-color: var(--t2); color: var(--t0); }
+.iv-bundle-copy.copied { border-color: var(--grn); color: var(--grn); }
+.iv-bundle-body { padding: 12px 14px; font-family: var(--mono); font-size: 10.5px; line-height: 1.8; color: var(--t1); background: var(--bg-0); white-space: pre; overflow-x: auto; max-height: 220px; overflow-y: auto; }
+.iv-footer { margin-top: 10px; font-family: var(--mono); font-size: 10.5px; color: var(--t3); }
+@media (max-width: 600px) { .iv-paths { grid-template-columns: 1fr; } .iv-paths-3 { grid-template-columns: 1fr; } }
 .next-btn { font-family: var(--mono); font-size: 13px; font-weight: 600; background: var(--t0); color: var(--bg); padding: 11px 28px; border-radius: 6px; border: none; cursor: pointer; transition: opacity .15s, transform .1s; display: inline-flex; align-items: center; gap: 8px; }
 .next-btn:hover { opacity: .85; transform: translateY(-1px); }
 .next-btn:disabled { opacity: .4; cursor: default; transform: none; }
 .step-actions { display: flex; align-items: center; gap: 12px; margin-top: 24px; }
-.skip-link { font-family: var(--mono); font-size: 12px; color: var(--t3); cursor: pointer; transition: color .15s; text-decoration: none; }
+.skip-link { font-family: var(--mono); font-size: 12px; color: var(--t3); cursor: pointer; transition: color .15s; text-decoration: none; background: none; border: 0; padding: 0; }
 .skip-link:hover { color: var(--t1); }
 
 /* STEP 4 — done state */
@@ -218,8 +256,8 @@ nav { position: sticky; top: 0; z-index: 100; background: rgba(255,255,255,0.96)
 
 <div class="demo-header">
   <div class="demo-eyebrow">Interactive demo</div>
-  <h1>See a record. Check its proof level. Verify it.</h1>
-  <p>No account needed. This is exactly what DarkMatter does — in 60 seconds.</p>
+  <h1>Watch an AI decision become something you can prove.</h1>
+  <p>In under a minute, you'll see how a decision turns into a record — and how anyone can verify it.</p>
 </div>
 
 <!-- PROGRESS BAR -->
@@ -231,7 +269,7 @@ nav { position: sticky; top: 0; z-index: 100; background: rgba(255,255,255,0.96)
   <div class="prog-line" id="pl-line-1"></div>
   <div class="prog-step">
     <div class="prog-num" id="pn-2">2</div>
-    <div class="prog-label" id="pl-2">Record</div>
+    <div class="prog-label" id="pl-2">Agent acts</div>
   </div>
   <div class="prog-line" id="pl-line-2"></div>
   <div class="prog-step">
@@ -241,7 +279,7 @@ nav { position: sticky; top: 0; z-index: 100; background: rgba(255,255,255,0.96)
   <div class="prog-line" id="pl-line-3"></div>
   <div class="prog-step">
     <div class="prog-num" id="pn-4">4</div>
-    <div class="prog-label" id="pl-4">Verify</div>
+    <div class="prog-label" id="pl-4">Why it matters</div>
   </div>
 </div>
 
@@ -256,20 +294,20 @@ nav { position: sticky; top: 0; z-index: 100; background: rgba(255,255,255,0.96)
     <p class="step-sub">Pick the kind of AI decision you want to record. Each one creates a real record with a proof level.</p>
 
     <div class="scenario-grid">
-      <div class="scenario-card selected" onclick="selectScenario(this, 'finance')" id="sc-finance">
-        <div class="sc-icon">💰</div>
-        <div class="sc-title">Financial decision</div>
-        <div class="sc-desc">An agent approves a vendor payment and documents its reasoning</div>
+      <div class="scenario-card selected" onclick="selectScenario(this, 'codereview')" id="sc-codereview">
+        <div class="sc-icon">🔍</div>
+        <div class="sc-title">Code review</div>
+        <div class="sc-desc">An agent reviews a pull request for security issues and policy violations</div>
       </div>
-      <div class="scenario-card" onclick="selectScenario(this, 'compliance')" id="sc-compliance">
-        <div class="sc-icon">📋</div>
-        <div class="sc-title">Compliance check</div>
-        <div class="sc-desc">An agent reviews a contract clause against internal policy</div>
+      <div class="scenario-card" onclick="selectScenario(this, 'support')" id="sc-support">
+        <div class="sc-icon">💬</div>
+        <div class="sc-title">Support triage</div>
+        <div class="sc-desc">An agent classifies a customer issue, drafts a response, and escalates if needed</div>
       </div>
       <div class="scenario-card" onclick="selectScenario(this, 'research')" id="sc-research">
-        <div class="sc-icon">🔍</div>
-        <div class="sc-title">Research summary</div>
-        <div class="sc-desc">An agent synthesises sources and produces a summary for review</div>
+        <div class="sc-icon">📄</div>
+        <div class="sc-title">Content summary</div>
+        <div class="sc-desc">An agent reads multiple sources and produces a summary for human review</div>
       </div>
     </div>
 
@@ -278,13 +316,13 @@ nav { position: sticky; top: 0; z-index: 100; background: rgba(255,255,255,0.96)
     </div>
   </div>
 
-  <!-- ── STEP 2: Watch the record form ── -->
+  <!-- ── STEP 2: Agent acts, record forms ── -->
   <div class="step-panel" id="step-2">
     <div class="step-label">
       <span class="step-num-badge">Step 2</span>
       <span class="step-title">The agent acts. A record forms.</span>
     </div>
-    <p class="step-sub">Watch the agent complete its task. Every action is captured as part of the record.</p>
+    <p class="step-sub">The agent completes the task. A record forms as it happens.</p>
 
     <div class="agent-feed" id="agent-feed">
       <div class="af-header">
@@ -294,22 +332,12 @@ nav { position: sticky; top: 0; z-index: 100; background: rgba(255,255,255,0.96)
       <div class="af-actions" id="af-actions"></div>
     </div>
 
+    <!-- Neutral record card — no proof level here, just the record -->
     <div class="record-card" id="record-card">
-      <div class="rc-header">
-        <div class="rc-proof">
-          <div class="rc-proof-label">Proof level</div>
-          <div class="rc-proof-badge pb-signed" id="record-proof-badge">Signed</div>
-          <div class="rc-proof-desc" id="record-proof-desc">The agent signed this record before it reached DarkMatter. It cannot have been changed in transit without detection.</div>
-        </div>
-        <div class="rc-verify-area">
-          <div class="rc-verify-status" id="record-verify-status">Not yet verified</div>
-          <button class="btn-verify" id="verify-btn" onclick="runVerification()" disabled>Verify record →</button>
-        </div>
-      </div>
-      <div class="rc-body">
+      <div class="rc-body" style="padding:16px 18px;">
         <div class="rc-field"><span class="rc-key">Agent</span><span class="rc-val" id="rec-agent">—</span></div>
         <div class="rc-field"><span class="rc-key">Action</span><span class="rc-val" id="rec-action">—</span></div>
-        <div class="rc-field"><span class="rc-key">Timestamp</span><span class="rc-val">Apr 13, 2026 · 14:32 UTC</span></div>
+        <div class="rc-field"><span class="rc-key">Timestamp</span><span class="rc-val" id="rec-timestamp">—</span></div>
         <div class="rc-field"><span class="rc-key">Record ID</span><span class="rc-val pur" id="rec-id">—</span></div>
         <div class="rc-payload">
           <div class="rc-payload-label">What the agent did</div>
@@ -318,54 +346,129 @@ nav { position: sticky; top: 0; z-index: 100; background: rgba(255,255,255,0.96)
       </div>
     </div>
 
-    <div class="verify-result" id="verify-result">
-      <div class="vr-icon">✓</div>
-      <div>
-        <div class="vr-title">Verified · Apr 13, 14:32 UTC</div>
-        <div class="vr-body" id="vr-body">This record has not been altered. The signature matches the agent's registered identity.</div>
-        <div class="vr-detail" id="vr-detail">Proof level: Signed · Verified locally · No DarkMatter account required to verify</div>
-      </div>
-    </div>
-
     <div class="step-actions" id="step2-actions" style="display:none">
-      <button class="next-btn" onclick="goToStep(3)">Understand proof levels →</button>
-      <a class="skip-link" onclick="goToStep(4)">Skip to finish</a>
+      <button class="next-btn" onclick="goToStep(3)">See the proof level →</button>
+      <button type="button" class="skip-link" onclick="goToStep(1)">← Back</button>
     </div>
   </div>
 
-  <!-- ── STEP 3: Proof levels explained ── -->
+  <!-- ── STEP 3: Proof level revealed + verify ── -->
   <div class="step-panel" id="step-3">
     <div class="step-label">
       <span class="step-num-badge">Step 3</span>
-      <span class="step-title">Not all records are equal</span>
+      <span class="step-title">Proof level revealed. Verify the record.</span>
     </div>
-    <p class="step-sub">The record you just saw was <strong>Signed</strong>. Here is what that means — and how it compares to the other proof levels.</p>
+    <p class="step-sub" id="step3-sub">This record is <strong id="step3-level-name">Signed</strong>. Here is what that means — and why it matters.</p>
 
-    <div class="proof-explainer">
-      <div class="pe-card pe-recorded">
+    <!-- Record card with proof level now revealed -->
+    <div class="record-card appeared" id="record-card-step3" style="margin-bottom:20px;">
+      <div class="rc-header">
+        <div class="rc-proof">
+          <div class="rc-proof-label">Proof level</div>
+          <div class="rc-proof-badge pb-signed" id="record-proof-badge">Signed</div>
+          <div class="rc-proof-desc" id="record-proof-desc">—</div>
+        </div>
+        <div class="rc-verify-area">
+          <div class="rc-verify-status" id="record-verify-status">Not yet verified</div>
+          <button class="btn-verify" id="verify-btn" onclick="runVerification()">Verify record →</button>
+        </div>
+      </div>
+      <div class="rc-body">
+        <div class="rc-field"><span class="rc-key">Agent</span><span class="rc-val" id="rec-agent-3">—</span></div>
+        <div class="rc-field"><span class="rc-key">Action</span><span class="rc-val" id="rec-action-3">—</span></div>
+        <div class="rc-field"><span class="rc-key">Record ID</span><span class="rc-val pur" id="rec-id-3">—</span></div>
+      </div>
+    </div>
+
+    <!-- Verbose verification log — appears during verify, collapses after -->
+    <div class="verify-log" id="verify-log" style="display:none;">
+      <div class="vl-lines" id="vl-lines"></div>
+    </div>
+
+    <!-- Verify result + buyer moment -->
+    <div class="verify-result" id="verify-result">
+      <div class="vr-icon">✓</div>
+      <div style="flex:1">
+        <div class="vr-title" id="vr-title">Verified · —</div>
+        <div class="vr-body" id="vr-body">—</div>
+        <div class="vr-detail" id="vr-detail">—</div>
+        <div class="vr-buyer-moment" id="vr-buyer">If this decision were challenged, this is the record you would present.</div>
+      </div>
+    </div>
+
+    <!-- Independent verification block — appears after verify -->
+    <div class="indep-verify" id="indep-verify">
+      <div class="iv-header">
+        <span class="iv-title">Verify independently</span>
+        <span class="iv-note">No DarkMatter account required</span>
+      </div>
+      <div class="iv-body">
+        <p class="iv-intro">This result is not just DarkMatter saying "trust us." The same record can be checked independently — by you, your auditor, or any third party — including without using any DarkMatter software.</p>
+
+        <!-- Proof bundle JSON -->
+        <div class="iv-bundle">
+          <div class="iv-bundle-header">
+            <span class="iv-bundle-label">proof_bundle.json</span>
+            <button class="iv-bundle-copy" onclick="copyBundle(this)">Copy JSON</button>
+          </div>
+          <div class="iv-bundle-body" id="bundle-json">—</div>
+        </div>
+
+        <div class="iv-paths-3">
+          <div class="iv-path">
+            <div class="iv-path-num">Option 1</div>
+            <div class="iv-path-title">Browser verifier</div>
+            <div class="iv-path-body">Open <a href="/verify" style="color:var(--purple);text-decoration:none;">darkmatterhub.ai/verify</a>, drop the bundle. Runs in your browser — file never leaves your machine.</div>
+          </div>
+          <div class="iv-path">
+            <div class="iv-path-num">Option 2</div>
+            <div class="iv-path-title">Python script</div>
+            <div class="iv-path-body">Run the verifier locally. Works offline.</div>
+            <div class="iv-code" style="margin-top:8px;">python verify_darkmatter_chain.py proof_bundle.json</div>
+          </div>
+          <div class="iv-path iv-path-independent">
+            <div class="iv-path-num">Option 3</div>
+            <div class="iv-path-title">Any cryptography library</div>
+            <div class="iv-path-body">The proof bundle contains an Ed25519 signature and SHA-256 hash chain. Any standard cryptography tool can verify them — no DarkMatter software required.</div>
+            <div class="iv-independent-note">DarkMatter does not need to exist for this to work.</div>
+          </div>
+        </div>
+
+        <div class="iv-footer">All three produce the same result · the math is the same regardless of which tool you use</div>
+      </div>
+    </div>
+
+    <!-- Proof level explainer below verify -->
+    <div class="proof-explainer" id="proof-explainer" style="margin-top:24px;">
+      <div class="pe-card pe-recorded" id="pe-recorded">
         <div class="pe-badge pb-recorded">Recorded</div>
         <div class="pe-body">DarkMatter captured this record. You can inspect it, but some trust in capture is still required.</div>
         <div class="pe-how">Via proxy or extension — no code changes</div>
       </div>
-      <div class="pe-card pe-signed">
-        <div class="pe-badge pb-signed">Signed ← you saw this</div>
-        <div class="pe-body">The agent signed this record before it reached DarkMatter. It cannot have been changed in transit without detection.</div>
+      <div class="pe-card pe-signed" id="pe-signed">
+        <div class="pe-badge pb-signed">Signed</div>
+        <div class="pe-body">This record was signed by the agent before it reached DarkMatter. If anyone changed it, verification would fail.</div>
         <div class="pe-how">Via SDK — one line of code</div>
       </div>
-      <div class="pe-card pe-sealed">
+      <div class="pe-card pe-sealed" id="pe-sealed">
         <div class="pe-badge pb-sealed">Sealed</div>
-        <div class="pe-body">Signed and encrypted before leaving your system. DarkMatter never saw the content.</div>
+        <div class="pe-body">This record was signed and encrypted before leaving your system. DarkMatter never saw the contents.</div>
         <div class="pe-how">Via SDK with your own encryption key</div>
       </div>
     </div>
 
-    <div class="pe-active-note" id="proof-level-note">
+    <div class="pe-active-note" id="proof-level-note" style="margin-top:16px;">
       <span class="pe-arrow">→</span>
-      <span id="proof-note-text">The record you just verified was <strong>Signed</strong>. That means the agent's signature mathematically proves no one altered the content after it was created — including DarkMatter.</span>
+      <span id="proof-note-text">—</span>
     </div>
 
-    <div class="step-actions">
+    <div class="step-actions" id="step3-actions" style="display:none">
       <button class="next-btn" onclick="goToStep(4)">Finish →</button>
+      <button type="button" class="skip-link" onclick="goToStep(2)">← Back</button>
+    </div>
+    <div class="step-actions" id="step3-verify-prompt" style="margin-top:24px;">
+      <span style="font-size:13px;color:var(--t3);font-family:var(--mono);">Click "Verify record" above to continue →</span>
+      <button type="button" class="skip-link" style="margin-left:auto;" onclick="goToStep(2)">← Back</button>
     </div>
   </div>
 
@@ -373,32 +476,22 @@ nav { position: sticky; top: 0; z-index: 100; background: rgba(255,255,255,0.96)
   <div class="step-panel" id="step-4">
     <div class="done-card">
       <div class="done-icon">✓</div>
-      <div class="done-title">You've seen what DarkMatter does.</div>
-      <div class="done-sub">You watched an agent act, saw a record form, understood its proof level, and verified it yourself. That is the whole product.</div>
+      <div class="done-title">This is what changes in a real situation.</div>
+      <div style="font-family:var(--mono);font-size:11.5px;color:var(--grn);margin-top:8px;margin-bottom:4px;">✓ You already verified the record. Here's why that matters.</div>
+      <div class="done-sub" style="margin-top:20px;text-align:left;max-width:none;">
+        <ul style="list-style:none;display:flex;flex-direction:column;gap:14px;">
+          <li style="display:flex;gap:12px;align-items:flex-start;"><span style="color:var(--grn);font-family:var(--mono);font-size:13px;flex-shrink:0;margin-top:2px;">✓</span><span style="font-size:15px;color:var(--t1);line-height:1.55;">You can show <strong>exactly what the AI decided</strong> — not a summary, the actual record.</span></li>
+          <li style="display:flex;gap:12px;align-items:flex-start;"><span style="color:var(--grn);font-family:var(--mono);font-size:13px;flex-shrink:0;margin-top:2px;">✓</span><span style="font-size:15px;color:var(--t1);line-height:1.55;">Anyone can <strong>verify the record independently</strong> — no account, no internet, no DarkMatter.</span></li>
+          <li style="display:flex;gap:12px;align-items:flex-start;"><span style="color:var(--grn);font-family:var(--mono);font-size:13px;flex-shrink:0;margin-top:2px;">✓</span><span style="font-size:15px;color:var(--t1);line-height:1.55;">Disputes become <strong>provable, not arguable</strong> — your counterpart runs the same check and gets the same result.</span></li>
+        </ul>
+      </div>
       <div class="done-actions">
         <a href="/docs" class="btn-p">Read the docs →</a>
         <a href="/compare" class="btn-o">See how it compares</a>
         <a href="/integrity" class="btn-o">How verification works</a>
       </div>
-    </div>
-
-    <div class="what-you-saw">
-      <div class="wys-header">What just happened</div>
-      <div class="wys-row">
-        <div class="wys-num">1</div>
-        <div class="wys-text"><strong>An agent completed a task.</strong> Every action it took was captured as part of a record — not a log, a structured record with a chain to its parent.</div>
-      </div>
-      <div class="wys-row">
-        <div class="wys-num">2</div>
-        <div class="wys-text"><strong>The record received a proof level.</strong> Signed means the agent signed the record before it left the agent. DarkMatter verified the signature, not the content.</div>
-      </div>
-      <div class="wys-row">
-        <div class="wys-num">3</div>
-        <div class="wys-text"><strong>You verified it independently.</strong> That verification ran locally. No account, no internet, no DarkMatter involvement — just the record and the signature.</div>
-      </div>
-      <div class="wys-row">
-        <div class="wys-num">4</div>
-        <div class="wys-text"><strong>In a dispute, that record is provable.</strong> Your counterpart can run the same verification. Both get the same result. That is what ordinary logs cannot do.</div>
+      <div style="margin-top:16px;text-align:center;">
+        <button type="button" class="skip-link" onclick="goToStep(3)">← Back to proof level</button>
       </div>
     </div>
   </div>
@@ -408,67 +501,72 @@ nav { position: sticky; top: 0; z-index: 100; background: rgba(255,255,255,0.96)
 <script>
 // ── Scenario data ──
 const scenarios = {
-  finance: {
-    agent: 'Finance Agent',
-    action: 'Approve vendor payment',
+  codereview: {
+    agent: 'Code Review Agent',
+    action: 'Review pull request #412',
     proofLevel: 'signed',
     proofBadgeClass: 'pb-signed',
-    proofDesc: 'The agent signed this record before it reached DarkMatter. It cannot have been changed in transit without detection.',
-    recordId: 'rec_7f3a9b2c14e8',
+    proofDesc: 'This record was signed by the agent before it reached DarkMatter. If anyone changed it, verification would fail.',
+    recordId: 'rec_4c2f8a1e93b7',
     payload: `{
-  "decision":   "approve",
-  "vendor":     "Acme Supplies Ltd",
-  "amount":     "$12,400.00",
-  "policy_ref": "procurement-v3.2",
-  "reasoning":  "Within approved limit. Vendor verified.",
-  "confidence": 0.97
+  "pr":         "#412 — add user export endpoint",
+  "verdict":    "changes_requested",
+  "issues": [
+    "SQL query on line 84 not parameterised",
+    "No rate limiting on export endpoint"
+  ],
+  "policy_ref": "security-checklist-v4",
+  "severity":   "high"
 }`,
     actions: [
-      { icon: '🔧', type: 'tool', name: 'fetch_vendor_record', detail: 'Looking up vendor: Acme Supplies Ltd' },
-      { icon: '🧠', type: 'think', name: 'policy_check', detail: 'Comparing against procurement-v3.2 limits' },
-      { icon: '🔧', type: 'tool', name: 'verify_approver', detail: 'Checking authorization chain' },
-      { icon: '✍️', type: 'write', name: 'commit_decision', detail: 'Signing and recording: approve · $12,400.00' },
+      { icon: '🔧', type: 'tool', name: 'fetch_diff', detail: 'Pulling diff for PR #412' },
+      { icon: '🧠', type: 'think', name: 'security_scan', detail: 'Checking against security-checklist-v4' },
+      { icon: '🔧', type: 'tool', name: 'pattern_match', detail: 'Scanning for injection vulnerabilities' },
+      { icon: '✍️', type: 'write', name: 'commit_review', detail: 'Signing and recording: changes_requested · high severity' },
     ],
-    vrBody: 'This record has not been altered. The agent\'s signature confirms it approved this payment and documented its reasoning.',
+    vrBody: 'This record has not been altered. The agent\'s findings and severity rating are exactly as produced during review.',
     vrDetail: 'Proof level: Signed · Verified locally · No DarkMatter account required to verify',
-    proofNote: 'The record you just verified was <strong>Signed</strong>. The finance agent\'s signature mathematically proves the approval decision and reasoning were not changed after the agent created this record.',
+    proofNote: 'The record you just verified was <strong>Signed</strong>. The review agent\'s signature proves this finding was not changed after it was produced — useful if a vulnerability is later disputed or traced back to this review.',
+    activeCard: 'pe-signed',
   },
-  compliance: {
-    agent: 'Compliance Agent',
-    action: 'Review contract clause',
+  support: {
+    agent: 'Support Agent',
+    action: 'Triage customer issue',
     proofLevel: 'signed',
     proofBadgeClass: 'pb-signed',
-    proofDesc: 'The agent signed this record before it reached DarkMatter. It cannot have been changed in transit without detection.',
-    recordId: 'rec_2e8c4d7a91f3',
+    proofDesc: 'This record was signed by the agent before it reached DarkMatter. If anyone changed it, verification would fail.',
+    recordId: 'rec_8d1b7e4f29a3',
     payload: `{
-  "clause":     "Section 4.2 — Liability cap",
-  "policy":     "legal-standards-2026",
-  "verdict":    "non-compliant",
-  "reason":     "Cap below required minimum for enterprise tier",
-  "action":     "escalate_to_legal"
+  "ticket":     "#8821 — data export not working",
+  "category":   "product_bug",
+  "priority":   "high",
+  "response":   "Acknowledged. Engineering notified.",
+  "escalated":  true,
+  "sla_breach": false
 }`,
     actions: [
-      { icon: '🔧', type: 'tool', name: 'parse_clause', detail: 'Extracting Section 4.2 from contract' },
-      { icon: '🧠', type: 'think', name: 'policy_match', detail: 'Checking against legal-standards-2026' },
-      { icon: '🔧', type: 'tool', name: 'precedent_search', detail: 'Searching similar clause rulings' },
-      { icon: '✍️', type: 'write', name: 'commit_verdict', detail: 'Signing and recording: non-compliant · escalate' },
+      { icon: '🔧', type: 'tool', name: 'read_ticket', detail: 'Parsing ticket #8821' },
+      { icon: '🧠', type: 'think', name: 'classify_issue', detail: 'Matching against known issue patterns' },
+      { icon: '🔧', type: 'tool', name: 'check_sla', detail: 'Verifying SLA window for this tier' },
+      { icon: '✍️', type: 'write', name: 'commit_triage', detail: 'Signing and recording: high priority · escalated' },
     ],
-    vrBody: 'This record has not been altered. The compliance verdict and reasoning are exactly as the agent produced them.',
+    vrBody: 'This record has not been altered. The triage decision and escalation status are exactly as the agent produced them.',
     vrDetail: 'Proof level: Signed · Verified locally · No DarkMatter account required to verify',
-    proofNote: 'The record you just verified was <strong>Signed</strong>. The compliance agent\'s signature proves this verdict was not modified after it was issued — which matters if the finding is later disputed.',
+    proofNote: 'The record you just verified was <strong>Signed</strong>. The support agent\'s signature proves the classification and escalation decision were not changed after they were made — useful if a customer later disputes how their issue was handled.',
+    activeCard: 'pe-signed',
   },
   research: {
     agent: 'Research Agent',
     action: 'Synthesise sources',
     proofLevel: 'recorded',
     proofBadgeClass: 'pb-recorded',
-    proofDesc: 'DarkMatter captured this record. You can inspect it, but some trust in how it was captured is still required.',
+    proofDesc: 'This record was captured by DarkMatter. You can inspect it, but some trust in how it was captured is still required.',
     recordId: 'rec_9a1b5f3c87d2',
     payload: `{
-  "topic":    "Q1 market conditions — APAC",
-  "sources":  3,
-  "summary":  "Growth remained strong at 34% YoY...",
-  "flagged":  false,
+  "topic":      "Q1 market conditions — APAC",
+  "sources":    3,
+  "summary":    "Growth remained strong at 34% YoY...",
+  "flagged":    false,
   "for_review": "analyst-team"
 }`,
     actions: [
@@ -477,15 +575,23 @@ const scenarios = {
       { icon: '🔧', type: 'tool', name: 'extract_findings', detail: 'Structuring key data points' },
       { icon: '✍️', type: 'write', name: 'commit_summary', detail: 'Recording summary for analyst review' },
     ],
-    vrBody: 'This record was captured by DarkMatter. The chain is intact. Note: this record is Recorded, not Signed — some trust in the capture layer is still required.',
+    vrBody: 'This record was captured by DarkMatter. The chain is intact. Note: this is a Recorded record — some trust in the capture layer is still required.',
     vrDetail: 'Proof level: Recorded · Chain intact · Upgrade to Signed for stronger proof',
-    proofNote: 'This record is <strong>Recorded</strong> — captured by DarkMatter, but not signed by the agent itself. It shows the summary the agent produced, but to prove it was unaltered you would need to upgrade to Signed level.',
+    proofNote: 'This record is <strong>Recorded</strong> — captured by DarkMatter, but not signed by the agent. You can inspect what the agent produced, but you cannot independently prove it was unaltered without upgrading to Signed.',
+    activeCard: 'pe-recorded',
   },
 };
 
-let currentScenario = 'finance';
+let currentScenario = 'codereview';
 let currentStep = 1;
 let verifyDone = false;
+let recordTimestamp = '';
+
+function getTimestamp() {
+  const now = new Date();
+  return now.toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' })
+    + ' · ' + now.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' }) + ' UTC';
+}
 
 function selectScenario(el, id) {
   document.querySelectorAll('.scenario-card').forEach(c => c.classList.remove('selected'));
@@ -494,13 +600,10 @@ function selectScenario(el, id) {
 }
 
 function goToStep(n) {
-  // Update panels
   document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('visible'));
-  const panel = document.getElementById('step-' + n);
-  panel.classList.add('visible');
+  document.getElementById('step-' + n).classList.add('visible');
   currentStep = n;
 
-  // Update progress
   for (let i = 1; i <= 4; i++) {
     const num = document.getElementById('pn-' + i);
     const lbl = document.getElementById('pl-' + i);
@@ -521,40 +624,33 @@ function goToStep(n) {
 
   if (n === 2) startStep2();
   if (n === 3) setupStep3();
-
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function startStep2() {
   const s = scenarios[currentScenario];
   verifyDone = false;
+  recordTimestamp = getTimestamp();
 
   // Reset
   document.getElementById('af-actions').innerHTML = '';
   document.getElementById('feed-status').textContent = 'Running…';
+  const dot = document.querySelector('.af-dot');
+  dot.style.background = 'var(--grn)';
+  dot.style.animation = 'pulse-dot 2s ease-in-out infinite';
+
   const rc = document.getElementById('record-card');
   rc.classList.remove('appeared');
-  const vr = document.getElementById('verify-result');
-  vr.classList.remove('appeared');
   document.getElementById('step2-actions').style.display = 'none';
-  document.getElementById('verify-btn').disabled = true;
-  document.getElementById('verify-btn').className = 'btn-verify';
-  document.getElementById('verify-btn').textContent = 'Verify record →';
-  document.getElementById('record-verify-status').textContent = 'Not yet verified';
-  document.getElementById('record-verify-status').className = 'rc-verify-status';
 
-  // Populate record fields
+  // Populate neutral record (no proof level yet)
   document.getElementById('rec-agent').textContent = s.agent;
   document.getElementById('rec-action').textContent = s.action;
+  document.getElementById('rec-timestamp').textContent = recordTimestamp;
   document.getElementById('rec-id').textContent = s.recordId;
   document.getElementById('rec-payload').innerHTML = formatPayload(s.payload);
-  document.getElementById('record-proof-badge').className = 'rc-proof-badge ' + s.proofBadgeClass;
-  document.getElementById('record-proof-badge').textContent = s.proofLevel.charAt(0).toUpperCase() + s.proofLevel.slice(1);
-  document.getElementById('record-proof-desc').textContent = s.proofDesc;
-  document.getElementById('vr-body').textContent = s.vrBody;
-  document.getElementById('vr-detail').textContent = s.vrDetail;
 
-  // Animate actions appearing
+  // Animate actions
   const container = document.getElementById('af-actions');
   s.actions.forEach((action, i) => {
     const el = document.createElement('div');
@@ -571,16 +667,195 @@ function startStep2() {
     setTimeout(() => el.classList.add('appeared'), 400 + i * 700);
   });
 
-  // Record appears after all actions
+  // "Record complete" friction state, then record card appears
+  const totalDelay = 400 + s.actions.length * 700 + 300;
   setTimeout(() => {
-    document.getElementById('feed-status').textContent = 'Complete';
-    document.querySelector('.af-dot').style.background = 'var(--grn)';
-    document.querySelector('.af-dot').style.animation = 'none';
+    document.getElementById('feed-status').textContent = 'Record complete';
+    dot.style.background = 'var(--grn)';
+    dot.style.animation = 'none';
     rc.classList.add('appeared');
     setTimeout(() => {
-      document.getElementById('verify-btn').disabled = false;
+      document.getElementById('step2-actions').style.display = 'flex';
+    }, 500);
+  }, totalDelay);
+}
+
+function setupStep3() {
+  const s = scenarios[currentScenario];
+  verifyDone = false;
+
+  // Reset verified visual state on re-entry
+  const rc3 = document.getElementById('record-card-step3');
+  if (rc3) {
+    rc3.classList.add('appeared');
+    rc3.classList.remove('record-verified');
+  }
+
+  // Reset independent verify block
+  const iv = document.getElementById('indep-verify');
+  if (iv) iv.classList.remove('appeared');
+  document.getElementById('bundle-json').textContent = '—';
+
+  // Reset verify log
+  const logEl = document.getElementById('verify-log');
+  if (logEl) { logEl.style.display = 'none'; document.getElementById('vl-lines').innerHTML = ''; }
+
+  // Update step 3 sub text with correct level name
+  const levelName = s.proofLevel.charAt(0).toUpperCase() + s.proofLevel.slice(1);
+  document.getElementById('step3-level-name').textContent = levelName;
+
+  // Populate the proof-level record card
+  document.getElementById('record-proof-badge').className = 'rc-proof-badge ' + s.proofBadgeClass;
+  document.getElementById('record-proof-badge').textContent = levelName;
+  document.getElementById('record-proof-desc').textContent = s.proofDesc;
+  document.getElementById('rec-agent-3').textContent = s.agent;
+  document.getElementById('rec-action-3').textContent = s.action;
+  document.getElementById('rec-id-3').textContent = s.recordId;
+
+  // Set verify state
+  document.getElementById('record-verify-status').textContent = 'Not yet verified';
+  document.getElementById('record-verify-status').className = 'rc-verify-status';
+  const btn = document.getElementById('verify-btn');
+  btn.className = 'btn-verify';
+  btn.textContent = 'Verify record →';
+  btn.disabled = false;
+
+  // Reset verify result
+  const vr = document.getElementById('verify-result');
+  vr.classList.remove('appeared', 'ok');
+
+  // Populate proof note (shown before verify)
+  document.getElementById('proof-note-text').innerHTML = s.proofNote;
+
+  // Highlight active proof card
+  ['pe-recorded','pe-signed','pe-sealed'].forEach(id => {
+    const el = document.getElementById(id);
+    el.style.outline = 'none';
+    el.style.background = '';
+  });
+  const activeEl = document.getElementById(s.activeCard);
+  if (activeEl) {
+    activeEl.style.outline = '2px solid var(--purple)';
+    activeEl.style.outlineOffset = '2px';
+  }
+
+  // Show verify prompt, hide finish actions
+  document.getElementById('step3-actions').style.display = 'none';
+  document.getElementById('step3-verify-prompt').style.display = 'flex';
+}
+
+function runVerification() {
+  if (verifyDone) return;
+  const s = scenarios[currentScenario];
+  const btn = document.getElementById('verify-btn');
+  const status = document.getElementById('record-verify-status');
+
+  btn.disabled = true;
+  btn.className = 'btn-verify verifying';
+  btn.textContent = 'Verifying…';
+  status.textContent = 'Running checks…';
+
+  // Show verbose log
+  const logEl = document.getElementById('verify-log');
+  const linesEl = document.getElementById('vl-lines');
+  logEl.style.display = 'block';
+  linesEl.innerHTML = '';
+
+  const steps = [
+    { text: 'Checking this record…', delay: 0 },
+    { text: 'Checking that it matches the file…', delay: 420 },
+    { text: 'Checking that it still fits into its history…', delay: 860 },
+    { text: 'Checking who signed it…', delay: 1280 },
+    { text: 'Verification complete.', delay: 1650, final: true },
+  ];
+
+  steps.forEach((step, i) => {
+    const line = document.createElement('div');
+    line.className = 'vl-line';
+    line.innerHTML = `<span class="vl-dot"></span>${step.text}`;
+    linesEl.appendChild(line);
+    setTimeout(() => {
+      line.classList.add('appeared', 'active');
+      if (i > 0) linesEl.children[i - 1].classList.remove('active');
+      linesEl.children[i - 1] && linesEl.children[i - 1].classList.add('done');
+      if (step.final) { line.classList.remove('active'); line.classList.add('done'); }
+    }, step.delay);
+  });
+
+  // Complete after all steps — log stays visible
+  setTimeout(() => {
+    const ts = getTimestamp();
+
+    btn.className = 'btn-verify verified-btn';
+    btn.textContent = '✓ Verified';
+    status.textContent = '✓ Verified · ' + ts;
+    status.className = 'rc-verify-status verified';
+
+    document.getElementById('vr-title').textContent = 'Verified · ' + ts;
+    document.getElementById('vr-body').textContent = s.vrBody;
+    document.getElementById('vr-detail').textContent = s.vrDetail;
+
+    const vr = document.getElementById('verify-result');
+    vr.classList.add('appeared', 'ok');
+
+    // Generate and show proof bundle JSON
+    const bundleJson = generateBundle(s, ts);
+    document.getElementById('bundle-json').textContent = bundleJson;
+
+    // Independent verification block
+    setTimeout(() => {
+      const iv = document.getElementById('indep-verify');
+      if (iv) iv.classList.add('appeared');
     }, 400);
-  }, 400 + s.actions.length * 700 + 300);
+
+    // Verified state on record card
+    const rc3 = document.getElementById('record-card-step3');
+    if (rc3) rc3.classList.add('record-verified');
+
+    verifyDone = true;
+
+    setTimeout(() => {
+      document.getElementById('step3-verify-prompt').style.display = 'none';
+      document.getElementById('step3-actions').style.display = 'flex';
+    }, 700);
+  }, 1900);
+}
+
+function generateBundle(s, ts) {
+  const id = s.recordId.replace('rec_','');
+  const parentId = 'rec_prev_' + id.slice(0, 8);
+  const bundle = {
+    darkmatter_version: '1.0',
+    record_id: s.recordId,
+    agent: s.agent,
+    action: s.action,
+    proof_level: s.proofLevel,
+    timestamp: new Date().toISOString(),
+    verified_at: ts,
+    payload_hash: 'sha256:' + id + 'a8f3c2e1b9d0472c',
+    integrity_hash: 'sha256:' + id + 'f4b1e9d78c3a2051',
+    parent_id: parentId,
+    parent_hash: 'sha256:' + id + 'p9c1e3d5f7a2b4c6',
+    verification_result: 'pass',
+    chain_intact: true,
+  };
+  if (s.proofLevel !== 'recorded') {
+    bundle.signature = 'ed25519:' + id + 'b2d4f6a8c0e1f3a5b7c9d2e4f6a8c0e1';
+    bundle.agent_public_key = 'ed25519-pub:' + id + 'a1b2c3d4e5f6a7b8';
+  }
+  return JSON.stringify(bundle, null, 2);
+}
+
+function copyBundle(btn) {
+  const text = document.getElementById('bundle-json').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = 'Copied ✓';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = 'Copy JSON';
+      btn.classList.remove('copied');
+    }, 2000);
+  });
 }
 
 function formatPayload(raw) {
@@ -588,34 +863,6 @@ function formatPayload(raw) {
     .replace(/"([^"]+)":/g, '<span class="pk">"$1"</span>:')
     .replace(/: "([^"]+)"/g, ': <span class="ps">"$1"</span>')
     .replace(/[{}]/g, m => `<span class="pc">${m}</span>`);
-}
-
-function runVerification() {
-  if (verifyDone) return;
-  const btn = document.getElementById('verify-btn');
-  const status = document.getElementById('record-verify-status');
-
-  btn.disabled = true;
-  btn.className = 'btn-verify verifying';
-  btn.textContent = 'Verifying…';
-  status.textContent = 'Checking signature…';
-
-  setTimeout(() => {
-    btn.className = 'btn-verify verified-btn';
-    btn.textContent = '✓ Verified';
-    status.textContent = '✓ Verified · Apr 13, 14:32 UTC';
-    status.className = 'rc-verify-status verified';
-    document.getElementById('verify-result').classList.add('appeared', 'ok');
-    verifyDone = true;
-    setTimeout(() => {
-      document.getElementById('step2-actions').style.display = 'flex';
-    }, 600);
-  }, 1800);
-}
-
-function setupStep3() {
-  const s = scenarios[currentScenario];
-  document.getElementById('proof-note-text').innerHTML = s.proofNote;
 }
 </script>
 
