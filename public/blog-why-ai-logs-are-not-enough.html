@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Why AI Logs Are Not Enough — DarkMatter Blog</title>
+<title>Why AI Logs Are Not Enough | DarkMatter Blog</title>
 <meta name="description" content="Nobody questions a Slack message. So why do we need to prove what an AI agent did? The answer changes everything about how we should think about AI accountability.">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=Lora:ital,wght@0,400;0,600;1,400;1,600&display=swap');
@@ -206,7 +206,7 @@ h1.article-title {
 
   <h1 class="article-title">Nobody questions a Slack message. So why do we need to prove what an AI agent did?</h1>
 
-  <p class="article-deck">Most logs are trusted until challenged. The problem with AI is that challenging them has never been easier — or more tempting.</p>
+  <p class="article-deck">Most logs are trusted until challenged. The problem with AI is that challenging them has never been easier, or more tempting.</p>
 
   <div class="article-body">
 
@@ -223,7 +223,7 @@ h1.article-title {
 
     <p><strong>An authoritative system of record.</strong> Your texts come from Apple or your carrier. Your emails come from Google Workspace or Microsoft Exchange. Those are institutional sources with their own audit infrastructure. Nobody asks you to prove a Gmail is real because Google is implicitly vouching for it.</p>
 
-    <p><strong>A clean chain of custody.</strong> An auditor doesn't verify the cryptography on a Slack export — they verify the <em>process</em>. Who exported it? From which account? With what permissions? If that process is clean, they accept the data.</p>
+    <p><strong>A clean chain of custody.</strong> An auditor doesn't verify the cryptography on a Slack export. They verify the <em>process</em>. Who exported it? From which account? With what permissions? If that process is clean, they accept the data.</p>
 
     <p><strong>Low economic incentive to dispute.</strong> Disputing logs is expensive and slow. Unless the stakes are high enough to justify that cost, nobody goes there. Most of the time the stakes aren't high enough. So the logs just... work.</p>
 
@@ -231,16 +231,16 @@ h1.article-title {
       <p>Text messages aren't proven. They are trusted until challenged. That's a very different thing.</p>
     </div>
 
-    <p>When that trust does break — when someone <em>does</em> have a reason to challenge the logs — things get complicated fast. Forensics experts appear. Chain-of-custody questions surface. Screenshots get dismissed as weak evidence. The process that made everything feel solid starts to crack.</p>
+    <p>When that trust does break, when someone <em>does</em> have a reason to challenge the logs, things get complicated fast. Forensics experts appear. Chain-of-custody questions surface. Screenshots get dismissed as weak evidence. The process that made everything feel solid starts to crack.</p>
 
     <h2>Part two</h2>
     <h3>Why AI logs are fundamentally weaker</h3>
 
     <p>Here's where the comparison falls apart. AI logs are missing all three of those trust layers.</p>
 
-    <p><strong>There's no authoritative system of record.</strong> OpenAI and Anthropic are not treated like legal systems of record the way carriers and email providers are. You cannot subpoena "the canonical version" of an AI conversation in a reliable, institutionally recognised way. What you have is an export — and exports can be selective.</p>
+    <p><strong>There's no authoritative system of record.</strong> OpenAI and Anthropic are not treated like legal systems of record the way carriers and email providers are. You cannot subpoena "the canonical version" of an AI conversation in a reliable, institutionally recognised way. What you have is an export, and exports can be selective.</p>
 
-    <p><strong>There's no stable chain of custody.</strong> AI outputs are non-deterministic. The same prompt, run twice, produces different outputs. That means a transcript can be <em>reconstructed</em> to look like the original without being the original. Prompts can be modified. Outputs can be re-run. None of this is hypothetical — it's just how the technology works.</p>
+    <p><strong>There's no stable chain of custody.</strong> AI outputs are non-deterministic. The same prompt, run twice, produces different outputs. That means a transcript can be <em>reconstructed</em> to look like the original without being the original. Prompts can be modified. Outputs can be re-run. None of this is hypothetical. It's just how the technology works.</p>
 
     <table class="compare-table">
       <thead>
@@ -274,11 +274,11 @@ h1.article-title {
       </tbody>
     </table>
 
-    <p><strong>There's actually high incentive to dispute.</strong> This is the most important difference. With AI decisions, people <em>want</em> to push back. The model said the wrong thing. The agent made a bad call. The output was different to what was reported. These challenges are already happening — they'll become more common as AI takes on more consequential work.</p>
+    <p><strong>There's actually high incentive to dispute.</strong> This is the most important difference. With AI decisions, people <em>want</em> to push back. The model said the wrong thing. The agent made a bad call. The output was different to what was reported. These challenges are already happening and will become more common as AI takes on more consequential work.</p>
 
     <div class="callout amber">
       <div class="callout-label">The key shift</div>
-      <p>With AI, the question isn't just "did this happen?" It's "can you prove what the AI actually decided — and that nobody changed the record after the fact?" Those are different questions. And today, you mostly can't answer the second one.</p>
+      <p>With AI, the question isn't just "did this happen?" It's "can you prove what the AI actually decided, and that nobody changed the record after the fact?" Those are different questions. And today, you mostly can't answer the second one.</p>
     </div>
 
     <h2>Part three</h2>
@@ -288,7 +288,7 @@ h1.article-title {
 
     <p>But that changes the moment AI starts making decisions that carry real consequences.</p>
 
-    <p>An AI agent that flags a customer account for fraud. One that approves or rejects a procurement request. One that classifies a support ticket as high-priority and escalates it — or doesn't. One that recommends a medical summary for a clinician. In those situations, "the AI said so" stops being an acceptable answer the moment someone is affected by the decision and wants to understand or challenge it.</p>
+    <p>An AI agent that flags a customer account for fraud. One that approves or rejects a procurement request. One that classifies a support ticket as high-priority and escalates it. Or doesn't. One that recommends a medical summary for a clinician. In those situations, "the AI said so" stops being an acceptable answer the moment someone is affected by the decision and wants to understand or challenge it.</p>
 
     <div class="zones">
       <div class="zone">
@@ -316,36 +316,36 @@ h1.article-title {
       <p>When someone challenges what your AI did, this is the record you show them.</p>
     </div>
 
-    <p>The agent signs its decision before the record leaves the agent. The signature is stored outside your system. If anything changes after that — the output, the reasoning, the context — the signature breaks. Anyone can verify this independently, using standard cryptography tools, without trusting DarkMatter to tell them the answer.</p>
+    <p>The agent signs its decision before the record leaves the agent. The signature is stored outside your system. If anything changes after that, whether the output, the reasoning, or the context, the signature breaks. Anyone can verify this independently, using standard cryptography tools, without trusting DarkMatter to tell them the answer.</p>
 
     <p>That's not log verification. That's non-repudiation. The record says what it says, and there's no plausible way to claim otherwise.</p>
 
     <h2>Part five</h2>
     <h3>Are we too early?</h3>
 
-    <p>Probably, for most companies. Right now, most AI agents are still advisory — a human reviews the output, and the human's judgment is what actually matters. In that world, DarkMatter is nice-to-have at best.</p>
+    <p>Probably, for most companies. Right now, most AI agents are still advisory. A human reviews the output, and the human's judgment is what actually matters. In that world, DarkMatter is nice-to-have at best.</p>
 
     <p>But the direction is clear. AI agents are moving from advisory to autonomous. From suggesting to deciding. From assisting humans to acting on behalf of humans. Every step in that direction increases the moment when "we have logs" stops being enough and "we can prove it" becomes necessary.</p>
 
     <div class="callout green">
       <div class="callout-label">The question to ask</div>
       <p>Not: "Do people verify AI logs today?"</p>
-      <p>But: <strong>"Where do AI logs stop being trusted — and start being disputed?"</strong> That boundary is exactly where DarkMatter lives. And it's moving toward more companies, not fewer.</p>
+      <p>But: <strong>"Where do AI logs stop being trusted and start being disputed?"</strong> That boundary is exactly where DarkMatter lives. And it's moving toward more companies, not fewer.</p>
     </div>
 
-    <p>The infrastructure that makes AI decisions provable needs to exist before the disputes arrive — not after. That's always been true of trust infrastructure. The time to build a ledger is before the first transaction is questioned, not after.</p>
+    <p>The infrastructure that makes AI decisions provable needs to exist before the disputes arrive, not after. That's always been true of trust infrastructure. The time to build a ledger is before the first transaction is questioned, not after.</p>
 
     <p>We're building it now.</p>
 
     <hr class="article-divider">
 
-    <p style="font-size:15px;color:var(--t2);font-family:var(--sans);">DarkMatter records AI agent decisions as tamper-evident records stored outside your system. Every record carries a proof level that shows exactly how much you can rely on it — and anyone can verify it independently, without a DarkMatter account.</p>
+    <p style="font-size:15px;color:var(--t2);font-family:var(--sans);">DarkMatter records AI agent decisions as tamper-evident records stored outside your system. Every record carries a proof level that shows exactly how much you can rely on it, and anyone can verify it independently, without a DarkMatter account.</p>
 
   </div>
 
   <div class="article-cta">
     <h3>See what a provable AI record looks like.</h3>
-    <p>The demo walks through a real agent decision, shows its proof level, and lets you verify it yourself — in under a minute.</p>
+    <p>The demo walks through a real agent decision, shows its proof level, and lets you verify it yourself, in under a minute.</p>
     <div class="article-cta-actions">
       <a href="/demo" class="btn-p">Run the demo →</a>
       <a href="/verify" class="btn-o">Try the verifier</a>
