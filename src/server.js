@@ -222,6 +222,14 @@ async function requireAuth(req, res, next) {
   const token = auth.replace('Bearer ', '').trim();
   let { data: { user }, error } = await supabaseAnon.auth.getUser(token);
 
+  // Fallback: try service client (handles tokens issued by supabaseService)
+  if (error || !user) {
+    try {
+      const { data: sd } = await supabaseService.auth.getUser(token);
+      if (sd?.user) { user = sd.user; error = null; }
+    } catch(_) {}
+  }
+
   // If token is expired, try server-side refresh
   if ((error || !user) && req.headers['x-refresh-token']) {
     try {
@@ -4595,7 +4603,7 @@ app.post('/api/workspace/invite', wsAuth, async (req, res) => {
 
     const { data: me } = await supabaseService.from('workspace_members')
       .select('workspace_id, role').eq('user_id', req.user.id).single();
-    if (!me || me.role !== 'admin') return res.status(403).json({ error: 'Admin only' });
+    if (!me || !['admin','owner'].includes(me.role)) return res.status(403).json({ error: 'Admin only' });
 
     const { data: inv, error } = await supabaseService.from('workspace_invitations')
       .insert({ workspace_id: me.workspace_id, email, role, invited_by: req.user.id })
@@ -4605,23 +4613,41 @@ app.post('/api/workspace/invite', wsAuth, async (req, res) => {
     const { data: ws } = await supabaseService.from('workspaces')
       .select('name, join_code').eq('id', me.workspace_id).single();
 
-    const acceptUrl = `${process.env.APP_URL || 'https://darkmatterhub.ai'}/join?token=${inv.token}`;
+    const acceptUrl = `${process.env.APP_URL || 'https://darkmatterhub.ai'}/join?token=${inv?.token || inv?.id}`;
 
-    // Send invite email via Resend if configured
-    if (process.env.RESEND_API_KEY) {
-      await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          from: 'DarkMatter <noreply@darkmatterhub.ai>',
-          to: [email],
-          subject: `You've been invited to ${ws.name} on DarkMatter`,
-          html: `<p>You've been invited to join <strong>${ws.name}</strong> on DarkMatter.</p>
-                 <p><a href="${acceptUrl}" style="background:#3b82f6;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;display:inline-block;">Accept invitation →</a></p>
-                 <p>Or use join code: <strong>${ws.join_code}</strong></p>
-                 <p style="color:#6b7280;font-size:12px;">This invitation expires in 7 days.</p>`
-        })
-      });
+    // Send invite email via Resend
+    const resendKey = process.env.RESEND_API_KEY;
+    console.log('[invite] RESEND_API_KEY present:', !!resendKey, '| to:', email);
+    if (resendKey) {
+      try {
+        const emailRes = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            from: 'DarkMatter <noreply@darkmatterhub.ai>',
+            to: [email],
+            subject: `You've been invited to ${ws?.name || 'a workspace'} on DarkMatter`,
+            html: `<div style="font-family:sans-serif;max-width:480px;margin:0 auto;">
+                     <h2 style="color:#1a1a1a;">You're invited to DarkMatter</h2>
+                     <p>You've been invited to join <strong>${ws?.name || 'a workspace'}</strong>.</p>
+                     <p><a href="${acceptUrl}" style="background:#6b4fbb;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;display:inline-block;font-weight:600;">Accept invitation →</a></p>
+                     <p style="color:#6b7280;font-size:13px;">Or enter join code: <strong>${ws?.join_code || ''}</strong></p>
+                     <p style="color:#9ca3af;font-size:12px;">This invitation expires in 7 days. If you didn't expect this, you can ignore it.</p>
+                   </div>`
+          })
+        });
+        const emailData = await emailRes.json();
+        if (!emailRes.ok) {
+          console.error('[invite] Resend error:', emailData);
+        } else {
+          console.log('[invite] Email sent, id:', emailData.id);
+        }
+      } catch(emailErr) {
+        console.error('[invite] Email send failed:', emailErr.message);
+        // Non-fatal — invitation record was created, user can share the link manually
+      }
+    } else {
+      console.warn('[invite] RESEND_API_KEY not set — email not sent. Accept URL:', acceptUrl);
     }
 
     res.json({ invitation: inv, joinCode: ws.join_code, acceptUrl });
@@ -5095,6 +5121,12 @@ const publicDir = path.join(__dirname, '../public');
 app.use(express.static(publicDir));
 
 // SPA fallback — serve dashboard for unknown routes when user is likely logged in
+// ── GET /chat ── serve chat page (must be before SPA catch-all)
+app.get('/chat', (req, res) => {
+  res.sendFile(require('path').join(__dirname, '../public/chat.html'));
+});
+
+
 app.get('*', (req, res) => {
   // API routes should 404
   if (req.path.startsWith('/api/') || req.path.startsWith('/proxy/')) {

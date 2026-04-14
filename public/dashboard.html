@@ -1707,15 +1707,51 @@ function renderInviteTags() {
   input.focus();
 }
 
-function sendInvites() {
+async function sendInvites() {
   const inputVal = document.getElementById('invite-input').value.trim();
   if (inputVal && inputVal.includes('@')) addInviteEmail(inputVal);
   if (inviteEmails.length === 0) { showToast('Add at least one email address'); return; }
-  closeModal('modal-invite');
-  const count = inviteEmails.length;
+
+  const emails = [...inviteEmails];
   inviteEmails = [];
   renderInviteTags();
-  showToast(`✓ Invite${count > 1 ? 's' : ''} sent to ${count} ${count > 1 ? 'people' : 'person'}`);
+  closeModal('modal-invite');
+
+  const btn = document.querySelector('#modal-invite .modal-btn-primary');
+  if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
+
+  let sent = 0, failed = 0, lastError = '';
+  for (const email of emails) {
+    try {
+      const res = await fetch('/api/workspace/invite', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        body:    JSON.stringify({ email, role: 'member' }),
+      });
+      handleNewTokens(res);
+      if (res.ok) {
+        sent++;
+      } else {
+        const d = await res.json().catch(() => ({}));
+        lastError = d.error || res.status;
+        console.error('[invite] failed for', email, ':', lastError);
+        failed++;
+      }
+    } catch(e) {
+      lastError = e.message;
+      failed++;
+    }
+  }
+
+  if (btn) { btn.disabled = false; btn.textContent = 'Send invites'; }
+
+  if (failed === 0) {
+    showToast(`✓ Invite${sent > 1 ? 's' : ''} sent to ${sent} ${sent > 1 ? 'people' : 'person'}`);
+  } else if (sent === 0) {
+    showToast(`Failed to send — ${lastError}`);
+  } else {
+    showToast(`Sent ${sent}, ${failed} failed — check console`);
+  }
 }
 
 // ── Toast ──
