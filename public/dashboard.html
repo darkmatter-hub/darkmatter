@@ -868,7 +868,7 @@ body.dm-shell{background:var(--bg);}
         <div class="panel" id="services-panel">
           <div class="panel-header">
             <span class="panel-title">AI services</span>
-            <button class="panel-action" onclick="openServiceModal('claude')">Manage</button>
+            <button class="panel-action" onclick="showSection('services')">Manage</button>
           </div>
           <div class="service-row">
             <div class="service-top">
@@ -878,7 +878,7 @@ body.dm-shell{background:var(--bg);}
             </div>
             <div class="service-desc">Your team's default AI for writing, analysis, and documents. Usage billed by Anthropic directly to your account.</div>
             <div class="service-actions" id="actions-claude">
-              <!-- populated by loadConnectedServices() -->
+              <button class="service-btn primary" onclick="openServiceModal('claude')">Connect</button>
             </div>
           </div>
           <div class="service-row">
@@ -889,7 +889,7 @@ body.dm-shell{background:var(--bg);}
             </div>
             <div class="service-desc">Fast and versatile. Connect to give your team access. Usage billed by OpenAI directly to your account.</div>
             <div class="service-actions" id="actions-gpt">
-              <!-- populated by loadConnectedServices() -->
+              <button class="service-btn primary" onclick="openServiceModal('gpt')">Connect</button>
             </div>
           </div>
         </div>
@@ -1703,6 +1703,15 @@ async function connectService(provider) {
       body: JSON.stringify({ provider: apiProvider, apiKey: val }),
     });
     handleNewTokens(res);
+
+    // Guard against HTML error pages (401 redirect, 500, etc.) before parsing JSON
+    const ct = res.headers.get('content-type') || '';
+    if (!ct.includes('application/json')) {
+      showToast('Error: Server error (' + res.status + '). Check your session and try again.');
+      if (res.status === 401) window.location.href = '/login?next=/dashboard';
+      return;
+    }
+
     const data = await res.json();
 
     if (!res.ok) {
