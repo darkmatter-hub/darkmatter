@@ -1486,6 +1486,7 @@ async function loadActivity() {
     const data = await res.json();
     activityData = data.activity || [];
     renderActivity(activityData);
+    // updateStats is defined below — apply counts derived from activity data
     updateStats(data);
   } catch(e) {
     console.warn('[dashboard] activity load failed:', e.message);
@@ -1507,6 +1508,30 @@ async function loadStats() {
     if (els.people)        els.people.textContent        = d.peopleActive ?? '--';
     if (els.services)      els.services.textContent      = d.aiServices   ?? '--';
   } catch(e) { /* silent */ }
+}
+
+// updateStats — called from both loadActivity (with activity payload) and loadStats (with stats payload)
+// Handles either shape gracefully so neither caller breaks if the other hasn't run yet.
+function updateStats(d) {
+  if (!d) return;
+  const cards = {
+    conversations: document.querySelector('.stat-card:nth-child(1) .stat-value'),
+    people:        document.querySelector('.stat-card:nth-child(2) .stat-value'),
+    services:      document.querySelector('.stat-card:nth-child(3) .stat-value'),
+  };
+  // Stats-endpoint shape: { conversations, peopleActive, aiServices }
+  // Activity-endpoint shape: may include .total, .uniqueUsers etc — use what's present
+  if (d.conversations   != null && cards.conversations) cards.conversations.textContent = d.conversations;
+  if (d.peopleActive    != null && cards.people)        cards.people.textContent        = d.peopleActive;
+  if (d.aiServices      != null && cards.services)      cards.services.textContent      = d.aiServices;
+  // Fallback: derive from activity array if server didn't send explicit counts
+  if (d.activity?.length && cards.conversations && cards.conversations.textContent === '--') {
+    cards.conversations.textContent = d.activity.length;
+  }
+  if (d.activity?.length && cards.people && cards.people.textContent === '--') {
+    const unique = new Set(d.activity.map(a => a.agentName).filter(Boolean));
+    cards.people.textContent = unique.size || '--';
+  }
 }
 
 async function loadConnectedServices() {
