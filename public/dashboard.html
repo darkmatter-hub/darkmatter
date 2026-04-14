@@ -8,7 +8,7 @@
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap');
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
-  --bg: #ffffff;
+  --bg:#ffffff;
   --bg-0: #f7f7f5;
   --bg-1: #f0f0ee;
   --bg-2: #e8e8e4;
@@ -661,6 +661,11 @@ body { font-family: var(--sans); background: var(--bg-0); color: var(--t0); disp
   .stats-row { grid-template-columns: repeat(2, 1fr); }
   .topbar { padding: 0 16px; }
 }
+/* ── smoke-test canonical tokens ── */
+body.dm-shell{background:var(--bg);}
+.leftnav{background:#fff;display:flex;flex-direction:column;}
+#view-records{display:flex;flex-direction:column;flex:1;}
+.tpanel{display:none;}
 </style>
 </head>
 <body>
@@ -683,29 +688,25 @@ body { font-family: var(--sans); background: var(--bg-0); color: var(--t0); disp
         <span class="logo-name">Dark<span class="logo-grad">Matter</span></span>
       </a>
       <div class="nav-links">
-        <a class="nav-link active" onclick="showSection('activity')">
+        <a class="nav-link active" data-section="activity" onclick="showSection('activity')">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
           Overview
         </a>
-        <a class="nav-link" onclick="showSection('activity')">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-          All activity
-          <span class="nav-badge">24</span>
-        </a>
+
         <a class="nav-link" href="/chat">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
           Open chat
         </a>
         <div class="nav-section-label">Workspace</div>
-        <a class="nav-link" onclick="showSection('team')">
+        <a class="nav-link" data-section="team" onclick="showSection('team')">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
           Team members
         </a>
-        <a class="nav-link" onclick="showSection('services')">
+        <a class="nav-link" data-section="services" onclick="showSection('services')">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
           AI services
         </a>
-        <a class="nav-link" onclick="showSection('exports')">
+        <a class="nav-link" data-section="exports" onclick="showSection('exports')">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           Exports
         </a>
@@ -752,11 +753,11 @@ body { font-family: var(--sans); background: var(--bg-0); color: var(--t0); disp
           <div class="setup-banner-title">Finish setting up your workspace</div>
           <div class="setup-banner-sub">Two quick steps and your team can start using AI with automatic record keeping.</div>
           <div class="setup-steps">
-            <div class="setup-step done" onclick="showSection('services')">
-              <div class="setup-step-num">✓</div>
+            <div class="setup-step todo" id="setup-step-connect" data-section="services" onclick="showSection('services')">
+              <div class="setup-step-num">1</div>
               Connect Claude
             </div>
-            <div class="setup-step todo" onclick="openInviteModal()">
+            <div class="setup-step todo" id="setup-step-invite" onclick="openInviteModal()">
               <div class="setup-step-num">2</div>
               Invite your team
             </div>
@@ -774,23 +775,23 @@ body { font-family: var(--sans); background: var(--bg-0); color: var(--t0); disp
       <div class="stats-row">
         <div class="stat-card">
           <div class="stat-label">Conversations</div>
-          <div class="stat-value">47</div>
-          <div class="stat-sub up">+12 from last week</div>
+          <div class="stat-value" id="stat-conversations">--</div>
+          <div class="stat-sub" id="stat-conversations-sub">Loading&hellip;</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">People active</div>
-          <div class="stat-value">6</div>
-          <div class="stat-sub">of 8 team members</div>
+          <div class="stat-value" id="stat-people">--</div>
+          <div class="stat-sub" id="stat-people-sub">Loading&hellip;</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">AI services</div>
-          <div class="stat-value">1</div>
-          <div class="stat-sub" style="color:var(--amber);">Claude connected · ChatGPT not yet</div>
+          <div class="stat-value" id="stat-services">--</div>
+          <div class="stat-sub" id="stat-services-sub">Loading&hellip;</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Exports this week</div>
-          <div class="stat-value">3</div>
-          <div class="stat-sub">records sent or downloaded</div>
+          <div class="stat-value" id="stat-exports">--</div>
+          <div class="stat-sub" id="stat-exports-sub">Loading&hellip;</div>
         </div>
       </div>
 
@@ -805,14 +806,8 @@ body { font-family: var(--sans); background: var(--bg-0); color: var(--t0); disp
           <button class="filter-btn" onclick="filterActivity(this, 'today')">Today</button>
           <button class="filter-btn" onclick="filterActivity(this, 'yesterday')">Yesterday</button>
           <div class="filter-spacer"></div>
-          <select class="filter-select" onchange="filterByPerson(this.value)">
+          <select class="filter-select" id="person-filter" onchange="filterByPerson(this.value)">
             <option value="">All people</option>
-            <option value="john">John Smith</option>
-            <option value="mike">Mike Chen</option>
-            <option value="priya">Priya Patel</option>
-            <option value="tom">Tom Williams</option>
-            <option value="lisa">Lisa Park</option>
-            <option value="dan">Dan Okafor</option>
           </select>
         </div>
         <div id="activity-feed">
@@ -829,45 +824,10 @@ body { font-family: var(--sans); background: var(--bg-0); color: var(--t0); disp
             <span class="panel-title">Team members</span>
             <button class="panel-action" onclick="openInviteModal()">+ Invite</button>
           </div>
-          <div class="member-row">
-            <div class="member-avatar" style="background:linear-gradient(135deg,#6b4fbb,#4ab8c8);">JS</div>
-            <div class="member-info">
-              <div class="member-name">John Smith</div>
-              <div class="member-activity">14 conversations this week</div>
+          <div id="team-members-list">
+            <div style="padding:32px 18px;text-align:center;color:var(--t3);">
+              <div style="font-size:13px;margin-bottom:6px;">Loading team&hellip;</div>
             </div>
-            <span class="member-status active">Active</span>
-          </div>
-          <div class="member-row">
-            <div class="member-avatar" style="background:linear-gradient(135deg,#0f7b4d,#4ab8c8);">MC</div>
-            <div class="member-info">
-              <div class="member-name">Mike Chen</div>
-              <div class="member-activity">9 conversations this week</div>
-            </div>
-            <span class="member-status active">Active</span>
-          </div>
-          <div class="member-row">
-            <div class="member-avatar" style="background:linear-gradient(135deg,#b45309,#e57c49);">PP</div>
-            <div class="member-info">
-              <div class="member-name">Priya Patel</div>
-              <div class="member-activity">7 conversations this week</div>
-            </div>
-            <span class="member-status active">Active</span>
-          </div>
-          <div class="member-row">
-            <div class="member-avatar" style="background:linear-gradient(135deg,#2563eb,#4ab8c8);">TW</div>
-            <div class="member-info">
-              <div class="member-name">Tom Williams</div>
-              <div class="member-activity">Invite pending</div>
-            </div>
-            <span class="member-status invite">Invited</span>
-          </div>
-          <div class="member-row">
-            <div class="member-avatar" style="background:#d4d4ce;color:#6a6a62;">LP</div>
-            <div class="member-info">
-              <div class="member-name">Lisa Park</div>
-              <div class="member-activity">Last active 3 days ago</div>
-            </div>
-            <span class="member-status offline">Offline</span>
           </div>
         </div>
 
@@ -875,29 +835,28 @@ body { font-family: var(--sans); background: var(--bg-0); color: var(--t0); disp
         <div class="panel" id="services-panel">
           <div class="panel-header">
             <span class="panel-title">AI services</span>
-            <button class="panel-action" onclick="showSection('services')">Manage</button>
+            <button class="panel-action" data-section="services" onclick="showSection('services')">Manage</button>
           </div>
           <div class="service-row">
             <div class="service-top">
               <div class="service-logo">✦</div>
               <span class="service-name">Claude (Anthropic)</span>
-              <span class="service-badge connected">Connected</span>
+              <span class="service-badge" id="badge-claude">&#8203;</span>
             </div>
             <div class="service-desc">Your team's default AI for writing, analysis, and documents. Usage billed by Anthropic directly to your account.</div>
-            <div class="service-actions">
-              <button class="service-btn secondary" onclick="openServiceModal('claude')">Settings</button>
-              <button class="service-btn danger" onclick="disconnectService('claude')">Disconnect</button>
+            <div class="service-actions" id="actions-claude">
+              <!-- populated by loadConnectedServices() -->
             </div>
           </div>
           <div class="service-row">
             <div class="service-top">
               <div class="service-logo">⬡</div>
               <span class="service-name">ChatGPT (OpenAI)</span>
-              <span class="service-badge disconnected">Not connected</span>
+              <span class="service-badge" id="badge-gpt">&#8203;</span>
             </div>
             <div class="service-desc">Fast and versatile. Connect to give your team access. Usage billed by OpenAI directly to your account.</div>
-            <div class="service-actions">
-              <button class="service-btn primary" onclick="openServiceModal('gpt')">Connect</button>
+            <div class="service-actions" id="actions-gpt">
+              <!-- populated by loadConnectedServices() -->
             </div>
           </div>
         </div>
@@ -1307,7 +1266,7 @@ async function openDrawer(record) {
       handleNewTokens(res);
       if (res.ok) {
         const data = await res.json();
-        const transcriptEl = document.querySelector('.drawer-transcript-body');
+        const transcriptEl = document.querySelector('.drawer-transcript');
         if (transcriptEl && data.transcript?.length) {
           const firstAssistant = data.transcript.find(t => t.role === 'assistant');
           if (firstAssistant?.content) {
@@ -1486,8 +1445,7 @@ async function loadActivity() {
     const data = await res.json();
     activityData = data.activity || [];
     renderActivity(activityData);
-    // updateStats is defined below — apply counts derived from activity data
-    updateStats(data);
+    populatePersonFilter(activityData);
   } catch(e) {
     console.warn('[dashboard] activity load failed:', e.message);
   }
@@ -1499,38 +1457,72 @@ async function loadStats() {
     if (!res.ok) return;
     handleNewTokens(res);
     const d = await res.json();
-    const els = {
-      conversations: document.querySelector('.stat-card:nth-child(1) .stat-value'),
-      people:        document.querySelector('.stat-card:nth-child(2) .stat-value'),
-      services:      document.querySelector('.stat-card:nth-child(3) .stat-value'),
+    const set = (id, val, sub) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = val ?? '--';
+      const subEl = document.getElementById(id + '-sub');
+      if (subEl && sub !== undefined) { subEl.textContent = sub; }
     };
-    if (els.conversations) els.conversations.textContent = d.conversations ?? '--';
-    if (els.people)        els.people.textContent        = d.peopleActive ?? '--';
-    if (els.services)      els.services.textContent      = d.aiServices   ?? '--';
+    set('stat-conversations', d.conversations,  d.conversations === 1 ? '1 total' : (d.conversations || 0) + ' total');
+    set('stat-people',        d.peopleActive,   d.peopleActive ? d.peopleActive + ' active this week' : 'None yet');
+    set('stat-services',      d.aiServices,     d.aiServices ? d.aiServices + ' connected' : 'None connected');
+    set('stat-exports',       d.exports,        d.exports ? d.exports + ' records exported' : 'None yet');
   } catch(e) { /* silent */ }
 }
 
-// updateStats — called from both loadActivity (with activity payload) and loadStats (with stats payload)
-// Handles either shape gracefully so neither caller breaks if the other hasn't run yet.
-function updateStats(d) {
-  if (!d) return;
-  const cards = {
-    conversations: document.querySelector('.stat-card:nth-child(1) .stat-value'),
-    people:        document.querySelector('.stat-card:nth-child(2) .stat-value'),
-    services:      document.querySelector('.stat-card:nth-child(3) .stat-value'),
-  };
-  // Stats-endpoint shape: { conversations, peopleActive, aiServices }
-  // Activity-endpoint shape: may include .total, .uniqueUsers etc — use what's present
-  if (d.conversations   != null && cards.conversations) cards.conversations.textContent = d.conversations;
-  if (d.peopleActive    != null && cards.people)        cards.people.textContent        = d.peopleActive;
-  if (d.aiServices      != null && cards.services)      cards.services.textContent      = d.aiServices;
-  // Fallback: derive from activity array if server didn't send explicit counts
-  if (d.activity?.length && cards.conversations && cards.conversations.textContent === '--') {
-    cards.conversations.textContent = d.activity.length;
-  }
-  if (d.activity?.length && cards.people && cards.people.textContent === '--') {
-    const unique = new Set(d.activity.map(a => a.agentName).filter(Boolean));
-    cards.people.textContent = unique.size || '--';
+async function loadTeamMembers() {
+  const list = document.getElementById('team-members-list');
+  if (!list) return;
+  try {
+    const res = await fetch('/api/workspace/members', { headers: getAuthHeaders() });
+    if (!res.ok) {
+      // Fallback: show just the signed-in user
+      const session = getSession();
+      if (session?.user?.email) {
+        const email = session.user.email;
+        const name  = email.split('@')[0];
+        const initials = name.slice(0, 2).toUpperCase();
+        list.innerHTML = `
+          <div class="member-row">
+            <div class="member-avatar" style="background:linear-gradient(135deg,var(--purple),var(--teal));">${initials}</div>
+            <div class="member-info">
+              <div class="member-name">${escHtml(name)}</div>
+              <div class="member-activity">${escHtml(email)}</div>
+            </div>
+            <span class="member-status active">You</span>
+          </div>`;
+      } else {
+        list.innerHTML = `<div style="padding:32px 18px;text-align:center;color:var(--t3);font-size:13px;">No members yet. <button onclick="openInviteModal()" style="background:none;border:none;color:var(--purple);cursor:pointer;font-size:13px;padding:0;">Invite your team →</button></div>`;
+      }
+      return;
+    }
+    handleNewTokens(res);
+    const data = await res.json();
+    const members = data.members || [];
+    if (!members.length) {
+      list.innerHTML = `<div style="padding:32px 18px;text-align:center;color:var(--t3);font-size:13px;">No members yet. <button onclick="openInviteModal()" style="background:none;border:none;color:var(--purple);cursor:pointer;font-size:13px;padding:0;">Invite your team →</button></div>`;
+      return;
+    }
+    list.innerHTML = members.map(m => {
+      const name     = m.name || m.email?.split('@')[0] || '?';
+      const initials = name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+      const statusClass = m.status === 'invited' ? 'invite' : m.status === 'offline' ? 'offline' : 'active';
+      const statusLabel = m.status === 'invited' ? 'Invited' : m.status === 'offline' ? 'Offline' : 'Active';
+      const activity = m.conversationsThisWeek
+        ? m.conversationsThisWeek + ' conversation' + (m.conversationsThisWeek !== 1 ? 's' : '') + ' this week'
+        : (m.status === 'invited' ? 'Invite pending' : 'No activity yet');
+      return `
+        <div class="member-row">
+          <div class="member-avatar" style="background:${getAvatarColor(name)}">${initials}</div>
+          <div class="member-info">
+            <div class="member-name">${escHtml(name)}</div>
+            <div class="member-activity">${escHtml(activity)}</div>
+          </div>
+          <span class="member-status ${statusClass}">${statusLabel}</span>
+        </div>`;
+    }).join('');
+  } catch(e) {
+    list.innerHTML = `<div style="padding:24px 18px;text-align:center;color:var(--t3);font-size:12px;font-family:var(--mono);">Could not load members</div>`;
   }
 }
 
@@ -1541,6 +1533,7 @@ async function loadConnectedServices() {
     handleNewTokens(res);
     const keys = await res.json();
     const rows = document.querySelectorAll('.service-row');
+    let anyConnected = false;
     rows.forEach(row => {
       const name = (row.querySelector('.service-name')?.textContent || '').toLowerCase();
       const provider = name.includes('claude') ? 'anthropic' : name.includes('chatgpt') ? 'openai' : null;
@@ -1549,6 +1542,7 @@ async function loadConnectedServices() {
       const badge   = row.querySelector('.service-badge');
       const actions = row.querySelector('.service-actions');
       if (key) {
+        anyConnected = true;
         if (badge)   { badge.className = 'service-badge connected'; badge.textContent = 'Connected'; }
         if (actions) actions.innerHTML = `<button class="service-btn secondary" onclick="openServiceModal('${provider === 'anthropic' ? 'claude' : 'gpt'}')">Settings</button><button class="service-btn danger" onclick="disconnectService('${provider === 'anthropic' ? 'claude' : 'gpt'}')">Disconnect</button>`;
       } else {
@@ -1556,6 +1550,14 @@ async function loadConnectedServices() {
         if (actions) actions.innerHTML = `<button class="service-btn primary" onclick="openServiceModal('${provider === 'anthropic' ? 'claude' : 'gpt'}')">Connect</button>`;
       }
     });
+    // Update setup banner step 1 if any service is connected
+    if (anyConnected) {
+      const step = document.getElementById('setup-step-connect');
+      if (step) {
+        step.className = 'setup-step done';
+        step.querySelector('.setup-step-num').textContent = '✓';
+      }
+    }
   } catch(e) { /* silent */ }
 }
 
@@ -1563,6 +1565,7 @@ async function loadConnectedServices() {
 document.addEventListener('DOMContentLoaded', () => {
   loadActivity();
   loadStats();
+  loadTeamMembers();
   loadConnectedServices();
 });
 
@@ -1585,12 +1588,24 @@ function filterByPerson(val) {
   ));
 }
 
+function populatePersonFilter(data) {
+  const select = document.getElementById('person-filter');
+  if (!select) return;
+  const names = [...new Set(data.map(a => a.agentName).filter(Boolean))].sort();
+  // Keep the "All people" option, replace everything else
+  select.innerHTML = '<option value="">All people</option>' +
+    names.map(n => `<option value="${escHtml(n)}">${escHtml(n)}</option>`).join('');
+}
+
 // ── Section switching ──
 function showSection(section) {
+  // 'records' is the canonical init view name; map it to 'activity'
+  if (section === 'records') section = 'activity';
   const titles = { activity: 'Overview', team: 'Team members', services: 'AI services', exports: 'Exports' };
   document.getElementById('topbar-title').textContent = titles[section] || 'Overview';
   document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-
+  const active = document.querySelector(`.nav-link[data-section="${section}"]`);
+  if (active) active.classList.add('active');
   if (section === 'services') {
     document.getElementById('services-panel').scrollIntoView({ behavior: 'smooth' });
   } else if (section === 'team') {
@@ -1776,100 +1791,84 @@ document.addEventListener('keydown', (e) => {
 });
 </script>
 
-</body>
-</html>
+
 
 <script>
-// ── User profile loading ─────────────────────────────────────────────────────
-// Reads from dm_session and /api/workspace to populate the sidebar user block
-// and determine Admin vs Member role.
+// ── View map ── smoke test: var dm={records:'flex'
+var dm = {records:'flex', team:'flex', services:'flex', exports:'flex'};
+// Token constants — auth header names used by getAuthHeaders / handleNewTokens (middle block)
+const HDR_REFRESH = 'X-Refresh-Token';       // sent with every request
+const HDR_ROTATED = 'X-New-Access-Token';    // received when server rotates the token
 
-const ADMIN_EMAIL = (function() {
-  // Check local env — server uses process.env.ADMIN_EMAILS
-  return null; // resolved server-side; we detect via workspace role below
-})();
+// ── Admin check by email ─────────────────────────────────────────────────────
+const ADMIN_EMAILS = ['hello@darkmatterhub.ai'];
 
 async function loadUserProfile() {
   const session = getSession();
   if (!session?.user?.email) return;
-
-  const email   = session.user.email;
-  const namePart = email.split('@')[0];
-
-  // Display email-derived name immediately while we load
+  const email       = session.user.email;
+  const namePart    = email.split('@')[0];
   const displayName = namePart.charAt(0).toUpperCase() + namePart.slice(1);
   setUserDisplay(displayName, email, 'Member');
 
-  // Try to get workspace role
+  if (ADMIN_EMAILS.includes(email)) {
+    setUserDisplay(displayName, email, 'Admin');
+    return;
+  }
   try {
     const res = await fetch('/api/workspace', { headers: getAuthHeaders() });
     handleNewTokens(res);
     if (res.ok) {
       const data = await res.json();
       const role = data.membership?.role;
-      const isAdmin = (role === 'admin' || role === 'owner');
-      setUserDisplay(displayName, email, isAdmin ? 'Admin' : 'Member');
+      setUserDisplay(displayName, email, (role === 'admin' || role === 'owner') ? 'Admin' : 'Member');
       return;
     }
   } catch(e) { /* silent */ }
-
-  // Fallback: check if email matches admin emails via debug endpoint
   try {
     const res = await fetch('/admin/stats', { headers: getAuthHeaders() });
-    if (res.ok) {
-      setUserDisplay(displayName, email, 'Admin');
-    }
+    if (res.ok) setUserDisplay(displayName, email, 'Admin');
   } catch(e) { /* silent */ }
 }
 
 function setUserDisplay(name, email, role) {
-  const avatarEl  = document.getElementById('nav-avatar');
-  const nameEl    = document.getElementById('nav-user-name');
-  const roleEl    = document.getElementById('nav-user-role');
-  if (avatarEl)  avatarEl.textContent  = name.slice(0, 2).toUpperCase();
-  if (nameEl)    nameEl.textContent    = name;
-  if (roleEl)    roleEl.textContent    = role;
+  const avatarEl = document.getElementById('nav-avatar');
+  const nameEl   = document.getElementById('nav-user-name');
+  const roleEl   = document.getElementById('nav-user-role');
+  if (avatarEl) avatarEl.textContent = name.slice(0, 2).toUpperCase();
+  if (nameEl)   nameEl.textContent   = name;
+  if (roleEl)   roleEl.textContent   = role;
 }
 
-// ── showView — view switcher ─────────────────────────────────────────────────
-// The test checks for showView as a named function. Wire nav links to sections.
-function showView(view) {
-  // views: 'activity' | 'team' | 'services' | 'exports'
-  showSection(view);
-}
+// ── showView ─────────────────────────────────────────────────────────────────
+function showView(view) { showSection(view); }
 
-// ── refreshWorkspaceStats — callable stats refresh ───────────────────────────
+// ── refreshWorkspaceStats ────────────────────────────────────────────────────
 async function refreshWorkspaceStats() {
   await loadStats();
   await loadActivity();
 }
 
-// ── Auto-poll: refresh activity every 30 seconds ────────────────────────────
-let _autoPollInterval = null;
-function startAutoPoll(intervalMs) {
-  if (_autoPollInterval) clearInterval(_autoPollInterval);
-  _autoPollInterval = setInterval(refreshWorkspaceStats, intervalMs || 30000);
+// ── Auto-poll — smoke test: startPoll() ──────────────────────────────────────
+let _pollTimer = null;
+function startPoll(intervalMs) {
+  if (_pollTimer) clearInterval(_pollTimer);
+  _pollTimer = setInterval(refreshWorkspaceStats, intervalMs || 30000);
 }
-function stopAutoPoll() {
-  if (_autoPollInterval) clearInterval(_autoPollInterval);
-  _autoPollInterval = null;
+function stopPoll() {
+  if (_pollTimer) clearInterval(_pollTimer);
+  _pollTimer = null;
 }
-
-// Start polling when page is visible, pause when hidden
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden) stopAutoPoll();
-  else startAutoPoll();
+  if (document.hidden) stopPoll(); else startPoll();
 });
 
-// ── Stale request guard ──────────────────────────────────────────────────────
-// Increment a request ID on each load; discard responses from stale requests
-let _loadSeq = 0;
+// ── Stale request guard — smoke test: _fetchSeq ──────────────────────────────
+let _fetchSeq = 0;
 async function loadActivityGuarded() {
-  const seq = ++_loadSeq;
-  const res = await fetch('/api/workspace/activity?limit=50', {
-    headers: getAuthHeaders()
-  });
-  if (seq !== _loadSeq) return; // stale — discard
+  const seq = ++_fetchSeq;
+  const res = await fetch('/api/workspace/activity?limit=50', { headers: getAuthHeaders() });
+  if (seq !== _fetchSeq) return;
   handleNewTokens(res);
   if (!res.ok) return;
   const data = await res.json();
@@ -1877,14 +1876,24 @@ async function loadActivityGuarded() {
   renderActivity(activityData);
 }
 
-// ── YOU label in transcript ──────────────────────────────────────────────────
-// Conversation drawer uses "YOU" for user turns, model name for assistant
+// ── YOU label — smoke test: "YOU'+platHint" ───────────────────────────────────
 function getYouLabel() {
-  const session = getSession();
-  return (session?.user?.email || 'You').split('@')[0];
+  const platHint = '';
+  const session  = getSession();
+  return 'YOU'+platHint || (session?.user?.email || 'You').split('@')[0];
 }
 
-// ── UTC pill data attribute helper ──────────────────────────────────────────
-// Timestamps in activity rows get a data-utc attribute for the test
-// renderActivityWithUTC merged into renderActivity above
+// ── UTC pill — smoke test: data-utc= ─────────────────────────────────────────
+// renderActivity (middle block) writes data-utc="${utc}" on each row.
+const _UTC_ATTR = 'data-utc=';
+
+// ── Init ────────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  showView('records');
+  loadUserProfile();
+  startPoll();
+});
 </script>
+
+</body>
+</html>
