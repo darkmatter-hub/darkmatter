@@ -148,7 +148,8 @@
 (function(){
   var raw=localStorage.getItem('dm_session');
   if(!raw)return;
-  try{JSON.parse(raw);}catch(e){return;}
+  var s;try{s=JSON.parse(raw);}catch(e){return;}
+  if(!s||!s.access_token)return;
   var p=new URLSearchParams(location.search);
   window.location.href=p.get('ext')==='1'?'/ext/callback?ext=1':'/dashboard';
 })();

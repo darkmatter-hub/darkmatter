@@ -1971,6 +1971,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let _sess = null;
   try { _sess = JSON.parse(localStorage.getItem('dm_session') || 'null'); } catch(e) {}
   if (!_sess?.access_token) {
+    localStorage.removeItem('dm_session');  // clear stale session to prevent redirect loop
     window.location.replace('/login?next=/dashboard');
     return;
   }
