@@ -1277,75 +1277,260 @@ body { font-family: var(--sans); background: var(--bg-0); color: var(--t0); disp
 </style>
 
 <script>
-function openDrawer(record) {
-  const drawer = document.getElementById('conv-drawer');
+let activeDrawerRecord = null;
+
+async function openDrawer(record) {
+  activeDrawerRecord = record;
+  const drawer  = document.getElementById('conv-drawer');
   const overlay = document.getElementById('drawer-overlay');
-  document.getElementById('drawer-title').textContent = record.title;
-  document.getElementById('drawer-user').textContent = record.user;
-  document.getElementById('drawer-model').textContent = record.model === 'claude' ? 'Claude 4.6' : 'GPT-4o';
-  document.getElementById('dt-ai-role').textContent = record.model === 'claude' ? 'Claude 4.6' : 'GPT-4o';
-  document.getElementById('drawer-time').textContent = record.time;
-  document.getElementById('drawer-preview').textContent = record.preview;
-  document.getElementById('drawer-record-id').textContent = record.record;
+  const modelLabel = record.model === 'claude' ? 'Claude 4.6' : 'GPT-4o';
+
+  document.getElementById('drawer-title').textContent    = record.title;
+  document.getElementById('drawer-user').textContent     = record.user;
+  document.getElementById('drawer-model').textContent    = modelLabel;
+  document.getElementById('dt-ai-role').textContent      = modelLabel;
+  document.getElementById('drawer-time').textContent     = record.time;
+  document.getElementById('drawer-preview').textContent  = record.preview || 'Loading…';
+  document.getElementById('drawer-record-id').textContent = record.record || record.traceId || '—';
+
   drawer.classList.add('open');
   overlay.classList.add('active');
   document.body.style.overflow = 'hidden';
+
+  // Load real transcript if we have a traceId
+  const traceId = record.traceId || record.record;
+  if (traceId && !traceId.startsWith('rec_')) {
+    try {
+      const res = await fetch('/api/workspace/conversation/' + encodeURIComponent(traceId), {
+        headers: getAuthHeaders(),
+      });
+      handleNewTokens(res);
+      if (res.ok) {
+        const data = await res.json();
+        const transcriptEl = document.querySelector('.drawer-transcript-body');
+        if (transcriptEl && data.transcript?.length) {
+          const firstAssistant = data.transcript.find(t => t.role === 'assistant');
+          if (firstAssistant?.content) {
+            document.getElementById('drawer-preview').textContent =
+              firstAssistant.content.slice(0, 300) + (firstAssistant.content.length > 300 ? '…' : '');
+          }
+          transcriptEl.innerHTML = data.transcript.map(t => `
+            <div class="dt-turn" style="margin-bottom:14px;">
+              <div style="font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--t3);margin-bottom:4px;">${t.role === 'assistant' ? (modelLabel) : 'You'}</div>
+              <div style="font-size:13.5px;color:var(--t1);line-height:1.6;">${escHtml(t.content).replace(/\n/g,'<br>')}</div>
+            </div>`).join('');
+        }
+      }
+    } catch(e) { /* silent — transcript stays as preview */ }
+  }
 }
 
 function closeDrawer() {
   document.getElementById('conv-drawer').classList.remove('open');
   document.getElementById('drawer-overlay').classList.remove('active');
   document.body.style.overflow = '';
+  activeDrawerRecord = null;
 }
 
-function exportFromDrawer() {
+async function exportFromDrawer() {
   const btn = event.target;
+  btn.textContent = 'Exporting…';
+  btn.disabled = true;
+  const traceId = activeDrawerRecord?.traceId || activeDrawerRecord?.record;
+  if (traceId) {
+    // Open the JSON proof bundle in a new tab
+    window.open('/r/' + encodeURIComponent(traceId) + '?format=json', '_blank');
+  }
   btn.textContent = '✓ Exported';
-  setTimeout(() => { btn.textContent = 'Export record'; }, 2200);
+  setTimeout(() => { btn.textContent = 'Export record'; btn.disabled = false; }, 2200);
 }
 
 function verifyFromDrawer() {
-  window.open('/verify', '_blank');
+  const traceId = activeDrawerRecord?.traceId || activeDrawerRecord?.record;
+  if (traceId) {
+    window.open('/r/' + encodeURIComponent(traceId), '_blank');
+  } else {
+    window.open('/verify', '_blank');
+  }
 }
 </script>
 
 <script>
-// ── Activity data ──
-const activityData = [
-  { user: 'John Smith', initials: 'JS', color: 'linear-gradient(135deg,#6b4fbb,#4ab8c8)', title: 'Drafted year-end client letter', model: 'claude', time: '2 min ago', record: 'rec_4c2f8a', preview: 'Helped draft a year-end summary letter for all active clients covering key tax changes for 2026.' },
-  { user: 'Priya Patel', initials: 'PP', color: 'linear-gradient(135deg,#b45309,#e57c49)', title: 'Summarized Q4 audit findings', model: 'claude', time: '18 min ago', record: 'rec_9e1b3f', preview: 'Condensed the Q4 audit report into a two-page executive summary for the partner review meeting.' },
-  { user: 'Mike Chen', initials: 'MC', color: 'linear-gradient(135deg,#0f7b4d,#4ab8c8)', title: 'Prepared capital gains explanation for client meeting', model: 'gpt', time: '34 min ago', record: 'rec_7a2c5d', preview: 'Plain-language explanation of short-term vs long-term capital gains rates for a client with recent property sales.' },
-  { user: 'John Smith', initials: 'JS', color: 'linear-gradient(135deg,#6b4fbb,#4ab8c8)', title: 'Reviewed vendor contract language', model: 'claude', time: '1 hr ago', record: 'rec_2f8b1e', preview: 'Reviewed indemnification and liability clauses in a new software vendor agreement and flagged items for legal review.' },
-  { user: 'Lisa Park', initials: 'LP', color: '#d4d4ce', fontcolor: '#6a6a62', title: 'Built client onboarding document checklist', model: 'claude', time: '2 hr ago', record: 'rec_5c9d4a', preview: 'Created a step-by-step onboarding checklist for new individual tax clients covering documents needed and deadlines.' },
-  { user: 'Mike Chen', initials: 'MC', color: 'linear-gradient(135deg,#0f7b4d,#4ab8c8)', title: 'Explained depreciation schedule options', model: 'claude', time: '3 hr ago', record: 'rec_8e3f7b', preview: 'Compared straight-line vs accelerated depreciation for a client purchasing commercial equipment.' },
-  { user: 'Dan Okafor', initials: 'DO', color: 'linear-gradient(135deg,#2563eb,#6b4fbb)', title: 'Drafted response to IRS inquiry', model: 'claude', time: 'Yesterday', record: 'rec_1a4d8c', preview: 'Drafted a formal written response to an IRS CP2000 notice regarding unreported income for a client.' },
-  { user: 'Priya Patel', initials: 'PP', color: 'linear-gradient(135deg,#b45309,#e57c49)', title: 'Analyzed partnership agreement tax implications', model: 'gpt', time: 'Yesterday', record: 'rec_6b2e9f', preview: 'Reviewed a new partnership structure and outlined the tax implications for each partner under current rules.' },
-];
+// ── Session helpers ──────────────────────────────────────────────────────
+function getSession() {
+  try { return JSON.parse(localStorage.getItem('dm_session') || 'null'); } catch { return null; }
+}
+function getAuthHeaders() {
+  const s = getSession();
+  if (!s?.access_token) return {};
+  const h = { 'Authorization': 'Bearer ' + s.access_token };
+  if (s.refresh_token) h['X-Refresh-Token'] = s.refresh_token;
+  return h;
+}
+function handleNewTokens(res) {
+  const t = res.headers.get('X-New-Access-Token');
+  if (t) {
+    const s = getSession() || {};
+    s.access_token = t;
+    const r = res.headers.get('X-New-Refresh-Token');
+    if (r) s.refresh_token = r;
+    localStorage.setItem('dm_session', JSON.stringify(s));
+  }
+}
+
+// ── Activity data (live) ─────────────────────────────────────────────────
+let activityData = [];
+let activeFilter = 'all';
+
+function timeAgo(ts) {
+  const diff = Date.now() - new Date(ts).getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 1)   return 'just now';
+  if (m < 60)  return m + ' min ago';
+  const h = Math.floor(m / 60);
+  if (h < 24)  return h + ' hr ago';
+  const d = Math.floor(h / 24);
+  if (d === 1) return 'Yesterday';
+  return d + ' days ago';
+}
+
+function getInitials(name) {
+  if (!name) return '?';
+  return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+}
+
+function getAvatarColor(name) {
+  const colors = [
+    'linear-gradient(135deg,#6b4fbb,#4ab8c8)',
+    'linear-gradient(135deg,#b45309,#e57c49)',
+    'linear-gradient(135deg,#0f7b4d,#4ab8c8)',
+    'linear-gradient(135deg,#2563eb,#6b4fbb)',
+    'linear-gradient(135deg,#d4703a,#6b4fbb)',
+  ];
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  return colors[Math.abs(hash) % colors.length];
+}
 
 function renderActivity(data) {
   const feed = document.getElementById('activity-feed');
-  feed.innerHTML = data.map(a => `
-    <div class="activity-row" onclick="openDrawer(${JSON.stringify(a)})">
-      <div class="activity-avatar" style="background:${a.color};${a.fontcolor ? 'color:' + a.fontcolor : ''}">${a.initials}</div>
+  if (!data.length) {
+    feed.innerHTML = `
+      <div style="padding:40px 24px;text-align:center;color:var(--t3);">
+        <div style="font-size:14px;margin-bottom:8px;">No activity yet</div>
+        <div style="font-size:12px;font-family:var(--mono);">Connect Claude or ChatGPT and start a conversation to see records here.</div>
+      </div>`;
+    return;
+  }
+  feed.innerHTML = data.map(a => {
+    const modelType  = (a.provider === 'openai') ? 'gpt' : 'claude';
+    const modelLabel = (a.provider === 'openai') ? 'GPT-4o' : 'Claude 4.6';
+    const drawerObj  = JSON.stringify({
+      user:    a.agentName,
+      initials: getInitials(a.agentName),
+      color:   getAvatarColor(a.agentName),
+      title:   a.title,
+      model:   modelType,
+      time:    timeAgo(a.timestamp),
+      record:  a.id,
+      traceId: a.traceId,
+      preview: a.title,
+    });
+    return `
+    <div class="activity-row" onclick="openDrawer(${escAttr(drawerObj)})">
+      <div class="activity-avatar" style="background:${getAvatarColor(a.agentName)}">${getInitials(a.agentName)}</div>
       <div class="activity-body">
-        <div class="activity-title">${a.title}</div>
+        <div class="activity-title">${escHtml(a.title)}</div>
         <div class="activity-meta">
-          <span class="activity-user">${a.user}</span>
-          <span class="activity-model ${a.model}">${a.model === 'claude' ? 'Claude 4.6' : 'GPT-4o'}</span>
+          <span class="activity-user">${escHtml(a.agentName)}</span>
+          <span class="activity-model ${modelType}">${modelLabel}</span>
         </div>
       </div>
-      <span class="activity-time">${a.time}</span>
-    </div>
-  `).join('');
+      <span class="activity-time">${timeAgo(a.timestamp)}</span>
+    </div>`;
+  }).join('');
 }
 
-renderActivity(activityData);
+function escHtml(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function escAttr(s) {
+  return s.replace(/'/g, '&#39;').replace(/"/g, '&quot;');
+}
+
+async function loadActivity() {
+  try {
+    const res = await fetch('/api/workspace/activity?limit=50', {
+      headers: { ...getAuthHeaders() }
+    });
+    if (res.status === 401) return; // not logged in — keep placeholder
+    handleNewTokens(res);
+    if (!res.ok) return;
+    const data = await res.json();
+    activityData = data.activity || [];
+    renderActivity(activityData);
+    updateStats(data);
+  } catch(e) {
+    console.warn('[dashboard] activity load failed:', e.message);
+  }
+}
+
+async function loadStats() {
+  try {
+    const res = await fetch('/api/workspace/stats', { headers: getAuthHeaders() });
+    if (!res.ok) return;
+    handleNewTokens(res);
+    const d = await res.json();
+    const els = {
+      conversations: document.querySelector('.stat-card:nth-child(1) .stat-number'),
+      people:        document.querySelector('.stat-card:nth-child(2) .stat-number'),
+      services:      document.querySelector('.stat-card:nth-child(3) .stat-number'),
+    };
+    if (els.conversations) els.conversations.textContent = d.conversations ?? '--';
+    if (els.people)        els.people.textContent        = d.peopleActive ?? '--';
+    if (els.services)      els.services.textContent      = d.aiServices   ?? '--';
+  } catch(e) { /* silent */ }
+}
+
+async function loadConnectedServices() {
+  try {
+    const res = await fetch('/api/workspace/provider-keys', { headers: getAuthHeaders() });
+    if (!res.ok) return;
+    handleNewTokens(res);
+    const keys = await res.json();
+    const rows = document.querySelectorAll('.service-row');
+    rows.forEach(row => {
+      const name = (row.querySelector('.service-name')?.textContent || '').toLowerCase();
+      const provider = name.includes('claude') ? 'anthropic' : name.includes('chatgpt') ? 'openai' : null;
+      if (!provider) return;
+      const key = keys.find(k => k.provider === provider);
+      const badge   = row.querySelector('.service-badge');
+      const actions = row.querySelector('.service-actions');
+      if (key) {
+        if (badge)   { badge.className = 'service-badge connected'; badge.textContent = 'Connected'; }
+        if (actions) actions.innerHTML = `<button class="service-btn secondary" onclick="openServiceModal('${provider === 'anthropic' ? 'claude' : 'gpt'}')">Settings</button><button class="service-btn danger" onclick="disconnectService('${provider === 'anthropic' ? 'claude' : 'gpt'}')">Disconnect</button>`;
+      } else {
+        if (badge)   { badge.className = 'service-badge disconnected'; badge.textContent = 'Not connected'; }
+        if (actions) actions.innerHTML = `<button class="service-btn primary" onclick="openServiceModal('${provider === 'anthropic' ? 'claude' : 'gpt'}')">Connect</button>`;
+      }
+    });
+  } catch(e) { /* silent */ }
+}
+
+// Init on load
+document.addEventListener('DOMContentLoaded', () => {
+  loadActivity();
+  loadStats();
+  loadConnectedServices();
+});
 
 function filterActivity(btn, filter) {
   document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
+  activeFilter = filter;
   if (filter === 'today') {
-    renderActivity(activityData.filter(a => !a.time.includes('Yesterday')));
+    const today = new Date(); today.setHours(0,0,0,0);
+    renderActivity(activityData.filter(a => new Date(a.timestamp) >= today));
   } else {
     renderActivity(activityData);
   }
@@ -1353,8 +1538,9 @@ function filterActivity(btn, filter) {
 
 function filterByPerson(val) {
   if (!val) { renderActivity(activityData); return; }
-  const nameMap = { john: 'John', mike: 'Mike', priya: 'Priya', tom: 'Tom', lisa: 'Lisa', dan: 'Dan' };
-  renderActivity(activityData.filter(a => a.user.toLowerCase().includes(nameMap[val]?.toLowerCase() || val)));
+  renderActivity(activityData.filter(a =>
+    (a.agentName || '').toLowerCase().includes(val.toLowerCase())
+  ));
 }
 
 // ── Section switching ──
@@ -1396,29 +1582,89 @@ document.querySelectorAll('.modal-overlay').forEach(overlay => {
   });
 });
 
-function connectService(provider) {
+async function connectService(provider) {
+  const isAnthropicProvider = provider === 'claude';
+  const apiProvider = isAnthropicProvider ? 'anthropic' : 'openai';
   const input = document.getElementById(provider === 'claude' ? 'claude-key-input' : 'gpt-key-input');
   const val = input.value.trim();
-  if (!val) { input.style.borderColor = 'var(--red)'; setTimeout(() => input.style.borderColor = '', 1500); return; }
-  closeModal('modal-' + provider);
-  showToast(provider === 'claude' ? '✓ Claude connected' : '✓ ChatGPT connected');
-  // Update service badge in panel
-  const rows = document.querySelectorAll('.service-row');
-  rows.forEach(row => {
-    const name = row.querySelector('.service-name').textContent;
-    if ((provider === 'claude' && name.includes('Claude')) || (provider === 'gpt' && name.includes('ChatGPT'))) {
-      const badge = row.querySelector('.service-badge');
-      badge.className = 'service-badge connected';
-      badge.textContent = 'Connected';
-      const actions = row.querySelector('.service-actions');
-      actions.innerHTML = `<button class="service-btn secondary" onclick="openServiceModal('${provider}')">Settings</button><button class="service-btn danger" onclick="disconnectService('${provider}')">Disconnect</button>`;
+
+  if (!val) {
+    input.style.borderColor = 'var(--red)';
+    setTimeout(() => input.style.borderColor = '', 1500);
+    return;
+  }
+
+  // Validate key format client-side
+  if (isAnthropicProvider && !val.startsWith('sk-ant-')) {
+    input.style.borderColor = 'var(--red)';
+    showToast('Anthropic API keys start with sk-ant-');
+    return;
+  }
+  if (!isAnthropicProvider && !val.startsWith('sk-')) {
+    input.style.borderColor = 'var(--red)';
+    showToast('OpenAI API keys start with sk-');
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/workspace/provider-keys', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+      body: JSON.stringify({ provider: apiProvider, apiKey: val }),
+    });
+    handleNewTokens(res);
+    const data = await res.json();
+
+    if (!res.ok) {
+      showToast('Error: ' + (data.error || 'Could not save key'));
+      return;
     }
-  });
+
+    input.value = '';
+    closeModal('modal-' + provider);
+    showToast(provider === 'claude' ? '✓ Claude connected' : '✓ ChatGPT connected');
+
+    // Update service badge in panel
+    const rows = document.querySelectorAll('.service-row');
+    rows.forEach(row => {
+      const name = (row.querySelector('.service-name')?.textContent || '').toLowerCase();
+      if ((provider === 'claude' && name.includes('claude')) || (provider === 'gpt' && name.includes('chatgpt'))) {
+        const badge = row.querySelector('.service-badge');
+        if (badge) { badge.className = 'service-badge connected'; badge.textContent = 'Connected'; }
+        const actions = row.querySelector('.service-actions');
+        if (actions) actions.innerHTML = `<button class="service-btn secondary" onclick="openServiceModal('${provider}')">Settings</button><button class="service-btn danger" onclick="disconnectService('${provider}')">Disconnect</button>`;
+      }
+    });
+  } catch(e) {
+    showToast('Error: ' + e.message);
+  }
 }
 
-function disconnectService(provider) {
-  if (!confirm('Disconnect this service? Your team will lose access to this AI until you reconnect.')) return;
-  showToast(provider === 'claude' ? 'Claude disconnected' : 'ChatGPT disconnected');
+async function disconnectService(provider) {
+  if (!confirm('Disconnect this service? Conversations through DarkMatter will stop until you reconnect.')) return;
+  const apiProvider = provider === 'claude' ? 'anthropic' : 'openai';
+  try {
+    const res = await fetch('/api/workspace/provider-keys/' + apiProvider, {
+      method:  'DELETE',
+      headers: getAuthHeaders(),
+    });
+    handleNewTokens(res);
+    showToast(provider === 'claude' ? 'Claude disconnected' : 'ChatGPT disconnected');
+
+    // Update badge
+    const rows = document.querySelectorAll('.service-row');
+    rows.forEach(row => {
+      const name = (row.querySelector('.service-name')?.textContent || '').toLowerCase();
+      if ((provider === 'claude' && name.includes('claude')) || (provider === 'gpt' && name.includes('chatgpt'))) {
+        const badge = row.querySelector('.service-badge');
+        if (badge) { badge.className = 'service-badge disconnected'; badge.textContent = 'Not connected'; }
+        const actions = row.querySelector('.service-actions');
+        if (actions) actions.innerHTML = `<button class="service-btn primary" onclick="openServiceModal('${provider}')">Connect</button>`;
+      }
+    });
+  } catch(e) {
+    showToast('Error: ' + e.message);
+  }
 }
 
 // ── Invite ──

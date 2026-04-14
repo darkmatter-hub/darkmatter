@@ -1082,7 +1082,62 @@ function useSuggestion(btn) {
   ta.focus();
 }
 
-function sendMessage() {
+// ── Session helpers ─────────────────────────────────────────────────────
+function getSession() {
+  try {
+    const raw = localStorage.getItem('dm_session');
+    return raw ? JSON.parse(raw) : null;
+  } catch(e) { return null; }
+}
+
+function getAuthHeaders() {
+  const session = getSession();
+  if (!session?.access_token) return {};
+  const headers = { 'Authorization': 'Bearer ' + session.access_token };
+  if (session.refresh_token) headers['X-Refresh-Token'] = session.refresh_token;
+  return headers;
+}
+
+function handleNewTokens(res) {
+  const newToken = res.headers.get('X-New-Access-Token');
+  if (newToken) {
+    const session = getSession() || {};
+    session.access_token = newToken;
+    const newRefresh = res.headers.get('X-New-Refresh-Token');
+    if (newRefresh) session.refresh_token = newRefresh;
+    localStorage.setItem('dm_session', JSON.stringify(session));
+  }
+}
+
+// ── Map model selector value to API model string ────────────────────────
+function resolveModel(modelId) {
+  const map = {
+    'claude-4.6':  { model: 'claude-sonnet-4-6', provider: 'anthropic' },
+    'claude-opus': { model: 'claude-opus-4-6',   provider: 'anthropic' },
+    'gpt-4o':      { model: 'gpt-4o',             provider: 'openai'   },
+    'gpt-4o-mini': { model: 'gpt-4o-mini',        provider: 'openai'   },
+  };
+  return map[modelId] || { model: 'claude-sonnet-4-6', provider: 'anthropic' };
+}
+
+// ── No-API-key banner ───────────────────────────────────────────────────
+function showNoKeyBanner(provider) {
+  const existing = document.getElementById('no-key-banner');
+  if (existing) existing.remove();
+  const banner = document.createElement('div');
+  banner.id = 'no-key-banner';
+  banner.style.cssText = 'position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:#1a1a2e;color:#fff;padding:12px 20px;border-radius:8px;font-size:13px;font-family:var(--mono);display:flex;align-items:center;gap:12px;z-index:200;box-shadow:0 4px 20px rgba(0,0,0,0.3);';
+  const providerLabel = provider === 'anthropic' ? 'Claude' : 'ChatGPT';
+  banner.innerHTML = `
+    <span>No ${providerLabel} API key connected.</span>
+    <a href="/dashboard#settings" style="color:#7dd3fc;text-decoration:none;font-weight:600;">Connect in Settings →</a>
+    <button onclick="this.parentElement.remove()" style="background:none;border:none;color:#9ca3af;cursor:pointer;font-size:16px;line-height:1;">×</button>
+  `;
+  document.body.appendChild(banner);
+  setTimeout(() => { if (banner.parentElement) banner.remove(); }, 8000);
+}
+
+async function sendMessage() {
   const ta = document.getElementById('input-textarea');
   const text = ta.value.trim();
   if (!text || isWaiting) return;
@@ -1091,7 +1146,7 @@ function sendMessage() {
   if (!currentThread) {
     const title = text.length > 40 ? text.slice(0, 40) + '...' : text;
     currentThread = {
-      id: 'tnew_' + Date.now(),
+      id: 'thread_' + Date.now(),
       title,
       group: 'Today',
       messages: []
@@ -1100,7 +1155,7 @@ function sendMessage() {
     document.getElementById('topbar-title').textContent = currentThread.title;
   }
 
-  // Add user message
+  // Add user message to thread
   currentThread.messages.push({ role: 'user', content: text });
   ta.value = '';
   ta.style.height = 'auto';
@@ -1110,23 +1165,74 @@ function sendMessage() {
   const empty = document.getElementById('empty-state');
   if (empty) empty.remove();
 
-  // Render user message immediately
   appendUserMessage(text);
   showTypingIndicator();
   isWaiting = true;
   document.getElementById('send-btn').disabled = true;
 
-  // Simulate response (replace with real API call)
-  setTimeout(() => {
-    const response = getMockResponse(text);
-    const recId = 'rec_' + Math.random().toString(36).slice(2, 14);
-    currentThread.messages.push({ role: 'assistant', content: response, record_id: recId });
+  // Resolve model + provider
+  const { model, provider } = resolveModel(currentModel);
+
+  // Build messages array for the API (only role + content)
+  const apiMessages = currentThread.messages
+    .filter(m => m.role === 'user' || m.role === 'assistant')
+    .map(m => ({ role: m.role, content: m.content }));
+
+  try {
+    const res = await fetch('/api/workspace/chat', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+      body: JSON.stringify({
+        messages:       apiMessages,
+        model,
+        provider,
+        traceId:        currentThread.id,
+        conversationId: currentThread.id,
+      }),
+    });
+
+    handleNewTokens(res);
+
+    if (res.status === 401) {
+      // Not logged in — redirect to login
+      hideTypingIndicator();
+      isWaiting = false;
+      updateSendBtn();
+      window.location.href = '/login?next=/chat';
+      return;
+    }
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      if (data.code === 'NO_API_KEY') {
+        hideTypingIndicator();
+        isWaiting = false;
+        updateSendBtn();
+        showNoKeyBanner(data.provider || provider);
+        // Remove the user message we just added since we can't complete it
+        currentThread.messages.pop();
+        return;
+      }
+      throw new Error(data.error || 'Request failed');
+    }
+
+    const responseText = data.message || '';
+    const recId        = data.recordId || ('rec_' + Math.random().toString(36).slice(2, 14));
+
+    currentThread.messages.push({ role: 'assistant', content: responseText, record_id: recId });
     hideTypingIndicator();
-    appendAiMessage(response, recId);
+    appendAiMessage(responseText, recId);
+    renderSidebar();
+
+  } catch(err) {
+    hideTypingIndicator();
+    // Show error inline
+    appendAiMessage(`_Error: ${err.message}. Check your connection or API key._`, null);
+  } finally {
     isWaiting = false;
     updateSendBtn();
-    renderSidebar();
-  }, 1200 + Math.random() * 800);
+  }
 }
 
 function appendUserMessage(text) {
@@ -1280,19 +1386,7 @@ function formatResponse(text) {
     .replace(/$/, '</p>');
 }
 
-function getMockResponse(input) {
-  const lower = input.toLowerCase();
-  if (lower.includes('email') || lower.includes('draft')) {
-    return `**Subject: Important Update Regarding Your Tax Filing**\n\nDear [Client Name],\n\nI hope this message finds you well. I wanted to reach out with an important update regarding your upcoming tax obligations.\n\nBased on our review of your accounts, there are a few items we should discuss before your filing deadline. I would recommend scheduling a brief call at your earliest convenience.\n\nPlease let me know your availability for a 30-minute call this week or next.\n\nBest regards,\n[Your Name]`;
-  }
-  if (lower.includes('capital gains') || lower.includes('tax')) {
-    return `**Capital Gains Tax: Plain Language Explanation**\n\nWhen you sell an asset (like stocks, property, or a business) for more than you paid for it, the profit is called a **capital gain**. The government taxes this profit.\n\n**Short-term vs. long-term:**\n- If you held the asset for less than a year, it is taxed as ordinary income (same rate as your salary)\n- If you held it for more than a year, you generally pay a lower rate , typically 0%, 15%, or 20% depending on your total income\n\n**Key point for clients:** The timing of a sale can significantly affect the tax owed. Selling just after crossing the one-year mark can make a meaningful difference.`;
-  }
-  if (lower.includes('summarize') || lower.includes('summary')) {
-    return `I'd be happy to summarize that document for you. Please share the text or upload the file and I'll provide a clear, concise summary highlighting the key points your client needs to understand before the meeting.`;
-  }
-  return `Thank you for your question. Based on what you've shared, here is my analysis:\n\nThis is a nuanced situation that requires careful consideration of the relevant factors. I'd recommend reviewing the key details before making any decisions.\n\nWould you like me to go deeper on any particular aspect of this?`;
-}
+// getMockResponse removed — using real /api/workspace/chat endpoint
 
 // Close dropdowns on outside click
 document.addEventListener('click', (e) => {
