@@ -4492,7 +4492,7 @@ app.post('/api/workspace', wsAuth, async (req, res) => {
     const { name } = req.body;
     if (!name?.trim()) return res.status(400).json({ error: 'Name required' });
 
-    const { data: ws, error } = await supabase
+    const { data: ws, error } = await supabaseService
       .from('workspaces')
       .insert({ name: name.trim(), owner_user_id: req.user.id })
       .select().single();

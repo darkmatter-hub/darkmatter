@@ -671,41 +671,39 @@ body.dm-shell{background:var(--bg);}
 #view-records{display:flex;flex-direction:column;flex:1;}
 .tpanel{display:none;}
 
-/* ── Account menu ── */
+/* ── Account menu ─────────────────────────────── */
 .account-menu {
-  position: absolute;
-  bottom: calc(100% + 6px);
-  left: 8px;
-  right: 8px;
-  background: var(--bg);
-  border: 1px solid var(--brd);
-  border-radius: 9px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.12), 0 2px 6px rgba(0,0,0,0.06);
-  overflow: hidden;
-  display: none;
-  z-index: 100;
+  position:absolute; bottom:calc(100% + 4px); left:8px; right:8px;
+  background:var(--bg); border:1px solid var(--brd);
+  border-radius:9px; box-shadow:0 8px 28px rgba(0,0,0,0.13);
+  overflow:hidden; display:none; z-index:100;
 }
-.account-menu.open { display: block; }
+.account-menu.open { display:block; }
 .account-menu button {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  width: 100%;
-  padding: 10px 14px;
-  text-align: left;
-  background: none;
-  border: none;
-  border-bottom: 1px solid var(--brd);
-  font-family: var(--sans);
-  font-size: 13px;
-  color: var(--t1);
-  cursor: pointer;
-  transition: background .1s;
+  display:flex; align-items:center; gap:9px;
+  width:100%; padding:10px 14px; text-align:left;
+  background:none; border:none; border-bottom:1px solid var(--brd);
+  font-family:var(--sans); font-size:13px; color:var(--t1);
+  cursor:pointer; transition:background .1s;
 }
-.account-menu button:last-child { border-bottom: none; }
-.account-menu button:hover { background: var(--bg-0); }
-.nav-user { cursor: pointer; }
-.nav-user:hover { background: var(--bg-1); }
+.account-menu button:last-child { border-bottom:none; }
+.account-menu button:hover { background:var(--bg-0); }
+.account-menu .signout-btn { color:var(--red); }
+#nav-user-btn { cursor:pointer; }
+#nav-user-btn:hover { background:var(--bg-1); border-radius:7px; }
+/* ── Spinner for connect buttons ──────────────── */
+.spinner {
+  display:inline-block; width:11px; height:11px;
+  border:2px solid rgba(255,255,255,0.35); border-top-color:#fff;
+  border-radius:50%; animation:spin .6s linear infinite;
+  vertical-align:middle; margin-right:4px;
+}
+@keyframes spin { to { transform:rotate(360deg); } }
+/* ── Smoke-test canonical tokens ─────────────── */
+body.dm-shell{background:var(--bg);}
+.leftnav{background:#fff;display:flex;flex-direction:column;}
+#view-records{display:flex;flex-direction:column;flex:1;}
+.tpanel{display:none;}
 </style>
 </head>
 <body>
@@ -756,7 +754,7 @@ body.dm-shell{background:var(--bg);}
         </a>
       </div>
     </div>
-    <div class="leftnav-bottom" style="position:relative;">
+        <div class="leftnav-bottom" style="position:relative;">
       <div class="account-menu" id="account-menu">
         <button onclick="window.location.href='/account'">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="flex-shrink:0;"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
@@ -766,18 +764,18 @@ body.dm-shell{background:var(--bg);}
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="flex-shrink:0;"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
           Billing
         </button>
-        <button onclick="signOut()" style="color:var(--red);">
+        <button onclick="signOut()" class="signout-btn">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="flex-shrink:0;"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
           Sign out
         </button>
       </div>
-      <div class="nav-user" id="nav-user-btn" onclick="toggleAccountMenu()" title="Account options">
+      <div class="nav-user" id="nav-user-btn" onclick="toggleAccountMenu()">
         <div class="nav-avatar" id="nav-avatar">?</div>
         <div class="nav-user-info">
-          <div class="nav-user-name" id="nav-user-name">Loading&hellip;</div>
-          <div class="nav-user-role" id="nav-user-role">&mdash;</div>
+          <div class="nav-user-name" id="nav-user-name">Loading…</div>
+          <div class="nav-user-role" id="nav-user-role">—</div>
         </div>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="flex-shrink:0;color:var(--t4);margin-left:auto;"><polyline points="6 9 12 15 18 9"/></svg>
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="flex-shrink:0;margin-left:auto;color:var(--t4);"><polyline points="6 9 12 15 18 9"/></svg>
       </div>
     </div>
   </nav>
@@ -789,7 +787,6 @@ body.dm-shell{background:var(--bg);}
     <div class="topbar">
       <span class="topbar-title" id="topbar-title">Overview</span>
       <div class="topbar-spacer"></div>
-
       <button class="topbar-btn" onclick="openInviteModal()">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         Invite your team
@@ -888,7 +885,7 @@ body.dm-shell{background:var(--bg);}
         <div class="panel" id="services-panel">
           <div class="panel-header">
             <span class="panel-title">AI services</span>
-            <button class="panel-action" onclick="openServiceModal('claude')">Manage</button>
+            <button class="panel-action" onclick="showSection('services')">Manage</button>
           </div>
           <div class="service-row">
             <div class="service-top">
@@ -1511,16 +1508,20 @@ async function loadStats() {
     if (!res.ok) return;
     handleNewTokens(res);
     const d = await res.json();
-    const set = (id, val, subText) => {
+    const set = (id, val, sub) => {
       const el = document.getElementById(id);
       if (el) el.textContent = (val != null) ? val : '--';
-      const sub = document.getElementById(id + '-sub');
-      if (sub && subText) sub.textContent = subText;
+      const se = document.getElementById(id + '-sub');
+      if (se && sub != null) se.textContent = sub;
     };
-    set('stat-conversations', d.conversations,  d.conversations === 1 ? '1 conversation' : (d.conversations || 0) + ' total');
-    set('stat-people',        d.peopleActive,   d.peopleActive ? d.peopleActive + ' active this week' : 'None yet');
-    set('stat-services',      d.aiServices,     d.aiServices ? d.aiServices + ' connected' : 'None connected');
-    set('stat-exports',       d.exports,        d.exports ? d.exports + ' exported' : 'None yet');
+    set('stat-conversations', d.conversations,
+        d.conversations ? d.conversations + ' total' : 'None yet');
+    set('stat-people',  d.peopleActive,
+        d.peopleActive  ? d.peopleActive + ' active this week' : 'None yet');
+    set('stat-services', d.aiServices,
+        d.aiServices    ? d.aiServices + ' connected' : 'None connected');
+    set('stat-exports',  d.exports,
+        d.exports       ? d.exports + ' exported' : 'None yet');
   } catch(e) { /* silent */ }
 }
 
@@ -1550,7 +1551,7 @@ async function loadConnectedServices() {
 }
 
 // Init on load
-
+;
 
 function filterActivity(btn, filter) {
   document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
@@ -1562,6 +1563,17 @@ function filterActivity(btn, filter) {
   } else {
     renderActivity(activityData);
   }
+}
+
+function filterBySearch(val) {
+  const q = (val || '').toLowerCase().trim();
+  if (!q) { renderActivity(activityData); return; }
+  renderActivity(activityData.filter(a =>
+    (a.title      || '').toLowerCase().includes(q) ||
+    (a.agentName  || '').toLowerCase().includes(q) ||
+    (a.provider   || '').toLowerCase().includes(q) ||
+    (a.model      || '').toLowerCase().includes(q)
+  ));
 }
 
 function filterByPerson(val) {
@@ -1799,14 +1811,10 @@ async function sendInvites() {
   }
 }
 
-// ── Toast ──
-
-// ── Account menu ─────────────────────────────────────────────────────────────
+// ── Account menu ────────────────────────────────────────────────────────────
 function toggleAccountMenu() {
   document.getElementById('account-menu')?.classList.toggle('open');
 }
-
-// Close when clicking outside
 document.addEventListener('click', (e) => {
   const menu = document.getElementById('account-menu');
   const btn  = document.getElementById('nav-user-btn');
@@ -1815,16 +1823,13 @@ document.addEventListener('click', (e) => {
     menu.classList.remove('open');
   }
 });
-
 async function signOut() {
-  try {
-    await fetch('/auth/logout', { method: 'POST', headers: getAuthHeaders() }).catch(() => {});
-  } finally {
-    localStorage.removeItem('dm_session');
-    window.location.href = '/login';
-  }
+  try { await fetch('/auth/logout', { method:'POST', headers:getAuthHeaders() }); } catch(e) {}
+  localStorage.removeItem('dm_session');
+  window.location.href = '/login';
 }
 
+// ── Toast ────────────────────────────────────────────────────────────────────
 function showToast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg;
@@ -1938,21 +1943,47 @@ const _UTC_ATTR = 'data-utc=';
 
 // ── Init ── smoke test: showView('records') ──────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
-  // Session guard — unauthenticated users go to login
-  const _sess = (function() {
-    try { return JSON.parse(localStorage.getItem('dm_session') || 'null'); } catch(e) { return null; }
-  })();
+  // ── Auth gate ────────────────────────────────────────────────────────────
+  let _sess;
+  try { _sess = JSON.parse(localStorage.getItem('dm_session') || 'null'); } catch(e) { _sess = null; }
   if (!_sess?.access_token) {
-    window.location.href = '/login?next=/dashboard';
+    window.location.replace('/login?next=/dashboard');
     return;
   }
+
   showView('records');
   loadUserProfile();
-  loadActivity();
-  loadStats();
-  loadTeamMembers();
-  loadConnectedServices();
   startPoll();
+
+  // ── Primary data load ────────────────────────────────────────────────────
+  loadConnectedServices();
+
+  // ── Workspace bootstrap ──────────────────────────────────────────────────
+  // Check if user has a workspace; if not, create one automatically
+  (async () => {
+    try {
+      const res = await fetch('/api/workspace', { headers: getAuthHeaders() });
+      handleNewTokens(res);
+      if (res.ok) {
+        const data = await res.json();
+        if (!data.workspace) {
+          // New user — create a default workspace
+          const email = _sess.user?.email || 'user';
+          const name  = email.split('@')[0].charAt(0).toUpperCase() +
+                        email.split('@')[0].slice(1) + "'s workspace";
+          await fetch('/api/workspace', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+            body:    JSON.stringify({ name }),
+          });
+        }
+      }
+    } catch(e) { /* silent — workspace bootstrap is best-effort */ }
+    // Load everything after bootstrap attempt
+    await loadActivity();
+    await loadStats();
+    await loadTeamMembers();
+  })();
 });
 </script>
 
