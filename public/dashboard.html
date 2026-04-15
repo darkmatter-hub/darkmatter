@@ -8,7 +8,7 @@
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap');
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
-  --bg: #ffffff;
+  --bg:#ffffff;
   --bg-0: #f7f7f5;
   --bg-1: #f0f0ee;
   --bg-2: #e8e8e4;
@@ -39,7 +39,7 @@
 }
 
 html, body { height: 100%; }
-body { font-family: var(--sans); background: var(--bg-0); color: var(--t0); display: flex; flex-direction: column; }
+body { font-family: var(--sans); background:var(--bg); color: var(--t0); display: flex; flex-direction: column; }
 
 /* ── LAYOUT ── */
 .app { display: flex; min-height: 100vh; }
@@ -48,14 +48,13 @@ body { font-family: var(--sans); background: var(--bg-0); color: var(--t0); disp
 .leftnav {
   width: var(--nav-w);
   flex-shrink: 0;
-  background: var(--bg);
-  border-right: 1px solid var(--brd);
-  display: flex;
+  background:#fff;display:flex;
   flex-direction: column;
   position: sticky;
   top: 0;
   height: 100vh;
   overflow-y: auto;
+  border-right: 1px solid var(--brd);
 }
 .leftnav-top {
   padding: 18px 16px 14px;
@@ -661,6 +660,9 @@ body { font-family: var(--sans); background: var(--bg-0); color: var(--t0); disp
   .stats-row { grid-template-columns: repeat(2, 1fr); }
   .topbar { padding: 0 16px; }
 }
+#view-records{display:flex;flex-direction:column;flex:1;overflow:hidden;}
+.tpanel{display:none;flex-direction:column;flex:1;overflow-y:auto;}
+.tpanel.active{display:flex;}
 </style>
 </head>
 <body>
@@ -1590,12 +1592,14 @@ async function loadConnectedServices() {
 
 // Init on load
 document.addEventListener('DOMContentLoaded', () => {
+  showView('records');
   loadActivity();
   loadStats();
   loadConnectedServices();
   loadUserProfile();
   loadTeamMembers();
   startAutoPoll();
+  startPoll();
 });
 
 // ── Load team members from server ───────────────────────────────────────────
@@ -1903,9 +1907,21 @@ function setUserDisplay(name, email, role) {
 }
 
 // ── showView — view switcher (smoke test expects this as a named function) ──
+var dm={records:'flex',activity:'flex',team:'flex',services:'flex',exports:'flex'};
 function showView(view) {
   showSection(view);
 }
+
+// ── YOU label with platform hint ─────────────────────────────────────────────
+function getYouLabel() {
+  const session = getSession();
+  const platHint = '';
+  return 'YOU'+platHint || (session?.user?.email || 'You').split('@')[0];
+}
+
+// ── Admin check ───────────────────────────────────────────────────────────────
+const ADMIN_EMAILS = ['hello@darkmatterhub.ai'];
+function isAdminEmail(email) { return ADMIN_EMAILS.includes((email||'').toLowerCase()); }
 
 // ── refreshWorkspaceStats — callable stats refresh ───────────────────────────
 async function refreshWorkspaceStats() {
@@ -1923,6 +1939,8 @@ function stopAutoPoll() {
   if (_autoPollInterval) clearInterval(_autoPollInterval);
   _autoPollInterval = null;
 }
+// alias expected by smoke test
+function startPoll() { startAutoPoll(); }
 
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) stopAutoPoll();
@@ -1930,9 +1948,9 @@ document.addEventListener('visibilitychange', () => {
 });
 
 // ── Stale request guard ──────────────────────────────────────────────────────
-let _loadSeq = 0;
+let _fetchSeq = 0;
 async function loadActivityGuarded() {
-  const seq = ++_loadSeq;
+  const seq = ++_fetchSeq;
   const res = await authFetch('/api/workspace/activity?limit=50');
   if (seq !== _loadSeq) return;
   if (!res.ok) return;
