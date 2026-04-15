@@ -767,7 +767,7 @@ body { font-family: var(--sans); background: var(--bg); color: var(--t0); displa
       </button>
       <div class="sidebar-search">
         <svg class="sidebar-search-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input type="text" placeholder="Search conversations" oninput="filterThreads(this.value)">
+        <input type="text" placeholder="Search conversations" autocomplete="off" name="dm-thread-search" oninput="filterThreads(this.value)">
       </div>
     </div>
 
@@ -943,23 +943,8 @@ function titleFromCommits(commits) {
 }
 
 async function loadThreadsFromServer() {
-  const session = getSession();
-  if (!session?.access_token) {
-    // Not logged in — sidebar stays empty, send will redirect to login
-    renderSidebar();
-    return;
-  }
-
   try {
-    const res = await fetch('/dashboard/commits', {
-      headers: getAuthHeaders(),
-    });
-    handleNewTokens(res);
-
-    if (res.status === 401) {
-      renderSidebar(); // stay on page — token may refresh on next request
-      return;
-    }
+    const res = await authFetch('/dashboard/commits');
     if (!res.ok) { renderSidebar(); return; }
 
     const commits = await res.json();
@@ -999,14 +984,35 @@ async function loadThreadsFromServer() {
 }
 
 // ── Boot ──
-(function() {
+(async function() {
   var _s = null;
   try { _s = JSON.parse(localStorage.getItem('dm_session') || 'null'); } catch(e) {}
   if (!_s || !_s.access_token) {
     window.location.replace('/login?next=/chat');
     return;
   }
-  // Populate sidebar user from session immediately — no server call needed
+
+  // Proactively refresh if token is expired or about to expire
+  try {
+    const payload = JSON.parse(atob(_s.access_token.split('.')[1]));
+    if (Date.now() > (payload.exp * 1000) - 60000) {
+      // Token expired — try refresh before giving up
+      if (_s.refresh_token) {
+        try {
+          await ensureValidSession();
+          _s = getSession(); // re-read after refresh
+        } catch(e) {
+          // ensureValidSession redirects to login on failure
+          return;
+        }
+      } else {
+        window.location.replace('/login?next=/chat');
+        return;
+      }
+    }
+  } catch(e) { /* can't decode — proceed and let authFetch handle it */ }
+
+  // Populate sidebar user from session immediately
   var email    = (_s.user && _s.user.email) || '';
   var meta     = (_s.user && _s.user.user_metadata) || {};
   var fullName = meta.full_name || meta.name || email.split('@')[0] || 'User';
@@ -1083,10 +1089,7 @@ async function loadThread(id) {
   // Refresh this thread's messages from server in the background
   // (catches any commits made since the sidebar loaded)
   try {
-    const res = await fetch('/api/workspace/conversation/' + encodeURIComponent(id), {
-      headers: getAuthHeaders(),
-    });
-    handleNewTokens(res);
+    const res = await authFetch('/api/workspace/conversation/' + encodeURIComponent(id));
     if (res.ok) {
       const data = await res.json();
       if (data.transcript?.length) {
@@ -1227,6 +1230,10 @@ function getSession() {
   } catch(e) { return null; }
 }
 
+function saveSession(s) {
+  localStorage.setItem('dm_session', JSON.stringify(s));
+}
+
 function getAuthHeaders() {
   const session = getSession();
   if (!session?.access_token) return {};
@@ -1242,8 +1249,76 @@ function handleNewTokens(res) {
     session.access_token = newToken;
     const newRefresh = res.headers.get('X-New-Refresh-Token');
     if (newRefresh) session.refresh_token = newRefresh;
-    localStorage.setItem('dm_session', JSON.stringify(session));
+    saveSession(session);
   }
+}
+
+// ── Token refresh ────────────────────────────────────────────────────────
+let _refreshPromise = null;
+async function ensureValidSession() {
+  const s = getSession();
+  if (!s?.access_token) {
+    window.location.href = '/login?next=/chat';
+    throw new Error('No session');
+  }
+  try {
+    const payload = JSON.parse(atob(s.access_token.split('.')[1]));
+    const expiresAt = payload.exp * 1000;
+    if (Date.now() < expiresAt - 60000) return s;
+  } catch(e) { return s; }
+
+  if (!s.refresh_token) {
+    window.location.href = '/login?next=/chat';
+    throw new Error('No refresh token');
+  }
+  if (_refreshPromise) return _refreshPromise;
+  _refreshPromise = (async () => {
+    try {
+      const res = await fetch('/api/auth/refresh', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: s.refresh_token }),
+      });
+      if (!res.ok) {
+        localStorage.removeItem('dm_session');
+        window.location.href = '/login?next=/chat';
+        throw new Error('Session expired');
+      }
+      const data = await res.json();
+      const updated = {
+        ...s,
+        access_token: data.access_token || data.session?.access_token,
+        refresh_token: data.refresh_token || data.session?.refresh_token || s.refresh_token,
+      };
+      if (data.user) updated.user = data.user;
+      saveSession(updated);
+      return updated;
+    } finally { _refreshPromise = null; }
+  })();
+  return _refreshPromise;
+}
+
+async function authFetch(url, opts = {}) {
+  await ensureValidSession();
+  opts.headers = { ...getAuthHeaders(), ...(opts.headers || {}) };
+  let res = await fetch(url, opts);
+  handleNewTokens(res);
+  if (res.status === 401) {
+    const s = getSession();
+    if (s?.refresh_token) {
+      _refreshPromise = null;
+      try {
+        await ensureValidSession();
+        opts.headers = { ...getAuthHeaders(), ...(opts.headers || {}) };
+        res = await fetch(url, opts);
+        handleNewTokens(res);
+      } catch(e) { throw e; }
+    } else {
+      window.location.href = '/login?next=/chat';
+      throw new Error('Session expired');
+    }
+  }
+  return res;
 }
 
 // ── Map model selector value to API model string ────────────────────────
@@ -1316,9 +1391,9 @@ async function sendMessage() {
     .map(m => ({ role: m.role, content: m.content }));
 
   try {
-    const res = await fetch('/api/workspace/chat', {
+    const res = await authFetch('/api/workspace/chat', {
       method:  'POST',
-      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         messages:       apiMessages,
         model,
@@ -1327,17 +1402,6 @@ async function sendMessage() {
         conversationId: currentThread.id,
       }),
     });
-
-    handleNewTokens(res);
-
-    if (res.status === 401) {
-      // Not logged in — redirect to login
-      hideTypingIndicator();
-      isWaiting = false;
-      updateSendBtn();
-      window.location.href = '/login?next=/chat';
-      return;
-    }
 
     const data = await res.json();
 
