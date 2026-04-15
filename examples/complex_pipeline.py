@@ -247,4 +247,4 @@ log(f"""
   darkmatter open   {TIP_CTX_ID}
   darkmatter replay {TIP_CTX_ID}
   darkmatter diff   {TIP_CTX_ID} {fork_writer_ctx_id}
-""", flush=True)
+""")

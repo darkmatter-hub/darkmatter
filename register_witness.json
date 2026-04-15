@@ -1,0 +1,8 @@
+{
+  "name": "DarkMatter Witness Node 1",
+  "publicKey": "-----BEGIN PUBLIC KEY-----
+MCowBQYDK2VwAyEAbTjPGWC40AHN9iD5GFBrFhbf36t9yq5LSKYrHN6d+pc=
+-----END PUBLIC KEY-----
+",
+  "endpointUrl": "https://witness-server-production.up.railway.app/witness"
+}

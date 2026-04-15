@@ -1,0 +1,271 @@
+{
+  "readme": "DarkMatter Export Bundle\n========================\n\nExport ID:    bundle_1775140835601_6abf1433\nExported at:  2026-04-02T14:40:35.601Z\nContext tip:  ctx_1775140824734_782892e038f7\nContext root: ctx_1775140816549_3f0ca710e2f2\n\nChain summary\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nSteps:        5\nModels:       claude-opus-4-6, gpt-4o\nAgents:       stock analytics sandp500, researcher, fact-checker, writer, reviewer\nFork points:  0\nChain intact: true\nChain hash:   sha256:745946a33e5f9f01cb038aa18f3f575601502d56e053a14fe5a5d070219d754a\n\nVerification\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nThis bundle contains the full execution chain with cryptographic\nintegrity hashes. Anyone can verify the chain is unmodified by\nrecomputing the hashes from the chain data.\n\nAlgorithm: sha256(payload_hash + parent_hash)\nRoot parent_hash input: \"root\"\n\nFiles in this bundle\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n  chain.json        \u2014 Full chain with all commits and payloads\n  verification.json \u2014 Integrity summary and hash chain\n  metadata.json     \u2014 Export metadata\n  README.txt        \u2014 This file",
+  "metadata": {
+    "exportId": "bundle_1775140835601_6abf1433",
+    "exportedAt": "2026-04-02T14:40:35.601Z",
+    "exportedBy": "dm_b4fe59062152e90b",
+    "ctxId": "ctx_1775140824734_782892e038f7",
+    "rootId": "ctx_1775140816549_3f0ca710e2f2",
+    "chainLength": 5,
+    "models": [
+      "claude-opus-4-6",
+      "gpt-4o"
+    ],
+    "agents": [
+      "stock analytics sandp500",
+      "researcher",
+      "fact-checker",
+      "writer",
+      "reviewer"
+    ],
+    "forkPoints": 0,
+    "dateRange": {
+      "from": "2026-04-02T14:40:16.549+00:00",
+      "to": "2026-04-02T14:40:24.734+00:00"
+    }
+  },
+  "verification": {
+    "chainIntact": true,
+    "chainHash": "sha256:745946a33e5f9f01cb038aa18f3f575601502d56e053a14fe5a5d070219d754a",
+    "rootHash": "sha256:33f8ec5884337143e1a26708463eb9f6d0e5489641968255a4da5d413bdaaa8a",
+    "tipHash": "sha256:1f973a47649bc28db59bef897711c6ff1bb59eff2da4c93ede0a5348b24bcfca",
+    "steps": [
+      {
+        "step": 1,
+        "id": "ctx_1775140816549_3f0ca710e2f2",
+        "payload_hash": "sha256:f12c403c3a0bc848140e6fc63160aa7c759dbe05e0d31fe478ac36f9020d1164",
+        "integrity_hash": "sha256:33f8ec5884337143e1a26708463eb9f6d0e5489641968255a4da5d413bdaaa8a",
+        "parent_hash": null,
+        "chainValid": true
+      },
+      {
+        "step": 2,
+        "id": "ctx_1775140818022_851c0f9841ce",
+        "payload_hash": "sha256:3099c8cf311655a687d09fd303ee62042df626c9ad0ce55e573e5a92d10f36d6",
+        "integrity_hash": "sha256:ce3aaf61997c4d1e62aa20745055d1da5b1d5c33b2ba0882ce3153dc24aecc57",
+        "parent_hash": "sha256:33f8ec5884337143e1a26708463eb9f6d0e5489641968255a4da5d413bdaaa8a",
+        "chainValid": true
+      },
+      {
+        "step": 3,
+        "id": "ctx_1775140820564_51ce7421466a",
+        "payload_hash": "sha256:fc3bdd08a2be9cae63110353ad4c3bfa9f4c054c8dcc5da7ffdb796992046ab5",
+        "integrity_hash": "sha256:06d915f6a6328ec89d3df07b3059ba42bb8ef7e08d0c9857b34e1124da3e341e",
+        "parent_hash": "sha256:ce3aaf61997c4d1e62aa20745055d1da5b1d5c33b2ba0882ce3153dc24aecc57",
+        "chainValid": true
+      },
+      {
+        "step": 4,
+        "id": "ctx_1775140822180_6946a8ed70a7",
+        "payload_hash": "sha256:5555be07f49134b37a74cf035311b79a5ff824d32b73635baebb7d69fc420dc7",
+        "integrity_hash": "sha256:8c79c828d37209621707e1071e67d38db4edc2b24f30d535a6c1cd895c3913f5",
+        "parent_hash": "sha256:06d915f6a6328ec89d3df07b3059ba42bb8ef7e08d0c9857b34e1124da3e341e",
+        "chainValid": true
+      },
+      {
+        "step": 5,
+        "id": "ctx_1775140824734_782892e038f7",
+        "payload_hash": "sha256:807d2facfbe618b1e3b8f87d904827f8d116dc3c2c28af63063e620175a65d24",
+        "integrity_hash": "sha256:1f973a47649bc28db59bef897711c6ff1bb59eff2da4c93ede0a5348b24bcfca",
+        "parent_hash": "sha256:8c79c828d37209621707e1071e67d38db4edc2b24f30d535a6c1cd895c3913f5",
+        "chainValid": true
+      }
+    ]
+  },
+  "chain": [
+    {
+      "step": 1,
+      "id": "ctx_1775140816549_3f0ca710e2f2",
+      "parent_id": null,
+      "trace_id": "trc_complex_1775140811",
+      "branch_key": "main",
+      "created_by": {
+        "agent_id": "dm_b4fe59062152e90b",
+        "agent_name": "stock analytics sandp500",
+        "role": "orchestrator",
+        "provider": "anthropic",
+        "model": "claude-opus-4-6"
+      },
+      "event": {
+        "type": "commit",
+        "timestamp": "2026-04-02T14:40:16.549+00:00"
+      },
+      "payload": {
+        "task": "Analyze Q1 2026 APAC performance and produce executive summary",
+        "event": "agents_spawned",
+        "spawned": [
+          {
+            "id": "dm_433420a428422170",
+            "name": "researcher"
+          },
+          {
+            "id": "dm_d61b090bf343d04e",
+            "name": "writer"
+          }
+        ]
+      },
+      "integrity": {
+        "payload_hash": "sha256:f12c403c3a0bc848140e6fc63160aa7c759dbe05e0d31fe478ac36f9020d1164",
+        "integrity_hash": "sha256:33f8ec5884337143e1a26708463eb9f6d0e5489641968255a4da5d413bdaaa8a",
+        "parent_hash": null,
+        "verification_status": "valid"
+      },
+      "is_fork": false,
+      "fork_of": null
+    },
+    {
+      "step": 2,
+      "id": "ctx_1775140818022_851c0f9841ce",
+      "parent_id": "ctx_1775140816549_3f0ca710e2f2",
+      "trace_id": "trc_complex_1775140811",
+      "branch_key": "main",
+      "created_by": {
+        "agent_id": "dm_433420a428422170",
+        "agent_name": "researcher",
+        "role": "researcher",
+        "provider": "anthropic",
+        "model": "claude-opus-4-6"
+      },
+      "event": {
+        "type": "commit",
+        "timestamp": "2026-04-02T14:40:18.022+00:00"
+      },
+      "payload": {
+        "input": "Analyze Q1 2026 APAC performance",
+        "output": {
+          "findings": [
+            "APAC revenue: $4.2B (+34% YoY)",
+            "Japan: +41%, enterprise AI adoption",
+            "South Korea: +38%, semiconductor tooling",
+            "ANZ: +22%, macro headwinds",
+            "China: flat, regulatory environment"
+          ],
+          "confidence": 0.91
+        }
+      },
+      "integrity": {
+        "payload_hash": "sha256:3099c8cf311655a687d09fd303ee62042df626c9ad0ce55e573e5a92d10f36d6",
+        "integrity_hash": "sha256:ce3aaf61997c4d1e62aa20745055d1da5b1d5c33b2ba0882ce3153dc24aecc57",
+        "parent_hash": "sha256:33f8ec5884337143e1a26708463eb9f6d0e5489641968255a4da5d413bdaaa8a",
+        "verification_status": "valid"
+      },
+      "is_fork": false,
+      "fork_of": null
+    },
+    {
+      "step": 3,
+      "id": "ctx_1775140820564_51ce7421466a",
+      "parent_id": "ctx_1775140818022_851c0f9841ce",
+      "trace_id": "trc_complex_1775140811",
+      "branch_key": "main",
+      "created_by": {
+        "agent_id": "dm_2d53a81f0f01173a",
+        "agent_name": "fact-checker",
+        "role": "validator",
+        "provider": "anthropic",
+        "model": "claude-opus-4-6"
+      },
+      "event": {
+        "type": "checkpoint",
+        "timestamp": "2026-04-02T14:40:20.564+00:00"
+      },
+      "payload": {
+        "input": [
+          "APAC revenue: $4.2B (+34% YoY)",
+          "Japan: +41%, enterprise AI adoption",
+          "South Korea: +38%, semiconductor tooling",
+          "ANZ: +22%, macro headwinds",
+          "China: flat, regulatory environment"
+        ],
+        "output": {
+          "flags": [],
+          "verdict": "All figures cross-referenced. No discrepancies.",
+          "validated": true
+        }
+      },
+      "integrity": {
+        "payload_hash": "sha256:fc3bdd08a2be9cae63110353ad4c3bfa9f4c054c8dcc5da7ffdb796992046ab5",
+        "integrity_hash": "sha256:06d915f6a6328ec89d3df07b3059ba42bb8ef7e08d0c9857b34e1124da3e341e",
+        "parent_hash": "sha256:ce3aaf61997c4d1e62aa20745055d1da5b1d5c33b2ba0882ce3153dc24aecc57",
+        "verification_status": "valid"
+      },
+      "is_fork": false,
+      "fork_of": null
+    },
+    {
+      "step": 4,
+      "id": "ctx_1775140822180_6946a8ed70a7",
+      "parent_id": "ctx_1775140820564_51ce7421466a",
+      "trace_id": "trc_complex_1775140811",
+      "branch_key": "main",
+      "created_by": {
+        "agent_id": "dm_d61b090bf343d04e",
+        "agent_name": "writer",
+        "role": "writer",
+        "provider": "openai",
+        "model": "gpt-4o"
+      },
+      "event": {
+        "type": "commit",
+        "timestamp": "2026-04-02T14:40:22.181+00:00"
+      },
+      "payload": {
+        "input": {
+          "findings": [
+            "APAC revenue: $4.2B (+34% YoY)",
+            "Japan: +41%, enterprise AI adoption",
+            "South Korea: +38%, semiconductor tooling",
+            "ANZ: +22%, macro headwinds",
+            "China: flat, regulatory environment"
+          ],
+          "validated": true
+        },
+        "output": "Q1 2026 APAC Performance: $4.2B revenue (+34% YoY). Japan leads at +41% driven by enterprise AI adoption. South Korea +38% via semiconductor tooling. ANZ +22%. China flat. Recommend accelerating Japan and Korea investment. Q2 guidance: +28-32% YoY."
+      },
+      "integrity": {
+        "payload_hash": "sha256:5555be07f49134b37a74cf035311b79a5ff824d32b73635baebb7d69fc420dc7",
+        "integrity_hash": "sha256:8c79c828d37209621707e1071e67d38db4edc2b24f30d535a6c1cd895c3913f5",
+        "parent_hash": "sha256:06d915f6a6328ec89d3df07b3059ba42bb8ef7e08d0c9857b34e1124da3e341e",
+        "verification_status": "valid"
+      },
+      "is_fork": false,
+      "fork_of": null
+    },
+    {
+      "step": 5,
+      "id": "ctx_1775140824734_782892e038f7",
+      "parent_id": "ctx_1775140822180_6946a8ed70a7",
+      "trace_id": "trc_complex_1775140811",
+      "branch_key": "main",
+      "created_by": {
+        "agent_id": "dm_5c486fbfac311243",
+        "agent_name": "reviewer",
+        "role": "reviewer",
+        "provider": "anthropic",
+        "model": "claude-opus-4-6"
+      },
+      "event": {
+        "type": "checkpoint",
+        "timestamp": "2026-04-02T14:40:24.734+00:00"
+      },
+      "payload": {
+        "input": "Q1 2026 APAC Performance: $4.2B revenue (+34% YoY). Japan leads at +41% driven by enterprise AI adoption. South Korea +38% via semiconductor tooling. ANZ +22%. China flat. Recommend accelerating Japan and Korea investment. Q2 guidance: +28-32% YoY.",
+        "output": {
+          "edits": 1,
+          "approved": true,
+          "final_draft": "Q1 2026 APAC Performance: $4.2B (+34% YoY). Japan +41%, Korea +38%, ANZ +22%. China flat. Recommend increasing Japan/Korea investment. Q2: +28-32% YoY.",
+          "edit_summary": "Softened Q2 guidance to reflect uncertainty",
+          "ready_for_send": true
+        }
+      },
+      "integrity": {
+        "payload_hash": "sha256:807d2facfbe618b1e3b8f87d904827f8d116dc3c2c28af63063e620175a65d24",
+        "integrity_hash": "sha256:1f973a47649bc28db59bef897711c6ff1bb59eff2da4c93ede0a5348b24bcfca",
+        "parent_hash": "sha256:8c79c828d37209621707e1071e67d38db4edc2b24f30d535a6c1cd895c3913f5",
+        "verification_status": "valid"
+      },
+      "is_fork": false,
+      "fork_of": null
+    }
+  ]
+}
