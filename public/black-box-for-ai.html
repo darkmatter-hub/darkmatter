@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Black Box for AI — Definition and Standard</title>
+<meta name="description" content="A Black Box for AI is an independent system that records, preserves, and proves what an AI system actually did. The canonical definition, properties, and standard.">
+<link rel="canonical" href="https://darkmatterhub.ai/black-box-for-ai">
+<link rel="icon" href="/favicon.ico">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --ink: #0e0e0e;
+    --ink-mid: #444;
+    --ink-light: #888;
+    --ink-faint: #bbb;
+    --paper: #ffffff;
+    --paper-off: #f8f7f5;
+    --paper-dim: #f1efeb;
+    --rule: #e2dfd8;
+    --red: #c0392b;
+    --red-faint: #fdf0ee;
+    --green-text: #0f6e56;
+    --mono: 'DM Mono', 'Courier New', monospace;
+    --serif: 'DM Serif Display', Georgia, serif;
+    --sans: 'DM Sans', system-ui, sans-serif;
+  }
+
+  html { font-size: 16px; scroll-behavior: smooth; }
+  body { font-family: var(--sans); background: var(--paper); color: var(--ink); line-height: 1.6; -webkit-font-smoothing: antialiased; }
+
+  /* NAV */
+  nav {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(255,255,255,0.96); backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--rule);
+    padding: 0 2rem;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 56px;
+  }
+  .nav-logo { font-family: var(--mono); font-size: 13px; font-weight: 500; color: var(--ink); text-decoration: none; letter-spacing: 0.04em; }
+  .nav-logo span { color: var(--red); }
+  .nav-links { display: flex; align-items: center; gap: 2rem; list-style: none; }
+  .nav-links a { font-size: 13px; color: var(--ink-mid); text-decoration: none; transition: color 0.15s; }
+  .nav-links a:hover { color: var(--ink); }
+  .nav-cta { font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; padding: 0.5rem 1.1rem; background: var(--ink); color: var(--paper) !important; border-radius: 2px; text-decoration: none; }
+
+  /* LAYOUT */
+  .container { max-width: 760px; margin: 0 auto; padding: 0 2rem; }
+  section { padding: 5rem 0; }
+  section + section { border-top: 1px solid var(--rule); }
+
+  /* EYEBROW */
+  .eyebrow {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--ink-light); margin-bottom: 1.5rem;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .eyebrow::before { content: ''; display: inline-block; width: 18px; height: 1px; background: var(--ink-faint); flex-shrink: 0; }
+
+  /* HERO */
+  .hero { padding: 6rem 0 5rem; }
+
+  .hero-kicker {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--red);
+    margin-bottom: 1.25rem;
+  }
+
+  .hero-headline {
+    font-family: var(--serif);
+    font-size: clamp(2.6rem, 5vw, 3.8rem);
+    line-height: 1.1;
+    color: var(--ink);
+    margin-bottom: 1.75rem;
+    max-width: 640px;
+  }
+
+  .hero-headline em { font-style: italic; color: var(--ink-mid); }
+
+  .hero-opening {
+    font-size: 1.1rem;
+    line-height: 1.85;
+    color: var(--ink-mid);
+    max-width: 600px;
+    font-weight: 300;
+    margin-bottom: 1.25rem;
+  }
+
+  .hero-opening strong { color: var(--ink); font-weight: 500; }
+
+  .hero-stamp {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 2rem;
+    padding: 0.6rem 1rem;
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    background: var(--paper-off);
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-light);
+  }
+
+  .hero-stamp-dot {
+    width: 6px; height: 6px; border-radius: 50%; background: var(--red); flex-shrink: 0;
+  }
+
+  /* TOC */
+  .toc {
+    background: var(--paper-off);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: 1.75rem 2rem;
+  }
+
+  .toc-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-light);
+    margin-bottom: 1rem;
+  }
+
+  .toc-list { list-style: none; display: flex; flex-direction: column; gap: 0.5rem; }
+
+  .toc-list a {
+    font-size: 0.875rem;
+    color: var(--ink-mid);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: color 0.15s;
+  }
+
+  .toc-list a:hover { color: var(--ink); }
+
+  .toc-num {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--ink-faint);
+    width: 20px;
+    flex-shrink: 0;
+  }
+
+  /* PROSE SECTIONS */
+  .section-title {
+    font-family: var(--serif);
+    font-size: clamp(1.7rem, 3vw, 2.2rem);
+    line-height: 1.2;
+    color: var(--ink);
+    margin-bottom: 1.25rem;
+    max-width: 580px;
+  }
+
+  .prose {
+    font-size: 0.95rem;
+    line-height: 1.9;
+    color: var(--ink-mid);
+    max-width: 640px;
+    font-weight: 300;
+  }
+
+  .prose p { margin-bottom: 1.1rem; }
+  .prose p:last-child { margin-bottom: 0; }
+  .prose strong { color: var(--ink); font-weight: 500; }
+
+  /* DEFINITION */
+  .def-block {
+    background: var(--paper-off);
+    border-left: 3px solid var(--ink);
+    padding: 1.75rem 2rem;
+    margin: 2rem 0;
+    max-width: 640px;
+  }
+
+  .def-block-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-light);
+    margin-bottom: 0.75rem;
+  }
+
+  .def-block-text {
+    font-family: var(--serif);
+    font-size: 1.15rem;
+    line-height: 1.6;
+    color: var(--ink);
+  }
+
+  /* PROPERTIES */
+  .property {
+    border-top: 1px solid var(--rule);
+    padding: 2.5rem 0;
+  }
+
+  .property:last-child { border-bottom: 1px solid var(--rule); }
+
+  .property-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .property-num {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    color: var(--ink-faint);
+    padding-top: 6px;
+    flex-shrink: 0;
+    width: 24px;
+  }
+
+  .property-title {
+    font-family: var(--serif);
+    font-size: 1.3rem;
+    color: var(--ink);
+    line-height: 1.2;
+  }
+
+  .property-body {
+    padding-left: calc(24px + 1.5rem);
+    font-size: 0.9rem;
+    line-height: 1.85;
+    color: var(--ink-mid);
+    font-weight: 300;
+    max-width: 560px;
+  }
+
+  .property-body p { margin-bottom: 0.85rem; }
+  .property-body p:last-child { margin-bottom: 0; }
+  .property-body strong { color: var(--ink); font-weight: 500; }
+
+  .property-criteria {
+    padding-left: calc(24px + 1.5rem);
+    margin-top: 1rem;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .property-criteria li {
+    font-size: 0.875rem;
+    color: var(--ink-mid);
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    line-height: 1.6;
+  }
+
+  .criteria-check {
+    color: var(--green-text);
+    font-family: var(--mono);
+    font-size: 11px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  /* NOT A BLACK BOX */
+  .not-list {
+    margin-top: 1.5rem;
+    max-width: 620px;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .not-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    font-size: 0.9rem;
+    color: var(--ink-mid);
+    line-height: 1.65;
+  }
+
+  .not-x {
+    color: var(--red);
+    font-family: var(--mono);
+    font-size: 11px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  /* RECORDS TABLE */
+  .records-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+    margin-top: 1.5rem;
+  }
+
+  .records-table th {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-light);
+    text-align: left;
+    padding: 0.75rem 1rem 0.75rem 0;
+    border-bottom: 1px solid var(--rule);
+    font-weight: 400;
+  }
+
+  .records-table td {
+    padding: 0.85rem 1rem 0.85rem 0;
+    border-bottom: 1px solid var(--rule);
+    color: var(--ink-mid);
+    vertical-align: top;
+    line-height: 1.6;
+  }
+
+  .records-table tr:last-child td { border-bottom: none; }
+
+  .record-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink);
+    white-space: nowrap;
+  }
+
+  .record-required {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--green-text);
+  }
+
+  .record-optional {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+
+  /* ATTRIBUTION */
+  .attribution {
+    background: var(--paper-off);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: 2.5rem;
+    margin-top: 3rem;
+  }
+
+  .attribution-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-light);
+    margin-bottom: 1.25rem;
+  }
+
+  .attribution-body {
+    font-size: 0.875rem;
+    line-height: 1.8;
+    color: var(--ink-mid);
+    max-width: 580px;
+    margin-bottom: 1.5rem;
+    font-weight: 300;
+  }
+
+  .attribution-body a { color: var(--ink-mid); text-decoration: underline; text-decoration-color: var(--rule); }
+  .attribution-body a:hover { color: var(--ink); }
+
+  .attribution-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .attribution-row {
+    display: flex;
+    gap: 1rem;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--ink-light);
+  }
+
+  .attribution-key { min-width: 120px; color: var(--ink-faint); }
+  .attribution-val { color: var(--ink-mid); }
+  .attribution-val a { color: var(--ink-mid); text-decoration: underline; text-decoration-color: var(--rule); }
+  .attribution-val a:hover { color: var(--ink); }
+
+  /* CTA ROW */
+  .cta-row { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; margin-top: 2rem; }
+
+  .btn-primary {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 0.8rem 1.6rem; background: var(--ink); color: var(--paper);
+    border: none; border-radius: 2px; cursor: pointer; text-decoration: none; display: inline-block;
+    transition: opacity 0.15s;
+  }
+  .btn-primary:hover { opacity: 0.82; }
+
+  .btn-ghost {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 0.8rem 1.6rem; background: transparent; color: var(--ink-mid);
+    border: 1px solid var(--rule); border-radius: 2px; cursor: pointer; text-decoration: none; display: inline-block;
+    transition: border-color 0.15s;
+  }
+  .btn-ghost:hover { border-color: var(--ink-light); }
+
+  /* SHARE STRIP */
+  .share-strip {
+    border-top: 1px solid var(--rule);
+    padding: 2rem 0;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .share-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-light);
+  }
+
+  .share-url {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-mid);
+    background: var(--paper-off);
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    padding: 0.4rem 0.75rem;
+  }
+
+  /* FOOTER */
+  footer { padding: 3rem 2rem; border-top: 1px solid var(--rule); }
+  .footer-inner { max-width: 1100px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1.5rem; }
+  .footer-logo { font-family: var(--mono); font-size: 12px; color: var(--ink-mid); text-decoration: none; }
+  .footer-links { display: flex; flex-wrap: wrap; gap: 1.25rem; list-style: none; }
+  .footer-links a { font-size: 12px; color: var(--ink-light); text-decoration: none; }
+  .footer-links a:hover { color: var(--ink-mid); }
+  .footer-copy { font-size: 11px; color: var(--ink-faint); font-family: var(--mono); }
+
+  @media (max-width: 700px) {
+    nav .nav-links { display: none; }
+    .property-body { padding-left: 0; }
+    .property-criteria { padding-left: 0; }
+    .property-header { gap: 0.75rem; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="/"><span>◉</span> DarkMatter</a>
+  <ul class="nav-links">
+    <li><a href="/demo">Demo</a></li>
+    <li><a href="/docs">Docs</a></li>
+    <li><a href="/why">Why</a></li>
+    <li><a href="/pricing">Pricing</a></li>
+    <li><a href="/blog">Blog</a></li>
+    <li><a class="nav-cta" href="/signup">Get API key</a></li>
+  </ul>
+</nav>
+
+
+<!-- HERO -->
+<section class="hero">
+  <div class="container">
+    <p class="hero-kicker">Canonical definition — v1.0</p>
+    <h1 class="hero-headline">
+      Black Box<br>
+      <em>for AI</em>
+    </h1>
+
+    <p class="hero-opening">
+      Every commercial aircraft carries a flight data recorder. It doesn't belong to the airline. It doesn't report to the pilot. It records everything that happens, independently of the system it's observing, and survives conditions that destroy everything else.
+    </p>
+    <p class="hero-opening">
+      When the investigation begins, nobody asks the airline what happened. They read the black box.
+    </p>
+    <p class="hero-opening">
+      <strong>AI agents are now making consequential decisions autonomously.</strong> Approving payments. Flagging contracts. Routing customers. Generating outputs that affect real people. And when something goes wrong — when the question is asked — the only record that exists lives inside the same system that made the decision.
+    </p>
+    <p class="hero-opening">
+      That's not a black box. That's a system vouching for itself.
+    </p>
+    <p class="hero-opening">
+      A Black Box for AI applies the aviation principle to autonomous systems: an independent record, written outside the system being observed, sealed at the moment it happens, and reconstructable by anyone who needs to know what actually occurred.
+    </p>
+
+    <div class="hero-stamp">
+      <span class="hero-stamp-dot"></span>
+      Definition first published by DarkMatter — April 2026
+    </div>
+  </div>
+</section>
+
+
+<!-- TABLE OF CONTENTS -->
+<section style="padding: 3rem 0;">
+  <div class="container">
+    <div class="toc">
+      <p class="toc-label">Contents</p>
+      <ul class="toc-list">
+        <li><a href="#definition"><span class="toc-num">01</span> The definition</a></li>
+        <li><a href="#properties"><span class="toc-num">02</span> Core properties — what qualifies</a></li>
+        <li><a href="#not"><span class="toc-num">03</span> What it is not</a></li>
+        <li><a href="#records"><span class="toc-num">04</span> What it records</a></li>
+        <li><a href="#why"><span class="toc-num">05</span> Why it matters now</a></li>
+        <li><a href="#attribution"><span class="toc-num">06</span> Attribution and implementation</a></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+
+<!-- DEFINITION -->
+<section id="definition">
+  <div class="container">
+    <p class="eyebrow">01 — The definition</p>
+    <h2 class="section-title">What a Black Box for AI is</h2>
+
+    <div class="def-block">
+      <p class="def-block-label">Canonical definition</p>
+      <p class="def-block-text">A Black Box for AI is an independent system that records, preserves, and proves what an AI system actually did — capturing the sequence of actions, decisions, inputs, and outputs produced by AI agents, and making them reconstructable and verifiable after the fact, even if the original system is unavailable or compromised.</p>
+    </div>
+
+    <div class="prose">
+      <p>The purpose is simple. When an AI system makes a decision, there must be a reliable way to determine exactly what happened.</p>
+      <p>Not what the system says happened. Not what the operator's logs record. What actually happened, preserved independently, verifiable by anyone who needs to know.</p>
+      <p>The term is borrowed from aviation deliberately. A flight data recorder is not an optional feature. It is not controlled by the party being investigated. It exists specifically so that the question "what happened?" has a clean, independent answer — even when everyone with an interest in the outcome would prefer a different one.</p>
+      <p>The same principle applies to AI agents. As they make more consequential decisions with less human involvement, the need for an independent record becomes structurally identical to the need that produced the flight data recorder. <strong>The stakes are different. The logic is the same.</strong></p>
+    </div>
+  </div>
+</section>
+
+
+<!-- PROPERTIES -->
+<section id="properties">
+  <div class="container">
+    <p class="eyebrow">02 — Core properties</p>
+    <h2 class="section-title">What qualifies as a Black Box for AI</h2>
+    <div class="prose" style="margin-bottom: 2rem;">
+      <p>A system qualifies as a Black Box for AI only if it satisfies all five of the following properties. Partial compliance does not qualify. A system that meets four of five is a logging system, not a black box.</p>
+    </div>
+
+    <div class="property">
+      <div class="property-header">
+        <span class="property-num">01</span>
+        <h3 class="property-title">Independent</h3>
+      </div>
+      <div class="property-body">
+        <p>Records are written to a system outside the AI agent that produced them. The system being observed cannot control, modify, or delete the record after the fact. The operator of the AI system and the operator of the black box are not the same party.</p>
+        <p>This is the foundational property. Without it, every other property is undermined. A record that lives inside the system it describes is only as trustworthy as that system — which means it is not independently trustworthy at all.</p>
+      </div>
+      <ul class="property-criteria">
+        <li><span class="criteria-check">✓</span><span>Records written outside the agent runtime</span></li>
+        <li><span class="criteria-check">✓</span><span>Not controlled by the model provider</span></li>
+        <li><span class="criteria-check">✓</span><span>Not modifiable by the deploying organization after writing</span></li>
+      </ul>
+    </div>
+
+    <div class="property">
+      <div class="property-header">
+        <span class="property-num">02</span>
+        <h3 class="property-title">Append-only and tamper-evident</h3>
+      </div>
+      <div class="property-body">
+        <p>Events are immutable once recorded. Each record is cryptographically linked to the previous one, forming a chain where any modification or deletion is mathematically detectable. It is not enough to say records cannot be changed — the architecture must make tampering provably visible to any third party.</p>
+        <p>This is what separates a black box from a database with an audit table. The integrity must be verifiable without trusting the operator's claim that nothing was changed.</p>
+      </div>
+      <ul class="property-criteria">
+        <li><span class="criteria-check">✓</span><span>No UPDATE or DELETE operations on committed records</span></li>
+        <li><span class="criteria-check">✓</span><span>Cryptographic hash chaining between records</span></li>
+        <li><span class="criteria-check">✓</span><span>Tampering at any node detectable by any party holding a receipt</span></li>
+      </ul>
+    </div>
+
+    <div class="property">
+      <div class="property-header">
+        <span class="property-num">03</span>
+        <h3 class="property-title">Reconstructable</h3>
+      </div>
+      <div class="property-body">
+        <p>The full sequence of events can be replayed in order. It must be possible to trace what inputs the system received, what actions it took, what outputs it produced, and how one step led to the next. Not a summary. The actual chain, in the actual order it happened.</p>
+        <p>Aviation investigators do not read a summary of the flight. They replay it. The black box equivalent for AI requires the same capability — step-by-step reconstruction, from root to tip, including branching points.</p>
+      </div>
+      <ul class="property-criteria">
+        <li><span class="criteria-check">✓</span><span>Full event chain replayable from any starting point</span></li>
+        <li><span class="criteria-check">✓</span><span>Parent linkage between events preserves causal order</span></li>
+        <li><span class="criteria-check">✓</span><span>Branching and forking points preserved in the record</span></li>
+      </ul>
+    </div>
+
+    <div class="property">
+      <div class="property-header">
+        <span class="property-num">04</span>
+        <h3 class="property-title">Verifiable by third parties</h3>
+      </div>
+      <div class="property-body">
+        <p>The record can be validated by anyone who needs to know what happened — without requiring access to the original system, without a DarkMatter account, without any network connection to the infrastructure that produced the record. Verification must not require trust in the system that generated the data.</p>
+        <p>This is the property that most "audit trail" products fail to meet. If verification requires calling the vendor's API, or logging into the vendor's dashboard, or trusting the vendor's claim that the record is intact — it is not independent verification. It is the vendor vouching for themselves.</p>
+      </div>
+      <ul class="property-criteria">
+        <li><span class="criteria-check">✓</span><span>Offline verification with no network calls</span></li>
+        <li><span class="criteria-check">✓</span><span>No account required to verify a record</span></li>
+        <li><span class="criteria-check">✓</span><span>Standalone verifier published and auditable</span></li>
+        <li><span class="criteria-check">✓</span><span>Cryptographic proof included in every export bundle</span></li>
+      </ul>
+    </div>
+
+    <div class="property">
+      <div class="property-header">
+        <span class="property-num">05</span>
+        <h3 class="property-title">Durable across failure</h3>
+      </div>
+      <div class="property-body">
+        <p>The record persists even if the original system fails, is shut down, or is compromised. The black box remains a reliable source of truth after the fact. This is the property that makes it useful precisely in the moment it is most needed — when the system that produced the record no longer exists in a trustworthy state.</p>
+        <p>A flight data recorder that only works when the aircraft is functioning is not a black box. The same applies here. The record must outlive and be independent of the system it describes.</p>
+      </div>
+      <ul class="property-criteria">
+        <li><span class="criteria-check">✓</span><span>Records survive shutdown of the originating system</span></li>
+        <li><span class="criteria-check">✓</span><span>Export bundles are self-contained and portable</span></li>
+        <li><span class="criteria-check">✓</span><span>Retention policy defined and independent of the AI operator</span></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+
+<!-- NOT A BLACK BOX -->
+<section id="not">
+  <div class="container">
+    <p class="eyebrow">03 — What it is not</p>
+    <h2 class="section-title">These do not qualify</h2>
+    <div class="prose">
+      <p>The following systems are useful. Several are important. None of them are black boxes, because none of them provide independent, verifiable truth. They describe behavior from inside the system that produced it.</p>
+    </div>
+
+    <ul class="not-list">
+      <li>
+        <span class="not-x">✕</span>
+        <span><strong style="color:var(--ink)">Application logs stored inside the system.</strong> Logs you control are logs you can modify. They are evidence you produced, which is the weakest kind of evidence in any investigation.</span>
+      </li>
+      <li>
+        <span class="not-x">✕</span>
+        <span><strong style="color:var(--ink)">Observability dashboards and tracing tools.</strong> These show you what is happening in real time. They do not provide an independent, tamper-evident record of what happened.</span>
+      </li>
+      <li>
+        <span class="not-x">✕</span>
+        <span><strong style="color:var(--ink)">Analytics pipelines and usage metrics.</strong> Aggregated data is not a chain of events. You cannot reconstruct a sequence of decisions from a metric.</span>
+      </li>
+      <li>
+        <span class="not-x">✕</span>
+        <span><strong style="color:var(--ink)">Internal audit trails controlled by the same operator.</strong> An audit trail that the auditee controls is not an audit trail. It is a self-report.</span>
+      </li>
+      <li>
+        <span class="not-x">✕</span>
+        <span><strong style="color:var(--ink)">Model provider logs.</strong> Logs owned by the model provider have the same conflict of interest as logs owned by the deploying organization. Neither is independent of the system being investigated.</span>
+      </li>
+    </ul>
+  </div>
+</section>
+
+
+<!-- WHAT IT RECORDS -->
+<section id="records">
+  <div class="container">
+    <p class="eyebrow">04 — What it records</p>
+    <h2 class="section-title">The minimum and the complete</h2>
+    <div class="prose" style="margin-bottom: 1.5rem;">
+      <p>A Black Box for AI records the sequence of events that constitute an AI system's behavior. The minimum set is defined below. Implementations may extend this — they may not reduce it.</p>
+    </div>
+
+    <table class="records-table">
+      <thead>
+        <tr>
+          <th style="width: 180px;">Field</th>
+          <th style="width: 100px;">Status</th>
+          <th>What it captures</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="record-label">inputs</span></td>
+          <td><span class="record-required">Required</span></td>
+          <td>What the agent received — the prompt, data, or context that triggered the action.</td>
+        </tr>
+        <tr>
+          <td><span class="record-label">outputs</span></td>
+          <td><span class="record-required">Required</span></td>
+          <td>What the agent produced — the decision, response, or action taken.</td>
+        </tr>
+        <tr>
+          <td><span class="record-label">timestamp</span></td>
+          <td><span class="record-required">Required</span></td>
+          <td>When the event occurred — both client-asserted time and independent server receipt time.</td>
+        </tr>
+        <tr>
+          <td><span class="record-label">agent identity</span></td>
+          <td><span class="record-required">Required</span></td>
+          <td>Which agent produced the record — authenticated, not self-reported.</td>
+        </tr>
+        <tr>
+          <td><span class="record-label">event sequence</span></td>
+          <td><span class="record-required">Required</span></td>
+          <td>The order and causal relationship between events — parent linkage.</td>
+        </tr>
+        <tr>
+          <td><span class="record-label">integrity proof</span></td>
+          <td><span class="record-required">Required</span></td>
+          <td>Cryptographic evidence that the record has not been altered since it was written.</td>
+        </tr>
+        <tr>
+          <td><span class="record-label">tool calls</span></td>
+          <td><span class="record-optional">Recommended</span></td>
+          <td>API calls, tool invocations, and external actions taken as part of the decision — where agent behavior becomes operationally consequential.</td>
+        </tr>
+        <tr>
+          <td><span class="record-label">human interventions</span></td>
+          <td><span class="record-optional">Recommended</span></td>
+          <td>Approvals, overrides, and edits by human operators — the moments that matter most in disputes.</td>
+        </tr>
+        <tr>
+          <td><span class="record-label">model and version</span></td>
+          <td><span class="record-optional">Recommended</span></td>
+          <td>Which model produced the output — essential for attribution and reproducibility.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+
+<!-- WHY IT MATTERS -->
+<section id="why">
+  <div class="container">
+    <p class="eyebrow">05 — Why it matters now</p>
+    <h2 class="section-title">The same problem aviation solved. A different altitude.</h2>
+
+    <div class="prose">
+      <p>Aviation didn't mandate flight data recorders because pilots were untrustworthy. It mandated them because <strong>when something goes wrong at altitude, memory is unreliable, incentives are misaligned, and the only thing that matters is what actually happened.</strong></p>
+      <p>AI agents are not operating at altitude. They are operating inside enterprise infrastructure, financial systems, healthcare workflows, legal processes, and customer-facing products — making decisions that affect real people, at machine speed, with no human reviewing each action in real time.</p>
+      <p>When something goes wrong — when a decision is disputed, when a regulator asks, when a customer challenges an outcome — the question is always the same: what did your system actually do?</p>
+      <p>If the answer is "here are our internal logs," the investigation is already compromised. The evidence is controlled by the party being investigated. The record lives inside the system that needs to be trusted, which means no independent trust is possible.</p>
+      <p>A Black Box for AI changes the answer. <strong>It makes "what happened?" a question with a clean, verifiable, independent response.</strong> Not because anyone is assumed to be dishonest. Because independence is the only thing that makes a record credible when it matters most.</p>
+      <p>The EU AI Act requires tamper-evident logs retained for at least six months. US state AI laws are building explainability requirements. Financial regulators are asking for reasoning chains. Healthcare systems are beginning to require documentation of AI-assisted clinical decisions.</p>
+      <p>These are not requests for dashboards. They are requests for a black box.</p>
+    </div>
+  </div>
+</section>
+
+
+<!-- ATTRIBUTION -->
+<section id="attribution" style="padding-bottom: 6rem;">
+  <div class="container">
+    <p class="eyebrow">06 — Attribution and implementation</p>
+    <h2 class="section-title">Who defined this and where it lives</h2>
+
+    <div class="attribution">
+      <p class="attribution-label">Definition provenance</p>
+      <p class="attribution-body">
+        This definition was first published by DarkMatter in April 2026. It is intended as an open, vendor-neutral standard — not a proprietary claim. Any system that satisfies all five properties qualifies, regardless of who built it.
+      </p>
+      <p class="attribution-body">
+        DarkMatter is the first implementation of this standard. The full technical specification of how each property is implemented — including canonical serialization, hash chain construction, Ed25519 signing, Merkle inclusion proofs, signed checkpoints, and the standalone verifier — is published in the <a href="/integrity">DarkMatter Integrity Spec v1.0</a>. The spec is frozen. Changes require a new version number.
+      </p>
+      <p class="attribution-body">
+        The standalone verifier — the tool that lets anyone confirm a record's integrity without contacting DarkMatter — is open source and included in every export bundle. It can be audited, forked, and run independently. That is not a feature. That is how the independence guarantee is made real.
+      </p>
+
+      <div class="attribution-meta">
+        <div class="attribution-row">
+          <span class="attribution-key">Definition version</span>
+          <span class="attribution-val">v1.0</span>
+        </div>
+        <div class="attribution-row">
+          <span class="attribution-key">First published</span>
+          <span class="attribution-val">April 2026</span>
+        </div>
+        <div class="attribution-row">
+          <span class="attribution-key">Published by</span>
+          <span class="attribution-val"><a href="https://darkmatterhub.ai">DarkMatter</a></span>
+        </div>
+        <div class="attribution-row">
+          <span class="attribution-key">Technical spec</span>
+          <span class="attribution-val"><a href="/integrity">Integrity Spec v1.0</a></span>
+        </div>
+        <div class="attribution-row">
+          <span class="attribution-key">Implementation</span>
+          <span class="attribution-val"><a href="https://github.com/darkmatter-hub/darkmatter">github.com/darkmatter-hub/darkmatter</a></span>
+        </div>
+        <div class="attribution-row">
+          <span class="attribution-key">Canonical URL</span>
+          <span class="attribution-val">darkmatterhub.ai/black-box-for-ai</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="share-strip">
+      <span class="share-label">Cite or share</span>
+      <span class="share-url">darkmatterhub.ai/black-box-for-ai</span>
+    </div>
+
+    <div class="cta-row">
+      <a href="/signup" class="btn-primary">See it in production</a>
+      <a href="/integrity" class="btn-ghost">Read the integrity spec</a>
+    </div>
+  </div>
+</section>
+
+
+<footer>
+  <div class="footer-inner">
+    <a class="footer-logo" href="/">◉ DarkMatter</a>
+    <ul class="footer-links">
+      <li><a href="/demo">Demo</a></li>
+      <li><a href="/docs">Docs</a></li>
+      <li><a href="/pricing">Pricing</a></li>
+      <li><a href="/why">Why</a></li>
+      <li><a href="/blog">Blog</a></li>
+      <li><a href="/integrity">Integrity</a></li>
+      <li><a href="/enterprise">Enterprise</a></li>
+      <li><a href="/security">Security</a></li>
+      <li><a href="https://contextpassport.com">Context Passport</a></li>
+      <li><a href="https://github.com/darkmatter-hub/darkmatter">GitHub</a></li>
+    </ul>
+    <span class="footer-copy">© 2026 DarkMatter</span>
+  </div>
+</footer>
+
+</body>
+</html>
