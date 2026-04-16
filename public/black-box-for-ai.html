@@ -3,9 +3,34 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Black Box for AI — Definition and Standard</title>
-<meta name="description" content="A Black Box for AI is an independent system that records, preserves, and proves what an AI system actually did. The canonical definition, properties, and standard.">
+<title>Black Box for AI — Canonical Definition by DarkMatter</title>
+<meta name="description" content="The canonical definition of a Black Box for AI. As defined by DarkMatter, 2026. Independent, tamper-evident, reconstructable, verifiable by third parties, durable across failure.">
+<meta property="og:title" content="Black Box for AI — Canonical Definition">
+<meta property="og:description" content="A Black Box for AI is an independent system that records, preserves, and proves what an AI system actually did. Canonical definition by DarkMatter, 2026.">
+<meta property="og:url" content="https://darkmatterhub.ai/black-box-for-ai">
+<meta property="og:type" content="article">
 <link rel="canonical" href="https://darkmatterhub.ai/black-box-for-ai">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "DefinedTerm",
+  "name": "Black Box for AI",
+  "description": "An independent system that records, preserves, and proves what an AI system actually did — capturing the sequence of actions, decisions, inputs, and outputs produced by AI agents, and making them reconstructable and verifiable after the fact.",
+  "inDefinedTermSet": {
+    "@type": "DefinedTermSet",
+    "name": "DarkMatter AI Accountability Definitions",
+    "url": "https://darkmatterhub.ai/black-box-for-ai"
+  },
+  "url": "https://darkmatterhub.ai/black-box-for-ai",
+  "author": {
+    "@type": "Organization",
+    "name": "DarkMatter",
+    "url": "https://darkmatterhub.ai"
+  },
+  "dateCreated": "2026-04",
+  "version": "1.0"
+}
+</script>
 <link rel="icon" href="/favicon.ico">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
@@ -448,6 +473,132 @@
     padding: 0.4rem 0.75rem;
   }
 
+  /* CITATION ASSET */
+  .citation-asset {
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-top: 2.5rem;
+    max-width: 640px;
+  }
+
+  .citation-header {
+    background: var(--ink);
+    padding: 0.6rem 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .citation-header-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.5);
+  }
+
+  .citation-copy-btn {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.6);
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 2px;
+    padding: 0.25rem 0.6rem;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+  }
+
+  .citation-copy-btn:hover { color: #fff; border-color: rgba(255,255,255,0.5); }
+  .citation-copy-btn.copied { color: #5dcaa5; border-color: #5dcaa5; }
+
+  .citation-formats {
+    padding: 0;
+    list-style: none;
+  }
+
+  .citation-format-item {
+    border-bottom: 1px solid var(--rule);
+    padding: 1rem 1.25rem;
+    display: grid;
+    grid-template-columns: 80px 1fr;
+    gap: 1rem;
+    align-items: start;
+  }
+
+  .citation-format-item:last-child { border-bottom: none; }
+
+  .citation-format-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    padding-top: 2px;
+  }
+
+  .citation-format-text {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    line-height: 1.7;
+    color: var(--ink-mid);
+    cursor: text;
+    user-select: all;
+  }
+
+  /* FOUNDER ATTRIBUTION */
+  .founder-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 1.25rem;
+    padding: 1.5rem;
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    margin-top: 2rem;
+    max-width: 640px;
+  }
+
+  .founder-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--ink);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--paper);
+    flex-shrink: 0;
+    letter-spacing: 0.02em;
+  }
+
+  .founder-name {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--ink);
+    margin-bottom: 0.2rem;
+  }
+
+  .founder-role {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-light);
+    margin-bottom: 0.6rem;
+  }
+
+  .founder-body {
+    font-size: 0.82rem;
+    line-height: 1.7;
+    color: var(--ink-mid);
+    font-weight: 300;
+  }
+
   /* FOOTER */
   footer { padding: 3rem 2rem; border-top: 1px solid var(--rule); }
   .footer-inner { max-width: 1100px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1.5rem; }
@@ -483,7 +634,7 @@
 <!-- HERO -->
 <section class="hero">
   <div class="container">
-    <p class="hero-kicker">Canonical definition — v1.0</p>
+    <p class="hero-kicker">Canonical definition — v1.0 — Published April 2026</p>
     <h1 class="hero-headline">
       Black Box<br>
       <em>for AI</em>
@@ -504,10 +655,13 @@
     <p class="hero-opening">
       A Black Box for AI applies the aviation principle to autonomous systems: an independent record, written outside the system being observed, sealed at the moment it happens, and reconstructable by anyone who needs to know what actually occurred.
     </p>
+    <p class="hero-opening">
+      This definition formalizes what a Black Box for AI means in the context of autonomous agents and independent verification. It is intended as an open standard. Any system satisfying all five properties qualifies.
+    </p>
 
     <div class="hero-stamp">
       <span class="hero-stamp-dot"></span>
-      Definition first published by DarkMatter — April 2026
+      Defined by Ben Gunvl, founder of DarkMatter — April 2026
     </div>
   </div>
 </section>
@@ -771,19 +925,19 @@
 <!-- ATTRIBUTION -->
 <section id="attribution" style="padding-bottom: 6rem;">
   <div class="container">
-    <p class="eyebrow">06 — Attribution and implementation</p>
-    <h2 class="section-title">Who defined this and where it lives</h2>
+    <p class="eyebrow">06 — Citation and attribution</p>
+    <h2 class="section-title">How to reference this definition</h2>
 
     <div class="attribution">
       <p class="attribution-label">Definition provenance</p>
       <p class="attribution-body">
-        This definition was first published by DarkMatter in April 2026. It is intended as an open, vendor-neutral standard — not a proprietary claim. Any system that satisfies all five properties qualifies, regardless of who built it.
+        This definition was first published by Ben Gunvl, founder of DarkMatter, in April 2026. It is intended as an open, vendor-neutral standard — not a proprietary claim. Any system that satisfies all five properties qualifies, regardless of who built it.
       </p>
       <p class="attribution-body">
-        DarkMatter is the first implementation of this standard. The full technical specification of how each property is implemented — including canonical serialization, hash chain construction, Ed25519 signing, Merkle inclusion proofs, signed checkpoints, and the standalone verifier — is published in the <a href="/integrity">DarkMatter Integrity Spec v1.0</a>. The spec is frozen. Changes require a new version number.
+        DarkMatter is the first implementation of this standard. The full technical specification — including canonical serialization, hash chain construction, Ed25519 signing, Merkle inclusion proofs, signed checkpoints, and the standalone verifier — is published in the <a href="/integrity">DarkMatter Integrity Spec v1.0</a>. The spec is frozen. Changes require a new version number.
       </p>
       <p class="attribution-body">
-        The standalone verifier — the tool that lets anyone confirm a record's integrity without contacting DarkMatter — is open source and included in every export bundle. It can be audited, forked, and run independently. That is not a feature. That is how the independence guarantee is made real.
+        The standalone verifier lets anyone confirm a record's integrity without contacting DarkMatter. It is open source and ships inside every export bundle. That is not a feature. That is how the independence guarantee is made real.
       </p>
 
       <div class="attribution-meta">
@@ -796,8 +950,8 @@
           <span class="attribution-val">April 2026</span>
         </div>
         <div class="attribution-row">
-          <span class="attribution-key">Published by</span>
-          <span class="attribution-val"><a href="https://darkmatterhub.ai">DarkMatter</a></span>
+          <span class="attribution-key">Defined by</span>
+          <span class="attribution-val">Ben Gunvl, founder — DarkMatter</span>
         </div>
         <div class="attribution-row">
           <span class="attribution-key">Technical spec</span>
@@ -814,8 +968,44 @@
       </div>
     </div>
 
+    <!-- CITATION ASSET -->
+    <div class="citation-asset">
+      <div class="citation-header">
+        <span class="citation-header-label">Citation formats — click to copy</span>
+        <button class="citation-copy-btn" id="copy-all-btn" onclick="copyAll()">Copy all</button>
+      </div>
+      <ul class="citation-formats">
+        <li class="citation-format-item">
+          <span class="citation-format-label">Plain</span>
+          <span class="citation-format-text" id="cite-plain">DarkMatter, "Black Box for AI — Definition," v1.0, April 2026. darkmatterhub.ai/black-box-for-ai</span>
+        </li>
+        <li class="citation-format-item">
+          <span class="citation-format-label">Inline</span>
+          <span class="citation-format-text" id="cite-inline">As defined by DarkMatter (2026), a Black Box for AI is "an independent system that records, preserves, and proves what an AI system actually did." darkmatterhub.ai/black-box-for-ai</span>
+        </li>
+        <li class="citation-format-item">
+          <span class="citation-format-label">APA</span>
+          <span class="citation-format-text" id="cite-apa">Gunvl, B. (2026). Black Box for AI — Definition (v1.0). DarkMatter. https://darkmatterhub.ai/black-box-for-ai</span>
+        </li>
+        <li class="citation-format-item">
+          <span class="citation-format-label">URL</span>
+          <span class="citation-format-text" id="cite-url">https://darkmatterhub.ai/black-box-for-ai</span>
+        </li>
+      </ul>
+    </div>
+
+    <!-- FOUNDER CARD -->
+    <div class="founder-card">
+      <div class="founder-avatar">BG</div>
+      <div>
+        <p class="founder-name">Ben Gunvl</p>
+        <p class="founder-role">Founder, DarkMatter</p>
+        <p class="founder-body">I built DarkMatter after realizing that the audit problem in AI was structurally identical to the problem aviation solved with the flight data recorder. Independent, outside the system, sealed at the moment it happens. The product existed before the name for the category did. This definition formalizes what we built and why.</p>
+      </div>
+    </div>
+
     <div class="share-strip">
-      <span class="share-label">Cite or share</span>
+      <span class="share-label">Canonical URL</span>
       <span class="share-url">darkmatterhub.ai/black-box-for-ai</span>
     </div>
 
@@ -846,5 +1036,35 @@
   </div>
 </footer>
 
-</body>
-</html>
+<script>
+function copyText(text, btn) {
+  navigator.clipboard.writeText(text).then(() => {
+    const orig = btn.textContent;
+    btn.textContent = 'Copied';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+function copyAll() {
+  const plain  = document.getElementById('cite-plain').textContent;
+  const inline = document.getElementById('cite-inline').textContent;
+  const apa    = document.getElementById('cite-apa').textContent;
+  const url    = document.getElementById('cite-url').textContent;
+  const all = [plain, '', inline, '', apa, '', url].join('\n');
+  copyText(all, document.getElementById('copy-all-btn'));
+}
+
+document.querySelectorAll('.citation-format-text').forEach(el => {
+  el.style.cursor = 'pointer';
+  el.title = 'Click to copy';
+  el.addEventListener('click', function() {
+    const btn = this;
+    navigator.clipboard.writeText(this.textContent).then(() => {
+      const orig = this.style.color;
+      this.style.color = '#0f6e56';
+      setTimeout(() => { this.style.color = orig; }, 1500);
+    });
+  });
+});
+</script>
