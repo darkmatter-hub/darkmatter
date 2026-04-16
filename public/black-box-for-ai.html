@@ -179,6 +179,11 @@
     flex-shrink: 0;
   }
 
+  .toc-divider { height: 1px; background: var(--rule); margin: 0.5rem 0; }
+  .toc-list .external-doc a { color: var(--ink-light); }
+  .toc-list .external-doc a:hover { color: var(--ink-mid); }
+  .toc-list .external-doc .toc-num { color: var(--red); }
+
   /* PROSE SECTIONS */
   .section-title {
     font-family: var(--serif);
@@ -674,7 +679,7 @@
 <section style="padding: 3rem 0;">
   <div class="container">
     <div class="toc">
-      <p class="toc-label">Contents</p>
+      <p class="toc-label">Contents — This definition is part of the Black Box for AI standard</p>
       <ul class="toc-list">
         <li><a href="#definition"><span class="toc-num">01</span> The definition</a></li>
         <li><a href="#properties"><span class="toc-num">02</span> Core properties — what qualifies</a></li>
@@ -682,6 +687,10 @@
         <li><a href="#records"><span class="toc-num">04</span> What it records</a></li>
         <li><a href="#why"><span class="toc-num">05</span> Why it matters now</a></li>
         <li><a href="#attribution"><span class="toc-num">06</span> Attribution and implementation</a></li>
+        <li class="toc-divider"></li>
+        <li style="margin-bottom:0.3rem"><span style="font-family:var(--mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--ink-faint);">Related documents</span></li>
+        <li class="external-doc"><a href="/black-box-for-ai/event-schema"><span class="toc-num">↗</span> Event Schema v1.0</a></li>
+        <li class="external-doc"><a href="/integrity"><span class="toc-num">↗</span> BBIS v1.0 — Black Box Integrity Specification</a></li>
       </ul>
     </div>
   </div>

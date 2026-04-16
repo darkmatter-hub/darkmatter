@@ -75,6 +75,10 @@
   .toc-list a { font-size: 0.875rem; color: var(--ink-mid); text-decoration: none; display: flex; align-items: center; gap: 10px; }
   .toc-list a:hover { color: var(--ink); }
   .toc-num { font-family: var(--mono); font-size: 9px; color: var(--ink-faint); width: 20px; flex-shrink: 0; }
+  .toc-divider { height: 1px; background: var(--rule); margin: 0.5rem 0; }
+  .toc-list .external-doc a { color: var(--ink-light); }
+  .toc-list .external-doc a:hover { color: var(--ink-mid); }
+  .toc-list .external-doc .toc-num { color: var(--red); }
 
   /* PROSE */
   .section-title { font-family: var(--serif); font-size: clamp(1.6rem, 3vw, 2rem); line-height: 1.2; color: var(--ink); margin-bottom: 1rem; max-width: 560px; }
@@ -196,7 +200,7 @@
 <section style="padding: 2.5rem 0;">
   <div class="container">
     <div class="toc">
-      <p class="toc-label">Contents</p>
+      <p class="toc-label">Contents — Part of the Black Box for AI standard</p>
       <ul class="toc-list">
         <li><a href="#base-schema"><span class="toc-num">01</span> Base event schema</a></li>
         <li><a href="#agent-events"><span class="toc-num">02</span> Agent execution events</a></li>
@@ -204,6 +208,10 @@
         <li><a href="#system-events"><span class="toc-num">04</span> System and lifecycle events</a></li>
         <li><a href="#compliance-events"><span class="toc-num">05</span> Compliance events</a></li>
         <li><a href="#conformance"><span class="toc-num">06</span> Conformance and versioning</a></li>
+        <li class="toc-divider"></li>
+        <li style="margin-bottom:0.3rem"><span style="font-family:var(--mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--ink-faint);">Related documents</span></li>
+        <li class="external-doc"><a href="/black-box-for-ai"><span class="toc-num">↗</span> Black Box for AI — Definition</a></li>
+        <li class="external-doc"><a href="/integrity"><span class="toc-num">↗</span> BBIS v1.0 — Black Box Integrity Specification</a></li>
       </ul>
     </div>
   </div>
