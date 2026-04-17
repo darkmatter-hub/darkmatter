@@ -3724,7 +3724,7 @@ app.get('/r/:traceId', async (req, res) => {
         var p = commits[i].payload || {};
         if (p.role === 'user' && p.text) return p.text.slice(0, 60) + (p.text.length > 60 ? '...' : '');
       }
-      return 'AI Conversation Record';
+      return 'AI Decision Record';
     })();
 
     var platform = (commits[0] && commits[0].payload && commits[0].payload.platform) || 'AI';
@@ -3756,7 +3756,12 @@ app.get('/r/:traceId', async (req, res) => {
 
     var verifyUrl = (process.env.APP_URL || 'https://darkmatterhub.ai') + '/r/' + traceId;
     var jsonUrl   = verifyUrl + '?format=json';
-    var dateStr = firstTs ? new Date(firstTs).toLocaleDateString(undefined, {month:'short',day:'numeric',year:'numeric'}) : '';
+    var dateStr = firstTs ? (function() {
+      var d = new Date(firstTs);
+      var date = d.toLocaleDateString('en-GB', { month:'short', day:'numeric', year:'numeric', timeZone:'UTC' });
+      var time = d.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit', timeZone:'UTC', hour12:false });
+      return date + ' \u00b7 ' + time + ' UTC';
+    })() : '';
 
     var html = '<!DOCTYPE html>\n<html lang="en">\n<head>\n'
       + '<meta charset="UTF-8"/>\n'
@@ -3857,12 +3862,15 @@ app.get('/r/:traceId', async (req, res) => {
       + '    <span class="fs-chip">' + escH(platform) + '</span>\n'
       + (dateStr ? '    <span class="fs-sep">\u00b7</span>\n    <span class="fs-chip">' + escH(dateStr) + '</span>\n' : '')
       + '  </div>\n'
+      + '  <div style="font-size:12px;color:#059669;font-family:var(--mono);margin-bottom:4px;letter-spacing:.01em;">This record can be verified independently — without DarkMatter.</div>\n'
+      + '  <div style="font-size:11.5px;color:var(--ink4);font-family:var(--mono);margin-bottom:12px;">Anyone can verify this record. No account required.</div>\n'
       + '  <div class="fs-integrity">' + (chainIntact ? 'This record has been cryptographically verified. Nothing has been added, removed, or altered since it was captured.' : 'This record could not be fully verified. Download the proof file for independent investigation.') + '</div>\n'
       + '  <div class="fs-actions">\n'
-      + '    <button class="fs-btn-p" onclick="copyLink()">Copy link</button>\n'
+      + '    <button class="fs-btn-p" onclick="switchView(this.dataset.v,this)" data-v="proof">Verify independently &rarr;</button>\n'
       + '    <a class="fs-btn-s" href="' + escH(jsonUrl) + '">Download proof bundle (.json)</a>\n'
-      + '    <button class="fs-btn-s" onclick="switchView(this.dataset.v,this)" data-v="proof">View verification &rarr;</button>\n'
+      + '    <button class="fs-btn-s" onclick="copyLink()">Copy link</button>\n'
       + '  </div>\n'
+      + '  <div style="font-size:11.5px;color:var(--ink4);font-family:var(--mono);margin-top:10px;">Anyone can verify this record. No account required.</div>\n'
       + '</div>\n'
       + '<div class="view-switcher">\n'
       + '<div class="view-switcher">\n'
