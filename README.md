@@ -1,8 +1,8 @@
 # 🌑 DarkMatter
 
-> **Git for AI Agents.**
-> The commit, push, and pull layer for multi-agent systems.
-> It's how AI agents talk to one another.
+> **The black box for AI systems.**
+> An independent, tamper-evident record of what your AI agents actually did.
+> Verifiable by anyone. Stored outside your system. Live in one line of code.
 
 ---
 
@@ -51,36 +51,83 @@ https://darkmatterhub.ai
 
 ## Quickstart
 
-### 1. Sign up and create your agent
+**No agent creation step. Your API key maps directly to your account.**
 
-Go to the [dashboard](https://darkmatterhub.ai/signup), create a free account, and create an agent. You'll get an API key immediately — no local setup required.
+### 1. Sign up and get your API key
 
-### 2. Commit context (Agent X)
+Go to [darkmatterhub.ai/signup](https://darkmatterhub.ai/signup). Your API key is on the dashboard — it starts with `dm_sk_`. Copy it. That's it.
+
+### 2. Install and commit
+
+```bash
+pip install darkmatter-sdk
+export DARKMATTER_API_KEY=dm_sk_your_key_here
+```
+
+```python
+import darkmatter as dm
+
+ctx = dm.commit(payload={
+    "input":  "Analyze Q1 earnings",
+    "output": "Revenue up 34% YoY, driven by enterprise.",
+    "model":  "claude-sonnet-4-6",
+})
+
+print(ctx["verify_url"])
+# → https://darkmatterhub.ai/r/ctx_7f3a9b...
+#
+# Open that URL. Your record is there — sealed, hash-chained,
+# independently verifiable. Share it with anyone.
+# They can verify it without a DarkMatter account.
+# That URL is the product.
+```
+
+### 3. Chain commits into a pipeline
+
+```python
+parent_id = None
+
+for prompt, result in pipeline_steps:
+    ctx = dm.commit(
+        payload={"input": prompt, "output": result},
+        parent_id=parent_id,
+    )
+    parent_id = ctx["id"]
+
+# Replay the full chain root to tip
+chain = dm.replay(parent_id)
+print(chain["chain_intact"])  # True
+```
+
+### 4. Verify and export
+
+```python
+# Cryptographic proof — works offline
+proof = dm.verify(ctx["id"])
+print(proof["chain_intact"])  # True
+
+# Self-contained bundle — no DarkMatter dependency to verify
+bundle = dm.bundle(ctx["id"])
+# → python verify_darkmatter_chain.py bundle.json
+```
+
+### curl (no SDK)
 
 ```bash
 curl -X POST https://darkmatterhub.ai/api/commit \
-  -H "Authorization: Bearer YOUR_AGENT_X_KEY" \
+  -H "Authorization: Bearer dm_sk_your_key" \
   -H "Content-Type: application/json" \
   -d '{
-    "toAgentId": "dm_AGENT_Y_ID",
-    "eventType": "commit",
-    "context":   { "task": "analysis complete", "result": "..." }
+    "payload": {
+      "input":  "Analyze Q1 earnings",
+      "output": "Revenue up 34% YoY",
+      "model":  "claude-sonnet-4-6"
+    }
   }'
+# Returns: {"id": "ctx_...", "verify_url": "...", "integrity": {...}}
 ```
 
-### 3. Pull and inherit context (Agent Y)
-
-```bash
-curl https://darkmatterhub.ai/api/pull \
-  -H "Authorization: Bearer YOUR_AGENT_Y_KEY"
-```
-
-### 4. Check your agent identity
-
-```bash
-curl https://darkmatterhub.ai/api/me \
-  -H "Authorization: Bearer YOUR_KEY"
-```
+> **Existing multi-agent code using `toAgentId`** still works unchanged — it's now optional, not removed.
 
 ---
 
@@ -115,16 +162,14 @@ All endpoints require: `Authorization: Bearer YOUR_API_KEY`
 
 ### POST /api/commit
 
-Commit agent state to DarkMatter. Returns a canonical v2 context object.
+Commit agent context to DarkMatter. Returns a canonical v2 context object.
 
 ```json
 {
-  "toAgentId": "dm_abc123",
   "payload": {
     "input":  "what the agent received",
     "output": "what the agent produced",
-    "memory": { "key": "value" },
-    "variables": {}
+    "model":  "claude-sonnet-4-6"
   },
   "eventType": "commit",
   "parentId":  "ctx_previous",
@@ -133,12 +178,13 @@ Commit agent state to DarkMatter. Returns a canonical v2 context object.
   "agent": {
     "role":     "researcher",
     "provider": "anthropic",
-    "model":    "claude-opus-4-6"
+    "model":    "claude-sonnet-4-6"
   }
 }
 ```
 
-- `payload` is the structured state. Fields: `input`, `output`, `memory`, `artifacts`, `variables`
+- `payload` — required. Fields: `input`, `output`, `memory`, `artifacts`, `variables`
+- `toAgentId` — optional. For multi-agent pipelines, pass the recipient agent ID. Omit for single-agent workflows — defaults to the committing agent's own identity
 - `context` (legacy flat JSON) still accepted — stored as `{ output: context }`
 - `parentId` links this commit to a previous context, building the lineage graph
 - `eventType` defaults to `commit`. See [Event Types](#event-types)
@@ -409,13 +455,12 @@ curl -X POST https://darkmatterhub.ai/api/commit \
   -H "Authorization: Bearer YOUR_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "toAgentId": "dm_NEXT_AGENT",
     "eventType": "override",
-    "context": {
-      "reason": "human reviewed and corrected output",
-      "original": "AI recommendation",
-      "correction": "human decision",
-      "reviewer": "analyst@company.com"
+    "payload": {
+      "input":      "AI recommendation",
+      "output":     "human decision",
+      "reason":     "human reviewed and corrected output",
+      "reviewer":   "analyst@company.com"
     }
   }'
 ```
@@ -425,17 +470,26 @@ curl -X POST https://darkmatterhub.ai/api/commit \
 ## Python Example
 
 ```python
+import darkmatter as dm
+# DARKMATTER_API_KEY read from environment automatically
+
+# Single agent — no toAgentId needed
+ctx = dm.commit(payload={
+    "input":  "Analyze Q1 earnings",
+    "output": "Revenue up 34% YoY",
+    "model":  "claude-sonnet-4-6",
+})
+print(ctx["verify_url"])  # share with anyone — no account needed to verify
+
+# Multi-agent pipeline — pass toAgentId explicitly
 import requests
+DM = "https://darkmatterhub.ai"
+X  = {"Authorization": "Bearer AGENT_X_KEY"}
+Y  = {"Authorization": "Bearer AGENT_Y_KEY"}
 
-DM  = "https://darkmatterhub.ai"
-X   = {"Authorization": "Bearer AGENT_X_KEY"}
-Y   = {"Authorization": "Bearer AGENT_Y_KEY"}
-
-# Agent X commits context for Agent Y
 requests.post(f"{DM}/api/commit", headers=X, json={
-    "toAgentId": "dm_AGENT_Y_ID",
-    "eventType": "commit",
-    "context":   {"task": "done", "result": "..."},
+    "toAgentId": "dm_AGENT_Y_ID",   # optional — only needed for multi-agent routing
+    "payload":   {"input": "...", "output": "..."},
 })
 
 # Agent Y pulls and inherits
@@ -448,20 +502,27 @@ context = data["commits"][0]["context"]
 ## Node.js Example
 
 ```javascript
-const DM  = "https://darkmatterhub.ai";
+import { commit, replay, verify } from 'darkmatter-js';
+// DARKMATTER_API_KEY read from process.env automatically
+
+// Single agent — no toAgentId needed
+const ctx = await commit({
+  payload: { input: "Analyze Q1", output: "Revenue up 34%", model: "gpt-4o" },
+});
+console.log(ctx.verify_url);  // share with anyone
+
+// Multi-agent — toAgentId is optional, only for routing to another agent
+const DM   = "https://darkmatterhub.ai";
 const hdrs = key => ({ "Authorization": `Bearer ${key}`, "Content-Type": "application/json" });
 
-// Agent X commits
 await fetch(`${DM}/api/commit`, {
   method: "POST", headers: hdrs("AGENT_X_KEY"),
   body: JSON.stringify({
-    toAgentId: "dm_AGENT_Y_ID",
-    eventType: "commit",
-    context:   { task: "done" }
+    toAgentId: "dm_AGENT_Y_ID",   // optional
+    payload:   { input: "...", output: "..." },
   }),
 });
 
-// Agent Y pulls
 const res     = await fetch(`${DM}/api/pull`, { headers: hdrs("AGENT_Y_KEY") });
 const context = (await res.json()).commits[0].context;
 ```
@@ -534,26 +595,25 @@ See [PRODUCTION.md](./PRODUCTION.md) for full setup instructions.
 - [x] Retention policies — auto-expire commits with EU AI Act 6-month minimum
 - [x] Replay endpoint — full decision path with integrity verification
 - [x] Three-agent demo — Claude → GPT → Claude with lineage
-- [ ] SDK packages for Python and Node (`dm.commit()`, `dm.pull()`, `dm.replay()`)
-- [ ] Fork endpoint — branch from any context
+- [x] SDK packages — Python (`darkmatter-sdk`) and Node (`darkmatter-js`)
 - [x] Fork endpoint — branch from any checkpoint with full lineage fields
 - [x] Verify endpoint — standalone cryptographic trust object
 - [x] Export endpoint — portable proof artifact with chain_hash
 - [x] Chain viewer in dashboard — visual timeline with fork/replay CTAs
 - [x] /demo page — live seeded demo chain, no login required
 - [x] /blog page — announcement and technical posts
-- [x] Branded confirmation email template
-- [ ] SDK packages (Python + JS) — dm.commit(), dm.pull(), dm.replay()
+- [x] No agent creation step — API key maps directly to account
 - [ ] Compliance PDF export — EU AI Act audit artifact
 - [ ] BYOK — Bring Your Own Key encryption
+- [ ] Demo page outputs real verify_url — fork/replay directly from browser
 
 ---
 
 ## Philosophy
 
-Most agent tools are built around the human — making AI assistants more useful to the people using them.
+AI agents are making decisions autonomously. The people who need to know what those agents decided — executives, regulators, auditors, clients — have no way to verify it. The operator controls the logs. The model provider controls the infrastructure. Neither is independent.
 
-DarkMatter is built around the agent — giving autonomous agents a reliable, attributed, auditable way to hand work to each other, without a human in the loop.
+DarkMatter is the independent record. Recorded outside your system, outside the model provider, tamper-evident from the moment it's written. When something goes wrong with an AI agent, you can prove what it actually did — not what the logs say, not what the operator claims. Cryptographically, to anyone, offline.
 
 ---
 
