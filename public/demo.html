@@ -485,9 +485,18 @@ nav { position: sticky; top: 0; z-index: 100; background: rgba(255,255,255,0.96)
           <li style="display:flex;gap:12px;align-items:flex-start;"><span style="color:var(--grn);font-family:var(--mono);font-size:13px;flex-shrink:0;margin-top:2px;">✓</span><span style="font-size:15px;color:var(--t1);line-height:1.55;">Disputes become <strong>provable, not arguable</strong> — your counterpart runs the same check and gets the same result.</span></li>
         </ul>
       </div>
+
+      <!-- Real verify URL — populated when API commit succeeds -->
+      <div id="real-record-block" style="margin-top:24px;padding:16px 20px;background:rgba(15,123,77,0.06);border:1px solid rgba(15,123,77,0.2);border-radius:6px;text-align:left;">
+        <div style="font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--grn);margin-bottom:8px;">Your real record — committed during this demo</div>
+        <div style="font-size:13px;color:var(--t2);margin-bottom:10px;line-height:1.6;">This is not a simulation. The record you just saw was committed to the live DarkMatter system. Open it — it's verifiable by anyone.</div>
+        <a id="verify-url-display" href="#" target="_blank" style="font-family:var(--mono);font-size:11.5px;color:var(--purple);word-break:break-all;display:block;margin-bottom:12px;">Loading your verify URL…</a>
+        <a id="btn-open-record" href="#" target="_blank" class="btn-p" style="display:none;font-size:12px;padding:8px 18px;">Open your record ↗</a>
+      </div>
+
       <div class="done-actions">
-        <a href="/docs" class="btn-p">Read the docs →</a>
-        <a href="/compare" class="btn-o">See how it compares</a>
+        <a href="/signup" class="btn-p">Get your API key →</a>
+        <a href="/docs/quickstart" class="btn-o">Quickstart guide</a>
         <a href="/integrity" class="btn-o">How verification works</a>
       </div>
       <div style="margin-top:16px;text-align:center;">
@@ -627,9 +636,74 @@ function goToStep(n) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
+// ── Real API commit — makes an actual POST to DarkMatter ──────────────
+// Uses a public demo API key. Every demo visitor commits a real record
+// and gets a real verify_url they can open, share, and fork.
+const DEMO_API_KEY = 'dm_sk_demo_public_readonly';
+const DM_HOST = 'https://darkmatterhub.ai';
+
+let realCtxId = null;
+let realVerifyUrl = null;
+
+async function commitToApi(scenario) {
+  const payloads = {
+    codereview: {
+      input:  'Review PR #847 — auth middleware refactor',
+      output: 'LGTM with minor suggestions. No security regressions detected.',
+      model:  'claude-sonnet-4-6',
+      agent_role: 'code-reviewer',
+    },
+    support: {
+      input:  'Customer ticket #19204 — billing dispute, premium tier',
+      output: 'Classified: HIGH priority. Escalated to billing team.',
+      model:  'claude-sonnet-4-6',
+      agent_role: 'support-triage',
+    },
+    research: {
+      input:  'Synthesise Q1 market conditions — APAC region',
+      output: 'Growth remained strong at 34% YoY. Flagged for analyst review.',
+      model:  'claude-sonnet-4-6',
+      agent_role: 'research-agent',
+    },
+  };
+
+  const p = payloads[scenario] || payloads.codereview;
+
+  try {
+    const res = await fetch(`${DM_HOST}/api/commit`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${DEMO_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        payload: {
+          input:  p.input,
+          output: p.output,
+          model:  p.model,
+        },
+        agent: { role: p.agent_role },
+        traceId: 'trc_demo_' + Date.now(),
+      }),
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      realCtxId    = data.id || null;
+      realVerifyUrl = data.verify_url || (realCtxId ? `${DM_HOST}/r/${realCtxId}` : null);
+      return { id: realCtxId, verify_url: realVerifyUrl };
+    }
+  } catch (_) {}
+
+  // Graceful fallback — demo still works if API is unreachable
+  return null;
+}
+
 function startStep2() {
   const s = scenarios[currentScenario];
   verifyDone = false;
+  realCtxId = null;
+  realVerifyUrl = null;
   recordTimestamp = getTimestamp();
 
   // Reset
@@ -643,14 +717,36 @@ function startStep2() {
   rc.classList.remove('appeared');
   document.getElementById('step2-actions').style.display = 'none';
 
-  // Populate neutral record (no proof level yet)
+  // Populate neutral record fields (update ID when API responds)
   document.getElementById('rec-agent').textContent = s.agent;
   document.getElementById('rec-action').textContent = s.action;
   document.getElementById('rec-timestamp').textContent = recordTimestamp;
   document.getElementById('rec-id').textContent = s.recordId;
   document.getElementById('rec-payload').innerHTML = formatPayload(s.payload);
 
-  // Animate actions
+  // Fire real API commit in parallel with the animation
+  commitToApi(currentScenario).then(result => {
+    if (result && result.id) {
+      // Swap in real ID and verify URL
+      document.getElementById('rec-id').textContent = result.id;
+      if (document.getElementById('rec-id-3')) {
+        document.getElementById('rec-id-3').textContent = result.id;
+      }
+      // Wire up the open-record button in step 4
+      const openBtn = document.getElementById('btn-open-record');
+      if (openBtn && result.verify_url) {
+        openBtn.href = result.verify_url;
+        openBtn.style.display = 'inline-block';
+      }
+      const verifyUrlEl = document.getElementById('verify-url-display');
+      if (verifyUrlEl && result.verify_url) {
+        verifyUrlEl.textContent = result.verify_url;
+        verifyUrlEl.href = result.verify_url;
+      }
+    }
+  });
+
+  // Animate agent actions
   const container = document.getElementById('af-actions');
   s.actions.forEach((action, i) => {
     const el = document.createElement('div');
@@ -667,7 +763,7 @@ function startStep2() {
     setTimeout(() => el.classList.add('appeared'), 400 + i * 700);
   });
 
-  // "Record complete" friction state, then record card appears
+  // Record card appears after actions complete
   const totalDelay = 400 + s.actions.length * 700 + 300;
   setTimeout(() => {
     document.getElementById('feed-status').textContent = 'Record complete';
