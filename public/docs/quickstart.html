@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quickstart — DarkMatter</title>
+<meta name="description" content="Get from zero to your first verified AI agent record in under 2 minutes. No agent creation step. API key maps directly to your account.">
+<link rel="icon" href="/favicon.ico">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --ink: #0e0e0e; --ink-mid: #444; --ink-light: #888; --ink-faint: #bbb;
+    --paper: #fff; --paper-off: #f8f7f5; --paper-dim: #f1efeb; --rule: #e2dfd8;
+    --red: #c0392b; --green: #0f6e56; --amber: #92540a;
+    --mono: 'DM Mono','Courier New',monospace;
+    --serif: 'DM Serif Display',Georgia,serif;
+    --sans: 'DM Sans',system-ui,sans-serif;
+  }
+  html { font-size: 16px; scroll-behavior: smooth; }
+  body { font-family: var(--sans); background: var(--paper); color: var(--ink); line-height: 1.6; -webkit-font-smoothing: antialiased; }
+
+  nav { position: sticky; top: 0; z-index: 100; background: rgba(255,255,255,0.96); backdrop-filter: blur(8px); border-bottom: 1px solid var(--rule); padding: 0 2rem; display: flex; align-items: center; justify-content: space-between; height: 56px; }
+  .nav-logo { font-family: var(--mono); font-size: 13px; font-weight: 500; color: var(--ink); text-decoration: none; letter-spacing: 0.04em; }
+  .nav-logo span { color: var(--red); }
+  .nav-links { display: flex; align-items: center; gap: 2rem; list-style: none; }
+  .nav-links a { font-size: 13px; color: var(--ink-mid); text-decoration: none; }
+  .nav-links a:hover { color: var(--ink); }
+  .nav-cta { font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; padding: 0.5rem 1.1rem; background: var(--ink); color: var(--paper) !important; border-radius: 2px; text-decoration: none; }
+
+  /* LAYOUT */
+  .page { display: grid; grid-template-columns: 220px 1fr; max-width: 1100px; margin: 0 auto; min-height: calc(100vh - 56px); }
+
+  /* SIDEBAR */
+  .sidebar { border-right: 1px solid var(--rule); padding: 2.5rem 1.5rem; position: sticky; top: 56px; height: calc(100vh - 56px); overflow-y: auto; }
+  .sidebar-section { margin-bottom: 2rem; }
+  .sidebar-label { font-family: var(--mono); font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 0.75rem; }
+  .sidebar-links { list-style: none; display: flex; flex-direction: column; gap: 0.3rem; }
+  .sidebar-links a { font-size: 12.5px; color: var(--ink-mid); text-decoration: none; padding: 0.2rem 0; display: block; border-left: 2px solid transparent; padding-left: 0.75rem; margin-left: -0.75rem; transition: color 0.12s, border-color 0.12s; }
+  .sidebar-links a:hover { color: var(--ink); }
+  .sidebar-links a.active { color: var(--ink); border-left-color: var(--red); font-weight: 500; }
+
+  /* CONTENT */
+  .content { padding: 3rem 3rem 6rem; max-width: 760px; }
+
+  .eyebrow { font-family: var(--mono); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-light); margin-bottom: 1rem; display: flex; align-items: center; gap: 8px; }
+  .eyebrow::before { content: ''; display: inline-block; width: 14px; height: 1px; background: var(--ink-faint); }
+
+  h1 { font-family: var(--serif); font-size: clamp(2rem, 3.5vw, 2.8rem); line-height: 1.12; color: var(--ink); margin-bottom: 1rem; }
+  h2 { font-family: var(--serif); font-size: 1.6rem; line-height: 1.2; color: var(--ink); margin: 3rem 0 0.75rem; }
+  h3 { font-family: var(--sans); font-size: 0.95rem; font-weight: 500; color: var(--ink); margin: 1.75rem 0 0.5rem; }
+
+  .lead { font-size: 1.05rem; line-height: 1.8; color: var(--ink-mid); max-width: 580px; margin-bottom: 2rem; font-weight: 300; }
+  .lead strong { color: var(--ink); font-weight: 500; }
+
+  p { font-size: 0.9rem; line-height: 1.85; color: var(--ink-mid); margin-bottom: 0.85rem; font-weight: 300; }
+  p strong { color: var(--ink); font-weight: 500; }
+
+  /* TIME BADGE */
+  .time-badge { display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--green); background: #f0faf5; border: 1px solid #b6e8d3; border-radius: 2px; padding: 0.25rem 0.6rem; margin-bottom: 2rem; }
+
+  /* PATH CARDS */
+  .paths { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--rule); border: 1px solid var(--rule); border-radius: 3px; overflow: hidden; margin-bottom: 3rem; }
+  .path-card { background: var(--paper); padding: 1.5rem; cursor: pointer; transition: background 0.12s; }
+  .path-card:hover { background: var(--paper-off); }
+  .path-card.active { background: var(--paper-off); }
+  .path-num { font-family: var(--mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--red); margin-bottom: 0.5rem; }
+  .path-title { font-family: var(--serif); font-size: 1rem; color: var(--ink); margin-bottom: 0.35rem; }
+  .path-time { font-family: var(--mono); font-size: 10px; color: var(--green); }
+  .path-desc { font-size: 0.8rem; color: var(--ink-mid); margin-top: 0.4rem; line-height: 1.5; font-weight: 300; }
+
+  /* STEP LIST */
+  .steps { display: flex; flex-direction: column; gap: 0; }
+  .step { display: grid; grid-template-columns: 40px 1fr; gap: 1rem; padding: 1.5rem 0; border-bottom: 1px solid var(--rule); }
+  .step:last-child { border-bottom: none; }
+  .step-num { font-family: var(--mono); font-size: 11px; color: var(--ink-faint); padding-top: 2px; }
+  .step-body h3 { margin-top: 0; margin-bottom: 0.35rem; font-size: 0.9rem; }
+
+  /* CODE BLOCKS */
+  .code-block { border: 1px solid var(--rule); border-radius: 3px; overflow: hidden; margin: 0.75rem 0 1rem; }
+  .code-header { background: var(--paper-dim); padding: 0.5rem 1rem; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--rule); }
+  .code-lang { font-family: var(--mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-faint); }
+  .code-copy { font-family: var(--mono); font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-light); background: transparent; border: none; cursor: pointer; padding: 0; transition: color 0.12s; }
+  .code-copy:hover { color: var(--ink-mid); }
+  .code-copy.copied { color: var(--green); }
+  pre { padding: 1.1rem 1.25rem; font-family: var(--mono); font-size: 12px; line-height: 1.85; color: var(--ink-mid); overflow-x: auto; background: var(--paper); }
+  pre .c { color: var(--ink-faint); font-style: italic; }
+  pre .k { color: var(--ink); }
+  pre .s { color: var(--ink-mid); }
+  pre .h { color: var(--ink); font-weight: 500; }
+
+  /* INLINE CODE */
+  code { font-family: var(--mono); font-size: 0.85em; background: var(--paper-off); border: 1px solid var(--rule); padding: 0.1rem 0.35rem; border-radius: 2px; color: var(--ink-mid); }
+
+  /* CALLOUT */
+  .callout { border-left: 3px solid var(--green); background: #f0faf5; padding: 1rem 1.25rem; margin: 1rem 0; border-radius: 0 3px 3px 0; font-size: 0.875rem; color: var(--ink-mid); line-height: 1.7; }
+  .callout strong { color: var(--ink); font-weight: 500; }
+  .callout.amber { border-left-color: var(--amber); background: #fdf8ef; }
+  .callout.red { border-left-color: var(--red); background: #fdf0ee; }
+
+  /* RULE */
+  hr { border: none; border-top: 1px solid var(--rule); margin: 2.5rem 0; }
+
+  /* NEXT STEPS */
+  .next-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-top: 1.5rem; }
+  .next-card { border: 1px solid var(--rule); border-radius: 3px; padding: 1.25rem; text-decoration: none; display: block; transition: border-color 0.12s; }
+  .next-card:hover { border-color: var(--ink-light); }
+  .next-card-label { font-family: var(--mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--red); margin-bottom: 0.4rem; }
+  .next-card-title { font-size: 0.9rem; font-weight: 500; color: var(--ink); margin-bottom: 0.3rem; }
+  .next-card-desc { font-size: 0.8rem; color: var(--ink-mid); line-height: 1.55; font-weight: 300; }
+
+  footer { border-top: 1px solid var(--rule); padding: 2rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; }
+  .footer-logo { font-family: var(--mono); font-size: 12px; color: var(--ink-mid); text-decoration: none; }
+  .footer-links { display: flex; gap: 1.25rem; list-style: none; flex-wrap: wrap; }
+  .footer-links a { font-size: 12px; color: var(--ink-light); text-decoration: none; }
+  .footer-copy { font-size: 11px; color: var(--ink-faint); font-family: var(--mono); }
+
+  @media (max-width: 768px) {
+    .page { grid-template-columns: 1fr; }
+    .sidebar { display: none; }
+    .content { padding: 2rem 1.25rem 4rem; }
+    .paths { grid-template-columns: 1fr; }
+    .next-grid { grid-template-columns: 1fr; }
+    nav .nav-links { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="/"><span>◉</span> DarkMatter</a>
+  <ul class="nav-links">
+    <li><a href="/demo">Demo</a></li>
+    <li><a href="/docs">Docs</a></li>
+    <li><a href="/docs/cookbook">Cookbook</a></li>
+    <li><a href="/docs/cheatsheet">Cheatsheet</a></li>
+    <li><a href="/support">Support</a></li>
+    <li><a class="nav-cta" href="/signup">Get API key</a></li>
+  </ul>
+</nav>
+
+<div class="page">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <p class="sidebar-label">Get started</p>
+      <ul class="sidebar-links">
+        <li><a href="#paths" class="active">Three paths</a></li>
+        <li><a href="#path-zero">Path 0 — no signup</a></li>
+        <li><a href="#path-one">Path 1 — CLI</a></li>
+        <li><a href="#path-two">Path 2 — SDK</a></li>
+        <li><a href="#cheatsheet-anchor">Next steps</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-section">
+      <p class="sidebar-label">Docs</p>
+      <ul class="sidebar-links">
+        <li><a href="/docs">Overview</a></li>
+        <li><a href="/docs/quickstart">Quickstart</a></li>
+        <li><a href="/docs/cheatsheet">Cheatsheet</a></li>
+        <li><a href="/docs/cookbook">Cookbook</a></li>
+        <li><a href="/integrity">Integrity model</a></li>
+        <li><a href="/support">Support</a></li>
+      </ul>
+    </div>
+    <div class="sidebar-section">
+      <p class="sidebar-label">Integrations</p>
+      <ul class="sidebar-links">
+        <li><a href="/docs#langgraph">LangGraph</a></li>
+        <li><a href="/docs#langchain">LangChain</a></li>
+        <li><a href="/docs#anthropic-sdk">Anthropic SDK</a></li>
+        <li><a href="/docs#openai-sdk">OpenAI SDK</a></li>
+        <li><a href="/docs#crewai">CrewAI</a></li>
+        <li><a href="/docs#aws-bedrock">AWS Bedrock</a></li>
+      </ul>
+    </div>
+  </aside>
+
+  <!-- CONTENT -->
+  <main class="content">
+    <p class="eyebrow">Documentation — Quickstart</p>
+    <h1>From zero to verified record.</h1>
+    <p class="lead">
+      Sign up, get your API key, make your first commit. <strong>No agent creation step.</strong> Your API key maps directly to your account — you start recording immediately.
+    </p>
+    <div class="time-badge">Fastest path: under 2 minutes</div>
+
+    <!-- THREE PATHS -->
+    <h2 id="paths">Pick your path</h2>
+    <div class="paths">
+      <div class="path-card">
+        <p class="path-num">Path 0</p>
+        <p class="path-title">No signup</p>
+        <p class="path-time">30 seconds</p>
+        <p class="path-desc">See DarkMatter work locally before creating an account.</p>
+      </div>
+      <div class="path-card">
+        <p class="path-num">Path 1</p>
+        <p class="path-title">CLI</p>
+        <p class="path-time">Under 2 minutes</p>
+        <p class="path-desc">Sign up, install, and record your first commit from the terminal.</p>
+      </div>
+      <div class="path-card">
+        <p class="path-num">Path 2</p>
+        <p class="path-title">SDK integration</p>
+        <p class="path-time">Under 5 minutes</p>
+        <p class="path-desc">Add DarkMatter to an existing agent pipeline in Python or TypeScript.</p>
+      </div>
+    </div>
+
+    <!-- PATH 0 -->
+    <h2 id="path-zero">Path 0 — See it work first</h2>
+    <p>No account needed. Run the demo locally and see a full three-agent chain commit, replay, fork, and verify in your terminal.</p>
+
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">bash</span><button class="code-copy" onclick="copyCode(this)">Copy</button></div>
+      <pre>pip install darkmatter-sdk
+darkmatter demo</pre>
+    </div>
+
+    <p>You will see a researcher agent commit findings, a writer agent inherit that context, and a reviewer fork a branch — all with cryptographic integrity proofs. The whole chain is verifiable offline with the exported bundle.</p>
+
+    <div class="callout">
+      When you're ready to record your own agents, come back and follow Path 1 or 2. Everything you saw in the demo is what your agents will produce.
+    </div>
+
+    <hr>
+
+    <!-- PATH 1 -->
+    <h2 id="path-one">Path 1 — CLI quickstart</h2>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">01</div>
+        <div class="step-body">
+          <h3>Sign up and get your API key</h3>
+          <p>Go to <a href="/signup" style="color:var(--ink-mid)">darkmatterhub.ai/signup</a>. Create your account. Your API key is on the dashboard — it starts with <code>dm_sk_</code>. Copy it. That's it. No agent creation step, no additional IDs to configure.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">02</div>
+        <div class="step-body">
+          <h3>Install the SDK</h3>
+          <div class="code-block">
+            <div class="code-header"><span class="code-lang">bash</span><button class="code-copy" onclick="copyCode(this)">Copy</button></div>
+            <pre>pip install darkmatter-sdk</pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">03</div>
+        <div class="step-body">
+          <h3>Set your API key</h3>
+          <div class="code-block">
+            <div class="code-header"><span class="code-lang">bash</span><button class="code-copy" onclick="copyCode(this)">Copy</button></div>
+            <pre>export DARKMATTER_API_KEY=dm_sk_your_key_here</pre>
+          </div>
+          <p>Or add it to a <code>.env</code> file — the SDK reads it automatically.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">04</div>
+        <div class="step-body">
+          <h3>Make your first commit</h3>
+          <div class="code-block">
+            <div class="code-header"><span class="code-lang">python</span><button class="code-copy" onclick="copyCode(this)">Copy</button></div>
+            <pre>import darkmatter as dm
+
+ctx = dm.commit(payload={
+    <span class="s">"input"</span>:  <span class="s">"Analyze Q1 earnings"</span>,
+    <span class="s">"output"</span>: <span class="s">"Revenue up 34% YoY, driven by enterprise."</span>,
+    <span class="s">"model"</span>:  <span class="s">"claude-sonnet-4-6"</span>,
+})
+
+print(ctx[<span class="s">"id"</span>])            <span class="c"># ctx_7f3a9b...</span>
+print(ctx[<span class="s">"integrity"</span>])     <span class="c"># {"payload_hash": "sha256:...", "verification_status": "valid"}</span>
+print(ctx[<span class="s">"verify_url"</span>])    <span class="c"># darkmatterhub.ai/r/ctx_7f3a9b</span></pre>
+          </div>
+          <div class="callout">
+            <strong>No agent ID required.</strong> Your API key identifies you. DarkMatter auto-provisions your account identity on first commit. Share the <code>verify_url</code> with anyone — they can verify the record without logging in.
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">05</div>
+        <div class="step-body">
+          <h3>Open your verify URL — this is your record</h3>
+          <div class="code-block">
+            <div class="code-header"><span class="code-lang">python</span><button class="code-copy" onclick="copyCode(this)">Copy</button></div>
+            <pre>print(ctx[<span class="s">"verify_url"</span>])
+<span class="c"># → https://darkmatterhub.ai/r/ctx_7f3a9b...</span>
+<span class="c">#</span>
+<span class="c"># Open that URL. Your record is there — sealed, hash-chained,</span>
+<span class="c"># independently verifiable. Share it with anyone.</span>
+<span class="c"># They can verify it without a DarkMatter account.</span>
+<span class="c"># That URL is the product.</span></pre>
+          </div>
+          <div class="callout">
+            This is the aha moment. You just created an independent, tamper-evident record of what your agent decided. Open the URL, share it, or pass it to an auditor. Anyone can verify it — no login, no account, no asking you to vouch.
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">06</div>
+        <div class="step-body">
+          <h3>Replay, fork, and export</h3>
+          <div class="code-block">
+            <div class="code-header"><span class="code-lang">python</span><button class="code-copy" onclick="copyCode(this)">Copy</button></div>
+            <pre><span class="c"># Verify chain integrity</span>
+proof = dm.verify(ctx[<span class="s">"id"</span>])
+print(proof[<span class="s">"chain_intact"</span>])  <span class="c"># True</span>
+
+<span class="c"># Export a self-contained proof bundle — verifiable offline</span>
+bundle = dm.bundle(ctx[<span class="s">"id"</span>])
+<span class="c"># → darkmatter_proof_bundle.json</span>
+<span class="c"># → python verify_darkmatter_chain.py bundle.json</span>
+<span class="c"># No DarkMatter dependency. No internet. No account.</span></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <hr>
+
+    <!-- PATH 2 -->
+    <h2 id="path-two">Path 2 — SDK integration</h2>
+    <p>Add DarkMatter to an existing pipeline. Follow steps 1–3 from Path 1 to get your API key, then drop in one of these patterns.</p>
+
+    <h3>Python — record a chain</h3>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">python</span><button class="code-copy" onclick="copyCode(this)">Copy</button></div>
+      <pre>import darkmatter as dm
+
+parent_id = None
+
+<span class="c"># Each step links to the previous — builds a verifiable chain</span>
+for step_input, step_output in pipeline_steps:
+    ctx = dm.commit(
+        payload={<span class="s">"input"</span>: step_input, <span class="s">"output"</span>: step_output},
+        parent_id=parent_id,
+    )
+    parent_id = ctx[<span class="s">"id"</span>]
+
+<span class="c"># Replay the full chain root to tip</span>
+chain = dm.replay(parent_id)
+for step in chain[<span class="s">"replay"</span>]:
+    print(step[<span class="s">"step"</span>], step[<span class="s">"payload"</span>][<span class="s">"output"</span>])</pre>
+    </div>
+
+    <h3>TypeScript — same pattern</h3>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">typescript</span><button class="code-copy" onclick="copyCode(this)">Copy</button></div>
+      <pre>import { commit, replay, verify, bundle } from <span class="s">'darkmatter-js'</span>;
+<span class="c">// DARKMATTER_API_KEY read from process.env automatically</span>
+
+let parentId: string | undefined;
+
+for (const { input, output } of pipelineSteps) {
+  const ctx = await commit({ payload: { input, output }, parentId });
+  parentId = ctx.id;
+}
+
+const chain = await replay(parentId!);
+const proof = await verify(parentId!);
+console.log(proof.chain_intact); <span class="c">// true</span></pre>
+    </div>
+
+    <h3>Plain HTTP — no SDK required</h3>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">bash</span><button class="code-copy" onclick="copyCode(this)">Copy</button></div>
+      <pre>curl -X POST https://darkmatterhub.ai/api/commit \
+  -H <span class="s">"Authorization: Bearer dm_sk_your_key"</span> \
+  -H <span class="s">"Content-Type: application/json"</span> \
+  -d <span class="s">'{
+    "payload": {
+      "input":  "Analyze contract clause 4.2",
+      "output": "Clause 4.2 contains non-standard indemnity terms.",
+      "model":  "claude-sonnet-4-6"
+    }
+  }'</span>
+
+<span class="c"># Returns: {"id": "ctx_...", "integrity": {...}, "verify_url": "..."}</span></pre>
+    </div>
+
+    <div class="callout amber">
+      <strong>Existing code using agent IDs.</strong> If you previously used <code>to_agent_id</code> or <code>DARKMATTER_AGENT_ID</code>, those still work — they're now optional. Your API key is the identity. Drop the agent ID requirement from new code.
+    </div>
+
+    <hr>
+
+    <!-- NEXT STEPS -->
+    <h2 id="cheatsheet-anchor">Next steps</h2>
+
+    <div class="next-grid">
+      <a class="next-card" href="/docs/cheatsheet">
+        <p class="next-card-label">Reference</p>
+        <p class="next-card-title">API cheatsheet</p>
+        <p class="next-card-desc">Every operation in minimal code. Scannable in 60 seconds.</p>
+      </a>
+      <a class="next-card" href="/docs/cookbook">
+        <p class="next-card-label">Examples</p>
+        <p class="next-card-title">Cookbook</p>
+        <p class="next-card-desc">Complete working examples by use case. Grab and run.</p>
+      </a>
+      <a class="next-card" href="/docs">
+        <p class="next-card-label">Docs</p>
+        <p class="next-card-title">Full documentation</p>
+        <p class="next-card-desc">Integrations, API reference, enterprise features, self-hosting.</p>
+      </a>
+      <a class="next-card" href="/support">
+        <p class="next-card-label">Help</p>
+        <p class="next-card-title">Support</p>
+        <p class="next-card-desc">GitHub issues, Discord, and email for enterprise.</p>
+      </a>
+    </div>
+  </main>
+</div>
+
+<footer>
+  <a class="footer-logo" href="/">◉ DarkMatter</a>
+  <ul class="footer-links">
+    <li><a href="/docs">Docs</a></li>
+    <li><a href="/docs/quickstart">Quickstart</a></li>
+    <li><a href="/docs/cheatsheet">Cheatsheet</a></li>
+    <li><a href="/docs/cookbook">Cookbook</a></li>
+    <li><a href="/integrity">Integrity</a></li>
+    <li><a href="/support">Support</a></li>
+    <li><a href="https://github.com/darkmatter-hub/darkmatter">GitHub</a></li>
+  </ul>
+  <span class="footer-copy">© 2026 DarkMatter</span>
+</footer>
+
+<script>
+function copyCode(btn) {
+  const pre = btn.closest('.code-block').querySelector('pre');
+  const text = pre.innerText;
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = 'Copied';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+</script>
+</body>
+</html>

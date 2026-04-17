@@ -204,7 +204,23 @@ async function requireApiKey(req, res, next) {
       return res.status(401).json({ error: 'Invalid API key' });
     }
 
-    req.agent = data[0];
+    // ── Failure-safe: ensure agent context is complete ──────────────
+    // API key is valid but agent row may be missing expected fields.
+    // Auto-heal silently — never surface config errors to the user.
+    const agent = data[0];
+    if (!agent.agent_id) {
+      console.error('[requireApiKey] valid key but missing agent_id — auto-healing', apiKey.slice(0, 12));
+      agent.agent_id   = 'dm_' + require('crypto').randomBytes(8).toString('hex');
+      agent.agent_name = agent.agent_name || 'default';
+      try {
+        await supabaseService.from('agents').update({
+          agent_id:   agent.agent_id,
+          agent_name: agent.agent_name,
+        }).eq('api_key', apiKey);
+      } catch(_) {}
+    }
+
+    req.agent = agent;
     next();
   } catch(e) {
     console.error('[requireApiKey]', e.message);
