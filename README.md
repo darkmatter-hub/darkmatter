@@ -51,83 +51,31 @@ https://darkmatterhub.ai
 
 ## Quickstart
 
-**No agent creation step. Your API key maps directly to your account.**
-
-### 1. Sign up and get your API key
-
-Go to [darkmatterhub.ai/signup](https://darkmatterhub.ai/signup). Your API key is on the dashboard — it starts with `dm_sk_`. Copy it. That's it.
-
-### 2. Install and commit
+Install the SDK and set your API key:
 
 ```bash
 pip install darkmatter-sdk
-export DARKMATTER_API_KEY=dm_sk_your_key_here
+export DARKMATTER_API_KEY=dm_sk_...
 ```
+
+Create your first record:
 
 ```python
 import darkmatter as dm
 
+prompt = "Explain capital gains tax in plain language"
+result = "Capital gains tax is the tax you pay on profit from selling an asset..."
+
 ctx = dm.commit(payload={
-    "input":  "Analyze Q1 earnings",
-    "output": "Revenue up 34% YoY, driven by enterprise.",
-    "model":  "claude-sonnet-4-6",
+    "input": prompt,
+    "output": result
 })
 
 print(ctx["verify_url"])
-# → https://darkmatterhub.ai/r/ctx_7f3a9b...
-#
-# Open that URL. Your record is there — sealed, hash-chained,
-# independently verifiable. Share it with anyone.
-# They can verify it without a DarkMatter account.
-# That URL is the product.
 ```
 
-### 3. Chain commits into a pipeline
-
-```python
-parent_id = None
-
-for prompt, result in pipeline_steps:
-    ctx = dm.commit(
-        payload={"input": prompt, "output": result},
-        parent_id=parent_id,
-    )
-    parent_id = ctx["id"]
-
-# Replay the full chain root to tip
-chain = dm.replay(parent_id)
-print(chain["chain_intact"])  # True
-```
-
-### 4. Verify and export
-
-```python
-# Cryptographic proof — works offline
-proof = dm.verify(ctx["id"])
-print(proof["chain_intact"])  # True
-
-# Self-contained bundle — no DarkMatter dependency to verify
-bundle = dm.bundle(ctx["id"])
-# → python verify_darkmatter_chain.py bundle.json
-```
-
-### curl (no SDK)
-
-```bash
-curl -X POST https://darkmatterhub.ai/api/commit \
-  -H "Authorization: Bearer dm_sk_your_key" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "payload": {
-      "input":  "Analyze Q1 earnings",
-      "output": "Revenue up 34% YoY",
-      "model":  "claude-sonnet-4-6"
-    }
-  }'
-# Returns: {"id": "ctx_...", "verify_url": "...", "integrity": {...}}
-```
-
-> **Existing multi-agent code using `toAgentId`** still works unchanged — it's now optional, not removed.
+That's it. No agent creation step. No second ID.
+Open the `verify_url` to view and independently verify the record.
 
 ---
 
@@ -170,25 +118,17 @@ Commit agent context to DarkMatter. Returns a canonical v2 context object.
     "input":  "what the agent received",
     "output": "what the agent produced",
     "model":  "claude-sonnet-4-6"
-  },
-  "eventType": "commit",
-  "parentId":  "ctx_previous",
-  "traceId":   "trc_run_123",
-  "branchKey": "main",
-  "agent": {
-    "role":     "researcher",
-    "provider": "anthropic",
-    "model":    "claude-sonnet-4-6"
   }
 }
 ```
 
-- `payload` — required. Fields: `input`, `output`, `memory`, `artifacts`, `variables`
-- `toAgentId` — optional. For multi-agent pipelines, pass the recipient agent ID. Omit for single-agent workflows — defaults to the committing agent's own identity
-- `context` (legacy flat JSON) still accepted — stored as `{ output: context }`
-- `parentId` links this commit to a previous context, building the lineage graph
-- `eventType` defaults to `commit`. See [Event Types](#event-types)
-- `traceId` groups commits into a run/trace
+`payload` is the only required field. Everything else is optional:
+
+- `toAgentId` — for multi-agent pipelines, routes the commit to a specific recipient agent. Omit for single-agent workflows
+- `parentId` — links this commit to a previous context, building the lineage graph
+- `eventType` — defaults to `commit`. See [Event Types](#event-types)
+- `traceId` — groups commits into a run/trace
+- `agent` — `{ role, provider, model }` metadata from the caller
 
 Returns a canonical v2 context object:
 ```json
@@ -303,7 +243,6 @@ Branch from any checkpoint. Creates a new context node with explicit lineage fie
 ```json
 {
   "fromCheckpoint": "ctx_...",
-  "toAgentId":      "dm_...",
   "branchKey":      "experiment-1",
   "agent":          { "role": "researcher", "model": "claude-opus-4-6" }
 }
