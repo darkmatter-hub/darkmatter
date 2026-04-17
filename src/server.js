@@ -1079,9 +1079,11 @@ app.post('/api/commit', apiLimiter, requireApiKey, async (req, res) => {
       .single();
 
     // Fire event hooks (post-commit)
-    fireEventHooks(req.agent.agent_id, 'commit', {
-      ctxId: commitId, toAgentId: resolvedToAgentId, traceId, eventType: resolvedType,
-    }).catch(() => {});
+    if (typeof fireEventHooks === 'function') {
+      fireEventHooks(req.agent.agent_id, 'commit', {
+        ctxId: commitId, toAgentId: resolvedToAgentId, traceId, eventType: resolvedType,
+      }).catch(() => {});
+    }
 
     if (recipientAgent?.webhook_url) {
       deliverWebhook(recipientAgent, {
