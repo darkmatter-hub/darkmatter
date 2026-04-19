@@ -295,19 +295,19 @@ nav { position: sticky; top: 0; z-index: 100; background: rgba(255,255,255,0.96)
 
     <div class="scenario-grid">
       <div class="scenario-card selected" onclick="selectScenario(this, 'codereview')" id="sc-codereview">
-        <div class="sc-icon">🔍</div>
-        <div class="sc-title">Code review</div>
-        <div class="sc-desc">An agent reviews a pull request for security issues and policy violations</div>
+        <div class="sc-icon">💰</div>
+        <div class="sc-title">Refund decision</div>
+        <div class="sc-desc">An agent approves or denies a customer refund. If the customer disputes it, what's the record?</div>
       </div>
       <div class="scenario-card" onclick="selectScenario(this, 'support')" id="sc-support">
-        <div class="sc-icon">💬</div>
-        <div class="sc-title">Support triage</div>
-        <div class="sc-desc">An agent classifies a customer issue, drafts a response, and escalates if needed</div>
+        <div class="sc-icon">🔒</div>
+        <div class="sc-title">Account lock</div>
+        <div class="sc-desc">An agent revokes access after suspicious activity. The user wants to know exactly why.</div>
       </div>
       <div class="scenario-card" onclick="selectScenario(this, 'research')" id="sc-research">
-        <div class="sc-icon">📄</div>
-        <div class="sc-title">Content summary</div>
-        <div class="sc-desc">An agent reads multiple sources and produces a summary for human review</div>
+        <div class="sc-icon">🚫</div>
+        <div class="sc-title">Content removal</div>
+        <div class="sc-desc">An agent removes a post for policy violation. The creator disputes the decision.</div>
       </div>
     </div>
 
@@ -511,84 +511,88 @@ nav { position: sticky; top: 0; z-index: 100; background: rgba(255,255,255,0.96)
 // ── Scenario data ──
 const scenarios = {
   codereview: {
-    agent: 'Code Review Agent',
-    action: 'Review pull request #412',
+    agent: 'Refund Agent',
+    action: 'Customer dispute — order #84721',
     proofLevel: 'signed',
     proofBadgeClass: 'pb-signed',
     proofDesc: 'This record was signed by the agent before it reached DarkMatter. If anyone changed it, verification would fail.',
     recordId: 'rec_4c2f8a1e93b7',
     payload: `{
-  "pr":         "#412 — add user export endpoint",
-  "verdict":    "changes_requested",
-  "issues": [
-    "SQL query on line 84 not parameterised",
-    "No rate limiting on export endpoint"
-  ],
-  "policy_ref": "security-checklist-v4",
-  "severity":   "high"
+  "order":      "#84721",
+  "customer":   "sarah.chen@email.com",
+  "claim":      "Item defective on arrival — reported day 3",
+  "decision":   "refund_approved",
+  "amount":     "$1,240.00",
+  "reason":     "Defect claim within 30-day policy window",
+  "policy_ref": "returns-policy-v6",
+  "decided_by": "refund-agent-v3"
 }`,
     actions: [
-      { icon: '🔧', type: 'tool', name: 'fetch_diff', detail: 'Pulling diff for PR #412' },
-      { icon: '🧠', type: 'think', name: 'security_scan', detail: 'Checking against security-checklist-v4' },
-      { icon: '🔧', type: 'tool', name: 'pattern_match', detail: 'Scanning for injection vulnerabilities' },
-      { icon: '✍️', type: 'write', name: 'commit_review', detail: 'Signing and recording: changes_requested · high severity' },
+      { icon: '🔧', type: 'tool', name: 'fetch_order', detail: 'Loading order #84721 — sarah.chen@email.com' },
+      { icon: '🧠', type: 'think', name: 'eligibility_check', detail: 'Checking claim against returns-policy-v6' },
+      { icon: '🔧', type: 'tool', name: 'verify_window', detail: 'Confirming day 3 — within 30-day window' },
+      { icon: '✍️', type: 'write', name: 'commit_decision', detail: 'Signing and recording: refund_approved · $1,240.00' },
     ],
-    vrBody: 'This record has not been altered. The agent\'s findings and severity rating are exactly as produced during review.',
+    vrBody: 'This record has not been altered. The refund decision, amount, and policy basis are exactly as the agent produced them.',
     vrDetail: 'Proof level: Signed · Verified locally · No DarkMatter account required to verify',
-    proofNote: 'The record you just verified was <strong>Signed</strong>. The review agent\'s signature proves this finding was not changed after it was produced — useful if a vulnerability is later disputed or traced back to this review.',
+    proofNote: 'The record you just verified was <strong>Signed</strong>. If the customer disputes the outcome, or a chargeback is filed, this record proves exactly what the agent saw, which policy it applied, and what it decided — at that moment.',
     activeCard: 'pe-signed',
   },
   support: {
-    agent: 'Billing Agent',
-    action: 'Process refund request',
+    agent: 'Security Agent',
+    action: 'Access revoked — account j.torres@acme.com',
     proofLevel: 'signed',
     proofBadgeClass: 'pb-signed',
     proofDesc: 'This record was signed by the agent before it reached DarkMatter. If anyone changed it, verification would fail.',
     recordId: 'rec_8d1b7e4f29a3',
     payload: `{
-  "invoice":    "#4821",
-  "customer":   "Meridian Analytics LLC",
-  "decision":   "refund_approved",
-  "amount":     "$1,240.00",
-  "reason":     "Duplicate charge — billing cycle overlap",
-  "approved_by":"billing-agent-v2"
+  "account":     "j.torres@acme.com",
+  "decision":    "access_revoked",
+  "trigger":     "11 failed login attempts · new location · IP 185.23.91.12",
+  "action":      "Session terminated · MFA reset required · User notified",
+  "risk_score":  0.94,
+  "rule_ref":    "SEC-RULE-07 · anomalous access pattern",
+  "reversible":  true,
+  "decided_by":  "security-agent-v4"
 }`,
     actions: [
-      { icon: '🔧', type: 'tool', name: 'lookup_invoice', detail: 'Fetching invoice #4821' },
-      { icon: '🧠', type: 'think', name: 'verify_eligibility', detail: 'Checking refund policy against account history' },
-      { icon: '🔧', type: 'tool', name: 'calculate_amount', detail: 'Confirming charge overlap — $1,240.00' },
-      { icon: '✍️', type: 'write', name: 'commit_decision', detail: 'Signing and recording: refund_approved' },
+      { icon: '🔧', type: 'tool', name: 'fetch_signals', detail: 'Reading login attempts for j.torres' },
+      { icon: '🧠', type: 'think', name: 'risk_score', detail: 'Scoring against SEC-RULE-07 — result: 0.94' },
+      { icon: '🔧', type: 'tool', name: 'revoke_session', detail: 'Terminating session · flagging MFA reset' },
+      { icon: '✍️', type: 'write', name: 'commit_action', detail: 'Signing and recording: access_revoked · risk 0.94' },
     ],
-    vrBody: 'This record has not been altered. The refund decision and amount are exactly as the agent produced them.',
+    vrBody: 'This record has not been altered. The revocation decision, risk score, and trigger data are exactly as the agent produced them.',
     vrDetail: 'Proof level: Signed · Verified locally · No DarkMatter account required to verify',
-    proofNote: 'The record you just verified was <strong>Signed</strong>. The billing agent\'s signature proves this refund decision was not changed after it was made — useful if the customer or an auditor later questions the approval.',
+    proofNote: 'The record you just verified was <strong>Signed</strong>. If the user disputes the lock — "I was travelling, that was me" — this record proves exactly what signals the agent saw and what threshold it applied, without anyone having to take the company\'s word for it.',
     activeCard: 'pe-signed',
   },
   research: {
-    agent: 'Access Control Agent',
-    action: 'Evaluate access request',
-    proofLevel: 'recorded',
-    proofBadgeClass: 'pb-recorded',
-    proofDesc: 'This record was captured by DarkMatter. You can inspect it, but some trust in how it was captured is still required.',
+    agent: 'Moderation Agent',
+    action: 'Content removed — post ID 9f3a2c',
+    proofLevel: 'signed',
+    proofBadgeClass: 'pb-signed',
+    proofDesc: 'This record was signed by the agent before it reached DarkMatter. If anyone changed it, verification would fail.',
     recordId: 'rec_9a1b5f3c87d2',
     payload: `{
-  "request_id": "ACC-20940",
-  "user":       "j.santos@company.com",
-  "resource":   "internal analytics dashboard",
-  "decision":   "access_granted",
-  "basis":      "Role: senior analyst · approved by policy v3.1",
-  "expires":    "2026-07-17"
+  "post_id":    "9f3a2c",
+  "author":     "@marcus_dev",
+  "decision":   "removed",
+  "category":   "abusive_language",
+  "confidence": 0.92,
+  "rule_ref":   "community-policy-v12 § 4.2",
+  "appealable": true,
+  "decided_by": "moderation-agent-v5"
 }`,
     actions: [
-      { icon: '🔧', type: 'tool', name: 'lookup_user', detail: 'Fetching role and clearance for j.santos' },
-      { icon: '🧠', type: 'think', name: 'evaluate_policy', detail: 'Checking access policy v3.1' },
-      { icon: '🔧', type: 'tool', name: 'check_resource', detail: 'Verifying resource classification' },
-      { icon: '✍️', type: 'write', name: 'commit_decision', detail: 'Recording: access_granted · expires 2026-07-17' },
+      { icon: '🔧', type: 'tool', name: 'fetch_content', detail: 'Loading post 9f3a2c — @marcus_dev' },
+      { icon: '🧠', type: 'think', name: 'classify_content', detail: 'Running classifier — community-policy-v12 § 4.2' },
+      { icon: '🔧', type: 'tool', name: 'remove_post', detail: 'Removing content · flagging as appealable' },
+      { icon: '✍️', type: 'write', name: 'commit_action', detail: 'Signing and recording: removed · confidence 0.92' },
     ],
-    vrBody: 'This record was captured by DarkMatter. The chain is intact. Note: this is a Recorded record — some trust in the capture layer is still required.',
-    vrDetail: 'Proof level: Recorded · Chain intact · Upgrade to Signed for stronger proof',
-    proofNote: 'This record is <strong>Recorded</strong> — captured by DarkMatter, but not signed by the agent. You can inspect what the agent produced, but you cannot independently prove it was unaltered without upgrading to Signed.',
-    activeCard: 'pe-recorded',
+    vrBody: 'This record has not been altered. The removal decision, category, confidence score, and policy reference are exactly as the agent produced them.',
+    vrDetail: 'Proof level: Signed · Verified locally · No DarkMatter account required to verify',
+    proofNote: 'The record you just verified was <strong>Signed</strong>. If @marcus_dev appeals and claims the removal was arbitrary, this record proves exactly what the agent classified, at what confidence, and under which policy — before any human touched it.',
+    activeCard: 'pe-signed',
   },
 };
 
@@ -634,7 +638,10 @@ function goToStep(n) {
 
   if (n === 2) startStep2();
   if (n === 3) setupStep3();
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  // Scroll to top of demo content, not page top, so next-step button stays visible
+  const demoMain = document.querySelector('.demo-main');
+  if (demoMain) demoMain.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  else window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 // ── Demo commit — server-side endpoint, no key in browser ─────
@@ -681,9 +688,12 @@ async function fetchRealBundle() {
 
 function startStep2() {
   const s = scenarios[currentScenario];
-  verifyDone = false;
-  realCtxId = null;
-  realVerifyUrl = null;
+  verifyDone     = false;
+  realCtxId      = null;
+  realVerifyUrl  = null;
+  realExportUrl  = null;
+  realProofLevel = null;
+  realBundle     = null;
   recordTimestamp = getTimestamp();
 
   // Reset

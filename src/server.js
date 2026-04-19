@@ -466,8 +466,7 @@ const demoLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-const DEMO_AGENT_ID  = process.env.DEMO_AGENT_ID  || 'dm_demo_public';
-const DEMO_API_KEY   = process.env.DEMO_API_KEY   || 'dm_sk_demo_public_readonly';
+const DEMO_AGENT_ID = process.env.DEMO_AGENT_ID || 'dm_demo_public';
 
 app.post('/api/demo/commit', demoLimiter, async (req, res) => {
   try {
@@ -479,22 +478,22 @@ app.post('/api/demo/commit', demoLimiter, async (req, res) => {
 
     const payloads = {
       codereview: {
-        input:      'Review PR #847 — auth middleware refactor, session token validation',
-        output:     'Approved. No security regressions. Token expiry logic correct. Recommend adding rate limit to refresh endpoint before merge.',
+        input:      'Customer dispute — order #84721, sarah.chen@email.com claims item defective on day 3',
+        output:     'Refund approved. $1,240.00 returned. Basis: defect claim within 30-day policy window (returns-policy-v6).',
         model:      'claude-sonnet-4-6',
-        agent_role: 'code-reviewer',
+        agent_role: 'refund-agent',
       },
       support: {
-        input:      'Process refund request — invoice #4821, Meridian Analytics LLC',
-        output:     'Refund approved. Amount: $1,240.00. Reason: duplicate charge, billing cycle overlap.',
+        input:      '11 failed login attempts from new location (IP: 185.23.91.12) — account j.torres@acme.com',
+        output:     'Access revoked. Session terminated. MFA reset required. Basis: SEC-RULE-07, risk score 0.94. Reversible pending user verification.',
         model:      'claude-sonnet-4-6',
-        agent_role: 'billing-agent',
+        agent_role: 'security-agent',
       },
       research: {
-        input:      'Evaluate access request ACC-20940 — j.santos@company.com requesting internal analytics dashboard',
-        output:     'Access granted. Basis: senior analyst role, policy v3.1. Expires 2026-07-17.',
+        input:      'Post 9f3a2c by @marcus_dev flagged for policy review — community-policy-v12 § 4.2',
+        output:     'Content removed. Category: abusive_language. Confidence: 0.92. Decision is appealable.',
         model:      'claude-sonnet-4-6',
-        agent_role: 'access-control-agent',
+        agent_role: 'moderation-agent',
       },
     };
 
