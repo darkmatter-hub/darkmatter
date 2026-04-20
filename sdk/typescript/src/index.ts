@@ -381,33 +381,49 @@ export function verifyReceipt(receipt: CommitReceipt): {
 const DM_BASE = 'https://darkmatterhub.ai';
 
 interface SDKState {
-  apiKey:        string | null;
-  agentId:       string | null;
-  keyId:         string;
-  baseUrl:       string;
-  lastCtxId:     string | null;
-  lastIntegrity: string | null;
+  apiKey:           string | null;
+  agentId:          string | null;
+  keyId:            string;
+  baseUrl:          string;
+  customerKeyId:    string | null;   // Phase 2: stable key label
+  customerPubkey:   string | null;   // Phase 2: public key PEM sent on every commit
+  lastCtxId:        string | null;
+  lastIntegrity:    string | null;
 }
 
 const state: SDKState = {
-  apiKey:        null,
-  agentId:       null,
-  keyId:         'default',
-  baseUrl:       DM_BASE,
-  lastCtxId:     null,
-  lastIntegrity: null,
+  apiKey:           null,
+  agentId:          null,
+  keyId:            'default',
+  baseUrl:          DM_BASE,
+  customerKeyId:    null,
+  customerPubkey:   null,
+  lastCtxId:        null,
+  lastIntegrity:    null,
 };
 
 export function configure(options: {
-  apiKey?:  string;
-  agentId?: string;
-  keyId?:   string;
-  baseUrl?: string;
+  apiKey?:         string;
+  agentId?:        string;
+  keyId?:          string;
+  baseUrl?:        string;
+  /**
+   * Phase 2 — customer-held key fields.
+   * Set these now to be forward-compatible with Phase 2 verification.
+   * When customerKeyId + customerPubkey are present, they are included
+   * in every commit envelope so verifiers can check signatures without
+   * contacting DarkMatter. Signing itself happens outside the SDK
+   * (pass pre-computed agentSignature to commit()).
+   */
+  customerKeyId?:  string;
+  customerPubkey?: string;
 }): void {
-  if (options.apiKey)  state.apiKey  = options.apiKey;
-  if (options.agentId) state.agentId = options.agentId;
-  if (options.keyId)   state.keyId   = options.keyId;
-  if (options.baseUrl) state.baseUrl = options.baseUrl.replace(/\/$/, '');
+  if (options.apiKey)         state.apiKey         = options.apiKey;
+  if (options.agentId)        state.agentId        = options.agentId;
+  if (options.keyId)          state.keyId          = options.keyId;
+  if (options.baseUrl)        state.baseUrl        = options.baseUrl.replace(/\/$/, '');
+  if (options.customerKeyId)  state.customerKeyId  = options.customerKeyId;
+  if (options.customerPubkey) state.customerPubkey = options.customerPubkey;
 }
 
 function getApiKey(override?: string): string {
@@ -451,18 +467,19 @@ async function request<T>(method: string, path: string, body?: unknown, apiKey?:
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface CommitOptions {
-  toAgentId:       string;
-  payload:         Record<string, unknown>;
-  parentId?:       string;
-  traceId?:        string;
-  branchKey?:      string;
-  eventType?:      string;
-  agent?:          { role?: string; provider?: string; model?: string };
-  agentSignature?: string;   // pre-computed Ed25519 hex over canonical(envelope)
-  agentId?:        string;
-  keyId?:          string;
-  autoThread?:     boolean;
-  apiKey?:         string;
+  toAgentId?:       string;        // optional — defaults to committing agent
+  payload:          Record<string, unknown>;
+  parentId?:        string;
+  traceId?:         string;
+  branchKey?:       string;
+  eventType?:       string;
+  agent?:           { role?: string; provider?: string; model?: string };
+  agentSignature?:  string;        // pre-computed Ed25519 hex over canonical(envelope)
+  agentPublicKey?:  string;        // Phase 2: public key PEM — stored by server for independent verification
+  agentId?:         string;
+  keyId?:           string;
+  autoThread?:      boolean;
+  apiKey?:          string;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -482,11 +499,13 @@ export interface CommitOptions {
 export async function commit(options: CommitOptions): Promise<CommitReceipt> {
   const {
     toAgentId, payload, parentId, traceId, branchKey,
-    eventType, agent, agentSignature, autoThread = true, apiKey,
+    eventType, agent, agentSignature, agentPublicKey, autoThread = true, apiKey,
   } = options;
 
-  const agentId = getAgentId(options.agentId);
-  const keyId   = options.keyId ?? state.keyId;
+  const agentId = options.agentId ?? state.agentId ?? process.env.DARKMATTER_AGENT_ID ?? 'unknown';
+  // Phase 2: use customerKeyId in envelope when set so the key_id field
+  // is stable and matches the public key stored on the server.
+  const keyId   = options.keyId ?? state.customerKeyId ?? state.keyId;
   const ts      = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
 
   const resolvedParent = parentId
@@ -497,24 +516,28 @@ export async function commit(options: CommitOptions): Promise<CommitReceipt> {
     payload, parentIH, agentId, keyId, ts,
   );
 
+  // Phase 2: include agentPublicKey from options OR from configured state
+  const resolvedPubkey = agentPublicKey ?? state.customerPubkey ?? undefined;
+
   const body = {
-    toAgentId,
     payload,
-    payload_hash:   payloadHash,
-    integrity_hash: integrityHash,
+    payload_hash:    payloadHash,
+    integrity_hash:  integrityHash,
     envelope,
-    ...(agentSignature  ? { agent_signature: agentSignature } : {}),
-    ...(resolvedParent  ? { parentId: resolvedParent }        : {}),
-    ...(traceId         ? { traceId }                         : {}),
-    ...(branchKey       ? { branchKey }                       : {}),
-    ...(eventType       ? { eventType }                       : {}),
-    ...(agent           ? { agent }                           : {}),
+    ...(toAgentId       ? { toAgentId }                         : {}),
+    ...(agentSignature  ? { agent_signature: agentSignature }   : {}),
+    ...(resolvedPubkey  ? { agent_public_key: resolvedPubkey }  : {}),
+    ...(resolvedParent  ? { parentId: resolvedParent }          : {}),
+    ...(traceId         ? { traceId }                           : {}),
+    ...(branchKey       ? { branchKey }                         : {}),
+    ...(eventType       ? { eventType }                         : {}),
+    ...(agent           ? { agent }                             : {}),
   };
 
   const receipt = await request<CommitReceipt>('POST', '/api/commit', body, apiKey);
   receipt._envelope = envelope;
 
-  state.lastCtxId    = receipt.id;
+  state.lastCtxId     = receipt.id;
   state.lastIntegrity = integrityHash;
 
   return receipt;
