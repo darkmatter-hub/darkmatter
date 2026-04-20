@@ -489,9 +489,13 @@ nav { position: sticky; top: 0; z-index: 100; background: rgba(255,255,255,0.96)
       <!-- Real verify URL — populated when API commit succeeds -->
       <div id="real-record-block" style="margin-top:24px;padding:16px 20px;background:rgba(15,123,77,0.06);border:1px solid rgba(15,123,77,0.2);border-radius:6px;text-align:left;">
         <div style="font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--grn);margin-bottom:8px;">Your real record — created during this session</div>
-        <div style="font-size:13px;color:var(--t2);margin-bottom:10px;line-height:1.6;">This is not a simulation. The record you just saw was committed to the live DarkMatter system. Open it — it's verifiable by anyone.</div>
+        <div style="font-size:13px;color:var(--t2);margin-bottom:10px;line-height:1.6;">This is not a simulation. The record you just saw was committed to the live DarkMatter system. Open it, share it, or download the proof bundle to verify it offline — no DarkMatter required.</div>
         <a id="verify-url-display" href="#" target="_blank" style="font-family:var(--mono);font-size:11.5px;color:var(--purple);word-break:break-all;display:block;margin-bottom:12px;">Loading your verify URL…</a>
-        <a id="btn-open-record" href="#" target="_blank" class="btn-p" style="display:none;font-size:12px;padding:8px 18px;">Open your record ↗</a>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+          <a id="btn-open-record" href="#" target="_blank" class="btn-p" style="display:none;font-size:12px;padding:8px 18px;">Open your record ↗</a>
+          <button id="btn-download-bundle" onclick="downloadBundle()" class="btn-o" style="display:none;font-size:12px;padding:7px 16px;">Download proof bundle</button>
+        </div>
+        <div id="bundle-download-note" style="display:none;margin-top:10px;font-family:var(--mono);font-size:10px;color:var(--t3);">proof_bundle.json — verifiable offline: python verify_darkmatter_chain.py proof_bundle.json</div>
       </div>
 
       <div class="done-actions">
@@ -716,14 +720,14 @@ function startStep2() {
 
   commitToApi(currentScenario).then(result => {
     if (result && result.id) {
-      // Swap in real ID
       document.getElementById('rec-id').textContent = result.id;
       if (document.getElementById('rec-id-3')) {
         document.getElementById('rec-id-3').textContent = result.id;
       }
-      // Wire up verify URL display and open button
       const verifyUrlEl = document.getElementById('verify-url-display');
       const openBtn     = document.getElementById('btn-open-record');
+      const dlBtn       = document.getElementById('btn-download-bundle');
+      const dlNote      = document.getElementById('bundle-download-note');
       if (verifyUrlEl && result.verify_url) {
         verifyUrlEl.textContent = result.verify_url;
         verifyUrlEl.href        = result.verify_url;
@@ -732,8 +736,9 @@ function startStep2() {
         openBtn.href          = result.verify_url;
         openBtn.style.display = 'inline-block';
       }
+      if (dlBtn) dlBtn.style.display = 'inline-block';
+      if (dlNote) dlNote.style.display = 'block';
     } else {
-      // API call failed — hide the real-record block gracefully
       const verifyUrlEl = document.getElementById('verify-url-display');
       if (verifyUrlEl) verifyUrlEl.textContent = 'Could not reach API — try refreshing.';
       const block = document.getElementById('real-record-block');
@@ -943,6 +948,26 @@ function formatPayload(raw) {
     .replace(/"([^"]+)":/g, '<span class="pk">"$1"</span>:')
     .replace(/: "([^"]+)"/g, ': <span class="ps">"$1"</span>')
     .replace(/[{}]/g, m => `<span class="pc">${m}</span>`);
+}
+
+async function downloadBundle() {
+  const btn = document.getElementById('btn-download-bundle');
+  if (!realExportUrl) return;
+  if (btn) { btn.textContent = 'Fetching…'; btn.disabled = true; }
+  try {
+    const res  = await fetch(realExportUrl);
+    const data = await res.json();
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = `darkmatter_proof_${realCtxId || 'bundle'}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    if (btn) { btn.textContent = '✓ Downloaded'; btn.disabled = false; }
+  } catch (_) {
+    if (btn) { btn.textContent = 'Download failed'; btn.disabled = false; }
+  }
 }
 </script>
 
