@@ -1641,7 +1641,7 @@ app.get('/api/verify/:ctxId', flexAuth, async (req, res) => {
 //   commits         — ordered commits, each with _proof receipt
 //   export_hash     — SHA-256 of the entire bundle (uniquely identifies this export)
 //
-app.get('/api/export/:ctxId', flexAuth, async (req, res) => {
+app.get('/api/export/:ctxId', async (req, res) => {
   try {
     const { ctxId } = req.params;
 
