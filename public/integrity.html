@@ -81,6 +81,20 @@ a{color:inherit;text-decoration:none;}
 .callout.green{background:rgba(5,150,105,.05);border:1px solid rgba(5,150,105,.15);}
 .callout.green .callout-title{color:#059669;}
 
+/* GUARANTEE TIERS */
+.tier-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin:1.5rem 0 2.5rem;}
+.tier-card{background:var(--bg);padding:1.5rem 1.25rem;}
+.tier-card.tier-live{background:#fff;}
+.tier-card.tier-roadmap{background:var(--bg2);opacity:.82;}
+.tier-level{font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--text3);margin-bottom:.5rem;}
+.tier-name{font-size:15px;font-weight:700;color:var(--text);margin-bottom:.4rem;letter-spacing:-.02em;}
+.tier-claim{font-family:var(--mono);font-size:11px;color:var(--green);margin-bottom:1rem;line-height:1.55;}
+.tier-items{list-style:none;padding:0;display:flex;flex-direction:column;gap:.35rem;margin-bottom:1rem;}
+.tier-items li{font-size:13px;color:var(--text2);line-height:1.5;display:flex;gap:8px;}
+.tier-items li::before{content:'·';color:var(--text3);flex-shrink:0;}
+.tier-closes{font-family:var(--mono);font-size:10px;color:var(--text3);padding-top:.75rem;border-top:1px solid var(--border);line-height:1.5;}
+@media(max-width:700px){.tier-grid{grid-template-columns:1fr;}}
+
 /* CLAIM BOXES */
 .claim-box{background:var(--bg2);border:1px solid var(--border);border-left:3px solid var(--violet);border-radius:0 8px 8px 0;padding:16px 20px;margin:1.5rem 0;font-size:14.5px;color:var(--text2);font-style:italic;line-height:1.7;}
 .claim-box strong{color:var(--text);font-style:normal;}
@@ -159,6 +173,10 @@ a{color:inherit;text-decoration:none;}
       <a class="sb-link" href="#what-is-hashed">What is hashed</a>
       <a class="sb-link" href="#what-is-logged">What is logged</a>
       <a class="sb-link" href="#what-is-checkpointed">What is checkpointed</a>
+    </div>
+    <div class="sb-section">
+      <div class="sb-label">Trust architecture</div>
+      <a class="sb-link" href="#guarantee-tiers">Three levels of guarantee</a>
     </div>
     <div class="sb-section">
       <div class="sb-label">Phases</div>
@@ -280,6 +298,51 @@ a{color:inherit;text-decoration:none;}
 }</code></pre>
 
     <p>The checkpoint is signed over its canonical form — the same signing rules as commits. Anyone can verify the checkpoint signature using DarkMatter's public key at <a href="/api/log/pubkey"><code>GET /api/log/pubkey</code></a>.</p>
+
+    <hr/>
+
+    <!-- GUARANTEE TIERS -->
+    <h2 id="guarantee-tiers">Three levels of guarantee</h2>
+    <p>Each level answers a different question a skeptic can ask. Levels 1 and 2 are live. Level 3 is on the roadmap — the SDK is already forward-compatible.</p>
+
+    <div class="tier-grid">
+      <div class="tier-card tier-live">
+        <p class="tier-level">Level 1 &mdash; Live</p>
+        <p class="tier-name">Verifiable record</p>
+        <p class="tier-claim">"You don't have to trust us<br>to verify it."</p>
+        <ul class="tier-items">
+          <li>Hash chain — any alteration breaks the chain</li>
+          <li>Full replay — decision chain reconstructable root to tip</li>
+          <li>Offline verification — no network, no DarkMatter</li>
+          <li>Signed checkpoints published to GitHub every 10 minutes</li>
+        </ul>
+        <p class="tier-closes">Closes: "Did DarkMatter alter the record after the fact?"</p>
+      </div>
+      <div class="tier-card tier-live">
+        <p class="tier-level">Level 2 &mdash; Live</p>
+        <p class="tier-name">Independent verification</p>
+        <p class="tier-claim">"Verification does not<br>depend on DarkMatter."</p>
+        <ul class="tier-items">
+          <li>Self-contained proof bundle — complete without any external call</li>
+          <li>Embedded verifier script — no SDK, no account required</li>
+          <li>External timestamp anchoring — record cannot be backdated</li>
+          <li>Bundle survives DarkMatter going offline or being compromised</li>
+        </ul>
+        <p class="tier-closes">Closes: "What if DarkMatter disappears or can't be trusted?"</p>
+      </div>
+      <div class="tier-card tier-roadmap">
+        <p class="tier-level">Level 3 &mdash; Roadmap</p>
+        <p class="tier-name">Non-repudiation</p>
+        <p class="tier-claim">"We couldn't forge it<br>even if we wanted to."</p>
+        <ul class="tier-items">
+          <li>Customer-held signing keys — DarkMatter never sees your private key</li>
+          <li>Signatures cryptographically impossible for DarkMatter to produce</li>
+          <li>No API change required — envelope already carries the key fields</li>
+          <li>SDK forward-compatible now — set <code>customer_key_path</code> today</li>
+        </ul>
+        <p class="tier-closes">Closes: "Could DarkMatter have fabricated this record entirely?"</p>
+      </div>
+    </div>
 
     <hr/>
 

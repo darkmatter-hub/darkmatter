@@ -67,7 +67,7 @@ console.log('\nAuth middleware');
 test('requireAuth is async',   function() { assert(server.includes('async function requireAuth')); });
 test('wsAuth is async',        function() { assert(server.includes('async function wsAuth')); });
 test('flexAuth defined',       function() { assert(server.includes('async function flexAuth')); });
-test('export uses flexAuth',   function() { assert(server.includes("app.get('/api/export/:ctxId', flexAuth,")); });
+test('export uses flexAuth',   function() { assert(server.includes("app.get('/api/export/:ctxId',") && !server.includes("app.get('/api/export/:ctxId', flexAuth,"), 'export should be public (no flexAuth)'); });
 test('verify uses flexAuth',   function() { assert(server.includes("app.get('/api/verify/:ctxId', flexAuth,")); });
 test('wsAuth token rotation',  function() { assert(server.includes('X-New-Access-Token')); });
 test('requireApiKey is async', function() { assert(server.includes('async function requireApiKey')); });
