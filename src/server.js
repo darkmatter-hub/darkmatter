@@ -6012,30 +6012,46 @@ app.patch('/api/workspace/provider-keys/:id', requireAuth, async (req, res) => {
 app.get('/api/workspace/api-keys', requireAuth, async (req, res) => {
   try {
     const userId    = req.user.id;
-    const userEmail = req.user.email;
+    const userEmail = req.user.email || '';
 
-    // Primary: agents owned by this user_id
+    // Step 1: agents with matching user_id (created via dashboard)
     const { data: byUserId } = await supabaseService
       .from('agents')
       .select('agent_id, agent_name, created_at, user_id, api_key')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
 
-    // Secondary: agents created for this user's email via workspace membership
-    // (covers agents provisioned at signup or by admin before user_id was linked)
-    const { data: byEmail } = userEmail ? await supabaseService
+    // Step 2: if we found any, also look for agents whose user_id is null
+    // but whose api_key matches a key we know belongs to this user.
+    // This covers SDK-created agents that predate the user_id column.
+    // Strategy: find all agents where agent_name contains the email prefix
+    // OR agent_id starts with 'dm_' and was registered with no user_id.
+    const emailPrefix = userEmail.split('@')[0].toLowerCase();
+    const { data: byName } = emailPrefix ? await supabaseService
       .from('agents')
       .select('agent_id, agent_name, created_at, user_id, api_key')
-      .eq('agent_email', userEmail)
-      .order('created_at', { ascending: false }) : { data: [] };
+      .ilike('agent_name', `%${emailPrefix}%`)
+      .is('user_id', null)
+      .order('created_at', { ascending: false })
+      .limit(50) : { data: [] };
 
-    // Merge, deduplicate by agent_id
+    // Merge and deduplicate
     const seen = new Set();
-    const all  = [...(byUserId || []), ...(byEmail || [])].filter(a => {
+    const all  = [...(byUserId || []), ...(byName || [])].filter(a => {
       if (seen.has(a.agent_id)) return false;
       seen.add(a.agent_id);
       return true;
     });
+
+    // Step 3: for any null user_id agents we found, backfill user_id so
+    // they show up correctly on future logins without this fallback
+    const toBackfill = all.filter(a => !a.user_id);
+    if (toBackfill.length > 0) {
+      await supabaseService
+        .from('agents')
+        .update({ user_id: userId })
+        .in('agent_id', toBackfill.map(a => a.agent_id));
+    }
 
     const keys = all.map(a => ({
       id:         a.agent_id,

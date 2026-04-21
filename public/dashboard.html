@@ -205,7 +205,28 @@ body { font-family: var(--sans); background:var(--bg); color: var(--t0); display
 /* ── PAGE CONTENT ── */
 .page-content { padding: 28px 32px 48px; max-width: 1100px; }
 
-/* ── SECTION SWITCHING ── */
+/* ── QUICKSTART CODE COPY ── */
+.qs-code-wrap {
+  position: relative;
+}
+.qs-code-wrap code.qs-code {
+  padding-right: 36px;
+}
+.qs-copy-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--t3);
+  padding: 2px 4px;
+  border-radius: 3px;
+  transition: color .12s, background .12s;
+  line-height: 1;
+}
+.qs-copy-btn:hover { color: var(--t0); background: var(--bg-2); }
+.qs-copy-btn svg { display: block; }
 .dm-section { display: none; }
 .dm-section.active { display: block; }
 
@@ -351,11 +372,19 @@ body { font-family: var(--sans); background:var(--bg); color: var(--t0); display
   z-index: 1000;
   box-shadow: 0 8px 32px rgba(0,0,0,0.18);
 }
+.user-menu-header {
+  padding: 12px 14px 10px;
+}
+.user-menu-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.9);
+  margin-bottom: 2px;
+}
 .user-menu-email {
-  padding: 12px 14px;
   font-family: var(--mono);
   font-size: 11px;
-  color: rgba(255,255,255,0.5);
+  color: rgba(255,255,255,0.45);
 }
 .user-menu-divider { height: 1px; background: rgba(255,255,255,0.1); }
 .user-menu-item {
@@ -977,17 +1006,24 @@ body { font-family: var(--sans); background:var(--bg); color: var(--t0); display
         <div class="nav-avatar" id="nav-avatar">?</div>
         <div class="nav-user-info">
           <div class="nav-user-name" id="nav-user-name">Account</div>
-          <div class="nav-user-role" id="nav-user-role">Member</div>
+          <div class="nav-user-role" id="nav-user-role" style="display:none;"></div>
         </div>
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="color:var(--t4);flex-shrink:0;"><polyline points="6 9 12 15 18 9"/></svg>
       </div>
     </div>
   </nav>
 
-  <!-- User dropdown — outside nav so it can't block nav links -->
+  <!-- User dropdown — fixed position outside nav -->
   <div class="user-menu" id="user-menu" style="display:none;">
-    <div class="user-menu-email" id="user-menu-email"></div>
+    <div class="user-menu-header">
+      <div class="user-menu-name" id="user-menu-name"></div>
+      <div class="user-menu-email" id="user-menu-email"></div>
+    </div>
     <div class="user-menu-divider"></div>
+    <a class="user-menu-item" href="#">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      My organizations
+    </a>
     <a class="user-menu-item" href="/docs" target="_blank">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
       Docs
@@ -1026,7 +1062,7 @@ body { font-family: var(--sans); background:var(--bg); color: var(--t0); display
           <div style="padding:48px 32px 32px;">
             <div style="max-width:520px;">
               <div style="font-size:15px;font-weight:600;color:var(--t0);margin-bottom:8px;">No API keys yet</div>
-              <div style="font-size:13.5px;color:var(--t2);line-height:1.7;margin-bottom:24px;">Create an API key to assign to your agent or workflow. Every commit will be associated with this key — so you can trace decisions back to the agent that made them.</div>
+              <div style="font-size:13.5px;color:var(--t2);line-height:1.7;margin-bottom:24px;">Create an API key to assign to your agent or workflow. Every commit will be associated with this key, so you can trace decisions back to the agent that made them.</div>
               <button onclick="createApiKey()" style="font-family:var(--mono);font-size:12px;font-weight:600;padding:8px 20px;background:var(--t0);color:#fff;border:none;border-radius:7px;cursor:pointer;margin-bottom:36px;">Create your first key</button>
 
               <!-- Inline quickstart shown only on empty state -->
@@ -1037,21 +1073,21 @@ body { font-family: var(--sans); background:var(--bg); color: var(--t0); display
                     <div class="qs-num">1</div>
                     <div class="qs-body">
                       <div class="qs-title">Install the SDK</div>
-                      <code class="qs-code">pip install darkmatter-sdk</code>
+                      <div class="qs-code-wrap"><code class="qs-code">pip install darkmatter-sdk</code><button type="button" class="qs-copy-btn" onclick="qsCopy(this,'pip install darkmatter-sdk')" title="Copy"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div>
                     </div>
                   </div>
                   <div class="qs-step">
                     <div class="qs-num">2</div>
                     <div class="qs-body">
                       <div class="qs-title">Configure with your key</div>
-                      <code class="qs-code">import darkmatter as dm<br>dm.configure(api_key="dm_sk_…")</code>
+                      <div class="qs-code-wrap"><code class="qs-code">import darkmatter as dm<br>dm.configure(api_key="dm_sk_…")</code><button type="button" class="qs-copy-btn" onclick="qsCopy(this,'import darkmatter as dm\ndm.configure(api_key=&quot;dm_sk_…&quot;)')" title="Copy"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div>
                     </div>
                   </div>
                   <div class="qs-step">
                     <div class="qs-num">3</div>
                     <div class="qs-body">
                       <div class="qs-title">Commit your first decision</div>
-                      <code class="qs-code">ctx = dm.commit(payload={<br>&nbsp;&nbsp;"input":  "Approve refund for order #84721?",<br>&nbsp;&nbsp;"output": "Approved. Reason: within 30-day window"<br>})<br>print(ctx["verify_url"])  # open to verify</code>
+                      <div class="qs-code-wrap"><code class="qs-code">ctx = dm.commit(payload={<br>&nbsp;&nbsp;"input":  "Approve refund for order #84721?",<br>&nbsp;&nbsp;"output": "Approved. Reason: within 30-day window"<br>})<br>print(ctx["verify_url"])</code><button type="button" class="qs-copy-btn" onclick="qsCopy(this,'ctx = dm.commit(payload={\n  &quot;input&quot;:  &quot;Approve refund for order #84721?&quot;,\n  &quot;output&quot;: &quot;Approved. Reason: within 30-day window&quot;\n})\nprint(ctx[&quot;verify_url&quot;])')" title="Copy"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div>
                     </div>
                   </div>
                 </div>
@@ -2059,7 +2095,7 @@ function renderApiKeys(keys) {
       <div style="padding:48px 32px 32px;">
         <div style="max-width:520px;">
           <div style="font-size:15px;font-weight:600;color:var(--t0);margin-bottom:8px;">No API keys yet</div>
-          <div style="font-size:13.5px;color:var(--t2);line-height:1.7;margin-bottom:24px;">Create an API key to assign to your agent or workflow. Every commit will be associated with this key — so you can trace decisions back to the agent that made them.</div>
+          <div style="font-size:13.5px;color:var(--t2);line-height:1.7;margin-bottom:24px;">Create an API key to assign to your agent or workflow. Every commit will be associated with this key, so you can trace decisions back to the agent that made them.</div>
           <button onclick="createApiKey()" style="font-family:var(--mono);font-size:12px;font-weight:600;padding:8px 20px;background:var(--t0);color:#fff;border:none;border-radius:7px;cursor:pointer;margin-bottom:36px;">Create your first key</button>
           <div style="border-top:1px solid var(--brd);padding-top:28px;">
             <div style="font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--t3);margin-bottom:16px;">Quick start — test your key right away</div>
@@ -2438,15 +2474,25 @@ async function loadUserProfile() {
   setUserDisplay(name, email, 'Member');
 }
 
+function qsCopy(btn, text) {
+  const decoded = text.replace(/&quot;/g, '"').replace(/&amp;/g, '&');
+  navigator.clipboard.writeText(decoded).then(() => {
+    const orig = btn.innerHTML;
+    btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>';
+    btn.style.color = 'var(--grn)';
+    setTimeout(() => { btn.innerHTML = orig; btn.style.color = ''; }, 1800);
+  });
+}
+
 function setUserDisplay(name, email, role) {
-  const avatarEl  = document.getElementById('nav-avatar');
-  const nameEl    = document.getElementById('nav-user-name');
-  const roleEl    = document.getElementById('nav-user-role');
-  const emailEl   = document.getElementById('user-menu-email');
-  if (avatarEl)  avatarEl.textContent  = name.slice(0, 2).toUpperCase();
-  if (nameEl)    nameEl.textContent    = name;
-  if (roleEl)    roleEl.textContent    = role;
-  if (emailEl)   emailEl.textContent   = email;
+  const avatarEl   = document.getElementById('nav-avatar');
+  const nameEl     = document.getElementById('nav-user-name');
+  const menuNameEl = document.getElementById('user-menu-name');
+  const emailEl    = document.getElementById('user-menu-email');
+  if (avatarEl)   avatarEl.textContent   = name.slice(0, 2).toUpperCase();
+  if (nameEl)     nameEl.textContent     = name;
+  if (menuNameEl) menuNameEl.textContent = name;
+  if (emailEl)    emailEl.textContent    = email;
 }
 
 // ── showView — smoke test expects this as a named function ──
