@@ -904,20 +904,21 @@ body { font-family: var(--sans); background:var(--bg); color: var(--t0); display
     <!-- Page content -->
     <div class="page-content" id="page-content">
 
-      <!-- API Key banner — always visible, first thing new users need -->
+      <!-- API Key banner — hidden until revealed -->
       <div class="api-key-banner" id="api-key-banner">
         <div class="api-key-banner-left">
           <div class="api-key-banner-label">Your API key</div>
           <div class="api-key-value" id="api-key-display">
-            <span id="api-key-text">Loading…</span>
+            <span id="api-key-text" style="color:var(--t4);font-size:13px;letter-spacing:.15em;">●●●●●●●●●●●●●●●●●●●●●●●●</span>
           </div>
           <div class="api-key-hint" id="api-key-hint" style="display:none;">
             <code>export DARKMATTER_API_KEY=<span id="api-key-env"></span></code>
           </div>
         </div>
         <div class="api-key-banner-actions">
-          <button class="api-key-btn" onclick="copyApiKey(this)" id="copy-key-btn">Copy key</button>
-          <button class="api-key-btn secondary" onclick="toggleKeyHint()">Show export</button>
+          <button class="api-key-btn secondary" onclick="revealApiKey(this)" id="reveal-key-btn">Show key</button>
+          <button class="api-key-btn" onclick="copyApiKey(this)" id="copy-key-btn" style="display:none;">Copy</button>
+          <button class="api-key-btn secondary" onclick="toggleKeyHint()" id="export-key-btn" style="display:none;">Show export</button>
         </div>
       </div>
 
@@ -1564,7 +1565,7 @@ function renderActivity(data) {
     <div class="activity-row" data-idx="${idx}" data-utc="${utc}" onclick="openDrawerByIdx(this)">
       <div class="activity-avatar" style="background:${getAvatarColor(a.agentName)}">${getInitials(a.agentName)}</div>
       <div class="activity-body">
-        <div class="activity-title">${escHtml(a.title)}</div>
+        <div class="activity-title">${escHtml(getRecordTitle(a))}</div>
         <div class="activity-meta">
           <span class="activity-user">${escHtml(a.agentName)}</span>
           <span class="activity-model ${modelType}">${modelLabel}</span>
@@ -1594,6 +1595,21 @@ function openDrawerByIdx(el) {
   });
 }
 
+function getRecordTitle(a) {
+  // Prefer explicit title fields
+  if (a.title && a.title !== 'AI conversation recorded') return a.title;
+  // Try to derive from payload
+  const p = a.payload || {};
+  if (p.decision)    return 'Decision: ' + p.decision;
+  if (p.action)      return 'Action: ' + p.action;
+  if (p.event_type)  return p.event_type;
+  if (p.output && typeof p.output === 'string') return p.output.slice(0, 80);
+  if (p.input  && typeof p.input  === 'string') return 'Record: ' + p.input.slice(0, 60);
+  if (p.message)     return p.message.slice(0, 80);
+  if (a.eventType)   return a.eventType;
+  // Last resort — show the record ID short form
+  return 'Commit ' + (a.id || a.traceId || '—').slice(0, 12);
+}
 function escHtml(s) {
   return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
@@ -1632,15 +1648,17 @@ async function loadStats() {
     if (!res.ok) return;
     const d = await res.json();
     const commits  = document.getElementById('stat-commits');
-    const chains   = document.getElementById('stat-chains');
     const people   = document.getElementById('stat-people');
     const exports  = document.getElementById('stat-exports');
-    if (commits) commits.textContent = d.conversations ?? '--';
-    if (chains)  chains.textContent  = d.conversations ?? '--';
+    const chains   = document.getElementById('stat-chains');
+    if (commits) commits.textContent = d.conversations ?? d.commits ?? '--';
     if (people)  people.textContent  = d.peopleActive  ?? '--';
-    if (exports) exports.textContent = d.exports       ?? '--';
+    if (exports) exports.textContent = d.exports       ?? '0';
+    if (chains)  chains.textContent  = d.verifications ?? d.exports ?? '0';
   } catch(e) { /* silent */ }
 }
+
+let _cachedApiKey = null;
 
 async function loadApiKey() {
   try {
@@ -1648,46 +1666,58 @@ async function loadApiKey() {
     if (!res.ok) return;
     const data = await res.json();
     const key = data.apiKey || data.api_key;
-    if (!key) return;
-    const display = document.getElementById('api-key-text');
-    const envEl   = document.getElementById('api-key-env');
-    if (display) {
-      // Show first 12 chars then mask rest
-      const masked = key.slice(0, 16) + '…' + key.slice(-4);
-      display.textContent = masked;
-      display.dataset.full = key;
+    if (key) {
+      _cachedApiKey = key;
+      const envEl = document.getElementById('api-key-env');
+      if (envEl) envEl.textContent = key;
     }
-    if (envEl) envEl.textContent = key;
   } catch(e) { /* silent */ }
 }
 
-function copyApiKey(btn) {
-  const keyEl = document.getElementById('api-key-text');
-  const key   = keyEl?.dataset.full || keyEl?.textContent;
-  if (!key || key.includes('…')) {
-    // Full key not loaded — fetch it
+function revealApiKey(btn) {
+  if (!_cachedApiKey) {
+    // Key not loaded yet — fetch then reveal
     authFetch('/api/me').then(r => r.json()).then(data => {
-      const full = data.apiKey || data.api_key;
-      if (full) {
-        navigator.clipboard.writeText(full).then(() => {
-          btn.textContent = '✓ Copied';
-          btn.classList.add('copied');
-          setTimeout(() => { btn.textContent = 'Copy key'; btn.classList.remove('copied'); }, 2000);
-        });
-      }
-    });
+      const key = data.apiKey || data.api_key;
+      if (!key) { showToast('No API key found — commit your first record to generate one'); return; }
+      _cachedApiKey = key;
+      _doReveal(key);
+    }).catch(() => showToast('Could not load API key'));
     return;
   }
+  _doReveal(_cachedApiKey);
+}
+
+function _doReveal(key) {
+  const textEl = document.getElementById('api-key-text');
+  if (textEl) {
+    textEl.textContent = key.slice(0, 16) + '…' + key.slice(-4);
+    textEl.style.color = 'var(--t0)';
+    textEl.style.letterSpacing = '.02em';
+    textEl.dataset.full = key;
+  }
+  document.getElementById('reveal-key-btn').style.display  = 'none';
+  document.getElementById('copy-key-btn').style.display    = 'inline-flex';
+  document.getElementById('export-key-btn').style.display  = 'inline-flex';
+}
+
+function copyApiKey(btn) {
+  const key = _cachedApiKey || document.getElementById('api-key-text')?.dataset.full;
+  if (!key) return;
   navigator.clipboard.writeText(key).then(() => {
     btn.textContent = '✓ Copied';
     btn.classList.add('copied');
-    setTimeout(() => { btn.textContent = 'Copy key'; btn.classList.remove('copied'); }, 2000);
+    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
   });
 }
 
 function toggleKeyHint() {
   const hint = document.getElementById('api-key-hint');
-  if (hint) hint.style.display = hint.style.display === 'none' ? 'block' : 'none';
+  const btn  = document.getElementById('export-key-btn');
+  if (!hint) return;
+  const showing = hint.style.display !== 'none';
+  hint.style.display = showing ? 'none' : 'block';
+  if (btn) btn.textContent = showing ? 'Show export' : 'Hide export';
 }
 
 async function loadConnectedServices() {
