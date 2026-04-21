@@ -1443,11 +1443,35 @@ app.get('/api/replay/:ctxId', requireApiKey, async (req, res) => {
 });
 
 
-app.get('/api/me', requireApiKey, async (req, res) => {
-  res.json({
-    agentId:   req.agent.agent_id,
-    agentName: req.agent.agent_name,
-  });
+app.get('/api/me', flexAuth, async (req, res) => {
+  // API key path — agent context already loaded
+  if (req.authType === 'apikey' && req.agent) {
+    return res.json({
+      agentId:   req.agent.agent_id,
+      agentName: req.agent.agent_name,
+      apiKey:    req.agent.api_key,
+    });
+  }
+
+  // JWT path — look up the user's primary agent to surface their API key
+  if (req.user) {
+    const { data: agents } = await supabaseService
+      .from('agents')
+      .select('agent_id, agent_name, api_key')
+      .eq('user_id', req.user.id)
+      .order('created_at', { ascending: true })
+      .limit(1);
+
+    const agent = agents?.[0];
+    return res.json({
+      agentId:   agent?.agent_id  || null,
+      agentName: agent?.agent_name || null,
+      apiKey:    agent?.api_key   || null,
+      email:     req.user.email,
+    });
+  }
+
+  res.status(401).json({ error: 'Not authenticated' });
 });
 
 // ── POST /api/fork/:ctxId ── branch from a checkpoint ─

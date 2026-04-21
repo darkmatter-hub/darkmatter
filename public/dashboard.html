@@ -211,6 +211,41 @@ body { font-family: var(--sans); background:var(--bg); color: var(--t0); display
 .section-link { font-family: var(--mono); font-size: 11px; color: var(--purple); text-decoration: none; cursor: pointer; }
 .section-link:hover { text-decoration: underline; }
 
+/* ── USER DROPDOWN ── */
+.user-menu {
+  position: absolute;
+  bottom: 70px;
+  left: 12px;
+  right: 12px;
+  background: var(--t0);
+  border-radius: 10px;
+  overflow: hidden;
+  z-index: 300;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+}
+.user-menu-email {
+  padding: 12px 14px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: rgba(255,255,255,0.5);
+}
+.user-menu-divider { height: 1px; background: rgba(255,255,255,0.1); }
+.user-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  font-size: 13.5px;
+  color: rgba(255,255,255,0.85);
+  text-decoration: none;
+  cursor: pointer;
+  transition: background .1s;
+}
+.user-menu-item:hover { background: rgba(255,255,255,0.08); }
+.user-menu-item svg { flex-shrink: 0; opacity: .7; }
+.user-menu-danger { color: #f87171; }
+.leftnav-bottom { position: relative; }
+
 /* ── API KEY BANNER ── */
 .api-key-banner {
   display: flex;
@@ -791,37 +826,60 @@ body { font-family: var(--sans); background:var(--bg); color: var(--t0); display
         <span class="logo-name">Dark<span class="logo-grad">Matter</span></span>
       </a>
       <div class="nav-links">
-        <a class="nav-link active" onclick="showView('records')">
+        <a class="nav-link active" id="nav-overview" onclick="showView('records')">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
           Overview
         </a>
-        <a class="nav-link" onclick="showView('records')">
+        <a class="nav-link" id="nav-records" onclick="showView('records')">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
           Records
-          <span class="nav-badge" id="nav-record-badge"></span>
+          <span class="nav-badge" id="nav-record-badge" style="display:none;"></span>
         </a>
         <div class="nav-section-label">Workspace</div>
-        <a class="nav-link" onclick="showView('apikeys')">
+        <a class="nav-link" id="nav-apikeys" onclick="showView('apikeys')">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
           API Keys
         </a>
-        <a class="nav-link" onclick="showView('team')">
+        <a class="nav-link" id="nav-team" onclick="showView('team')">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
           Team
         </a>
-        <a class="nav-link" onclick="showView('exports')">
+        <a class="nav-link" id="nav-exports" onclick="showView('exports')">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           Exports
+        </a>
+        <a class="nav-link" href="/docs" target="_blank" style="margin-top:4px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Docs ↗
         </a>
       </div>
     </div>
     <div class="leftnav-bottom">
-      <div class="nav-user">
+      <div class="nav-user" onclick="toggleUserMenu()" id="nav-user-btn">
         <div class="nav-avatar" id="nav-avatar">?</div>
         <div class="nav-user-info">
           <div class="nav-user-name" id="nav-user-name">Loading&hellip;</div>
           <div class="nav-user-role" id="nav-user-role">&mdash;</div>
         </div>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="color:var(--t4);flex-shrink:0;"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <!-- User dropdown — matches Tinker style -->
+      <div class="user-menu" id="user-menu" style="display:none;">
+        <div class="user-menu-email" id="user-menu-email"></div>
+        <div class="user-menu-divider"></div>
+        <a class="user-menu-item" href="/docs" target="_blank">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Docs
+        </a>
+        <a class="user-menu-item" href="mailto:support@darkmatterhub.ai">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          Feedback
+        </a>
+        <div class="user-menu-divider"></div>
+        <a class="user-menu-item user-menu-danger" onclick="signOut()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          Log out
+        </a>
       </div>
     </div>
   </nav>
@@ -869,14 +927,9 @@ body { font-family: var(--sans); background:var(--bg); color: var(--t0); display
       </div>
       <div class="stats-row">
         <div class="stat-card">
-          <div class="stat-label">Commits</div>
+          <div class="stat-label">Records</div>
           <div class="stat-value" id="stat-commits">--</div>
-          <div class="stat-sub">records created</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Chains</div>
-          <div class="stat-value" id="stat-chains">--</div>
-          <div class="stat-sub">linked sequences</div>
+          <div class="stat-sub">this month</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Team active</div>
@@ -887,6 +940,11 @@ body { font-family: var(--sans); background:var(--bg); color: var(--t0); display
           <div class="stat-label">Exports</div>
           <div class="stat-value" id="stat-exports">--</div>
           <div class="stat-sub">proof bundles</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Verifications</div>
+          <div class="stat-value" id="stat-chains">--</div>
+          <div class="stat-sub">this month</div>
         </div>
       </div>
 
@@ -1734,13 +1792,50 @@ function filterByPerson(val) {
 function showSection(section) {
   const titles = { records: 'Overview', activity: 'Overview', team: 'Team', apikeys: 'API Keys', exports: 'Exports' };
   document.getElementById('topbar-title').textContent = titles[section] || 'Overview';
+
+  // Set active state on correct nav link
   document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+  const activeId = {
+    records: 'nav-overview', activity: 'nav-overview',
+    team: 'nav-team', apikeys: 'nav-apikeys', exports: 'nav-exports',
+  }[section];
+  if (activeId) document.getElementById(activeId)?.classList.add('active');
 
   if (section === 'team') {
-    document.querySelector('.two-col').scrollIntoView({ behavior: 'smooth' });
+    document.querySelector('.two-col')?.scrollIntoView({ behavior: 'smooth' });
   } else if (section === 'apikeys') {
-    document.getElementById('api-key-banner').scrollIntoView({ behavior: 'smooth' });
+    document.getElementById('api-key-banner')?.scrollIntoView({ behavior: 'smooth' });
+  } else {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
+}
+
+// User dropdown
+function toggleUserMenu() {
+  const menu = document.getElementById('user-menu');
+  if (!menu) return;
+  const isOpen = menu.style.display !== 'none';
+  menu.style.display = isOpen ? 'none' : 'block';
+  if (!isOpen) {
+    const s = getSession();
+    const emailEl = document.getElementById('user-menu-email');
+    if (emailEl && s?.user?.email) emailEl.textContent = s.user.email;
+    // Close on outside click
+    setTimeout(() => {
+      document.addEventListener('click', function closeMenu(e) {
+        if (!document.getElementById('user-menu')?.contains(e.target) &&
+            !document.getElementById('nav-user-btn')?.contains(e.target)) {
+          document.getElementById('user-menu').style.display = 'none';
+          document.removeEventListener('click', closeMenu);
+        }
+      });
+    }, 10);
+  }
+}
+
+function signOut() {
+  localStorage.removeItem('dm_session');
+  window.location.href = '/login';
 }
 
 // ── Modals ──
@@ -1967,9 +2062,11 @@ function setUserDisplay(name, email, role) {
   const avatarEl  = document.getElementById('nav-avatar');
   const nameEl    = document.getElementById('nav-user-name');
   const roleEl    = document.getElementById('nav-user-role');
+  const emailEl   = document.getElementById('user-menu-email');
   if (avatarEl)  avatarEl.textContent  = name.slice(0, 2).toUpperCase();
   if (nameEl)    nameEl.textContent    = name;
   if (roleEl)    roleEl.textContent    = role;
+  if (emailEl)   emailEl.textContent   = email;
 }
 
 // ── showView — view switcher (smoke test expects this as a named function) ──
