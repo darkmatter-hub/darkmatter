@@ -114,7 +114,7 @@ test('auto-poll active',       function() { assert(dashJS.includes('startPoll()'
 test('admin check by email',   function() { assert(dashJS.includes('hello@darkmatterhub.ai')); });
 test('api keys section',       function() { assert(dashJS.includes('loadApiKeys')); });
 test('commit drawer opens',    function() { assert(dashJS.includes('function openDrawer')); });
-test('drawer closes cleanly',  function() { assert(dashJS.includes('function closeDrawer')); });
+test('drawer closes cleanly',  function() { assert(dash.includes('function closeDrawer')); });
 test('key drawer opens',       function() { assert(dashJS.includes('function selectApiKey')); });
 test('key drawer closes',      function() { assert(dashJS.includes('function closeKeyDrawer')); });
 test('invite resets on open',  function() { assert(dashJS.includes('inviteEmails = []')); });
