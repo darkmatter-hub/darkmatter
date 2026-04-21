@@ -205,8 +205,62 @@ body { font-family: var(--sans); background:var(--bg); color: var(--t0); display
 /* ── PAGE CONTENT ── */
 .page-content { padding: 28px 32px 48px; max-width: 1100px; }
 
+/* ── TABS ── */
+.tab-bar {
+  display: flex;
+  gap: 2px;
+  border-bottom: 1px solid var(--brd);
+  margin-bottom: 24px;
+}
+.tab-btn {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 10px 16px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--t3);
+  cursor: pointer;
+  transition: color .12s, border-color .12s;
+  margin-bottom: -1px;
+}
+.tab-btn:hover { color: var(--t0); }
+.tab-btn.active { color: var(--t0); border-bottom-color: var(--t0); }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+.overview-grid { display: flex; flex-direction: column; gap: 24px; }
+
+/* ── APIKEY ROW ── */
+.apikey-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--brd);
+}
+.apikey-row:last-child { border-bottom: none; }
+.apikey-row:hover { background: var(--bg-0); }
+.apikey-name { font-size: 13.5px; font-weight: 500; color: var(--t0); }
+.apikey-value { font-family: var(--mono); font-size: 12px; color: var(--t3); letter-spacing: .08em; flex: 1; }
+.apikey-meta { font-family: var(--mono); font-size: 10.5px; color: var(--t4); }
+.apikey-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.apikey-btn {
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 5px;
+  border: 1px solid var(--brd);
+  background: none;
+  color: var(--t2);
+  cursor: pointer;
+  transition: all .12s;
+}
+.apikey-btn:hover { border-color: var(--t2); color: var(--t0); }
+.apikey-btn.danger { color: var(--red); border-color: var(--red-brd); }
+.apikey-btn.danger:hover { background: var(--red-bg); }
+
 /* ── SECTION HEADER ── */
-.section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
 .section-title { font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--t3); }
 .section-link { font-family: var(--mono); font-size: 11px; color: var(--purple); text-decoration: none; cursor: pointer; }
 .section-link:hover { text-decoration: underline; }
@@ -904,75 +958,114 @@ body { font-family: var(--sans); background:var(--bg); color: var(--t0); display
     <!-- Page content -->
     <div class="page-content" id="page-content">
 
-      <!-- API Key banner — hidden until revealed -->
-      <div class="api-key-banner" id="api-key-banner">
-        <div class="api-key-banner-left">
-          <div class="api-key-banner-label">Your API key</div>
-          <div class="api-key-value" id="api-key-display">
-            <span id="api-key-text" style="color:var(--t4);font-size:13px;letter-spacing:.15em;">●●●●●●●●●●●●●●●●●●●●●●●●</span>
+      <!-- Tab bar -->
+      <div class="tab-bar">
+        <button class="tab-btn active" data-tab="overview" onclick="switchTab('overview')">Overview</button>
+        <button class="tab-btn" data-tab="records"  onclick="switchTab('records')">Records</button>
+        <button class="tab-btn" data-tab="apikeys"  onclick="switchTab('apikeys')">API Keys</button>
+        <button class="tab-btn" data-tab="team"     onclick="switchTab('team')">Team</button>
+      </div>
+
+      <!-- ── TAB: OVERVIEW ── -->
+      <div class="tab-panel active" id="tab-overview">
+        <div class="overview-grid">
+
+          <!-- Stats row -->
+          <div class="stats-row">
+            <div class="stat-card">
+              <div class="stat-label">Records</div>
+              <div class="stat-value" id="stat-commits">--</div>
+              <div class="stat-sub">this month</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Team active</div>
+              <div class="stat-value" id="stat-people">--</div>
+              <div class="stat-sub">this week</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Exports</div>
+              <div class="stat-value" id="stat-exports">--</div>
+              <div class="stat-sub">proof bundles</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Verifications</div>
+              <div class="stat-value" id="stat-chains">--</div>
+              <div class="stat-sub">this month</div>
+            </div>
           </div>
-          <div class="api-key-hint" id="api-key-hint" style="display:none;">
-            <code>export DARKMATTER_API_KEY=<span id="api-key-env"></span></code>
+
+          <!-- Quickstart -->
+          <div class="panel" style="margin-bottom:0;">
+            <div class="panel-header">
+              <span class="panel-title">Quick start</span>
+              <a class="panel-action" href="/docs/quickstart" target="_blank">Full docs ↗</a>
+            </div>
+            <div style="padding:16px 18px;display:flex;flex-direction:column;gap:14px;">
+              <div class="qs-step">
+                <div class="qs-num">1</div>
+                <div class="qs-body">
+                  <div class="qs-title">Install the SDK</div>
+                  <code class="qs-code">pip install darkmatter-sdk</code>
+                </div>
+              </div>
+              <div class="qs-step">
+                <div class="qs-num">2</div>
+                <div class="qs-body">
+                  <div class="qs-title">Create an API key</div>
+                  <div style="font-size:12px;color:var(--t3);margin-top:2px;">Go to the <a onclick="switchTab('apikeys')" style="color:var(--purple);cursor:pointer;text-decoration:underline;">API Keys tab</a> and click <strong>New key</strong></div>
+                </div>
+              </div>
+              <div class="qs-step">
+                <div class="qs-num">3</div>
+                <div class="qs-body">
+                  <div class="qs-title">Record your first decision</div>
+                  <code class="qs-code">import darkmatter as dm<br>dm.configure(api_key="dm_sk_…")<br>ctx = dm.commit(payload={"input": prompt, "output": result})<br>print(ctx["verify_url"])</code>
+                </div>
+              </div>
+              <div style="padding-top:4px;border-top:1px solid var(--brd);">
+                <a href="/docs/cookbook" style="font-family:var(--mono);font-size:11px;color:var(--purple);text-decoration:none;">→ Browse cookbook recipes</a>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ── TAB: RECORDS ── -->
+      <div class="tab-panel" id="tab-records">
+        <div class="activity-card" style="margin-bottom:0;">
+          <div class="activity-filters">
+            <button class="filter-btn active" onclick="filterActivity(this,'all')">All</button>
+            <button class="filter-btn" onclick="filterActivity(this,'today')">Today</button>
+            <button class="filter-btn" onclick="filterActivity(this,'yesterday')">Yesterday</button>
+            <div class="filter-spacer"></div>
+            <select class="filter-select" id="person-filter" onchange="filterByPerson(this.value)">
+              <option value="">All people</option>
+            </select>
+          </div>
+          <div id="activity-feed"></div>
+        </div>
+      </div>
+
+      <!-- ── TAB: API KEYS ── -->
+      <div class="tab-panel" id="tab-apikeys">
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-title">API Keys</span>
+            <button class="panel-action" onclick="createApiKey()">+ New key</button>
+          </div>
+          <div id="apikeys-list">
+            <div style="padding:48px 24px;text-align:center;">
+              <div style="font-family:var(--mono);font-size:13px;color:var(--t3);margin-bottom:12px;">No API keys yet</div>
+              <div style="font-size:12.5px;color:var(--t3);margin-bottom:20px;">Create a key to start committing records from your agents.</div>
+              <button onclick="createApiKey()" style="font-family:var(--mono);font-size:12px;font-weight:600;padding:8px 20px;background:var(--t0);color:#fff;border:none;border-radius:7px;cursor:pointer;">Create your first key</button>
+            </div>
           </div>
         </div>
-        <div class="api-key-banner-actions">
-          <button class="api-key-btn secondary" onclick="revealApiKey(this)" id="reveal-key-btn">Show key</button>
-          <button class="api-key-btn" onclick="copyApiKey(this)" id="copy-key-btn" style="display:none;">Copy</button>
-          <button class="api-key-btn secondary" onclick="toggleKeyHint()" id="export-key-btn" style="display:none;">Show export</button>
-        </div>
       </div>
 
-      <!-- Stats -->
-      <div class="section-header">
-        <span class="section-title">This month</span>
-      </div>
-      <div class="stats-row">
-        <div class="stat-card">
-          <div class="stat-label">Records</div>
-          <div class="stat-value" id="stat-commits">--</div>
-          <div class="stat-sub">this month</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Team active</div>
-          <div class="stat-value" id="stat-people">--</div>
-          <div class="stat-sub">this week</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Exports</div>
-          <div class="stat-value" id="stat-exports">--</div>
-          <div class="stat-sub">proof bundles</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Verifications</div>
-          <div class="stat-value" id="stat-chains">--</div>
-          <div class="stat-sub">this month</div>
-        </div>
-      </div>
-
-      <!-- Records feed -->
-      <div class="section-header">
-        <span class="section-title">Recent records</span>
-        <a class="section-link">View all</a>
-      </div>
-      <div class="activity-card">
-        <div class="activity-filters">
-          <button class="filter-btn active" onclick="filterActivity(this, 'all')">All</button>
-          <button class="filter-btn" onclick="filterActivity(this, 'today')">Today</button>
-          <button class="filter-btn" onclick="filterActivity(this, 'yesterday')">Yesterday</button>
-          <div class="filter-spacer"></div>
-          <select class="filter-select" id="person-filter" onchange="filterByPerson(this.value)">
-            <option value="">All people</option>
-          </select>
-        </div>
-        <div id="activity-feed">
-          <!-- Populated by JS -->
-        </div>
-      </div>
-
-      <!-- Two col: team + quickstart -->
-      <div class="two-col">
-
-        <!-- Team panel -->
+      <!-- ── TAB: TEAM ── -->
+      <div class="tab-panel" id="tab-team">
         <div class="panel">
           <div class="panel-header">
             <span class="panel-title">Team members</span>
@@ -982,41 +1075,6 @@ body { font-family: var(--sans); background:var(--bg); color: var(--t0); display
             <div style="padding:24px 18px;text-align:center;color:var(--t3);font-size:13px;font-family:var(--mono);">Loading…</div>
           </div>
         </div>
-
-        <!-- Quickstart panel -->
-        <div class="panel">
-          <div class="panel-header">
-            <span class="panel-title">Quick start</span>
-            <a class="panel-action" href="/docs/quickstart" target="_blank">Full docs ↗</a>
-          </div>
-          <div style="padding:16px 18px;display:flex;flex-direction:column;gap:14px;">
-            <div class="qs-step">
-              <div class="qs-num">1</div>
-              <div class="qs-body">
-                <div class="qs-title">Install the SDK</div>
-                <code class="qs-code">pip install darkmatter-sdk</code>
-              </div>
-            </div>
-            <div class="qs-step">
-              <div class="qs-num">2</div>
-              <div class="qs-body">
-                <div class="qs-title">Set your key</div>
-                <code class="qs-code">export DARKMATTER_API_KEY=dm_sk_…</code>
-              </div>
-            </div>
-            <div class="qs-step">
-              <div class="qs-num">3</div>
-              <div class="qs-body">
-                <div class="qs-title">Record your first decision</div>
-                <code class="qs-code">ctx = dm.commit(payload={"input": prompt, "output": result})<br>print(ctx["verify_url"])</code>
-              </div>
-            </div>
-            <div style="padding-top:4px;border-top:1px solid var(--brd);">
-              <a href="/docs/cookbook" style="font-family:var(--mono);font-size:11px;color:var(--purple);text-decoration:none;">→ Browse cookbook recipes</a>
-            </div>
-          </div>
-        </div>
-
       </div>
 
     </div><!-- /page-content -->
@@ -1024,6 +1082,31 @@ body { font-family: var(--sans); background:var(--bg); color: var(--t0); display
 </div>
 
 <!-- ── MODALS ── -->
+
+<!-- New API Key modal — shown once after creation -->
+<div class="modal-overlay" id="modal-newkey">
+  <div class="modal">
+    <div class="modal-title">API key created</div>
+    <div class="modal-sub">Copy your key now. <strong>It will not be shown again.</strong></div>
+    <label class="modal-label">Key name</label>
+    <div id="newkey-name-display" style="font-size:13.5px;color:var(--t0);margin-bottom:16px;font-weight:500;"></div>
+    <label class="modal-label">Your key</label>
+    <div style="position:relative;margin-bottom:6px;">
+      <div id="newkey-value" style="font-family:var(--mono);font-size:12.5px;background:var(--bg-0);border:1px solid var(--brd);border-radius:7px;padding:10px 80px 10px 12px;color:var(--t0);word-break:break-all;"></div>
+      <button onclick="copyNewKey(this)" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);font-family:var(--mono);font-size:11px;padding:4px 10px;background:var(--t0);color:#fff;border:none;border-radius:5px;cursor:pointer;">Copy</button>
+    </div>
+    <div class="modal-help" style="margin-bottom:16px;">
+      <code style="font-size:11.5px;background:var(--bg-1);border:1px solid var(--brd);padding:6px 10px;border-radius:5px;display:block;word-break:break-all;">export DARKMATTER_API_KEY=<span id="newkey-env"></span></code>
+    </div>
+    <div class="modal-security">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="flex-shrink:0;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      Store this key securely. DarkMatter does not store retrievable copies of API keys.
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn-primary" onclick="closeModal('modal-newkey')">Done</button>
+    </div>
+  </div>
+</div>
 
 <!-- Invite modal -->
 <div class="modal-overlay" id="modal-invite">
@@ -1747,11 +1830,8 @@ async function loadConnectedServices() {
 // Init on load
 document.addEventListener('DOMContentLoaded', () => {
   showView('records');
-  loadActivity();
   loadStats();
-  loadApiKey();
   loadUserProfile();
-  loadTeamMembers();
   startAutoPoll();
   startPoll();
 });
@@ -1819,25 +1899,130 @@ function filterByPerson(val) {
 }
 
 // ── Section switching ──
-function showSection(section) {
-  const titles = { records: 'Overview', activity: 'Overview', team: 'Team', apikeys: 'API Keys', exports: 'Exports' };
-  document.getElementById('topbar-title').textContent = titles[section] || 'Overview';
+// ── Tab switching ──────────────────────────────────────────────────────────
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.tab === tab);
+  });
+  document.querySelectorAll('.tab-panel').forEach(p => {
+    p.classList.toggle('active', p.id === 'tab-' + tab);
+  });
+  document.getElementById('topbar-title').textContent =
+    { overview: 'Overview', records: 'Records', apikeys: 'API Keys', team: 'Team' }[tab] || 'Overview';
 
-  // Set active state on correct nav link
-  document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-  const activeId = {
-    records: 'nav-overview', activity: 'nav-overview',
-    team: 'nav-team', apikeys: 'nav-apikeys', exports: 'nav-exports',
-  }[section];
-  if (activeId) document.getElementById(activeId)?.classList.add('active');
+  // Lazy-load tab content
+  if (tab === 'records' && !_recordsLoaded) { loadActivity(); _recordsLoaded = true; }
+  if (tab === 'apikeys') loadApiKeys();
+  if (tab === 'team')    loadTeamMembers();
+}
+let _recordsLoaded = false;
 
-  if (section === 'team') {
-    document.querySelector('.two-col')?.scrollIntoView({ behavior: 'smooth' });
-  } else if (section === 'apikeys') {
-    document.getElementById('api-key-banner')?.scrollIntoView({ behavior: 'smooth' });
-  } else {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+function showSection(section) { switchTab(section === 'activity' ? 'overview' : section); }
+
+// ── API Key management ─────────────────────────────────────────────────────
+let _apiKeys = [];
+
+async function loadApiKeys() {
+  const container = document.getElementById('apikeys-list');
+  if (!container) return;
+  try {
+    const res = await authFetch('/api/workspace/api-keys');
+    if (!res.ok) {
+      // Endpoint may not exist yet — show empty state
+      renderApiKeys([]);
+      return;
+    }
+    const data = await res.json();
+    _apiKeys = data.keys || data || [];
+    renderApiKeys(_apiKeys);
+  } catch(e) {
+    renderApiKeys([]);
   }
+}
+
+function renderApiKeys(keys) {
+  const container = document.getElementById('apikeys-list');
+  if (!container) return;
+  if (!keys.length) {
+    container.innerHTML = `
+      <div style="padding:48px 24px;text-align:center;">
+        <div style="font-family:var(--mono);font-size:13px;color:var(--t3);margin-bottom:8px;">No API keys yet</div>
+        <div style="font-size:12.5px;color:var(--t3);margin-bottom:20px;">Create a key to start committing records from your agents.</div>
+        <button onclick="createApiKey()" style="font-family:var(--mono);font-size:12px;font-weight:600;padding:8px 20px;background:var(--t0);color:#fff;border:none;border-radius:7px;cursor:pointer;">Create your first key</button>
+      </div>`;
+    return;
+  }
+  container.innerHTML = keys.map((k, i) => `
+    <div class="apikey-row">
+      <div>
+        <div class="apikey-name">${escHtml(k.name || 'API Key')}</div>
+        <div class="apikey-meta">Created ${k.created_at ? timeAgo(k.created_at) : '—'}</div>
+      </div>
+      <div class="apikey-value">${k.key ? k.key.slice(0,16) + '…' + k.key.slice(-4) : 'dm_sk_••••••••'}</div>
+      <div class="apikey-actions">
+        ${k.key ? `<button class="apikey-btn" onclick="copyKeyByIdx(${i})">Copy</button>` : ''}
+        <button class="apikey-btn danger" onclick="deleteApiKey('${escAttr(k.id || '')}')">Revoke</button>
+      </div>
+    </div>`).join('');
+}
+
+function copyKeyByIdx(i) {
+  const key = _apiKeys[i]?.key;
+  if (!key) return;
+  navigator.clipboard.writeText(key).then(() => showToast('✓ Key copied'));
+}
+
+async function createApiKey() {
+  const name = prompt('Key name (e.g. "production", "my-agent"):');
+  if (name === null) return; // cancelled
+  const keyName = name.trim() || 'API Key';
+  try {
+    const res = await authFetch('/api/workspace/api-keys', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: keyName }),
+    });
+    if (!res.ok) {
+      const d = await res.json();
+      showToast('Error: ' + (d.error || 'Could not create key'));
+      return;
+    }
+    const data = await res.json();
+    const newKey = data.key || data.api_key;
+    // Show the key once — it won't be shown again
+    if (newKey) {
+      showNewKeyModal(keyName, newKey);
+    }
+    loadApiKeys();
+  } catch(e) {
+    showToast('Error: ' + e.message);
+  }
+}
+
+function showNewKeyModal(name, key) {
+  // Reuse existing modal infrastructure
+  const overlay = document.getElementById('modal-newkey');
+  if (overlay) {
+    document.getElementById('newkey-name-display').textContent = name;
+    document.getElementById('newkey-value').textContent = key;
+    document.getElementById('newkey-env').textContent = key;
+    overlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  } else {
+    // Fallback — browser prompt
+    prompt('Your new API key (copy it now — it will not be shown again):', key);
+  }
+}
+
+async function deleteApiKey(keyId) {
+  if (!keyId) return;
+  if (!confirm('Revoke this API key? Any agents using it will stop working immediately.')) return;
+  try {
+    const res = await authFetch('/api/workspace/api-keys/' + keyId, { method: 'DELETE' });
+    if (!res.ok) { showToast('Could not revoke key'); return; }
+    showToast('Key revoked');
+    loadApiKeys();
+  } catch(e) { showToast('Error: ' + e.message); }
 }
 
 // User dropdown
@@ -1861,6 +2046,15 @@ function toggleUserMenu() {
       });
     }, 10);
   }
+}
+
+function copyNewKey(btn) {
+  const key = document.getElementById('newkey-value')?.textContent;
+  if (!key) return;
+  navigator.clipboard.writeText(key).then(() => {
+    btn.textContent = '✓ Copied';
+    setTimeout(() => btn.textContent = 'Copy', 2000);
+  });
 }
 
 function signOut() {
@@ -2099,10 +2293,10 @@ function setUserDisplay(name, email, role) {
   if (emailEl)   emailEl.textContent   = email;
 }
 
-// ── showView — view switcher (smoke test expects this as a named function) ──
+// ── showView — smoke test expects this as a named function ──
 var dm={records:'flex',activity:'flex',team:'flex',services:'flex',exports:'flex'};
 function showView(view) {
-  showSection(view);
+  switchTab(view === 'activity' ? 'overview' : view);
 }
 
 // ── YOU label with platform hint ─────────────────────────────────────────────
