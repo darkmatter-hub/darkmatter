@@ -4979,6 +4979,25 @@ app.post('/api/workspace/invite/accept', async (req, res) => {
   }
 });
 
+// ── GET /api/workspace/invitations — list pending invites sent from this workspace ──
+app.get('/api/workspace/invitations', wsAuth, async (req, res) => {
+  try {
+    const { data: me } = await supabaseService.from('workspace_members')
+      .select('workspace_id').eq('user_id', req.user.id).single();
+    if (!me) return res.json({ invitations: [] });
+
+    const { data: invitations } = await supabaseService
+      .from('workspace_invitations')
+      .select('id, email, role, created_at, accepted_at')
+      .eq('workspace_id', me.workspace_id)
+      .order('created_at', { ascending: false });
+
+    res.json({ invitations: invitations || [] });
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // ── Alias: /api/workspace/invitations → /api/workspace/invite ───────────────
 // Compatibility for clients that call the plural form
 app.post('/api/workspace/invitations', wsAuth, async (req, res) => {
@@ -5432,8 +5451,42 @@ app.get('/proxy/status', proxyAuth, (req, res) => {
 });
 
 // ── Join page (for invite links) ──────────────────────────────────────
-app.get('/join', (req, res) => {
-  res.sendFile(path.join(__dirname, '../public/join.html'));
+app.get('/join',          (req, res) => res.sendFile(path.join(__dirname, '../public/join.html')));
+app.get('/organizations', (req, res) => res.sendFile(path.join(__dirname, '../public/organizations.html')));
+
+// ── GET /api/workspace/my-organizations ─────────────────────────────────────
+app.get('/api/workspace/my-organizations', requireAuth, async (req, res) => {
+  try {
+    const { data: memberships } = await supabaseService
+      .from('workspace_members')
+      .select('workspace_id, role, workspaces(id, name, owner_user_id)')
+      .eq('user_id', req.user.id);
+
+    const orgs = (memberships || []).map(m => ({
+      id:         m.workspace_id,
+      name:       m.workspaces?.name || req.user.email,
+      email:      req.user.email,
+      role:       m.role,
+      role_label: m.role === 'owner' ? 'Owner' : m.role === 'admin' ? 'Admin' : 'Member',
+      is_current: true,
+    }));
+
+    // If no workspaces, return a default entry
+    if (!orgs.length) {
+      orgs.push({
+        id:         'default',
+        name:       req.user.email,
+        email:      req.user.email,
+        role:       'owner',
+        role_label: 'Owner',
+        is_current: true,
+      });
+    }
+
+    res.json({ organizations: orgs });
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 

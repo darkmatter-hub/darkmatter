@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Select an organization — DarkMatter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --ink:#0a0e1a;--ink2:#2d3552;--ink3:#5a6480;--ink4:#9199b0;
+  --bg:#f4f6fb;--bg2:#fff;--border:#e5e7eb;
+  --blue:#3b82f6;--red:#ef4444;--green:#10b981;
+  --mono:"IBM Plex Mono","Courier New",monospace;
+  --sans:"IBM Plex Sans",sans-serif;
+}
+body{background:#fff;color:var(--ink);font-family:var(--sans);min-height:100vh;display:flex;flex-direction:column;-webkit-font-smoothing:antialiased;}
+.page{max-width:760px;margin:0 auto;padding:48px 32px;}
+.page-title{font-size:1.8rem;font-weight:700;letter-spacing:-.03em;color:var(--ink);margin-bottom:8px;}
+.page-sub{font-size:.875rem;color:var(--ink3);margin-bottom:4px;}
+.page-sub a{color:var(--blue);text-decoration:none;}
+.page-sub a:hover{text-decoration:underline;}
+.orgs-card{border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-top:32px;}
+.orgs-header{padding:16px 20px;border-bottom:1px solid var(--border);}
+.orgs-header-title{font-size:.9rem;font-weight:600;color:var(--ink);}
+.org-row{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);transition:background .1s;cursor:pointer;}
+.org-row:last-child{border-bottom:none;}
+.org-row:hover{background:var(--bg);}
+.org-info{display:flex;flex-direction:column;gap:3px;}
+.org-name{font-size:.9rem;font-weight:600;color:var(--ink);}
+.org-meta{font-size:.8rem;color:var(--ink3);}
+.org-btn{font-family:var(--sans);font-size:.82rem;padding:6px 16px;border:1px solid var(--border);border-radius:7px;background:#fff;color:var(--ink3);cursor:pointer;transition:all .15s;white-space:nowrap;}
+.org-btn:hover{border-color:var(--ink3);color:var(--ink);}
+.org-btn.current{background:var(--bg);color:var(--ink3);cursor:default;}
+.empty{padding:40px 20px;text-align:center;color:var(--ink4);font-size:.875rem;}
+.loading{padding:40px 20px;text-align:center;color:var(--ink4);font-family:var(--mono);font-size:.82rem;}
+</style>
+</head>
+<body>
+<div class="page">
+  <h1 class="page-title">Select an organization</h1>
+  <p class="page-sub" id="signed-in-as"></p>
+  <p class="page-sub">Need help? <a href="/docs">Read the docs</a>.</p>
+
+  <div class="orgs-card">
+    <div class="orgs-header">
+      <div class="orgs-header-title">Your organizations</div>
+    </div>
+    <div id="orgs-list">
+      <div class="loading">Loading…</div>
+    </div>
+  </div>
+</div>
+
+<script>
+function getSession() { try{return JSON.parse(localStorage.getItem('dm_session')||'null');}catch{return null;} }
+function getAuthHeaders() {
+  const s = getSession();
+  if (!s?.access_token) return {};
+  return { 'Authorization': 'Bearer ' + s.access_token, 'X-Refresh-Token': s.refresh_token || '' };
+}
+function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+async function init() {
+  const session = getSession();
+  if (!session?.access_token) { window.location.href = '/login'; return; }
+
+  const email = session.user?.email || '';
+  document.getElementById('signed-in-as').innerHTML =
+    `Signed in as ${escHtml(email)}. <a href="#" onclick="signOut()">Sign out</a>`;
+
+  try {
+    const res = await fetch('/api/workspace/my-organizations', { headers: getAuthHeaders() });
+    if (!res.ok) { renderOrgs([]); return; }
+    const data = await res.json();
+    renderOrgs(data.organizations || []);
+  } catch(e) {
+    renderOrgs([]);
+  }
+}
+
+function renderOrgs(orgs) {
+  const container = document.getElementById('orgs-list');
+  if (!orgs.length) {
+    container.innerHTML = '<div class="empty">No organizations yet. <a href="/dashboard" style="color:var(--blue);">Go to dashboard</a></div>';
+    return;
+  }
+  container.innerHTML = orgs.map(org => `
+    <div class="org-row" onclick="selectOrg('${escHtml(org.id)}')">
+      <div class="org-info">
+        <div class="org-name">${escHtml(org.email || org.name || 'Organization')}</div>
+        <div class="org-meta">${escHtml(org.role_label || (org.role === 'owner' ? 'Owner - current' : org.role))} ${org.is_current ? '- current' : ''}</div>
+      </div>
+      <button class="org-btn ${org.is_current ? 'current' : ''}" onclick="event.stopPropagation();selectOrg('${escHtml(org.id)}')">${org.is_current ? 'Current organization' : 'Switch'}</button>
+    </div>`).join('');
+}
+
+function selectOrg(id) {
+  window.location.href = '/dashboard';
+}
+
+function signOut() {
+  localStorage.removeItem('dm_session');
+  window.location.href = '/login';
+}
+
+init();
+</script>
+</body>
+</html>
