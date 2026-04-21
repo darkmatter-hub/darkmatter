@@ -1006,7 +1006,7 @@ body { font-family: var(--sans); background:var(--bg); color: var(--t0); display
         <div class="nav-avatar" id="nav-avatar">?</div>
         <div class="nav-user-info">
           <div class="nav-user-name" id="nav-user-name">Account</div>
-          <div class="nav-user-role" id="nav-user-role" style="display:none;"></div>
+          <div class="nav-user-role" id="nav-user-role" style="font-family:var(--sans);font-size:11px;color:var(--t3);"></div>
         </div>
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="color:var(--t4);flex-shrink:0;"><polyline points="6 9 12 15 18 9"/></svg>
       </div>
@@ -1098,41 +1098,6 @@ body { font-family: var(--sans); background:var(--bg); color: var(--t0); display
             </div>
           </div>
         </div>
-        <!-- Key detail panel (shown on row click) -->
-        <div id="apikey-detail" style="display:none;margin-top:24px;">
-          <div class="panel">
-            <div class="panel-header" style="justify-content:space-between;">
-              <span class="panel-title" id="detail-key-number" style="font-family:var(--mono);font-size:13px;letter-spacing:0;text-transform:none;color:var(--t0);"></span>
-              <button onclick="deleteCurrentKey()" style="font-family:var(--mono);font-size:11px;font-weight:600;padding:5px 14px;background:#dc2626;color:#fff;border:none;border-radius:6px;cursor:pointer;">Delete key</button>
-            </div>
-            <div class="key-detail-grid">
-              <div class="key-detail-cell">
-                <div class="key-detail-label">Key Number</div>
-                <div class="key-detail-value" id="detail-key-num2"></div>
-              </div>
-              <div class="key-detail-cell">
-                <div class="key-detail-label">API Key</div>
-                <div class="key-detail-value" id="detail-api-key" style="font-style:italic;color:var(--t3);font-size:13px;"></div>
-              </div>
-              <div class="key-detail-cell">
-                <div class="key-detail-label">Name</div>
-                <div class="key-detail-value" id="detail-name"></div>
-              </div>
-              <div class="key-detail-cell">
-                <div class="key-detail-label">Created by</div>
-                <div class="key-detail-value" id="detail-email"></div>
-              </div>
-              <div class="key-detail-cell">
-                <div class="key-detail-label">Created</div>
-                <div class="key-detail-value" id="detail-created"></div>
-              </div>
-              <div class="key-detail-cell">
-                <div class="key-detail-label">Expires</div>
-                <div class="key-detail-value" id="detail-expires">—</div>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
 
       <!-- ── SECTION: RECORDS ── -->
@@ -1179,6 +1144,50 @@ body { font-family: var(--sans); background:var(--bg); color: var(--t0); display
 </div>
 
 <!-- ── MODALS ── -->
+
+<!-- ── API KEY DETAIL DRAWER ── -->
+<div class="drawer-overlay" id="key-drawer-overlay" onclick="closeKeyDrawer()"></div>
+<div class="conv-drawer" id="key-drawer">
+  <div class="drawer-header">
+    <div class="drawer-header-left">
+      <div class="drawer-eyebrow">API Key</div>
+      <div class="drawer-title" id="kd-title"></div>
+    </div>
+    <button class="drawer-close" onclick="closeKeyDrawer()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+  <div class="key-detail-grid" style="flex:1;overflow-y:auto;">
+    <div class="key-detail-cell">
+      <div class="key-detail-label">Key ID</div>
+      <div class="key-detail-value" id="kd-id" style="font-family:var(--mono);font-size:12px;word-break:break-all;"></div>
+    </div>
+    <div class="key-detail-cell">
+      <div class="key-detail-label">API Key</div>
+      <div class="key-detail-value" id="kd-apikey" style="font-style:italic;color:var(--t3);font-size:13px;line-height:1.6;"></div>
+    </div>
+    <div class="key-detail-cell">
+      <div class="key-detail-label">Name</div>
+      <div class="key-detail-value" id="kd-name"></div>
+    </div>
+    <div class="key-detail-cell">
+      <div class="key-detail-label">Created by</div>
+      <div class="key-detail-value" id="kd-email"></div>
+    </div>
+    <div class="key-detail-cell">
+      <div class="key-detail-label">Created</div>
+      <div class="key-detail-value" id="kd-created"></div>
+    </div>
+    <div class="key-detail-cell">
+      <div class="key-detail-label">Expires</div>
+      <div class="key-detail-value" id="kd-expires">—</div>
+    </div>
+  </div>
+  <div class="drawer-actions">
+    <button type="button" class="drawer-btn-primary" onclick="deleteCurrentKey()" style="background:#dc2626;border-color:#dc2626;">Delete key</button>
+    <button type="button" class="drawer-btn-secondary" onclick="closeKeyDrawer()">Close</button>
+  </div>
+</div>
 
 <!-- New API Key — form modal (Tinker style) -->
 <div class="modal-overlay" id="modal-newkeyform">
@@ -2157,9 +2166,8 @@ function renderApiKeys(keys) {
 }
 
 function selectApiKey(idx) {
-  const key    = _apiKeys[idx];
-  const detail = document.getElementById('apikey-detail');
-  if (!key || !detail) return;
+  const key = _apiKeys[idx];
+  if (!key) return;
 
   document.querySelectorAll('.apikey-table tbody tr').forEach((r, i) => {
     r.classList.toggle('apikey-row-selected', i === idx);
@@ -2167,19 +2175,36 @@ function selectApiKey(idx) {
   _selectedKeyIdx = idx;
 
   const session   = getSession();
-  const userEmail = session?.user?.email || '—';
-  const keyNum    = key.name || key.agent_name || key.id || 'API Key';
+  const userEmail = session?.user?.email || key.created_by || '—';
 
-  document.getElementById('detail-key-number').textContent = keyNum;
-  document.getElementById('detail-key-num2').textContent   = keyNum;
-  document.getElementById('detail-api-key').textContent    = 'Redacted. If you have lost this key, create a new one instead.';
-  document.getElementById('detail-name').textContent       = key.name || key.agent_name || '—';
-  document.getElementById('detail-email').textContent      = key.created_by || userEmail;
-  document.getElementById('detail-created').textContent    = key.created_at ? timeAgo(key.created_at) : '—';
-  document.getElementById('detail-expires').textContent    = key.expires_at || '—';
-  detail.style.display = 'block';
-  detail.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  document.getElementById('kd-title').textContent   = key.name || key.agent_name || key.id;
+  document.getElementById('kd-id').textContent      = key.id;
+  document.getElementById('kd-apikey').textContent  = 'Redacted. If you have lost this key, create a new one instead.';
+  document.getElementById('kd-name').textContent    = key.name || key.agent_name || '—';
+  document.getElementById('kd-email').textContent   = userEmail;
+  document.getElementById('kd-created').textContent = key.created_at ? timeAgo(key.created_at) : '—';
+  document.getElementById('kd-expires').textContent = key.expires_at || '—';
+
+  const drawer  = document.getElementById('key-drawer');
+  const overlay = document.getElementById('key-drawer-overlay');
+  if (drawer)  drawer.classList.add('open');
+  if (overlay) overlay.classList.add('active');
+  document.body.style.overflow = 'hidden';
+  history.pushState({ keyIdx: idx }, '', '/dashboard/keys/' + key.id);
 }
+
+function closeKeyDrawer() {
+  document.getElementById('key-drawer')?.classList.remove('open');
+  document.getElementById('key-drawer-overlay')?.classList.remove('active');
+  document.body.style.overflow = '';
+  document.querySelectorAll('.apikey-table tbody tr').forEach(r => r.classList.remove('apikey-row-selected'));
+  _selectedKeyIdx = null;
+  if (location.pathname.includes('/keys/')) history.pushState({}, '', '/dashboard');
+}
+
+window.addEventListener('popstate', () => {
+  if (!location.pathname.includes('/keys/')) closeKeyDrawer();
+});
 
 async function deleteCurrentKey() {
   if (_selectedKeyIdx === null) return;
@@ -2189,11 +2214,9 @@ async function deleteCurrentKey() {
   if (!confirm(`Delete "${keyName}"? Any agents using it will stop working immediately.`)) return;
   try {
     const keyId = key.id || key.agent_id;
-    if (keyId) {
-      await authFetch('/api/workspace/api-keys/' + keyId, { method: 'DELETE' });
-    }
+    if (keyId) await authFetch('/api/workspace/api-keys/' + keyId, { method: 'DELETE' });
     showToast('Key deleted');
-    document.getElementById('apikey-detail').style.display = 'none';
+    closeKeyDrawer();
     loadApiKeys();
   } catch(e) { showToast('Error: ' + e.message); }
 }
@@ -2507,10 +2530,12 @@ function qsCopy(btn, text) {
 function setUserDisplay(name, email, role) {
   const avatarEl   = document.getElementById('nav-avatar');
   const nameEl     = document.getElementById('nav-user-name');
+  const roleEl     = document.getElementById('nav-user-role');
   const menuNameEl = document.getElementById('user-menu-name');
   const emailEl    = document.getElementById('user-menu-email');
   if (avatarEl)   avatarEl.textContent   = name.slice(0, 2).toUpperCase();
   if (nameEl)     nameEl.textContent     = name;
+  if (roleEl)     roleEl.textContent     = email;
   if (menuNameEl) menuNameEl.textContent = name;
   if (emailEl)    emailEl.textContent    = email;
 }

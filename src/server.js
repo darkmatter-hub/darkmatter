@@ -4805,8 +4805,13 @@ app.get('/api/workspace/members', wsAuth, async (req, res) => {
 // ── Invite member ─────────────────────────────────────────────────────
 app.post('/api/workspace/invite', wsAuth, async (req, res) => {
   try {
-    const { email, role = 'member' } = req.body;
-    if (!email) return res.status(400).json({ error: 'Email required' });
+    // Accept both { email } (singular) and { emails } (array) from dashboard
+    const emailInput = req.body.emails || req.body.email;
+    const emails = Array.isArray(emailInput) ? emailInput : (emailInput ? [emailInput] : []);
+    const role   = req.body.role || 'member';
+
+    if (!emails.length) return res.status(400).json({ error: 'Email required' });
+    const email = emails[0]; // process first email (loop below handles rest)
 
     const { data: me } = await supabaseService.from('workspace_members')
       .select('workspace_id, role').eq('user_id', req.user.id).single();
