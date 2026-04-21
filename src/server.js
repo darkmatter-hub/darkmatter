@@ -6011,19 +6011,37 @@ app.patch('/api/workspace/provider-keys/:id', requireAuth, async (req, res) => {
 
 app.get('/api/workspace/api-keys', requireAuth, async (req, res) => {
   try {
-    const { data: agents, error } = await supabaseService
+    const userId    = req.user.id;
+    const userEmail = req.user.email;
+
+    // Primary: agents owned by this user_id
+    const { data: byUserId } = await supabaseService
       .from('agents')
-      .select('agent_id, agent_name, created_at, user_id')
-      .eq('user_id', req.user.id)
+      .select('agent_id, agent_name, created_at, user_id, api_key')
+      .eq('user_id', userId)
       .order('created_at', { ascending: false });
 
-    if (error) throw error;
+    // Secondary: agents created for this user's email via workspace membership
+    // (covers agents provisioned at signup or by admin before user_id was linked)
+    const { data: byEmail } = userEmail ? await supabaseService
+      .from('agents')
+      .select('agent_id, agent_name, created_at, user_id, api_key')
+      .eq('agent_email', userEmail)
+      .order('created_at', { ascending: false }) : { data: [] };
 
-    const keys = (agents || []).map(a => ({
+    // Merge, deduplicate by agent_id
+    const seen = new Set();
+    const all  = [...(byUserId || []), ...(byEmail || [])].filter(a => {
+      if (seen.has(a.agent_id)) return false;
+      seen.add(a.agent_id);
+      return true;
+    });
+
+    const keys = all.map(a => ({
       id:         a.agent_id,
       name:       a.agent_name || 'API Key',
       created_at: a.created_at,
-      created_by: req.user.email,
+      created_by: userEmail,
       note:       'DarkMatter workspace',
     }));
 
