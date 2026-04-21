@@ -4780,26 +4780,20 @@ app.get('/api/workspace/members', wsAuth, async (req, res) => {
       .select('*').eq('workspace_id', me.workspace_id)
       .order('joined_at', { ascending: true });
 
-    // Get commit counts per member this week
-    const weekAgo = new Date(Date.now() - 7*86400000).toISOString();
-    const agentIds = members.map(m => m.agent_id).filter(Boolean);
-
-    const { data: recentCommits } = agentIds.length ? await supabase
-      .from('commits').select('agent_id')
-      .in('agent_id', agentIds)
-      .gte('accepted_at', weekAgo) : { data: [] };
-
-    const countByAgent = {};
-    (recentCommits || []).forEach(c => {
-      countByAgent[c.agent_id] = (countByAgent[c.agent_id] || 0) + 1;
-    });
-
-    const enriched = members.map(m => ({
-      ...m,
-      weekCommits: countByAgent[m.agent_id] || 0,
+    // For members missing email, try to get it from workspace_invitations
+    const enriched = await Promise.all((members || []).map(async m => {
+      if (m.email) return m;
+      // Look up by user_id match in invitations (accepted)
+      const { data: inv } = await supabaseService
+        .from('workspace_invitations')
+        .select('email')
+        .eq('workspace_id', me.workspace_id)
+        .not('accepted_at', 'is', null)
+        .limit(1);
+      return { ...m, email: inv?.[0]?.email || null };
     }));
 
-    res.json({ members: enriched, isAdmin: me.role === 'admin' });
+    res.json({ members: enriched, isAdmin: me.role === 'admin' || me.role === 'owner' });
   } catch(e) {
     res.status(500).json({ error: e.message });
   }
@@ -4960,11 +4954,13 @@ app.post('/api/workspace/invite/accept', async (req, res) => {
 
     if (!userId) return res.status(401).json({ error: 'Authentication required' });
 
-    // Add to workspace
+    // Add to workspace — store email so it shows in team list
     await supabaseService.from('workspace_members').upsert({
-      workspace_id: inv.workspace_id,
-      user_id:      userId,
-      role:         inv.role || 'member',
+      workspace_id:  inv.workspace_id,
+      user_id:       userId,
+      role:          inv.role || 'member',
+      email:         inv.email,
+      display_name:  inv.email.split('@')[0],
     }, { onConflict: 'workspace_id,user_id' });
 
     // Mark invitation used
@@ -4991,6 +4987,29 @@ app.get('/api/workspace/invitations', wsAuth, async (req, res) => {
       .select('id, email, role, created_at, accepted_at')
       .eq('workspace_id', me.workspace_id)
       .order('created_at', { ascending: false });
+
+    // Backfill email on workspace_members rows that are missing it
+    // (covers invites accepted before the email column was stored)
+    const accepted = (invitations || []).filter(i => i.accepted_at && i.email);
+    if (accepted.length > 0) {
+      for (const inv of accepted) {
+        // Find member with this email missing
+        const { data: member } = await supabaseService
+          .from('workspace_members')
+          .select('user_id, email')
+          .eq('workspace_id', me.workspace_id)
+          .is('email', null)
+          .limit(1)
+          .single();
+        if (member) {
+          await supabaseService
+            .from('workspace_members')
+            .update({ email: inv.email, display_name: inv.email.split('@')[0] })
+            .eq('workspace_id', me.workspace_id)
+            .eq('user_id', member.user_id);
+        }
+      }
+    }
 
     res.json({ invitations: invitations || [] });
   } catch(e) {
