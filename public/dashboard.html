@@ -1055,12 +1055,8 @@ body { font-family: var(--sans); background:var(--bg); color: var(--t0); display
       <div class="dm-section active" id="section-apikeys">
         <div class="section-page-header">
           <div class="section-page-title">Your API keys</div>
-          <div style="display:flex;gap:8px;align-items:center;">
-            <button class="section-page-btn" style="background:var(--bg-1);color:var(--t2);border:1px solid var(--brd);font-size:11px;" onclick="runDebug()">Debug</button>
-            <button class="section-page-btn" onclick="createApiKey()">New key</button>
-          </div>
+          <button class="section-page-btn" onclick="createApiKey()">New key</button>
         </div>
-        <div id="debug-output" style="margin-bottom:16px;padding:14px 18px;background:var(--bg-0);border:1px solid var(--brd);border-radius:8px;font-family:var(--mono);font-size:11px;color:var(--t2);white-space:pre-wrap;word-break:break-all;"></div>
         <!-- Key list -->
         <div id="apikeys-list">
           <div style="padding:48px 32px 32px;">
@@ -2038,33 +2034,36 @@ const SECTION_TITLES = {
   team: 'Team', exports: 'Exports', overview: 'API Keys', activity: 'Commits',
 };
 let _currentSection = 'apikeys';
+let _recordsLoaded  = false;
 
-function switchTab(section) { showView(section); }
-function showSection(section) { showView(section); }
+function switchTab(section) {
+  // Direct implementation — does NOT call showView to avoid recursion
+  const s = (section === 'activity' || section === 'overview') ? 'apikeys' : section;
+  _currentSection = s;
 
-var dm={records:'flex',activity:'flex',team:'flex',services:'flex',exports:'flex'};
-function showView(view) {
-  const section = (view === 'activity' || view === 'overview') ? 'apikeys' : view;
-  _currentSection = section;
-
-  document.querySelectorAll('.dm-section').forEach(s => s.classList.remove('active'));
-  const target = document.getElementById('section-' + section);
+  document.querySelectorAll('.dm-section').forEach(el => el.classList.remove('active'));
+  const target = document.getElementById('section-' + s);
   if (target) target.classList.add('active');
 
-  document.getElementById('topbar-title').textContent = SECTION_TITLES[section] || 'API Keys';
+  const titleEl = document.getElementById('topbar-title');
+  if (titleEl) titleEl.textContent = SECTION_TITLES[s] || 'API Keys';
 
   document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
   const navMap = { apikeys: 'nav-apikeys', records: 'nav-records', team: 'nav-team' };
-  const navId = navMap[section];
+  const navId = navMap[s];
   if (navId) document.getElementById(navId)?.classList.add('active');
 
-  if (section === 'records' && !_recordsLoaded) { loadActivity(); _recordsLoaded = true; }
-  if (section === 'apikeys') loadApiKeys();
-  if (section === 'team')    loadTeamMembers();
+  if (s === 'records' && !_recordsLoaded) { loadActivity(); _recordsLoaded = true; }
+  if (s === 'apikeys') loadApiKeys();
+  if (s === 'team')    loadTeamMembers();
 
   window.scrollTo({ top: 0 });
 }
-let _recordsLoaded = false;
+
+function showSection(section) { switchTab(section); }
+
+var dm={records:'flex',activity:'flex',team:'flex',services:'flex',exports:'flex'};
+function showView(view) { switchTab(view); }
 
 // ── API Key management ─────────────────────────────────────────────────────
 let _apiKeys = [];
@@ -2086,42 +2085,19 @@ async function runDebug() {
 
 async function loadApiKeys() {
   const container = document.getElementById('apikeys-list');
-  const out       = document.getElementById('debug-output');
   if (!container) return;
-
   container.innerHTML = '<div style="padding:32px 24px;text-align:center;color:var(--t3);font-family:var(--mono);font-size:12px;">Loading…</div>';
-
-  const session = getSession();
-  const log = (msg) => { if (out) out.textContent += msg + '\n'; };
-  if (out) out.textContent = '';
-  log('1. localStorage dm_session: ' + (session ? 'EXISTS' : 'MISSING'));
-  log('2. has access_token: ' + (!!session?.access_token));
-  log('3. token starts with: ' + (session?.access_token?.slice(0,30) || 'n/a'));
-  log('4. has user in session: ' + (!!session?.user));
-  log('5. user email: ' + (session?.user?.email || 'not in session'));
-
   try {
-    log('6. calling authFetch /api/workspace/api-keys...');
     const res  = await authFetch('/api/workspace/api-keys');
-    const text = await res.text();
-    log('7. response status: ' + res.status);
-    log('8. response body: ' + text.slice(0, 300));
-
     if (res.status === 401) {
-      container.innerHTML = '<div style="padding:32px;text-align:center;color:var(--red);font-size:13px;">401 — Not authenticated. <a href="/login" style="color:var(--purple);">Sign in again</a></div>';
+      container.innerHTML = '<div style="padding:32px;text-align:center;color:var(--t3);font-size:13px;">Session expired — <a href="/login" style="color:var(--purple);">sign in again</a></div>';
       return;
     }
-    if (!res.ok) {
-      log('ERROR: non-OK response');
-      renderApiKeys([]);
-      return;
-    }
-    const data = JSON.parse(text);
+    if (!res.ok) { renderApiKeys([]); return; }
+    const data = await res.json();
     _apiKeys = data.keys || data || [];
-    log('9. keys found: ' + _apiKeys.length);
     renderApiKeys(_apiKeys);
   } catch(e) {
-    log('EXCEPTION: ' + e.message);
     console.warn('[loadApiKeys]', e.message);
     renderApiKeys([]);
   }
