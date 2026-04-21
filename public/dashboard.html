@@ -2086,38 +2086,43 @@ async function runDebug() {
 
 async function loadApiKeys() {
   const container = document.getElementById('apikeys-list');
+  const out       = document.getElementById('debug-output');
   if (!container) return;
+
   container.innerHTML = '<div style="padding:32px 24px;text-align:center;color:var(--t3);font-family:var(--mono);font-size:12px;">Loading…</div>';
 
-  // Diagnose: check session state before making any call
   const session = getSession();
-  const out = document.getElementById('debug-output');
-  if (out) {
-    out.style.display = 'block';
-    out.textContent = 'Session check:\n' + JSON.stringify({
-      has_session: !!session,
-      has_access_token: !!session?.access_token,
-      has_user: !!session?.user,
-      email: session?.user?.email || null,
-      token_prefix: session?.access_token?.slice(0, 20) || null,
-    }, null, 2);
-  }
+  const log = (msg) => { if (out) out.textContent += msg + '\n'; };
+  if (out) out.textContent = '';
+  log('1. localStorage dm_session: ' + (session ? 'EXISTS' : 'MISSING'));
+  log('2. has access_token: ' + (!!session?.access_token));
+  log('3. token starts with: ' + (session?.access_token?.slice(0,30) || 'n/a'));
+  log('4. has user in session: ' + (!!session?.user));
+  log('5. user email: ' + (session?.user?.email || 'not in session'));
 
   try {
+    log('6. calling authFetch /api/workspace/api-keys...');
     const res  = await authFetch('/api/workspace/api-keys');
     const text = await res.text();
-    if (out) out.textContent += '\n\nResponse status: ' + res.status + '\nBody: ' + text.slice(0, 500);
+    log('7. response status: ' + res.status);
+    log('8. response body: ' + text.slice(0, 300));
+
     if (res.status === 401) {
-      container.innerHTML = '<div style="padding:32px 24px;text-align:center;color:var(--t3);font-size:13px;">Session expired — <a href="/login" style="color:var(--purple);">sign in again</a></div>';
+      container.innerHTML = '<div style="padding:32px;text-align:center;color:var(--red);font-size:13px;">401 — Not authenticated. <a href="/login" style="color:var(--purple);">Sign in again</a></div>';
       return;
     }
-    if (!res.ok) { renderApiKeys([]); return; }
+    if (!res.ok) {
+      log('ERROR: non-OK response');
+      renderApiKeys([]);
+      return;
+    }
     const data = JSON.parse(text);
     _apiKeys = data.keys || data || [];
+    log('9. keys found: ' + _apiKeys.length);
     renderApiKeys(_apiKeys);
   } catch(e) {
+    log('EXCEPTION: ' + e.message);
     console.warn('[loadApiKeys]', e.message);
-    if (out) out.textContent += '\n\nException: ' + e.message;
     renderApiKeys([]);
   }
 }
