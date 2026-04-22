@@ -876,33 +876,33 @@ dm.commit(payload={
 <!-- PROOF LEVELS -->
 <section>
   <div class="container">
-    <p class="eyebrow">Proof levels</p>
+    <p class="eyebrow">Verification levels</p>
     <h2 class="section-title">Not every record carries the same weight. DarkMatter makes that explicit.</h2>
-    <p class="section-sub">Start with Recorded today — no code changes. Move to Signed or Sealed as your compliance requirements grow. The difference is visible in every record.</p>
+    <p class="section-sub">Every commit starts at Level 1. Move to Level 2 or 3 as your compliance requirements grow. The difference is visible in every record and verifiable independently.</p>
 
     <table class="proof-table">
       <thead>
         <tr>
-          <th style="width:120px">Level</th>
+          <th style="width:140px">Level</th>
           <th>What it means</th>
           <th>How you get it</th>
         </tr>
       </thead>
       <tbody>
         <tr>
-          <td><span class="proof-label">Recorded</span></td>
-          <td>DarkMatter captured this record externally. You can inspect and replay it, but some trust in the capture method is still required.</td>
-          <td>Proxy or browser extension. No code changes needed.</td>
+          <td><span class="proof-label">Verifiable record</span></td>
+          <td>SHA-256 payload hash + parent chain linkage. Tampering at any node breaks every downstream hash. Independent offline verifier included.</td>
+          <td>Default with every <code>dm.commit()</code> call. No extra steps.</td>
         </tr>
         <tr>
-          <td><span class="proof-label">Signed</span></td>
-          <td>The agent signed this record client-side before it reached DarkMatter. Any modification in transit is mathematically detectable. This is black-box grade.</td>
-          <td>SDK. One extra line when your agent commits.</td>
+          <td><span class="proof-label">Independent verification</span></td>
+          <td>Signed checkpoint bundles anchored to Bitcoin via OpenTimestamps. Timestamp proof lives outside DarkMatter's infrastructure entirely.</td>
+          <td>Automatic. Every checkpoint batch is anchored and signed.</td>
         </tr>
         <tr>
-          <td><span class="proof-label">Sealed</span></td>
-          <td>Signed and encrypted before leaving your system. DarkMatter never saw the content. Verification works without revealing the payload.</td>
-          <td>SDK with your own encryption key (BYOK).</td>
+          <td><span class="proof-label">Non-repudiation</span></td>
+          <td>Customer-held signing keys. Even DarkMatter cannot forge a record — only your key can sign a valid commit. Verification works without revealing the payload.</td>
+          <td>SDK with your own Ed25519 key (BYOK). Roadmap.</td>
         </tr>
       </tbody>
     </table>
