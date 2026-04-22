@@ -1750,17 +1750,33 @@ async function authFetch(url, opts = {}) {
 let activityData = [];
 let activeFilter = 'all';
 
-function localTimestamp(ts) {
+let _showUTC = false;
+
+function formatTs(ts) {
   if (!ts) return '—';
   const d = new Date(ts);
+  if (_showUTC) {
+    // UTC format: Apr 21, 2026 · 18:42 UTC
+    return d.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric', timeZone:'UTC' })
+      + ' · '
+      + d.toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit', hour12:true, timeZone:'UTC' })
+      + ' UTC';
+  }
   return d.toLocaleString(undefined, {
-    month:  'short',
-    day:    'numeric',
-    year:   'numeric',
-    hour:   'numeric',
-    minute: '2-digit',
-    hour12: true,
+    month:'short', day:'numeric', year:'numeric',
+    hour:'numeric', minute:'2-digit', hour12:true,
   });
+}
+
+function toggleUTC() {
+  _showUTC = !_showUTC;
+  // Re-render both tables and update all column headers
+  renderApiKeys(_apiKeys);
+  renderActivity(_activityAll.length ? _activityAll : activityData);
+}
+
+function localTimestamp(ts) {
+  return formatTs(ts);
 }
 
 // Keep timeAgo for relative display in activity-time badge
@@ -1841,7 +1857,7 @@ function renderActivity(data) {
       <thead><tr>
         <th>Decision</th>
         <th>Agent</th>
-        <th>Date created</th>
+        <th onclick="toggleUTC()" title="Click to toggle UTC / local time" style="cursor:pointer;user-select:none;white-space:nowrap;">Date created <span style="font-family:var(--mono);font-size:9px;font-weight:500;color:var(--t4);border:1px solid var(--brd);border-radius:3px;padding:1px 4px;margin-left:3px;">${_showUTC ? 'UTC' : 'local'}</span></th>
       </tr></thead>
       <tbody>
         ${pageData.map((a, i) => {
@@ -2284,7 +2300,7 @@ function renderApiKeys(keys) {
       <thead><tr>
         <th>Name</th>
         <th>Created by</th>
-        <th>Date created</th>
+        <th onclick="toggleUTC()" title="Click to toggle UTC / local time" style="cursor:pointer;user-select:none;white-space:nowrap;">Date created <span style="font-family:var(--mono);font-size:9px;font-weight:500;color:var(--t4);border:1px solid var(--brd);border-radius:3px;padding:1px 4px;margin-left:3px;">${_showUTC ? 'UTC' : 'local'}</span></th>
       </tr></thead>
       <tbody>
         ${pageKeys.map((k, i) => `

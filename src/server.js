@@ -3876,6 +3876,9 @@ app.get('/r/:traceId', async (req, res) => {
     }
 
     if (req.query.format === 'json') {
+      const filename = `darkmatter_proof_${traceId.slice(-12)}.json`;
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader('Content-Type', 'application/json');
       return res.json({
         trace_id: traceId, chain_intact: chainIntact, step_count: commits.length,
         commits: commits.map(function(c) { return {
