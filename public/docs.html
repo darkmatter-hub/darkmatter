@@ -303,15 +303,15 @@ for s in replay[<span class="cv">"replay"</span>]:
 
   <h3>From zero to verified chain</h3>
   <div class="steps">
-    <div class="step"><div class="step-num">0</div><div><div class="step-title">Run the demo (no signup)</div><div class="step-desc">See replay, fork, and diff in your terminal in 30 seconds: <code>darkmatter demo</code>. No API key needed.</div></div></div>
-    <div class="step"><div class="step-num">1</div><div><div class="step-title">Install the SDK</div><div class="step-desc"><code>pip install darkmatter-sdk</code>. Then run <code>darkmatter demo</code> to see it locally (no signup), then <code>darkmatter init</code> to create your agent and API key.</div></div></div>
+    <div class="step"><div class="step-num">0</div><div><div class="step-title">Install and try the demo</div><div class="step-desc">Run <code>pip install darkmatter-sdk</code> then <code>darkmatter demo</code> — see a full commit, verify, replay, and fork cycle in your terminal. No signup needed.</div></div></div>
+    <div class="step"><div class="step-num">1</div><div><div class="step-title">Run init</div><div class="step-desc"><code>darkmatter init</code> — creates your account, agent, and API key. Writes <code>.env</code> with <code>DARKMATTER_API_KEY</code> and <code>DARKMATTER_AGENT_ID</code>. No browser needed.</div></div></div>
     <div class="step"><div class="step-num">2</div><div><div class="step-title">Get a free API key</div><div class="step-desc">Sign up at <a href="/signup">darkmatterhub.ai/signup</a>, create an agent in the dashboard, copy the key. Set <code>DARKMATTER_API_KEY=dm_sk_...</code></div></div></div>
     <div class="step"><div class="step-num">3</div><div><div class="step-title">Commit after each step</div><div class="step-desc">Call <code>dm.commit()</code> with the input and output. Pass <code>parent_id</code> to link commits into a chain. That's it.</div></div></div>
     <div class="step"><div class="step-num">4</div><div><div class="step-title">Replay, fork, verify</div><div class="step-desc"><code>dm.replay(ctx_id)</code> walks the chain root→tip. <code>dm.fork(ctx_id)</code> branches without modifying the original. <code>dm.verify(ctx_id)</code> proves the chain is intact.</div></div></div>
   </div>
 
   <h3>curl (no SDK)</h3>
-<pre><code><span class="cm"># Agent A commits output to Agent B</span>
+<pre><code><span class="cm"># Commit an agent decision</span>
 curl -X POST https://darkmatterhub.ai/api/commit   -H <span class="cv">"Authorization: Bearer AGENT_A_KEY"</span>   -H <span class="cv">"Content-Type: application/json"</span>   -d '{
     <span class="ck">"toAgentId"</span>: <span class="cv">"dm_agent_b_id"</span>,
     <span class="ck">"payload"</span>: {<span class="ck">"input"</span>: <span class="cv">"Analyze Q1"</span>, <span class="ck">"output"</span>: <span class="cv">"Revenue up 34%"</span>},
