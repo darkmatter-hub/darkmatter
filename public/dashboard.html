@@ -1157,10 +1157,6 @@ body { font-family: var(--sans); background:var(--bg); color: var(--t0); display
             <button class="filter-btn active" onclick="filterActivity(this,'all')">All</button>
             <button class="filter-btn" onclick="filterActivity(this,'today')">Today</button>
             <button class="filter-btn" onclick="filterActivity(this,'yesterday')">Yesterday</button>
-            <div class="filter-spacer"></div>
-            <select class="filter-select" id="person-filter" onchange="filterByPerson(this.value)">
-              <option value="">All people</option>
-            </select>
           </div>
           <div id="activity-feed"></div>
         </div>
@@ -1323,7 +1319,7 @@ body { font-family: var(--sans); background:var(--bg); color: var(--t0); display
       <span class="drawer-meta-value" id="drawer-model"></span>
     </div>
     <div class="drawer-meta-item">
-      <span class="drawer-meta-label">When</span>
+      <span class="drawer-meta-label">Committed</span>
       <span class="drawer-meta-value" id="drawer-time"></span>
     </div>
   </div>
@@ -1754,6 +1750,20 @@ async function authFetch(url, opts = {}) {
 let activityData = [];
 let activeFilter = 'all';
 
+function localTimestamp(ts) {
+  if (!ts) return '—';
+  const d = new Date(ts);
+  return d.toLocaleString(undefined, {
+    month:  'short',
+    day:    'numeric',
+    year:   'numeric',
+    hour:   'numeric',
+    minute: '2-digit',
+    hour12: true,
+  });
+}
+
+// Keep timeAgo for relative display in activity-time badge
 function timeAgo(ts) {
   const diff = Date.now() - new Date(ts).getTime();
   const m = Math.floor(diff / 60000);
@@ -1827,26 +1837,30 @@ function renderActivity(data) {
         <button onclick="commitPageNext()" ${nextDis ? 'disabled' : ''} style="font-size:12.5px;color:${nextDis ? 'var(--t4)' : 'var(--t2)'};background:none;border:none;cursor:${nextDis ? 'default' : 'pointer'};padding:4px 8px;border-radius:5px;">Next &rsaquo;</button>
       </div>
     </div>
-    ${pageData.map((a, i) => {
-      const idx        = start + i;
-      const modelType  = (a.provider === 'openai') ? 'gpt' : 'claude';
-      const modelLabel = (a.provider === 'openai') ? 'GPT-4o' : 'Claude 4.6';
-      const utc        = new Date(a.timestamp).toISOString();
-      return `
-      <div class="activity-row" data-idx="${idx}" data-utc="${utc}" onclick="openDrawerByIdx(this)">
-        <div class="activity-avatar" style="background:var(--bg-1);border:1px solid var(--brd);">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" stroke-width="2" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-        </div>
-        <div class="activity-body">
-          <div class="activity-title">${escHtml(getRecordTitle(a))}</div>
-          <div class="activity-meta">
-            <span class="activity-user">${escHtml(a.agentName)}</span>
-            <span class="activity-model ${modelType}">${modelLabel}</span>
-          </div>
-        </div>
-        <span class="activity-time" data-utc="${utc}">${timeAgo(a.timestamp)}</span>
-      </div>`;
-    }).join('')}`;
+    <table class="apikey-table">
+      <thead><tr>
+        <th>Decision</th>
+        <th>Agent</th>
+        <th>Date created</th>
+      </tr></thead>
+      <tbody>
+        ${pageData.map((a, i) => {
+          const idx        = start + i;
+          const modelType  = (a.provider === 'openai') ? 'gpt' : 'claude';
+          const modelLabel = (a.provider === 'openai') ? 'GPT-4o' : 'Claude 4.6';
+          const utc        = new Date(a.timestamp).toISOString();
+          return `
+          <tr data-idx="${idx}" data-utc="${utc}" onclick="openDrawerByIdx(this)" style="cursor:pointer;">
+            <td class="td-name">
+              <div>${escHtml(getRecordTitle(a))}</div>
+              <div class="td-sub"><span class="activity-model ${modelType}" style="font-size:10px;padding:1px 6px;">${modelLabel}</span></div>
+            </td>
+            <td class="td-email">${escHtml(a.agentName || '—')}</td>
+            <td class="td-date">${localTimestamp(a.timestamp)}</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>`;
 }
 
 function commitPagePrev() {
@@ -1868,7 +1882,7 @@ function openDrawerByIdx(el) {
     color:   getAvatarColor(a.agentName),
     title:   a.title,
     model:   modelType,
-    time:    timeAgo(a.timestamp),
+    time:    localTimestamp(a.timestamp),
     record:  a.id,
     traceId: a.traceId,   // backend conversation ID — used for transcript fetch
     preview: a.title,
@@ -2280,7 +2294,7 @@ function renderApiKeys(keys) {
               <div class="td-sub">${escHtml(k.note || 'DarkMatter workspace')}</div>
             </td>
             <td class="td-email">${escHtml(k.created_by || userEmail)}</td>
-            <td class="td-date">${k.created_at ? timeAgo(k.created_at) : '—'}</td>
+            <td class="td-date">${k.created_at ? localTimestamp(k.created_at) : '—'}</td>
           </tr>`).join('')}
       </tbody>
     </table>`;
@@ -2306,7 +2320,7 @@ function selectApiKey(idx) {
   document.getElementById('kd-apikey').textContent  = 'Redacted. If you have lost this key, create a new one instead.';
   document.getElementById('kd-name').textContent    = key.name || key.agent_name || '—';
   document.getElementById('kd-email').textContent   = userEmail;
-  document.getElementById('kd-created').textContent = key.created_at ? timeAgo(key.created_at) : '—';
+  document.getElementById('kd-created').textContent = key.created_at ? localTimestamp(key.created_at) : '—';
   document.getElementById('kd-expires').textContent = key.expires_at || '—';
 
   const drawer  = document.getElementById('key-drawer');
