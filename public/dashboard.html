@@ -991,10 +991,6 @@ body { font-family: var(--sans); background:var(--bg); color: var(--t0); display
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
           Commits
         </a>
-        <a class="nav-link" id="nav-team" onclick="showView('team')">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-          Team
-        </a>
         <a class="nav-link" href="/docs" target="_blank">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
           Docs ↗
@@ -1028,7 +1024,7 @@ body { font-family: var(--sans); background:var(--bg); color: var(--t0); display
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
       Docs
     </a>
-    <a class="user-menu-item" href="https://github.com/darkmatter-hub/darkmatter/issues" target="_blank">
+    <a class="user-menu-item" href="https://github.com/darkmatter-hub/darkmatter-feedback/issues/new" target="_blank">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
       Feedback
     </a>
@@ -1953,20 +1949,19 @@ document.addEventListener('DOMContentLoaded', () => {
   loadUserProfile();
   startAutoPoll();
   startPoll();
-  setTimeout(() => {
-    showView('apikeys');
-    // If URL is /dashboard/keys/:id, auto-open that key's drawer after keys load
-    const m = location.pathname.match(/\/dashboard\/keys\/(.+)/);
-    if (m) {
-      const targetId = m[1];
-      const tryOpen  = (attempts) => {
-        const idx = _apiKeys.findIndex(k => k.id === targetId);
-        if (idx >= 0) { selectApiKey(idx); return; }
-        if (attempts > 0) setTimeout(() => tryOpen(attempts - 1), 300);
-      };
-      setTimeout(() => tryOpen(10), 500);
-    }
-  }, 50);
+  // Load immediately — session is guaranteed after login redirect
+  showView('apikeys');
+  // If URL is /dashboard/keys/:id, auto-open that key's drawer after keys load
+  const m = location.pathname.match(/\/dashboard\/keys\/(.+)/);
+  if (m) {
+    const targetId = m[1];
+    const tryOpen  = (attempts) => {
+      const idx = _apiKeys.findIndex(k => k.id === targetId);
+      if (idx >= 0) { selectApiKey(idx); return; }
+      if (attempts > 0) setTimeout(() => tryOpen(attempts - 1), 300);
+    };
+    setTimeout(() => tryOpen(10), 500);
+  }
 });
 
 // ── Load team members from server ───────────────────────────────────────────

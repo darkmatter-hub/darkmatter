@@ -5920,40 +5920,36 @@ app.post('/api/workspace/chat', requireAuth, async (req, res) => {
 // ─────────────────────────────────────────────────────────────────────────────
 app.get('/api/workspace/activity', requireAuth, async (req, res) => {
   try {
-    const limit = Math.min(parseInt(req.query.limit) || 50, 200);
+    const limit = Math.min(parseInt(req.query.limit) || 25, 200);
 
-    // Get membership
-    const membership = await getMembership(req.user.id);
+    // Run membership and agents queries in parallel
+    const [membership, agentsRes] = await Promise.all([
+      getMembership(req.user.id),
+      supabaseService.from('agents').select('agent_id, agent_name').eq('user_id', req.user.id).limit(100),
+    ]);
 
-    // Collect all agent IDs we should show
-    let agentIds = [];
+    const userAgents   = agentsRes.data || [];
+    const userAgentIds = userAgents.map(a => a.agent_id);
+    const agentNameMap = {};
+    userAgents.forEach(a => { agentNameMap[a.agent_id] = a.agent_name; });
+
+    let allAgentIds = [...userAgentIds];
 
     if (membership) {
-      // Workspace member — show all workspace members' activity (admin) or own (member)
       if (membership.role === 'admin') {
         const { data: members } = await supabaseService
           .from('workspace_members')
           .select('agent_id')
           .eq('workspace_id', membership.workspace_id)
           .not('agent_id', 'is', null);
-        agentIds = (members || []).map(m => m.agent_id).filter(Boolean);
-      } else {
-        if (membership.agent_id) agentIds = [membership.agent_id];
+        const wsIds = (members || []).map(m => m.agent_id).filter(Boolean);
+        allAgentIds = [...new Set([...allAgentIds, ...wsIds])];
+      } else if (membership.agent_id) {
+        allAgentIds = [...new Set([...allAgentIds, membership.agent_id])];
       }
     }
 
-    // Always include user's own agents
-    const { data: userAgents } = await supabaseService
-      .from('agents')
-      .select('agent_id, agent_name')
-      .eq('user_id', req.user.id);
-
-    const userAgentIds = (userAgents || []).map(a => a.agent_id);
-    const allAgentIds  = [...new Set([...agentIds, ...userAgentIds])];
-
-    if (allAgentIds.length === 0) {
-      return res.json({ activity: [], total: 0 });
-    }
+    if (allAgentIds.length === 0) return res.json({ activity: [], total: 0 });
 
     const idList = allAgentIds.map(id => `"${id}"`).join(',');
     const { data: commits, error } = await supabaseService
@@ -5965,56 +5961,30 @@ app.get('/api/workspace/activity', requireAuth, async (req, res) => {
 
     if (error) throw error;
 
-    // Build an agent name map
-    const agentNameMap = {};
-    (userAgents || []).forEach(a => { agentNameMap[a.agent_id] = a.agent_name; });
-
-    // If workspace, also pull member names
-    if (membership) {
-      const { data: members } = await supabaseService
-        .from('workspace_members')
-        .select('agent_id, display_name, email')
-        .eq('workspace_id', membership.workspace_id);
-      (members || []).forEach(m => {
-        if (m.agent_id) agentNameMap[m.agent_id] = m.display_name || m.email;
-      });
-    }
-
-    // Format for dashboard
     const activity = (commits || []).map(c => {
       const agentKey  = c.agent_id || c.from_agent;
       const agentName = agentNameMap[agentKey] || c.agent_info?.name || agentKey || 'Agent';
       const provider  = c.agent_info?.provider || c.payload?._provider || null;
       const model     = c.agent_info?.model     || c.payload?._model    || null;
       const source    = c.capture_mode || c.payload?._source || 'api';
-
-      // Build a human-readable title from payload
-      const p = c.payload || {};
-      let title = 'AI conversation recorded';
-      if (p.prompt || p.output) {
-        const preview = (p.prompt || p.output || '').slice(0, 80);
-        title = preview ? `"${preview}${preview.length >= 80 ? '…' : ''}"` : title;
-      } else if (p.convTitle) {
-        title = p.convTitle;
-      }
+      const p         = c.payload || {};
+      let title = p.decision ? 'Decision: ' + p.decision
+                : p.action   ? 'Action: '   + p.action
+                : p.output   ? String(p.output).slice(0, 80)
+                : p.input    ? String(p.input).slice(0, 80)
+                : p.convTitle ? p.convTitle
+                : p.prompt   ? p.prompt.slice(0, 80)
+                : 'Commit ' + c.id.slice(0, 12);
 
       return {
-        id:         c.id,
-        traceId:    c.trace_id || c.id,
-        agentId:    agentKey,
-        agentName,
-        provider:   provider || 'unknown',
-        model:      model    || 'unknown',
-        eventType:  c.event_type || 'commit',
-        title,
-        timestamp:  c.timestamp,
-        verified:   c.verified || false,
-        source,
+        id: c.id, traceId: c.trace_id || c.id, agentId: agentKey,
+        agentName, provider: provider || 'unknown', model: model || 'unknown',
+        eventType: c.event_type || 'commit', title, timestamp: c.timestamp,
+        verified: c.verified || false, source,
       };
     });
 
     res.json({ activity, total: activity.length });
-
   } catch(err) {
     console.error('[workspace/activity]', err.message);
     res.status(500).json({ error: err.message });
@@ -6296,21 +6266,20 @@ app.get('/api/workspace/api-keys', requireAuth, async (req, res) => {
   try {
     const { data: agents, error } = await supabaseService
       .from('agents')
-      .select('agent_id, agent_name, created_at, user_id')
+      .select('agent_id, agent_name, created_at')
       .eq('user_id', req.user.id)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(50);
 
     if (error) throw error;
 
-    const keys = (agents || []).map(a => ({
+    res.json({ keys: (agents || []).map(a => ({
       id:         a.agent_id,
       name:       a.agent_name || 'API Key',
       created_at: a.created_at,
       created_by: req.user.email,
       note:       'DarkMatter workspace',
-    }));
-
-    res.json({ keys });
+    })) });
   } catch (e) {
     console.error('[api-keys GET]', e.message);
     res.status(500).json({ error: 'Could not load API keys' });
