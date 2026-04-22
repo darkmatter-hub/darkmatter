@@ -57,10 +57,25 @@ body { font-family: var(--sans); background:var(--bg); color: var(--t0); display
   border-right: 1px solid var(--brd);
   transition: width .2s ease;
 }
-.leftnav.collapsed { width: 0; border-right-width: 0; }
-.leftnav.collapsed .leftnav-top,
-.leftnav.collapsed .nav-links,
-.leftnav.collapsed .leftnav-bottom { opacity: 0; pointer-events: none; }
+.leftnav.collapsed { width: 52px; }
+.leftnav.collapsed .logo-name,
+.leftnav.collapsed .nav-link span,
+.leftnav.collapsed .nav-user-info,
+.leftnav.collapsed .nav-user svg:last-child,
+.leftnav.collapsed .nav-section-label,
+.leftnav.collapsed .leftnav-logo-text { display: none; }
+.leftnav.collapsed .nav-logo { justify-content: center; }
+.leftnav.collapsed .nav-link { justify-content: center; padding: 10px 0; }
+.leftnav.collapsed .nav-link svg { opacity: .7; margin: 0; }
+.leftnav.collapsed .nav-link.active svg { opacity: 1; }
+.leftnav.collapsed .nav-user { justify-content: center; padding: 7px 0; }
+.leftnav.collapsed .nav-avatar { margin: 0; }
+.leftnav.collapsed .leftnav-top { padding: 14px 8px; }
+.leftnav.collapsed .leftnav-bottom { padding: 10px 8px; }
+.leftnav.collapsed .nav-links { gap: 2px; }
+.leftnav.collapsed .sidebar-close-btn { display: none; }
+.leftnav.collapsed .nav-expand-btn { display: flex !important; }
+.leftnav.collapsed .nav-logo { display: none; }
 .nav-toggle-btn {
   position: fixed;
   top: 12px;
@@ -994,11 +1009,6 @@ body { font-family: var(--sans); background:var(--bg); color: var(--t0); display
 
 <div class="app">
 
-  <!-- Floating "open sidebar" button — shown only when nav is collapsed -->
-  <button class="nav-toggle-btn" id="nav-open-btn" onclick="openSidebar()" title="Open sidebar" style="display:none;">
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
-  </button>
-
   <!-- ── LEFT NAV ── -->
   <nav class="leftnav" id="leftnav">
     <div class="leftnav-top">
@@ -1015,7 +1025,11 @@ body { font-family: var(--sans); background:var(--bg); color: var(--t0); display
           </svg>
           <span class="logo-name">Dark<span class="logo-grad">Matter</span></span>
         </a>
-        <button onclick="closeSidebar()" title="Close sidebar" style="background:none;border:none;cursor:pointer;color:var(--t3);padding:4px;border-radius:5px;display:flex;align-items:center;transition:color .12s,background .12s;" onmouseover="this.style.color='var(--t0)';this.style.background='var(--bg-0)'" onmouseout="this.style.color='var(--t3)';this.style.background='none'">
+        <!-- Collapsed-only expand button — sits at same position as logo SVG -->
+        <button onclick="openSidebar()" class="nav-expand-btn" title="Expand sidebar" style="display:none;background:none;border:none;cursor:pointer;color:var(--t3);padding:4px;border-radius:5px;align-items:center;transition:color .12s,background .12s;" onmouseover="this.style.color='var(--t0)'" onmouseout="this.style.color='var(--t3)'">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
+        </button>
+        <button onclick="document.getElementById('leftnav').classList.toggle('collapsed')" title="Toggle sidebar" class="sidebar-close-btn" style="background:none;border:none;cursor:pointer;color:var(--t3);padding:4px;border-radius:5px;display:flex;align-items:center;transition:color .12s,background .12s;flex-shrink:0;" onmouseover="this.style.color='var(--t0)';this.style.background='var(--bg-0)'" onmouseout="this.style.color='var(--t3)';this.style.background='none'">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
         </button>
       </div>
@@ -1900,6 +1914,7 @@ async function loadActivity() {
     if (!res.ok) return;
     const data = await res.json();
     activityData = data.activity || [];
+    _commitPage  = 0;
     renderActivity(activityData);
     updateStats(data);
   } catch(e) {
@@ -2107,6 +2122,7 @@ function filterActivity(btn, filter) {
   document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   activeFilter = filter;
+  _commitPage = 0;
   if (filter === 'today') {
     const today = new Date(); today.setHours(0,0,0,0);
     renderActivity(activityData.filter(a => new Date(a.timestamp) >= today));
@@ -2116,6 +2132,7 @@ function filterActivity(btn, filter) {
 }
 
 function filterActivityBySearch(val) {
+  _commitPage = 0;
   if (!val) { renderActivity(activityData); return; }
   const q = val.toLowerCase();
   renderActivity(activityData.filter(a =>
@@ -2126,6 +2143,7 @@ function filterActivityBySearch(val) {
 }
 
 function filterByPerson(val) {
+  _commitPage = 0;
   if (!val) { renderActivity(activityData); return; }
   renderActivity(activityData.filter(a =>
     (a.agentName || '').toLowerCase().includes(val.toLowerCase())
@@ -2189,14 +2207,8 @@ async function runDebug() {
 }
 
 // ── Sidebar open/close ────────────────────────────────────────────────────────
-function closeSidebar() {
-  document.getElementById('leftnav')?.classList.add('collapsed');
-  document.getElementById('nav-open-btn').style.display = 'flex';
-}
-function openSidebar() {
-  document.getElementById('leftnav')?.classList.remove('collapsed');
-  document.getElementById('nav-open-btn').style.display = 'none';
-}
+function closeSidebar() { document.getElementById('leftnav')?.classList.add('collapsed'); }
+function openSidebar()  { document.getElementById('leftnav')?.classList.remove('collapsed'); }
 
 async function loadApiKeys() {
   const container = document.getElementById('apikeys-list');
@@ -2723,6 +2735,7 @@ async function loadActivityGuarded() {
   if (!res.ok) return;
   const data = await res.json();
   activityData = data.activity || [];
+  _commitPage  = 0;
   renderActivity(activityData);
 }
 
