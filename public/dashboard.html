@@ -187,6 +187,7 @@ body { font-family: var(--sans); background:var(--bg); color: var(--t0); display
   flex-direction: column;
   min-width: 0;
   overflow-y: auto;
+  background: var(--bg);
 }
 
 /* Top bar */
@@ -241,7 +242,7 @@ body { font-family: var(--sans); background:var(--bg); color: var(--t0); display
 .topbar-btn:hover { opacity: .85; }
 
 /* ── PAGE CONTENT ── */
-.page-content { padding: 28px 32px 48px; max-width: 1100px; }
+.page-content { padding: 28px 32px 48px; max-width: 1100px; width: 100%; }
 
 /* ── QUICKSTART CODE COPY ── */
 .qs-code-wrap {
@@ -3086,9 +3087,17 @@ document.addEventListener('keydown', (e) => {
 async function loadUserProfile() {
   const session = getSession();
   if (!session?.user?.email) return;
-  const email    = session.user.email;
-  const namePart = email.split('@')[0];
-  const name     = namePart.charAt(0).toUpperCase() + namePart.slice(1);
+  const email = session.user.email;
+  // Try full name from user_metadata (set during signup or profile update)
+  const meta  = session.user?.user_metadata || {};
+  let name = meta.full_name || meta.name || meta.display_name || '';
+  if (!name) {
+    // Fallback: capitalise each word of the email prefix
+    name = email.split('@')[0]
+      .split(/[._-]/)
+      .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(' ');
+  }
   setUserDisplay(name, email, 'Member');
 }
 

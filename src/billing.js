@@ -142,16 +142,44 @@ function mountBillingRoutes(app, supabaseService, requireAuth) {
     try {
       const stripe = getStripe();
       if (!stripe) return res.status(503).json({ error: 'Billing not configured.' });
-      const { data: sub } = await supabaseService
-        .from('subscriptions').select('stripe_customer_id').eq('user_id', req.user.id).single();
-      if (!sub?.stripe_customer_id)
-        return res.status(400).json({ error: 'No billing account. Subscribe first.' });
+
+      const userId  = req.user.id;
+      const email   = req.user.email;
       const baseUrl = process.env.APP_URL || 'https://darkmatterhub.ai';
+
+      // Find existing customer ID
+      const { data: sub } = await supabaseService
+        .from('subscriptions').select('stripe_customer_id').eq('user_id', userId).single();
+
+      let customerId = sub?.stripe_customer_id;
+
+      // Free users have no subscription row yet — create a Stripe customer on demand
+      if (!customerId) {
+        const customer = await stripe.customers.create({
+          email,
+          metadata: { darkmatter_user_id: userId },
+        });
+        customerId = customer.id;
+        // Store the customer ID so future upgrades reuse it
+        await supabaseService.from('subscriptions').upsert({
+          user_id:            userId,
+          stripe_customer_id: customerId,
+          plan:               'free',
+          status:             'active',
+          updated_at:         new Date().toISOString(),
+        }, { onConflict: 'user_id' });
+      }
+
       const session = await stripe.billingPortal.sessions.create({
-        customer: sub.stripe_customer_id, return_url: `${baseUrl}/dashboard`,
+        customer:   customerId,
+        return_url: `${baseUrl}/dashboard`,
       });
+
       res.json({ url: session.url });
-    } catch(e) { res.status(500).json({ error: e.message }); }
+    } catch(e) {
+      console.error('[billing/portal]', e.message);
+      res.status(500).json({ error: e.message });
+    }
   });
 }
 
