@@ -1081,6 +1081,13 @@ function buildContext(c, agentMap = {}) {
     },
 
     created_at: c.timestamp,
+
+    // L3 non-repudiation fields
+    assurance_level: c.assurance_level || 'L1',
+    ...(c.client_key_id ? {
+      client_key_id:       c.client_key_id,
+      client_signature:    c.client_signature || null,
+    } : {}),
   };
 }
 
@@ -1380,6 +1387,7 @@ app.post('/api/commit', apiLimiter, requireApiKey, async (req, res) => {
       }).catch(err => console.error('webhook delivery error:', err));
     }
 
+    const baseUrl  = process.env.APP_URL || process.env.BASE_URL || 'https://darkmatterhub.ai';
     const receipt = buildContext({
       id:                  commitId,
       schema_version:      schemaVersion,
@@ -1398,7 +1406,11 @@ app.post('/api/commit', apiLimiter, requireApiKey, async (req, res) => {
       verification_reason: 'API key authenticated',
       capture_mode: 'client_signed',
       timestamp,
+      ...attestationFields,
     }, { [req.agent.agent_id]: req.agent.agent_name, [resolvedToAgentId]: recipientAgent?.agent_name || resolvedToAgentId });
+
+    // Always include verify_url in response
+    receipt.verify_url = `${baseUrl}/r/${commitId}`;
 
     // ── Phase 3: append to log + Merkle tree ──────────
     let logEntry = null;
