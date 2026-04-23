@@ -85,7 +85,6 @@ a{color:inherit;text-decoration:none;}
 .tier-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin:1.5rem 0 2.5rem;}
 .tier-card{background:var(--bg);padding:1.5rem 1.25rem;}
 .tier-card.tier-live{background:#fff;}
-.tier-card.tier-roadmap{background:var(--bg2);opacity:.82;}
 .tier-level{font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--text3);margin-bottom:.5rem;}
 .tier-name{font-size:15px;font-weight:700;color:var(--text);margin-bottom:.4rem;letter-spacing:-.02em;}
 .tier-claim{font-family:var(--mono);font-size:11px;color:var(--green);margin-bottom:1rem;line-height:1.55;}
@@ -303,7 +302,7 @@ a{color:inherit;text-decoration:none;}
 
     <!-- GUARANTEE TIERS -->
     <h2 id="guarantee-tiers">Three levels of guarantee</h2>
-    <p>Each level answers a different question a skeptic can ask. Levels 1 and 2 are live. Level 3 is on the roadmap — the SDK is already forward-compatible.</p>
+    <p>Each level answers a different question a skeptic can ask. All three levels are live. L3 requires one-time client-side key setup — see the <a href="/docs#l3">L3 setup guide</a>.</p>
 
     <div class="tier-grid">
       <div class="tier-card tier-live">
@@ -330,15 +329,15 @@ a{color:inherit;text-decoration:none;}
         </ul>
         <p class="tier-closes">Closes: "What if DarkMatter disappears or can't be trusted?"</p>
       </div>
-      <div class="tier-card tier-roadmap">
-        <p class="tier-level">Level 3 &mdash; Roadmap</p>
+      <div class="tier-card tier-live">
+        <p class="tier-level">Level 3 &mdash; Live</p>
         <p class="tier-name">Non-repudiation</p>
         <p class="tier-claim">"We couldn't forge it<br>even if we wanted to."</p>
         <ul class="tier-items">
-          <li>Customer-held signing keys — DarkMatter never sees your private key</li>
-          <li>Signatures cryptographically impossible for DarkMatter to produce</li>
-          <li>No API change required — envelope already carries the key fields</li>
-          <li>SDK forward-compatible now — set <code>customer_key_path</code> today</li>
+          <li>Customer-held Ed25519 signing keys — DarkMatter never sees your private key</li>
+          <li>Signatures cryptographically impossible for DarkMatter to forge</li>
+          <li><code>dm.commit()</code> unchanged — signing is one-time config via <code>SigningConfig</code></li>
+          <li>L3 badge shown on <code>/r/:traceId</code> verify page with key ID</li>
         </ul>
         <p class="tier-closes">Closes: "Could DarkMatter have fabricated this record entirely?"</p>
       </div>

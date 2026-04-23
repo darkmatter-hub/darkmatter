@@ -367,7 +367,7 @@ footer{padding:3rem 2.5rem;border-top:1px solid var(--rule);}
     <div class="levels-intro">
       <div class="eyebrow">Levels of assurance</div>
       <h2>Three levels of assurance.</h2>
-      <p>All plans include L1 and L2. L3 — customer-held signing keys — is on the roadmap.</p>
+      <p>All plans include L1 and L2. L3 — customer-held signing keys — is live. <a href="/integrity" style="color:var(--accent);">Setup guide →</a></p>
     </div>
     <table class="levels-table">
       <thead>
@@ -387,7 +387,7 @@ footer{padding:3rem 2.5rem;border-top:1px solid var(--rule);}
         <tr>
           <td><div style="margin-bottom:5px;"><span class="level-code">L3</span></div><div class="level-name">Non-repudiation</div></td>
           <td class="level-desc">Customer-held Ed25519 signing keys (BYOK). Even DarkMatter cannot forge a record. Verification works without revealing the payload content.</td>
-          <td><span class="status-roadmap">Roadmap</span></td>
+          <td><span class="status-live">Live</span></td>
         </tr>
       </tbody>
     </table>
@@ -437,7 +437,7 @@ footer{padding:3rem 2.5rem;border-top:1px solid var(--rule);}
       </div>
       <div class="faq-item">
         <div class="faq-q">Should the proof bundle be encrypted before sharing with an auditor?</div>
-        <div class="faq-a">For L1 and L2 records: no. The auditor verifies the hash chain against the payload — encrypting the payload breaks their ability to verify. Share under NDA, not encryption. L3 (BYOK, roadmap) handles cases where payload confidentiality is required alongside verification.</div>
+        <div class="faq-a">For L1 and L2 records: no. The auditor verifies the hash chain against the payload — encrypting the payload breaks their ability to verify. Share under NDA, not encryption. L3 (BYOK) handles cases where payload confidentiality is required alongside verification — <a href="/integrity" style="color:inherit;">setup guide →</a>.</div>
       </div>
     </div>
   </div>
