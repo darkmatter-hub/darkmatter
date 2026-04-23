@@ -176,48 +176,68 @@ function mountBillingRoutes(app, supabaseService, requireAuth) {
 // ── Stripe webhook event handler ──────────────────────────────────────────────
 async function handleStripeEvent(event, db) {
   const { type, data } = event;
-  console.log('[stripe]', type);
+  console.log('[stripe webhook]', type);
 
   if (type === 'checkout.session.completed') {
     const s = data.object;
     if (s.mode !== 'subscription') return;
-    const userId   = s.metadata?.darkmatter_user_id;
-    const plan     = s.metadata?.plan || 'pro';
-    if (!userId) return;
-    const stripe = getStripe();
+    const userId = s.metadata?.darkmatter_user_id;
+    const plan   = s.metadata?.plan || 'pro';
+    if (!userId) { console.error('[stripe] No darkmatter_user_id in metadata'); return; }
+
+    const stripe    = getStripe();
     const stripeSub = await stripe.subscriptions.retrieve(s.subscription);
-    await db.from('subscriptions').upsert({
-      id: s.subscription, user_id: userId,
-      stripe_customer_id: s.customer, plan, status: stripeSub.status,
+    console.log('[stripe] writing subscription for user', userId, 'plan', plan, 'sub', s.subscription);
+
+    const row = {
+      id:                   s.subscription,
+      user_id:              userId,
+      stripe_customer_id:   s.customer,
+      plan,
+      status:               stripeSub.status,
       current_period_start: new Date(stripeSub.current_period_start * 1000).toISOString(),
       current_period_end:   new Date(stripeSub.current_period_end   * 1000).toISOString(),
-      stripe_price_id: stripeSub.items.data[0]?.price?.id,
-      updated_at: new Date().toISOString(),
-    }, { onConflict: 'user_id' });
+      stripe_price_id:      stripeSub.items.data[0]?.price?.id,
+      updated_at:           new Date().toISOString(),
+    };
+
+    // Try update first (existing row), then insert (new row)
+    const { data: existing } = await db.from('subscriptions').select('id').eq('user_id', userId).single();
+    if (existing) {
+      const { error } = await db.from('subscriptions').update(row).eq('user_id', userId);
+      if (error) console.error('[stripe] update error:', error.message);
+      else console.log('[stripe] subscription updated — user', userId, 'plan', plan);
+    } else {
+      const { error } = await db.from('subscriptions').insert(row);
+      if (error) console.error('[stripe] insert error:', error.message);
+      else console.log('[stripe] subscription inserted — user', userId, 'plan', plan);
+    }
   }
 
   if (type === 'customer.subscription.updated') {
-    const s = data.object;
+    const s    = data.object;
     const plan = s.metadata?.plan || planFromPriceId(s.items.data[0]?.price?.id);
-    await db.from('subscriptions').upsert({
-      id: s.id, stripe_customer_id: s.customer,
-      plan: s.cancel_at_period_end ? plan : plan,
-      status: s.status,
-      current_period_start: new Date(s.current_period_start * 1000).toISOString(),
-      current_period_end:   new Date(s.current_period_end   * 1000).toISOString(),
-      cancel_at_period_end: s.cancel_at_period_end,
-      stripe_price_id: s.items.data[0]?.price?.id,
-      updated_at: new Date().toISOString(),
-    }, { onConflict: 'id' });
+    const { error } = await db.from('subscriptions')
+      .update({
+        plan,
+        status:               s.status,
+        current_period_start: new Date(s.current_period_start * 1000).toISOString(),
+        current_period_end:   new Date(s.current_period_end   * 1000).toISOString(),
+        cancel_at_period_end: s.cancel_at_period_end,
+        stripe_price_id:      s.items.data[0]?.price?.id,
+        updated_at:           new Date().toISOString(),
+      })
+      .eq('id', s.id);
+    if (error) console.error('[stripe] subscription.updated error:', error.message);
   }
 
   if (type === 'customer.subscription.deleted') {
     const s = data.object;
-    await db.from('subscriptions').upsert({
-      id: s.id, stripe_customer_id: s.customer,
-      plan: 'free', status: 'canceled', cancel_at_period_end: false,
-      updated_at: new Date().toISOString(),
-    }, { onConflict: 'id' });
+    const { error } = await db.from('subscriptions')
+      .update({ plan: 'free', status: 'canceled', cancel_at_period_end: false, updated_at: new Date().toISOString() })
+      .eq('id', s.id);
+    if (error) console.error('[stripe] subscription.deleted error:', error.message);
+    else console.log('[stripe] subscription canceled — downgraded to free');
   }
 
   if (type === 'invoice.payment_failed') {
