@@ -27,6 +27,11 @@ const {
   verifyWitnessSignature,
 } = require('./witness');
 
+const {
+  mountBillingRoutes, checkCommitLimit, incrementCommitUsage,
+} = require('./billing');
+
+const { verifyAttestation, canonicalJson } = require('./attestation');
 const app = express();
 
 // ── Trust proxy — required for Railway/Heroku/etc behind reverse proxy ────────
@@ -98,6 +103,9 @@ app.use((req, res, next) => {
   if (req.method === 'OPTIONS') return res.sendStatus(204);
   next();
 });
+
+// ── Billing routes (webhook must be before express.json) ─────────────────────
+mountBillingRoutes(app, supabaseService, requireAuth);
 
 app.use(express.json({ limit: '10mb' })); // increased for rich content from extension
 app.use(express.static(path.join(__dirname, '../public')));
@@ -1081,6 +1089,20 @@ app.post('/api/commit', apiLimiter, requireApiKey, async (req, res) => {
       return res.status(400).json({ error: 'payload (or context) required' });
     }
 
+    // ── Commit limit check ────────────────────────────────────────────────────
+    const userId = req.agent.user_id;
+    if (userId) {
+      const limitCheck = await checkCommitLimit(userId, supabaseService);
+      if (!limitCheck.allowed) {
+        return res.status(429).json({
+          error: limitCheck.error,
+          plan: limitCheck.plan,
+          limit: limitCheck.limit,
+          upgrade_url: 'https://darkmatterhub.ai/dashboard',
+        });
+      }
+    }
+
     // toAgentId is optional — defaults to the committing agent's own ID.
     // This removes the "create a second agent" requirement for single-agent workflows.
     // Multi-agent pipelines still pass an explicit toAgentId as before.
@@ -1097,7 +1119,71 @@ app.post('/api/commit', apiLimiter, requireApiKey, async (req, res) => {
     // client_timestamp: what the agent asserted in their envelope (may differ from accepted_at)
     const clientTimestamp = req.body.envelope?.timestamp || acceptedAt;
 
-    // ── Phase 1: Client-side hashing support ──────────────────────────────
+    // ── L3 attestation (optional) ─────────────────────────────────────────────
+    let assuranceLevel = 'L1';
+    let attestationFields = {};
+    const clientAttestation = req.body.client_attestation;
+
+    if (clientAttestation) {
+      // Resolve public key — inline or from registry
+      let publicKey = clientAttestation.public_key;
+      if (!publicKey && clientAttestation.key_id) {
+        const { data: sigKey } = await supabaseService
+          .from('signing_keys')
+          .select('public_key, status')
+          .eq('user_id', userId)
+          .eq('key_id', clientAttestation.key_id)
+          .single();
+        if (!sigKey) {
+          return res.status(400).json({ error: 'attestation_failed', reason: 'unknown_key_id',
+            message: `Signing key '${clientAttestation.key_id}' not registered. Use POST /api/signing-keys to register.` });
+        }
+        if (sigKey.status === 'revoked') {
+          return res.status(400).json({ error: 'attestation_failed', reason: 'revoked_key',
+            message: `Signing key '${clientAttestation.key_id}' has been revoked.` });
+        }
+        publicKey = sigKey.public_key;
+      }
+      if (!publicKey) {
+        return res.status(400).json({ error: 'attestation_failed', reason: 'missing_public_key',
+          message: 'Provide public_key inline or register key_id via POST /api/signing-keys.' });
+      }
+
+      const verifyResult = verifyAttestation({
+        attestation: { ...clientAttestation, public_key: publicKey },
+        payload: resolvedPayload,
+        metadata: req.body.metadata || null,
+        agentId: req.agent.agent_id,
+        parentId: req.body.parentId || null,
+      });
+
+      if (!verifyResult.valid) {
+        return res.status(400).json({ error: 'attestation_failed', reason: verifyResult.reason,
+          message: verifyResult.message });
+      }
+
+      assuranceLevel = 'L3';
+
+      // Clock skew check (never reject, just flag)
+      const serverNow = Date.now();
+      const clientTs  = new Date(clientAttestation.client_timestamp).getTime();
+      const skewMs    = Math.abs(serverNow - clientTs);
+      const skewWarning = skewMs > 5 * 60 * 1000;
+
+      attestationFields = {
+        assurance_level:            'L3',
+        client_signature:           clientAttestation.signature,
+        client_public_key:          publicKey,
+        client_key_id:              clientAttestation.key_id,
+        client_signature_algorithm: clientAttestation.algorithm || 'Ed25519',
+        client_envelope_version:    clientAttestation.version || 'dm-envelope-v1',
+        client_payload_hash:        clientAttestation.payload_hash,
+        client_metadata_hash:       clientAttestation.metadata_hash || null,
+        client_envelope_hash:       clientAttestation.envelope_hash,
+        client_attestation_ts:      clientAttestation.client_timestamp,
+        timestamp_skew_warning:     skewWarning,
+      };
+    }
     // If the client supplied pre-computed hashes (commit_verified / Phase 1 SDK),
     // we use THOSE hashes — the server recomputes and cross-checks, but stores
     // what the client computed. This makes the server a dumb notary:
@@ -1217,9 +1303,13 @@ app.post('/api/commit', apiLimiter, requireApiKey, async (req, res) => {
         verification_reason: 'API key authenticated',
         capture_mode: 'client_signed',
         timestamp,
+        ...attestationFields,
       });
 
     if (error) throw error;
+
+    // Track usage for billing (non-fatal)
+    if (userId) incrementCommitUsage(userId, supabaseService).catch(() => {});
 
     // Update last_active
     await supabaseService
@@ -2766,6 +2856,80 @@ app.get('/api/diff/:ctxIdA/:ctxIdB', requireApiKey, async (req, res) => {
 // WEEK 1: SHARED READ-ONLY CHAIN LINKS
 // ═══════════════════════════════════════════════════
 
+// ── SIGNING KEY REGISTRY — Phase 2 ──────────────────────────────────────────
+
+// POST /api/signing-keys — register a public key for L3 commits
+app.post('/api/signing-keys', requireAuth, async (req, res) => {
+  try {
+    const { key_id, public_key, algorithm, description } = req.body;
+    if (!key_id || !public_key) {
+      return res.status(400).json({ error: 'key_id and public_key are required' });
+    }
+    if (algorithm && algorithm !== 'Ed25519') {
+      return res.status(400).json({ error: 'Only Ed25519 is supported' });
+    }
+    // Validate public key is valid base64url (32 bytes decoded)
+    try {
+      const raw = Buffer.from(public_key.replace(/-/g,'+').replace(/_/g,'/') + '==', 'base64');
+      if (raw.length !== 32) throw new Error('wrong length');
+    } catch {
+      return res.status(400).json({ error: 'public_key must be base64url of a 32-byte Ed25519 public key' });
+    }
+    const { data, error } = await supabaseService
+      .from('signing_keys')
+      .upsert({
+        user_id:     req.user.id,
+        key_id:      sanitizeText(key_id, 100),
+        public_key,
+        algorithm:   'Ed25519',
+        status:      'active',
+        description: description ? sanitizeText(description, 200) : null,
+        created_at:  new Date().toISOString(),
+      }, { onConflict: 'user_id,key_id' })
+      .select()
+      .single();
+    if (error) throw error;
+    res.status(201).json({ key_id: data.key_id, algorithm: data.algorithm,
+      status: data.status, created_at: data.created_at });
+  } catch(e) {
+    console.error('[signing-keys POST]', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// GET /api/signing-keys — list registered keys
+app.get('/api/signing-keys', requireAuth, async (req, res) => {
+  try {
+    const { data, error } = await supabaseService
+      .from('signing_keys')
+      .select('key_id, algorithm, status, description, created_at, revoked_at')
+      .eq('user_id', req.user.id)
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    res.json({ keys: data || [] });
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// DELETE /api/signing-keys/:keyId — revoke a key
+app.delete('/api/signing-keys/:keyId', requireAuth, async (req, res) => {
+  try {
+    const { keyId } = req.params;
+    const { data, error } = await supabaseService
+      .from('signing_keys')
+      .update({ status: 'revoked', revoked_at: new Date().toISOString() })
+      .eq('user_id', req.user.id)
+      .eq('key_id', keyId)
+      .select()
+      .single();
+    if (error || !data) return res.status(404).json({ error: 'Key not found' });
+    res.json({ key_id: data.key_id, status: 'revoked', revoked_at: data.revoked_at });
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // ── POST /api/workspace/share/:traceId — generate on-demand share token ────────
 // Called from dashboard when user explicitly clicks Share or Verify.
 // Returns a signed URL valid for 30 days. No token = no public access.
@@ -4009,6 +4173,28 @@ app.get('/r/:traceId', async (req, res) => {
     var statusBg    = chainIntact ? 'rgba(16,185,129,.06)' : 'rgba(239,68,68,.06)';
     var statusBd    = chainIntact ? 'rgba(16,185,129,.2)'  : 'rgba(239,68,68,.2)';
 
+    // L3 detection — check any commit in the chain for customer attestation
+    var l3Commit = commits.find(function(c) { return c.assurance_level === 'L3' && c.client_signature; });
+    var isL3 = !!l3Commit;
+    var l3KeyId = l3Commit ? (l3Commit.client_key_id || 'customer key') : null;
+    var skewWarning = l3Commit ? l3Commit.timestamp_skew_warning : false;
+
+    // Assurance level badge
+    var assuranceBadge = isL3
+      ? '<span style="font-family:var(--mono);font-size:10px;font-weight:700;padding:2px 8px;border-radius:3px;background:rgba(107,79,187,.08);color:#6b4fbb;border:1px solid rgba(107,79,187,.2);letter-spacing:.06em;margin-left:6px;">L3 NON-REPUDIATION</span>'
+      : '<span style="font-family:var(--mono);font-size:10px;padding:2px 8px;border-radius:3px;background:var(--bg2);color:var(--ink4);border:1px solid var(--border);letter-spacing:.05em;margin-left:6px;">L1/L2</span>';
+
+    // Integrity description line
+    var integrityDesc = isL3
+      ? 'This record was signed by a customer-controlled key before DarkMatter received it. DarkMatter cannot forge or alter this record — verification requires only the customer public key.'
+      : (chainIntact
+          ? 'This record has been cryptographically verified. Nothing has been added, removed, or altered since it was captured.'
+          : 'This record could not be fully verified. Download the proof file for independent investigation.');
+
+    var l3CustomerLine = isL3
+      ? '  <div style="font-size:12px;color:#6b4fbb;font-family:var(--mono);margin-bottom:4px;letter-spacing:.01em;">\u2713 Customer-signed &middot; key: ' + escH(l3KeyId) + (skewWarning ? ' &middot; <span style="color:#b45309;">timestamp skew &gt;5 min</span>' : '') + '</div>\n'
+      : '';
+
     // Build messages HTML
     var messagesHTML = '';
     commits.forEach(function(c, i) {
@@ -4130,15 +4316,17 @@ app.get('/r/:traceId', async (req, res) => {
       + '  <div class="fs-title">' + escH(title) + '</div>\n'
       + '  <div class="fs-meta">\n'
       + '    <span class="fs-status" style="background:' + statusBg + ';color:' + statusColor + ';border-color:' + statusBd + ';">' + statusText + '</span>\n'
+      + assuranceBadge + '\n'
       + '    <span class="fs-sep">\u00b7</span>\n'
       + '    <span class="fs-chip">' + stepCount + ' step' + (stepCount !== 1 ? 's' : '') + '</span>\n'
       + '    <span class="fs-sep">\u00b7</span>\n'
       + '    <span class="fs-chip">' + escH(platform) + '</span>\n'
       + (dateStr ? '    <span class="fs-sep">\u00b7</span>\n    <span class="fs-chip">' + escH(dateStr) + '</span>\n' : '')
       + '  </div>\n'
+      + l3CustomerLine
       + '  <div style="font-size:12px;color:#059669;font-family:var(--mono);margin-bottom:4px;letter-spacing:.01em;">This record can be verified independently — without DarkMatter.</div>\n'
       + '  <div style="font-size:11.5px;color:var(--ink4);font-family:var(--mono);margin-bottom:12px;">Anyone can verify this record. No account required.</div>\n'
-      + '  <div class="fs-integrity">' + (chainIntact ? 'This record has been cryptographically verified. Nothing has been added, removed, or altered since it was captured.' : 'This record could not be fully verified. Download the proof file for independent investigation.') + '</div>\n'
+      + '  <div class="fs-integrity">' + integrityDesc + '</div>\n'
       + '  <div class="fs-actions">\n'
       + '    <button class="fs-btn-p" onclick="switchView(this.dataset.v,this)" data-v="proof">Verify independently &rarr;</button>\n'
       + '    <a class="fs-btn-s" href="' + escH(jsonUrl) + '">Download proof bundle (.json)</a>\n'
