@@ -6518,6 +6518,42 @@ app.patch('/api/workspace/provider-keys/:id', requireAuth, async (req, res) => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// ── GET /api/workspace/profile — get current user's display name ─────────────
+app.get('/api/workspace/profile', requireAuth, async (req, res) => {
+  try {
+    const user = req.user;
+    const meta = user.user_metadata || {};
+    const full_name = meta.full_name || meta.name || meta.display_name || '';
+    res.json({
+      email:      user.email,
+      full_name,
+      avatar_url: meta.avatar_url || null,
+    });
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ── PATCH /api/workspace/profile — update display name ───────────────────────
+app.patch('/api/workspace/profile', requireAuth, async (req, res) => {
+  try {
+    const { full_name } = req.body;
+    if (!full_name || typeof full_name !== 'string' || !full_name.trim()) {
+      return res.status(400).json({ error: 'full_name is required' });
+    }
+    const name = full_name.trim().slice(0, 100);
+    const { data, error } = await supabaseService.auth.admin.updateUserById(
+      req.user.id,
+      { user_metadata: { ...req.user.user_metadata, full_name: name } }
+    );
+    if (error) throw error;
+    res.json({ full_name: name });
+  } catch(e) {
+    console.error('[profile patch]', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // ── GET /api/debug/whoami ── temporary debug endpoint ─────────────────────
 app.get('/api/debug/whoami', requireAuth, async (req, res) => {
   try {
