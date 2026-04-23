@@ -162,7 +162,7 @@ function verifyAttestation({ attestation, payload, metadata, agentId, parentId }
 // ── Test vector runner ────────────────────────────────────────────────────────
 // Call this in tests or a health-check to ensure the implementation is correct.
 function runTestVectors() {
-  const vectors = require('./test-vectors-envelope-v1.json');
+  const vectors = require('../test-vectors-envelope-v1.json');
   const results = [];
 
   for (const v of vectors) {
