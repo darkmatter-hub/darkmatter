@@ -64,7 +64,7 @@ function buildEnvelope({ agentId, keyId, clientTimestamp, payload, metadata, par
 
 // ── Verify client_attestation ──────────────────────────────────────────────────
 // Returns { valid: true } or { valid: false, reason: string, message: string }
-function verifyAttestation({ attestation, payload, metadata, agentId, parentId }) {
+function verifyAttestation({ attestation, payload, metadata, agentId, parentId, completenessClaim }) {
   try {
     if (!attestation) return { valid: false, reason: 'missing_attestation', message: 'No client_attestation provided' };
     if (attestation.algorithm && attestation.algorithm !== 'Ed25519') {
@@ -87,6 +87,8 @@ function verifyAttestation({ attestation, payload, metadata, agentId, parentId }
     }
 
     // 3. Reconstruct canonical envelope
+    // completeness_claim is included in the signed surface when present.
+    // This means the claim cannot be added, removed, or changed after signing.
     const envelope = {
       version:          attestation.version || 'dm-envelope-v1',
       algorithm:        attestation.algorithm || 'Ed25519',
@@ -97,6 +99,13 @@ function verifyAttestation({ attestation, payload, metadata, agentId, parentId }
       parent_id:        parentId || attestation.parent_id || null,
       payload_hash:     attestation.payload_hash,
     };
+
+    // Include completeness_claim in envelope only when explicitly set
+    // (boolean false is a meaningful value — must be preserved)
+    const cc = completenessClaim !== undefined ? completenessClaim
+             : attestation.completeness_claim !== undefined ? attestation.completeness_claim
+             : undefined;
+    if (cc !== undefined) envelope.completeness_claim = cc;
 
     const envelopeCanonical = canonicalJson(envelope);
 

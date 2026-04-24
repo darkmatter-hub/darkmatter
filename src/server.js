@@ -1084,9 +1084,12 @@ function buildContext(c, agentMap = {}) {
 
     // L3 non-repudiation fields
     assurance_level: c.assurance_level || 'L1',
+    ...(c.completeness_claim !== null && c.completeness_claim !== undefined ? {
+      completeness_claim: c.completeness_claim,
+    } : {}),
     ...(c.client_key_id ? {
-      client_key_id:       c.client_key_id,
-      client_signature:    c.client_signature || null,
+      client_key_id:    c.client_key_id,
+      client_signature: c.client_signature || null,
     } : {}),
   };
 }
@@ -1200,6 +1203,7 @@ app.post('/api/commit', apiLimiter, requireApiKey, async (req, res) => {
         metadata: req.body.metadata || null,
         agentId: req.agent.agent_id,
         parentId: req.body.parentId || null,
+        completenessClaim: req.body.completeness_claim !== undefined ? req.body.completeness_claim : undefined,
       });
 
       if (!verifyResult.valid) {
@@ -1226,8 +1230,11 @@ app.post('/api/commit', apiLimiter, requireApiKey, async (req, res) => {
         client_metadata_hash:       clientAttestation.metadata_hash || null,
         client_envelope_hash:       clientAttestation.envelope_hash,
         client_attestation_ts:      clientAttestation.client_timestamp,
-        client_attestation_ts_text: clientAttestation.client_timestamp, // TEXT — exact string, not normalized
+        client_attestation_ts_text: clientAttestation.client_timestamp,
         timestamp_skew_warning:     skewWarning,
+        completeness_claim:         req.body.completeness_claim !== undefined
+                                      ? Boolean(req.body.completeness_claim)
+                                      : null,
       };
     }
     // If the client supplied pre-computed hashes (commit_verified / Phase 1 SDK),
@@ -4284,6 +4291,17 @@ app.get('/r/:traceId', async (req, res) => {
       ? '  <div style="font-size:12px;color:#6b4fbb;font-family:var(--mono);margin-bottom:4px;letter-spacing:.01em;">\u2713 Customer-signed &middot; key: ' + escH(l3KeyId) + (skewWarning ? ' &middot; <span style="color:#b45309;">timestamp skew &gt;5 min</span>' : '') + '</div>\n'
       : '';
 
+    // Completeness claim — shown only when explicitly set
+    var ccCommit = isL3 ? commits.find(function(c) { return c.completeness_claim !== null && c.completeness_claim !== undefined; }) : null;
+    var ccValue  = ccCommit ? ccCommit.completeness_claim : undefined;
+    var completenessLine = '';
+    if (ccValue === true) {
+      completenessLine = '  <div style="font-size:12px;color:#0f7b4d;font-family:var(--mono);margin-bottom:4px;">\u2713 Agent asserted this record is complete (nothing omitted)</div>\n';
+    } else if (ccValue === false) {
+      completenessLine = '  <div style="font-size:12px;color:var(--ink4);font-family:var(--mono);margin-bottom:4px;">&mdash; Partial record (agent did not assert completeness)</div>\n';
+    }
+    // ccValue === undefined/null → no line shown (neutral)
+
     // Build messages HTML
     var messagesHTML = '';
     commits.forEach(function(c, i) {
@@ -4413,6 +4431,7 @@ app.get('/r/:traceId', async (req, res) => {
       + (dateStr ? '    <span class="fs-sep">\u00b7</span>\n    <span class="fs-chip">' + escH(dateStr) + '</span>\n' : '')
       + '  </div>\n'
       + l3CustomerLine
+      + completenessLine
       + '  <div style="font-size:12px;color:#059669;font-family:var(--mono);margin-bottom:4px;letter-spacing:.01em;">This record can be verified independently — without DarkMatter.</div>\n'
       + '  <div style="font-size:11.5px;color:var(--ink4);font-family:var(--mono);margin-bottom:12px;">Anyone can verify this record. No account required.</div>\n'
       + '  <div class="fs-integrity">' + integrityDesc + '</div>\n'

@@ -183,6 +183,43 @@
 
   .btn-primary:hover { opacity: 0.82; }
 
+  /* Verify-yourself block */
+  .verify-block {
+    margin-top: 2.5rem;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.6rem;
+  }
+  .verify-label {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink4);
+    margin: 0;
+  }
+  .verify-snippet {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    line-height: 1.7;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.9rem 1.2rem;
+    margin: 0;
+    color: var(--ink2);
+    text-align: left;
+  }
+  .v-tick { color: #0f7b4d; font-weight: 600; }
+  .verify-cta {
+    font-size: 0.8rem;
+    color: var(--accent);
+    text-decoration: none;
+    font-family: var(--mono);
+  }
+  .verify-cta:hover { text-decoration: underline; }
+
   .btn-ghost {
     font-family: var(--mono);
     font-size: 11px;
@@ -745,6 +782,16 @@
     <div class="cta-row">
       <a href="/signup" class="btn-primary">Start recording agent activity</a>
       <a href="/demo" class="btn-ghost">See a live record</a>
+    </div>
+
+    <div class="verify-block">
+      <p class="verify-label">Verify this yourself</p>
+      <pre class="verify-snippet"><span class="v-tick">✔</span> Payload hash
+<span class="v-tick">✔</span> Metadata hash
+<span class="v-tick">✔</span> Envelope hash
+<span class="v-tick">✔</span> Ed25519 signature valid
+<span class="v-tick">✔</span> All checks passed — L3 verified</pre>
+      <a href="https://github.com/darkmatter-hub/darkmatter-l3-example" class="verify-cta" target="_blank" rel="noopener">Run this verification locally →</a>
     </div>
 
     <div class="pillars">

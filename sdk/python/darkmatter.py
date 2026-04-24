@@ -377,11 +377,15 @@ class SigningConfig:
         parent_id: Optional[str] = None,
         metadata: Optional[dict] = None,
         client_timestamp: Optional[str] = None,
+        completeness_claim: Optional[bool] = None,
     ) -> dict:
         """
         Build a client_attestation object per ENVELOPE_SPEC_V1.
         Signs the canonical envelope with the customer private key.
         This is the core L3 operation — DarkMatter never sees the private key.
+
+        completeness_claim: when True, the agent asserts nothing was omitted.
+        This claim is included in the signed envelope — it cannot be altered.
         """
         from datetime import datetime, timezone
         ts = client_timestamp or datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.') + \
@@ -398,21 +402,32 @@ class SigningConfig:
             'payload_hash':     _hash_field_l3(payload),
         }
 
+        # completeness_claim is part of the signed surface when set.
+        # canonical_json sorts keys — it will be between 'algorithm' and 'agent_id'.
+        if completeness_claim is not None:
+            envelope['completeness_claim'] = completeness_claim
+
         canonical   = _canonical_json_l3(envelope)
         env_hash    = 'sha256:' + _sha256_hex_l3(canonical)
         sig_bytes   = self._private_key.sign(canonical.encode('utf-8'))
 
-        return {
+        attestation = {
             'version':          envelope['version'],
             'algorithm':        envelope['algorithm'],
             'key_id':           self.key_id,
             'public_key':       self._public_key_b64,
             'client_timestamp': ts,
+            'agent_id':         agent_id,
             'payload_hash':     envelope['payload_hash'],
             'metadata_hash':    envelope['metadata_hash'],
+            'parent_id':        parent_id,
             'envelope_hash':    env_hash,
             'signature':        _b64url(sig_bytes),
         }
+        if completeness_claim is not None:
+            attestation['completeness_claim'] = completeness_claim
+
+        return attestation
 
 
 # ── Key registration helpers ───────────────────────────────────────────────────
@@ -609,25 +624,30 @@ def _sign_envelope(envelope: dict) -> tuple[Optional[str], Optional[str]]:
 # ─────────────────────────────────────────────────────────────────────────────
 
 def commit(
-    to_agent_id:  str,
-    payload:      dict,
-    parent_id:    Optional[str] = None,
-    trace_id:     Optional[str] = None,
-    branch_key:   Optional[str] = None,
-    event_type:   Optional[str] = None,
-    agent:        Optional[dict] = None,
-    auto_thread:  bool = True,
-    timestamp:    Optional[str] = None,
-    metadata:     Optional[dict] = None,
-    signing:      Optional['SigningConfig'] = None,
+    to_agent_id:        str,
+    payload:            dict,
+    parent_id:          Optional[str]  = None,
+    trace_id:           Optional[str]  = None,
+    branch_key:         Optional[str]  = None,
+    event_type:         Optional[str]  = None,
+    agent:              Optional[dict] = None,
+    auto_thread:        bool           = True,
+    timestamp:          Optional[str]  = None,
+    metadata:           Optional[dict] = None,
+    signing:            Optional['SigningConfig'] = None,
+    completeness_claim: Optional[bool] = None,
 ) -> dict:
     """
     Commit agent context to DarkMatter.
 
+    completeness_claim: set True to assert this record is complete — nothing omitted.
+    This claim is signed and cannot be altered after signing.
+    Default None = no claim made (neutral).
+
     Phase 1 guarantees (client-side):
       - payload_hash computed locally via canonical serialization
       - integrity_hash computed over full envelope (payload + parent + agent + key + timestamp)
-      - envelope signed with agent's Ed25519 private key (if configured)
+      - envelope signed with agent Ed25519 private key (if configured)
       - server validates all hashes — mismatches flagged in receipt._warnings
     """
     from datetime import datetime, timezone
@@ -658,6 +678,7 @@ def commit(
             parent_id=resolved_parent,
             metadata=metadata,
             client_timestamp=ts,
+            completeness_claim=completeness_claim,
         )
 
     body = {
@@ -675,6 +696,7 @@ def commit(
         **(({'agent':              agent})              if agent              else {}),
         **(({'metadata':           metadata})           if metadata           else {}),
         **(({'client_attestation': client_attestation}) if client_attestation else {}),
+        **(({'completeness_claim': completeness_claim}) if completeness_claim is not None else {}),
     }
 
     r = requests.post(f'{cfg["host"]}/api/commit', json=body, headers=_headers(), timeout=10)
