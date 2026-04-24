@@ -229,6 +229,7 @@ tr:hover td{background:var(--bg2);}
   </div>
   <div class="sb-group">
     <span class="sb-group-label">Enterprise</span>
+    <a class="sb-link" href="#l3-setup">L3 setup</a>
     <a class="sb-link" href="#byok">BYOK encryption</a>
     <a class="sb-link" href="#did">W3C DID identity</a>
     <a class="sb-link" href="#compliance">Compliance reports</a>
@@ -1170,13 +1171,13 @@ curl -X POST https://darkmatterhub.ai/api/agents/register \
   <div class="callout info"><div class="callout-title">One-line takeaway</div>We don't build a system that needs to be trusted. We build a system that can be verified without trust.</div>
 
   <h3>Verification levels</h3>
-  <p>Every commit starts at L1. L2 is automatic (Bitcoin anchoring runs on checkpoints). L3 requires a customer-held signing key.</p>
+  <p>Every commit starts at L1. L2 is automatic (Bitcoin anchoring runs on checkpoints). L3 requires a customer-held signing key — <a href="#l3-setup">setup guide below</a>.</p>
   <table class="params-table" style="margin-top:12px;">
     <thead><tr><th>Level</th><th>Guarantee</th><th>Status</th></tr></thead>
     <tbody>
       <tr><td><code>L1</code> Verifiable record</td><td>SHA-256 hash chain. Tampering breaks every downstream hash. Independent offline verifier included.</td><td>Live</td></tr>
       <tr><td><code>L2</code> Independent verification</td><td>Signed checkpoints anchored to Bitcoin via OpenTimestamps. Timestamp proof lives outside DarkMatter.</td><td>Live</td></tr>
-      <tr><td><code>L3</code> Non-repudiation</td><td>Customer-held Ed25519 signing keys (BYOK). Even DarkMatter cannot forge a record.</td><td>Roadmap</td></tr>
+      <tr><td><code>L3</code> Non-repudiation</td><td>Customer-held Ed25519 signing keys (BYOK). Even DarkMatter cannot forge a record.</td><td><span style="color:#0f7b4d;font-weight:600;">Live</span></td></tr>
     </tbody>
   </table>
 
@@ -1384,6 +1385,79 @@ for step in d[<span class="cv">"steps"</span>]:
         print(f<span class="cv">"Step {step['step']}: payload changed"</span>)<div class="lang-label">python</div></code></pre>
 
   <p>See also: <a href="#fork">fork a checkpoint</a>, then diff to compare the branches.</p>
+
+  
+  <h2 id="l3-setup">L3 setup — customer signing keys</h2>
+
+  <p>L3 means every commit is signed with a key only you hold, before it reaches DarkMatter's servers. DarkMatter cannot forge a record — verification requires only your public key.</p>
+
+  <div class="callout info"><div class="callout-title">One-time setup — dm.commit() is unchanged</div>Configure signing once. After that, every commit is automatically L3. No per-commit code changes required.</div>
+
+  <h3>Step 1 — Generate a keypair</h3>
+  <pre><code><span class="cm"># Node.js (no external dependencies)</span>
+node src/keys.js generate --name my-signing-key<div class="lang-label">bash</div></code></pre>
+
+  <p>Creates two files in the current directory:</p>
+  <ul>
+    <li><code>my-signing-key.pem</code> — private key (chmod 600, never share or commit)</li>
+    <li><code>my-signing-key.pub.pem</code> — public key (safe to share)</li>
+  </ul>
+
+  <h3>Step 2 — Register the public key</h3>
+  <pre><code>node src/keys.js register \
+  --key-id my-signing-key \
+  --public-key my-signing-key.pub.pem<div class="lang-label">bash</div></code></pre>
+
+  <p>Or via the Python SDK:</p>
+  <pre><code>import darkmatter as dm
+dm.configure(api_key="dm_sk_...")
+dm.register_signing_key("my-signing-key", public_key_path="my-signing-key.pub.pem")<div class="lang-label">python</div></code></pre>
+
+  <h3>Step 3 — Configure signing</h3>
+  <pre><code><span class="cm"># Add to your .env</span>
+DARKMATTER_SIGNING_MODE=customer
+DARKMATTER_SIGNING_KEY_ID=my-signing-key
+DARKMATTER_SIGNING_KEY_PATH=./my-signing-key.pem<div class="lang-label">bash</div></code></pre>
+
+  <h3>Step 4 — Commit (unchanged)</h3>
+  <pre><code>import darkmatter as dm
+
+client = dm.Client(
+    api_key="dm_sk_...",
+    signing=dm.SigningConfig.from_env(),  <span class="cm"># reads DARKMATTER_SIGNING_* vars</span>
+)
+
+ctx = client.commit(
+    payload={"input": "approve refund?", "output": "approved"},
+)
+print(ctx["assurance_level"])   <span class="cm"># "L3"</span>
+print(ctx["verify_url"])        <span class="cm"># shows L3 badge on /r/ page</span><div class="lang-label">python</div></code></pre>
+
+  <p>The <code>/r/:traceId</code> verify page shows an <strong>L3 NON-REPUDIATION</strong> badge and: <em>"This record was signed by a customer-controlled key before DarkMatter received it."</em></p>
+
+  <h3>Key management</h3>
+  <pre><code>node src/keys.js list             <span class="cm"># list registered keys</span>
+node src/keys.js revoke --key-id my-signing-key  <span class="cm"># revoke a key</span><div class="lang-label">bash</div></code></pre>
+
+  <div class="callout info"><div class="callout-title">Key rotation</div>Generate a new keypair with a new key-id, register it, update your .env. Old L3 records keep their original signature — rotation never breaks existing verification.</div>
+
+  <h3>What L3 proves</h3>
+  <p>The canonical sentence: <strong>DarkMatter received this record already signed. It cannot forge your signature — verification requires only your public key.</strong></p>
+  <p>For full protocol details see <a href="/ENVELOPE_SPEC_V1.md">ENVELOPE_SPEC_V1.md</a> and the <a href="/integrity">integrity model</a>.</p>
+
+  <h3>Coverage assertion (<code>completeness_claim</code>)</h3>
+
+  <p>Set <code>completeness_claim=True</code> on a commit to assert that no steps were omitted. This claim is included in the signed envelope — it cannot be added, removed, or altered after signing.</p>
+
+  <pre><code>ctx = dm.commit(
+    payload={...},
+    completeness_claim=True  <span class="cm"># agent asserts nothing was omitted</span>
+)<div class="lang-label">python</div></code></pre>
+
+  <p>The claim appears in the commit drawer and on the <code>/r/:traceId</code> verify page.</p>
+
+  <div class="callout info"><div class="callout-title">Signed assertion, not enforced coverage</div>This is a signed statement by the agent, not a guarantee. DarkMatter records and preserves the claim — it cannot verify that all steps actually occurred. The value is accountability: if a claim of completeness is made and steps are missing, the signed false assertion surfaces who made it. Verified coverage requires framework-level instrumentation (coming later).</div>
+
 
   <h2 id="byok">BYOK encryption</h2>
   <p>Payloads encrypted with AES-256-GCM using a key you provide. DarkMatter stores only ciphertext and never has access to your content. Available on all plans including Free.</p>
