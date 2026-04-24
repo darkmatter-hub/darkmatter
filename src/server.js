@@ -1901,13 +1901,31 @@ app.get('/api/export/:ctxId', async (req, res) => {
     // Build commits array with proof receipts
     const commitsWithProofs = chain.map(c => {
       const built    = buildContext(c);
-      // Include full attestation for offline L3 verification
-      if (c.client_attestation) {
-        built.client_attestation = c.client_attestation;
+
+      // Reconstruct client_attestation for L3 offline verification
+      // Fields are stored as individual columns, not as a JSON blob
+      if (c.assurance_level === 'L3' && c.client_signature) {
+        built.client_attestation = {
+          version:          'dm-envelope-v1',
+          algorithm:        c.client_signature_algorithm || 'Ed25519',
+          key_id:           c.client_key_id,
+          public_key:       c.client_public_key || null,
+          client_timestamp: c.client_attestation_ts || c.client_timestamp,
+          agent_id:         c.from_agent || c.agent_id,
+          payload_hash:     c.client_payload_hash   || (c.payload_hash   ? 'sha256:' + c.payload_hash   : null),
+          metadata_hash:    c.client_metadata_hash  || null,
+          envelope_hash:    c.client_envelope_hash  || null,
+          parent_id:        c.parent_id             || null,
+          signature:        c.client_signature,
+        };
       }
-      if (c.metadata) {
-        built.metadata = c.metadata;
-      }
+
+      // Include metadata for hash verification
+      if (c.metadata) built.metadata = c.metadata;
+
+      // Include trace_id at top level for verifier
+      if (c.trace_id && !built.trace_id) built.trace_id = c.trace_id;
+
       const logEntry = logByCommit[c.id];
       if (logEntry) {
         let inclusionProof = null;
@@ -1993,7 +2011,7 @@ app.get('/api/export/:ctxId', async (req, res) => {
         ctx_id:         ctxId,
         chain_length:   chain.length,
         lineage_root:   root?.lineage_root || root?.id,
-        trace_id:       tip?.trace_id || null,
+        trace_id:       tip?.trace_id || root?.trace_id || ctxId,
         exported_at:    exportedAt,
         exported_by:    req.agent?.agent_id || req.user?.id || 'anonymous',
       },
