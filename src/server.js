@@ -4202,7 +4202,7 @@ app.get('/r/:traceId', async (req, res) => {
 
     const { data: commits, error } = await supabaseService
       .from('commits')
-      .select('id, trace_id, from_agent, agent_id, agent_info, payload, timestamp, client_timestamp, event_type, integrity_hash, payload_hash, parent_hash, verified, assurance_level, client_signature, client_key_id, client_signature_algorithm')
+      .select('id, trace_id, from_agent, agent_id, agent_info, payload, timestamp, client_timestamp, event_type, integrity_hash, payload_hash, parent_hash, verified, assurance_level, client_signature, client_key_id, client_signature_algorithm, completeness_claim')
       .or(`trace_id.eq."${traceId}",trace_id.eq.${traceId},id.eq.${traceId}`)
       .order('timestamp', { ascending: true });
 
