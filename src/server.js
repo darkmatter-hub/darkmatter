@@ -5948,7 +5948,7 @@ app.get('*', (req, res, next) => {
 app.get('/admin/stats', requireAuth, async (req, res) => {
   try {
     // Check if the authenticated user is an admin email
-    const adminEmails = (process.env.ADMIN_EMAILS || 'hello@darkmatterhub.ai').split(',').map(e => e.trim());
+    const adminEmails = (process.env.SUPERUSER_EMAIL || process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim()).filter(Boolean);
     if (!adminEmails.includes(req.user.email)) {
       return res.status(403).json({ error: 'Admin only' });
     }
@@ -5974,7 +5974,7 @@ app.get('/admin/stats', requireAuth, async (req, res) => {
 // ── GET /api/workspace/stats/usage — SDK + L3 adoption metrics (admin only) ──
 app.get('/api/workspace/stats/usage', requireAuth, async (req, res) => {
   try {
-    const adminEmails = (process.env.ADMIN_EMAILS || 'hello@darkmatterhub.ai').split(',').map(e => e.trim());
+    const adminEmails = (process.env.SUPERUSER_EMAIL || process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim()).filter(Boolean);
     if (!adminEmails.includes(req.user.email)) {
       return res.status(403).json({ error: 'Admin only' });
     }
@@ -5988,6 +5988,10 @@ app.get('/api/workspace/stats/usage', requireAuth, async (req, res) => {
       activeRes7,
       activeRes30,
       agentCountRes,
+      newAgents7dRes,
+      newL3_7dRes,
+      firstCommitRes,
+      lastCommitRes,
     ] = await Promise.all([
 
       // Total commits
@@ -6017,9 +6021,27 @@ app.get('/api/workspace/stats/usage', requireAuth, async (req, res) => {
         .select('from_agent', { count: 'exact', head: false })
         .gte('timestamp', new Date(Date.now() - 30 * 86400000).toISOString()),
 
-      // Total unique agents
+      // New agents last 7d (agents created in last 7 days)
       supabaseService.from('agents')
-        .select('agent_id', { count: 'exact', head: true }),
+        .select('agent_id', { count: 'exact', head: true })
+        .gte('created_at', new Date(Date.now() - 7 * 86400000).toISOString()),
+
+      // New L3 commits last 7d
+      supabaseService.from('commits')
+        .select('id', { count: 'exact', head: true })
+        .eq('assurance_level', 'L3')
+        .gte('timestamp', new Date(Date.now() - 7 * 86400000).toISOString()),
+
+      // First and last commit times
+      supabaseService.from('commits')
+        .select('timestamp')
+        .order('timestamp', { ascending: true })
+        .limit(1),
+
+      supabaseService.from('commits')
+        .select('timestamp')
+        .order('timestamp', { ascending: false })
+        .limit(1),
     ]);
 
     const totalCommits = totalRes.count || 0;
@@ -6079,8 +6101,9 @@ app.get('/api/workspace/stats/usage', requireAuth, async (req, res) => {
         manual:    wrapperManualCount,
       },
       l3_usage: {
-        count:   l3Count,
-        percent: l3Percent,
+        count:       l3Count,
+        percent:     l3Percent,
+        last_7d:     newL3_7dRes?.count || 0,
       },
       commits_per_agent: {
         p50,
@@ -6091,7 +6114,12 @@ app.get('/api/workspace/stats/usage', requireAuth, async (req, res) => {
         last_7d:  active7d,
         last_30d: active30d,
       },
-      _note: 'wrapper_usage derived from metadata.wrapper field — only counts commits made via SDK wrappers after v1.3.0',
+      momentum: {
+        new_agents_7d:    newAgents7dRes?.count || 0,
+        first_commit_at:  firstCommitRes?.data?.[0]?.timestamp || null,
+        last_commit_at:   lastCommitRes?.data?.[0]?.timestamp  || null,
+      },
+      _note: 'wrapper_usage derived from metadata.wrapper — only counts commits via SDK wrappers after v1.3.0',
       _generated_at: new Date().toISOString(),
     });
 
@@ -6104,7 +6132,7 @@ app.get('/api/workspace/stats/usage', requireAuth, async (req, res) => {
 
 // ── GET /admin/usage — usage analytics page (admin only) ─────────────────────
 app.get('/admin/usage', requireAuth, (req, res) => {
-  const adminEmails = (process.env.ADMIN_EMAILS || 'hello@darkmatterhub.ai').split(',').map(e => e.trim());
+  const adminEmails = (process.env.SUPERUSER_EMAIL || process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim()).filter(Boolean);
   if (!adminEmails.includes(req.user.email)) return res.status(403).send('Admin only');
   res.sendFile(require('path').join(__dirname, '../public/admin-usage.html'));
 });

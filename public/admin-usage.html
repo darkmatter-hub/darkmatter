@@ -55,6 +55,16 @@
       <div class="card-value" id="active-7d">—</div>
       <div class="card-sub" id="active-30d"></div>
     </div>
+    <div class="card">
+      <div class="card-label">New agents (7d)</div>
+      <div class="card-value" id="new-agents-7d">—</div>
+      <div class="card-sub">acquisition signal</div>
+    </div>
+    <div class="card">
+      <div class="card-label">New L3 commits (7d)</div>
+      <div class="card-value" id="new-l3-7d">—</div>
+      <div class="card-sub">L3 momentum</div>
+    </div>
   </div>
 
   <div class="section">
@@ -97,13 +107,29 @@
 </div>
 
 <script>
-  // Get session from localStorage
+  // Get session from localStorage — try all known key patterns
   function getToken() {
     try {
-      const raw = localStorage.getItem('dm_session') || localStorage.getItem('sb-mfqponavycxykibaypseq-auth-token') || '';
-      if (!raw) return null;
-      const s = JSON.parse(raw);
-      return s?.access_token || s?.session?.access_token || null;
+      // Try dm_session first (DarkMatter's own key)
+      const dmRaw = localStorage.getItem('dm_session');
+      if (dmRaw) {
+        const s = JSON.parse(dmRaw);
+        const t = s?.access_token || s?.session?.access_token;
+        if (t) return t;
+      }
+      // Try any Supabase auth key (project-agnostic)
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.includes('auth-token')) {
+          const raw = localStorage.getItem(key);
+          if (raw) {
+            const s = JSON.parse(raw);
+            const t = s?.access_token || s?.session?.access_token;
+            if (t) return t;
+          }
+        }
+      }
+      return null;
     } catch { return null; }
   }
 
@@ -143,6 +169,8 @@
     document.getElementById('l3-count').textContent       = d.l3_usage.count.toLocaleString() + ' L3 commits';
     document.getElementById('active-7d').textContent      = d.active_agents.last_7d;
     document.getElementById('active-30d').textContent     = d.active_agents.last_30d + ' active last 30d';
+    document.getElementById('new-agents-7d').textContent  = d.momentum?.new_agents_7d ?? '—';
+    document.getElementById('new-l3-7d').textContent      = d.l3_usage?.last_7d ?? '—';
 
     const wu    = d.wrapper_usage;
     const total = wu.anthropic + wu.openai + wu.manual || 1;
@@ -162,6 +190,12 @@
     document.getElementById('cnt-p90').textContent = cp.p90;
     document.getElementById('agents-with-commits').textContent =
       cp.total_agents_with_commits + ' agents with at least 1 commit';
+
+    if (d.momentum?.first_commit_at) {
+      document.getElementById('note-bottom').textContent =
+        'First commit: ' + new Date(d.momentum.first_commit_at).toLocaleDateString() +
+        '  ·  Last commit: ' + new Date(d.momentum.last_commit_at).toLocaleString();
+    }
 
     document.getElementById('ts').textContent = 'Updated ' + new Date(d._generated_at).toLocaleTimeString();
   }
