@@ -1,0 +1,69 @@
+[build-system]
+requires      = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name        = "darkmatter-sdk"
+version     = "1.3.0"
+description = "Independent verification and audit layer for AI agent decisions"
+readme      = "README.md"
+license     = { text = "MIT" }
+requires-python = ">=3.8"
+
+keywords = [
+    "ai", "agents", "audit", "verification", "non-repudiation",
+    "llm", "anthropic", "openai", "observability",
+]
+
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Security :: Cryptography",
+]
+
+# Core SDK — zero required dependencies beyond requests
+dependencies = [
+    "requests>=2.28",
+]
+
+[project.optional-dependencies]
+# L3 signing — Ed25519 key generation and signing
+l3 = [
+    "cryptography>=41.0",
+]
+# Anthropic SDK auto-instrumentation
+anthropic = [
+    "anthropic>=0.20",
+    "cryptography>=41.0",
+]
+# OpenAI SDK auto-instrumentation
+openai = [
+    "openai>=1.0",
+]
+# All integrations
+all = [
+    "cryptography>=41.0",
+    "anthropic>=0.20",
+    "openai>=1.0",
+]
+
+[project.urls]
+Homepage      = "https://darkmatterhub.ai"
+Documentation = "https://darkmatterhub.ai/docs"
+Repository    = "https://github.com/darkmatter-hub/darkmatter"
+"Bug Tracker" = "https://github.com/darkmatter-hub/darkmatter-feedback/issues"
+
+[project.scripts]
+darkmatter = "darkmatter.cli:main"
+
+[tool.setuptools.packages.find]
+where   = ["sdk/python"]
+include = ["darkmatter*"]
