@@ -6004,7 +6004,7 @@ app.get('/api/workspace/stats/usage', requireAuth, async (req, res) => {
         .select('id', { count: 'exact', head: true }),
 
       // Wrapper usage — derive from metadata->>'wrapper'
-      supabaseService.rpc('usage_wrapper_breakdown').catch(() => null),
+      (async () => { try { return await supabaseService.rpc('usage_wrapper_breakdown'); } catch { return null; } })(),
 
       // L3 usage
       supabaseService.from('commits')
