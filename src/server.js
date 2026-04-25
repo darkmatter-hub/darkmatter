@@ -5971,7 +5971,144 @@ app.get('/admin/stats', requireAuth, async (req, res) => {
   }
 });
 
-// ── GET /admin — serve admin panel ────────────────────────────────────────
+// ── GET /api/workspace/stats/usage — SDK + L3 adoption metrics (admin only) ──
+app.get('/api/workspace/stats/usage', requireAuth, async (req, res) => {
+  try {
+    const adminEmails = (process.env.ADMIN_EMAILS || 'hello@darkmatterhub.ai').split(',').map(e => e.trim());
+    if (!adminEmails.includes(req.user.email)) {
+      return res.status(403).json({ error: 'Admin only' });
+    }
+
+    // ── Run all queries in parallel ───────────────────────────────────────────
+    const [
+      totalRes,
+      wrapperRes,
+      l3Res,
+      agentCommitsRes,
+      activeRes7,
+      activeRes30,
+      agentCountRes,
+    ] = await Promise.all([
+
+      // Total commits
+      supabaseService.from('commits')
+        .select('id', { count: 'exact', head: true }),
+
+      // Wrapper usage — derive from metadata->>'wrapper'
+      supabaseService.rpc('usage_wrapper_breakdown').catch(() => null),
+
+      // L3 usage
+      supabaseService.from('commits')
+        .select('id', { count: 'exact', head: true })
+        .eq('assurance_level', 'L3'),
+
+      // Commits per agent (for p50/p90)
+      supabaseService.from('commits')
+        .select('from_agent')
+        .not('from_agent', 'is', null),
+
+      // 7-day active agents
+      supabaseService.from('commits')
+        .select('from_agent', { count: 'exact', head: false })
+        .gte('timestamp', new Date(Date.now() - 7 * 86400000).toISOString()),
+
+      // 30-day active agents
+      supabaseService.from('commits')
+        .select('from_agent', { count: 'exact', head: false })
+        .gte('timestamp', new Date(Date.now() - 30 * 86400000).toISOString()),
+
+      // Total unique agents
+      supabaseService.from('agents')
+        .select('agent_id', { count: 'exact', head: true }),
+    ]);
+
+    const totalCommits = totalRes.count || 0;
+    const l3Count      = l3Res.count || 0;
+    const uniqueAgents = agentCountRes.count || 0;
+
+    // ── Wrapper breakdown — parse from metadata if RPC unavailable ────────────
+    let wrapperAnthropicCount = 0;
+    let wrapperOpenAICount    = 0;
+    let wrapperManualCount    = 0;
+
+    if (wrapperRes && wrapperRes.data) {
+      // RPC result
+      for (const row of wrapperRes.data) {
+        if (row.wrapper?.includes('anthropic')) wrapperAnthropicCount = row.count;
+        else if (row.wrapper?.includes('openai')) wrapperOpenAICount = row.count;
+        else wrapperManualCount = row.count;
+      }
+    } else {
+      // Fallback: fetch recent commits and check metadata.wrapper
+      const { data: sample } = await supabaseService
+        .from('commits')
+        .select('metadata')
+        .limit(2000)
+        .order('timestamp', { ascending: false });
+
+      for (const c of sample || []) {
+        const w = c.metadata?.wrapper || '';
+        if (w.includes('anthropic'))      wrapperAnthropicCount++;
+        else if (w.includes('openai'))    wrapperOpenAICount++;
+        else                              wrapperManualCount++;
+      }
+    }
+
+    // ── Commits per agent — p50, p90 ─────────────────────────────────────────
+    const agentCounts = {};
+    for (const c of agentCommitsRes.data || []) {
+      if (c.from_agent) agentCounts[c.from_agent] = (agentCounts[c.from_agent] || 0) + 1;
+    }
+    const countValues = Object.values(agentCounts).sort((a, b) => a - b);
+    const p50 = countValues[Math.floor(countValues.length * 0.5)] || 0;
+    const p90 = countValues[Math.floor(countValues.length * 0.9)] || 0;
+
+    // ── Active users — distinct agents with commits in window ─────────────────
+    const active7d  = new Set((activeRes7.data  || []).map(c => c.from_agent)).size;
+    const active30d = new Set((activeRes30.data || []).map(c => c.from_agent)).size;
+
+    // ── L3 percent ────────────────────────────────────────────────────────────
+    const l3Percent = totalCommits > 0 ? Math.round((l3Count / totalCommits) * 1000) / 10 : 0;
+
+    res.json({
+      total_commits:   totalCommits,
+      unique_agents:   uniqueAgents,
+      wrapper_usage: {
+        anthropic: wrapperAnthropicCount,
+        openai:    wrapperOpenAICount,
+        manual:    wrapperManualCount,
+      },
+      l3_usage: {
+        count:   l3Count,
+        percent: l3Percent,
+      },
+      commits_per_agent: {
+        p50,
+        p90,
+        total_agents_with_commits: countValues.length,
+      },
+      active_agents: {
+        last_7d:  active7d,
+        last_30d: active30d,
+      },
+      _note: 'wrapper_usage derived from metadata.wrapper field — only counts commits made via SDK wrappers after v1.3.0',
+      _generated_at: new Date().toISOString(),
+    });
+
+  } catch(e) {
+    console.error('[usage stats]', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+
+// ── GET /admin/usage — usage analytics page (admin only) ─────────────────────
+app.get('/admin/usage', requireAuth, (req, res) => {
+  const adminEmails = (process.env.ADMIN_EMAILS || 'hello@darkmatterhub.ai').split(',').map(e => e.trim());
+  if (!adminEmails.includes(req.user.email)) return res.status(403).send('Admin only');
+  res.sendFile(require('path').join(__dirname, '../public/admin-usage.html'));
+});
+
 app.get('/admin', requireAuth, (req, res) => {
   res.sendFile(require('path').join(__dirname, '../public/admin.html'));
 });
