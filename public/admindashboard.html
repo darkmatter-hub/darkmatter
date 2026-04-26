@@ -389,34 +389,40 @@ function setRange(d) {
 let allUsersData = [];
 
 async function loadAll() {
-  const statsRes = await fetch('/admin/stats', { headers: authH() });
-  if (statsRes.status === 403) {
-    document.getElementById('access-denied').style.display = 'block';
-    return;
-  }
+  // Show page immediately — never block
   document.getElementById('admin-page').style.display = 'block';
 
-  const [stats, funnel, commands, trends, users, usage] = await Promise.all([
-    statsRes.json(),
-    Promise.resolve({funnel:[]}),
-    Promise.resolve({commands:[]}),
-    Promise.resolve({commits_per_day:[]}),
-    fetch('/api/workspace/members', { headers: authH() }).then(r=>r.json()).catch(()=>({members:[]})),
-    fetch('/api/workspace/stats/usage', { headers: authH() }).then(r=>r.json()).catch(()=>({})),
+  const [stats, usage, membersData] = await Promise.all([
+    fetch('/admin/stats', { headers: authH() }).then(r => r.ok ? r.json() : {}).catch(() => ({})),
+    fetch('/api/workspace/stats/usage', { headers: authH() }).then(r => r.ok ? r.json() : {}).catch(() => ({})),
+    fetch('/api/workspace/members', { headers: authH() }).then(r => r.ok ? r.json() : {members:[]}).catch(() => ({members:[]})),
   ]);
 
-  allUsersData = users.users || [];
+  allUsersData = membersData.members || [];
 
-  renderKPIs(stats, usage);
-  renderAttention(stats, funnel);
-  renderFunnel(funnel);
-  renderTrends(trends);
-  renderAdoption(stats);
-  renderVirality(stats);
-  renderCommands(commands);
-  renderActivation(stats);
-  renderHealth(stats);
-  renderCohorts(stats);
+  // Build unified data object from both sources
+  const merged = {
+    kpis: {
+      totalCommits:   usage.total_commits              || stats.commits || 0,
+      totalAgents:    usage.unique_agents              || stats.agents  || 0,
+      totalUsers:     stats.users                      || 0,
+      activeUsers7d:  usage.active_agents?.last_7d     || 0,
+      activeUsers30d: usage.active_agents?.last_30d    || 0,
+      commits7d:      0, commits30d: 0, commitsToday: 0,
+      sharedChains:   0, avgChainLength: 0,
+    }
+  };
+
+  renderKPIs(merged, usage);
+  renderAttention(merged, {funnel:[]});
+  renderFunnel({funnel:[]});
+  renderTrends({commits_per_day:[]});
+  renderAdoption(merged);
+  renderVirality(merged);
+  renderCommands({commands:[]});
+  renderActivation(merged);
+  renderHealth(merged);
+  renderCohorts(merged);
   renderUsers(allUsersData);
   renderSDKUsage(usage);
 }
