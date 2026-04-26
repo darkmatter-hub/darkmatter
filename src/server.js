@@ -5936,9 +5936,19 @@ app.get('/admin', (req, res) => {
   res.sendFile(require('path').join(__dirname, '../public/admin.html'));
 });
 
-// ── /usage — internal SDK usage dashboard (no auth wall, data is gated) ──────
+// ── /admindashboard — consolidated admin (no redirect loop risk) ──────────────
+app.get('/admindashboard', (req, res) => {
+  res.sendFile(require('path').join(__dirname, '../public/admindashboard.html'));
+});
+
+// ── /usage — SDK usage dashboard ─────────────────────────────────────────────
 app.get('/usage', (req, res) => {
   res.sendFile(require('path').join(__dirname, '../public/usage.html'));
+});
+
+// ── /ops — internal operations dashboard ─────────────────────────────────────
+app.get('/ops', (req, res) => {
+  res.sendFile(require('path').join(__dirname, '../public/ops.html'));
 });
 
 app.get('*', (req, res, next) => {
