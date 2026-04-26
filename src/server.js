@@ -5935,6 +5935,9 @@ app.get('/admin/usage', (req, res) => {
   res.sendFile(require('path').join(__dirname, '../public/admin-usage.html'));
 });
 
+// Redirect /admin/ → /admin
+app.get('/admin/', (req, res) => res.redirect('/admin'));
+
 app.get('*', (req, res, next) => {
   // API routes: pass through to registered handlers (or Express default 404)
   if (req.path.startsWith('/api/') || req.path.startsWith('/proxy/')) {
