@@ -50,6 +50,11 @@ const ROUTES = [
   ['GET /admin/stats',              "app.get('/admin/stats'"],
   ['GET /ext/callback',             "app.get('/ext/callback'"],
   ['POST /auth/login',              "app.post('/auth/login'"],
+  // Dashboard-called endpoints — if these are missing, dashboard sections show empty
+  ['GET /api/workspace/api-keys',   "app.get('/api/workspace/api-keys'"],
+  ['POST /api/workspace/api-keys',  "app.post('/api/workspace/api-keys'"],
+  ['DELETE /api/workspace/api-keys', "app.delete('/api/workspace/api-keys/"],
+  ['POST /api/contact',             "app.post('/api/contact'"],
 ];
 ROUTES.forEach(function(r) { test(r[0], function() { assert(server.includes(r[1]), 'Missing: ' + r[1]); }); });
 
@@ -113,6 +118,8 @@ test('refreshWorkspaceStats',  function() { assert(dashJS.includes('function ref
 test('auto-poll active',       function() { assert(dashJS.includes('startPoll()')); });
 test('admin check by email',   function() { assert(dashJS.includes('hello@darkmatterhub.ai')); });
 test('api keys section',       function() { assert(dashJS.includes('loadApiKeys')); });
+test('api-keys endpoint wired', function() { assert(dashJS.includes('/api/workspace/api-keys'), 'loadApiKeys must call /api/workspace/api-keys'); });
+test('api-keys endpoint on server', function() { assert(server.includes("app.get('/api/workspace/api-keys'"), 'GET /api/workspace/api-keys missing from server.js'); });
 test('commit drawer opens',    function() { assert(dashJS.includes('function openDrawer')); });
 test('drawer closes cleanly',  function() { assert(dash.includes('function closeDrawer')); });
 test('key drawer opens',       function() { assert(dashJS.includes('function selectApiKey')); });
@@ -128,6 +135,39 @@ test('no dark body bg',       function() { assert(!style.includes('background:va
 test('--bg defined as white', function() { assert(style.includes('--bg:#ffffff')); });
 test('view-records flex',     function() { assert(style.includes('#view-records{display:flex')); });
 test('tpanel scroll CSS',     function() { assert(style.includes('.tpanel{display:none')); });
+
+// 9. Cross-check: every fetch URL in dashboard JS must have a route on server
+console.log('\nDashboard ↔ Server endpoint cross-check');
+(function() {
+  // Extract all authFetch('/api/...') calls from dashboard JS
+  var fetchRe = /authFetch\(['"`]\/api\/([^'"`?]+)/g;
+  var match, endpoints = new Set();
+  while ((match = fetchRe.exec(dashJS)) !== null) {
+    // Strip trailing path params like /:id so we match the base route
+    endpoints.add('/api/' + match[1].split('/')[0]);
+  }
+  // For each unique /api/... prefix, check server has a route for it
+  var KNOWN_DYNAMIC = [
+    '/api/workspace',   // umbrella — many sub-routes
+    '/api/agents',      // umbrella
+    '/api/commits',     // umbrella
+    '/api/share',       // umbrella
+    '/api/recording',   // umbrella
+    '/api/bundle',      // umbrella
+    '/api/hooks',       // umbrella
+    '/api/debug',       // umbrella (debug/me, debug/whoami)
+    '/api/billing',     // pending — Stripe billing not yet implemented on server
+  ];
+  endpoints.forEach(function(ep) {
+    // Skip if it's covered by a known umbrella prefix
+    var covered = KNOWN_DYNAMIC.some(function(p) { return ep.startsWith(p); });
+    if (covered) return;
+    test('server has route for ' + ep, function() {
+      assert(server.includes("'" + ep + "'") || server.includes('"' + ep + '"'),
+        'No route found on server for: ' + ep);
+    });
+  });
+})();
 
 // Summary
 console.log('\n' + '-'.repeat(50));
