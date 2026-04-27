@@ -1,1034 +1,492 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DarkMatter — The black box for AI systems</title>
-<meta name="description" content="Your AI agents are making decisions. Who's keeping the record? DarkMatter is the black box for AI systems. Every action recorded outside your system, independently verifiable by anyone.">
-<link rel="icon" href="/favicon.ico">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>DarkMatter — The independent record for AI systems</title>
+<meta name="description" content="DarkMatter records every AI agent action outside your system, seals it the moment it happens, and lets anyone verify it without trust." />
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-  :root {
-    --ink: #0e0e0e;
-    --ink-mid: #444;
-    --ink-light: #888;
-    --ink-faint: #bbb;
-    --paper: #ffffff;
-    --paper-off: #f8f7f5;
-    --paper-dim: #f1efeb;
-    --rule: #e2dfd8;
-    --red: #c0392b;
-    --red-light: #fdf0ee;
-    --green-light: #f0faf5;
-    --green-text: #0f6e56;
-    --mono: 'DM Mono', 'Courier New', monospace;
-    --serif: 'DM Serif Display', Georgia, serif;
-    --sans: 'DM Sans', system-ui, sans-serif;
-  }
-
-  html { font-size: 16px; scroll-behavior: smooth; }
-
-  body {
-    font-family: var(--sans);
-    background: var(--paper);
-    color: var(--ink);
-    line-height: 1.6;
-    -webkit-font-smoothing: antialiased;
-  }
-
-  /* NAV */
-  nav {
-    position: sticky;
-    top: 0;
-    z-index: 100;
-    background: rgba(255,255,255,0.96);
-    backdrop-filter: blur(8px);
-    border-bottom: 1px solid var(--rule);
-    padding: 0 2rem;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    height: 56px;
-  }
-
-  .nav-logo {
-    font-family: var(--mono);
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--ink);
-    text-decoration: none;
-    letter-spacing: 0.04em;
-  }
-
-  .nav-logo span { color: var(--red); }
-
-  .nav-links {
-    display: flex;
-    align-items: center;
-    gap: 2rem;
-    list-style: none;
-  }
-
-  .nav-links a {
-    font-size: 13px;
-    color: var(--ink-mid);
-    text-decoration: none;
-    font-weight: 400;
-    transition: color 0.15s;
-  }
-
-  .nav-links a:hover { color: var(--ink); }
-
-  .nav-cta {
-    font-family: var(--mono);
-    font-size: 11px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    padding: 0.5rem 1.1rem;
-    background: var(--ink);
-    color: var(--paper) !important;
-    border-radius: 2px;
-    text-decoration: none;
-  }
-
-  /* LAYOUT */
-  .container {
-    max-width: 860px;
-    margin: 0 auto;
-    padding: 0 2rem;
-  }
-
-  .container-wide {
-    max-width: 1100px;
-    margin: 0 auto;
-    padding: 0 2rem;
-  }
-
-  section { padding: 6rem 0; }
-  section + section { border-top: 1px solid var(--rule); }
-
-  /* EYEBROW */
-  .eyebrow {
-    font-family: var(--mono);
-    font-size: 10px;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--ink-light);
-    margin-bottom: 1.5rem;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .eyebrow::before {
-    content: '';
-    display: inline-block;
-    width: 18px;
-    height: 1px;
-    background: var(--ink-faint);
-    flex-shrink: 0;
-  }
-
-  /* HERO */
-  .hero { padding: 7rem 0 6rem; }
-
-  .hero-headline {
-    font-family: var(--serif);
-    font-size: clamp(2.6rem, 5vw, 3.8rem);
-    line-height: 1.1;
-    margin-bottom: 1.75rem;
-    color: var(--ink);
-    max-width: 680px;
-  }
-
-  .hero-headline em {
-    font-style: italic;
-    color: var(--ink-mid);
-  }
-
-  .hero-sub {
-    font-size: 1.1rem;
-    line-height: 1.8;
-    color: var(--ink-mid);
-    max-width: 540px;
-    margin-bottom: 2.5rem;
-    font-weight: 300;
-  }
-
-  .cta-row {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    flex-wrap: wrap;
-  }
-
-  .btn-primary {
-    font-family: var(--mono);
-    font-size: 11px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    padding: 0.8rem 1.6rem;
-    background: var(--ink);
-    color: var(--paper);
-    border: none;
-    border-radius: 2px;
-    cursor: pointer;
-    text-decoration: none;
-    display: inline-block;
-    transition: opacity 0.15s;
-  }
-
-  .btn-primary:hover { opacity: 0.82; }
-
-  /* Verify-yourself block */
-  .verify-block {
-    margin-top: 2.5rem;
-    display: inline-flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.6rem;
-  }
-  .verify-label {
-    font-family: var(--mono);
-    font-size: 0.65rem;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--ink4);
-    margin: 0;
-  }
-  .verify-snippet {
-    font-family: var(--mono);
-    font-size: 0.78rem;
-    line-height: 1.7;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 0.9rem 1.2rem;
-    margin: 0;
-    color: var(--ink2);
-    text-align: left;
-  }
-  .v-tick { color: #0f7b4d; font-weight: 600; }
-  .verify-cta {
-    font-size: 0.8rem;
-    color: var(--accent);
-    text-decoration: none;
-    font-family: var(--mono);
-  }
-  .verify-cta:hover { text-decoration: underline; }
-
-  .btn-ghost {
-    font-family: var(--mono);
-    font-size: 11px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    padding: 0.8rem 1.6rem;
-    background: transparent;
-    color: var(--ink-mid);
-    border: 1px solid var(--rule);
-    border-radius: 2px;
-    cursor: pointer;
-    text-decoration: none;
-    display: inline-block;
-    transition: border-color 0.15s;
-  }
-
-  .btn-ghost:hover { border-color: var(--ink-light); }
-
-  /* PILLARS */
-  .pillars {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    border-top: 1px solid var(--rule);
-    margin-top: 5rem;
-  }
-
-  .pillar {
-    padding: 2.5rem 2rem 2.5rem 0;
-    border-right: 1px solid var(--rule);
-  }
-
-  .pillar:last-child { border-right: none; }
-  .pillar:not(:first-child) { padding-left: 2rem; }
-
-  .pillar-num {
-    font-family: var(--mono);
-    font-size: 10px;
-    letter-spacing: 0.1em;
-    color: var(--ink-faint);
-    margin-bottom: 0.75rem;
-  }
-
-  .pillar-title {
-    font-family: var(--serif);
-    font-size: 1.2rem;
-    margin-bottom: 0.5rem;
-    color: var(--ink);
-  }
-
-  .pillar-body {
-    font-size: 0.85rem;
-    line-height: 1.7;
-    color: var(--ink-mid);
-    font-weight: 300;
-  }
-
-  /* WITHOUT / WITH */
-  .without-with {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1.5rem;
-  }
-
-  .ww-card {
-    padding: 1.75rem;
-    border: 1px solid var(--rule);
-    border-radius: 3px;
-  }
-
-  .ww-label {
-    font-family: var(--mono);
-    font-size: 10px;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    margin-bottom: 1.5rem;
-  }
-
-  .ww-label.bad { color: var(--red); }
-  .ww-label.good { color: var(--green-text); }
-
-  .ww-item {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    margin-bottom: 1rem;
-    font-size: 0.875rem;
-    line-height: 1.6;
-    color: var(--ink-mid);
-  }
-
-  .ww-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    flex-shrink: 0;
-    margin-top: 6px;
-  }
-
-  .ww-dot.bad { background: #e07070; }
-  .ww-dot.good { background: #5dcaa5; }
-
-  /* MOMENT SECTION */
-  .moment-intro {
-    font-family: var(--serif);
-    font-style: italic;
-    font-size: 1.5rem;
-    line-height: 1.5;
-    color: var(--ink-mid);
-    max-width: 600px;
-    margin-bottom: 1.5rem;
-  }
-
-  .moment-body {
-    font-size: 0.95rem;
-    line-height: 1.8;
-    color: var(--ink-mid);
-    max-width: 520px;
-    font-weight: 300;
-  }
-
-  /* CODE STRIP */
-  .code-strip {
-    border: 1px solid var(--rule);
-    border-radius: 3px;
-    overflow: hidden;
-    margin-top: 3rem;
-  }
-
-  .code-header {
-    background: var(--paper-dim);
-    padding: 0.6rem 1rem;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    border-bottom: 1px solid var(--rule);
-  }
-
-  .code-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--rule);
-  }
-
-  .code-filename {
-    font-family: var(--mono);
-    font-size: 11px;
-    color: var(--ink-light);
-    margin-left: 4px;
-  }
-
-  .code-body {
-    padding: 1.5rem;
-    font-family: var(--mono);
-    font-size: 12.5px;
-    line-height: 2;
-    color: var(--ink-mid);
-    background: var(--paper);
-  }
-
-  .c-comment { color: var(--ink-faint); }
-  .c-key { color: var(--ink); }
-  .c-val { color: var(--ink-mid); }
-  .c-result { color: var(--ink-light); }
-  .c-highlight { color: var(--ink); font-weight: 500; }
-
-  .code-return {
-    margin-top: 0.75rem;
-    padding-top: 1rem;
-    border-top: 1px solid var(--rule);
-  }
-
-  /* FEATURES */
-  .feature-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 2.5rem;
-    margin-top: 3rem;
-  }
-
-  .feature-card { }
-
-  .feature-tag {
-    font-family: var(--mono);
-    font-size: 10px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--red);
-    margin-bottom: 0.75rem;
-  }
-
-  .feature-title {
-    font-family: var(--serif);
-    font-size: 1.1rem;
-    color: var(--ink);
-    margin-bottom: 0.5rem;
-    line-height: 1.3;
-  }
-
-  .feature-body {
-    font-size: 0.85rem;
-    line-height: 1.7;
-    color: var(--ink-mid);
-    font-weight: 300;
-  }
-
-  /* PROOF LEVEL TABLE */
-  .proof-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 2rem;
-    font-size: 0.875rem;
-  }
-
-  .proof-table th {
-    font-family: var(--mono);
-    font-size: 10px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--ink-light);
-    text-align: left;
-    padding: 0.75rem 1rem 0.75rem 0;
-    border-bottom: 1px solid var(--rule);
-    font-weight: 400;
-  }
-
-  .proof-table td {
-    padding: 1.1rem 1rem 1.1rem 0;
-    border-bottom: 1px solid var(--rule);
-    color: var(--ink-mid);
-    vertical-align: top;
-    line-height: 1.6;
-  }
-
-  .proof-table tr:last-child td { border-bottom: none; }
-
-  .proof-label {
-    font-family: var(--mono);
-    font-size: 11px;
-    letter-spacing: 0.06em;
-    color: var(--ink);
-    white-space: nowrap;
-  }
-
-  /* INTEGRATIONS */
-  .integrations-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.6rem;
-    margin-top: 2rem;
-  }
-
-  .int-pill {
-    font-family: var(--mono);
-    font-size: 11px;
-    padding: 0.4rem 0.9rem;
-    border: 1px solid var(--rule);
-    border-radius: 2px;
-    color: var(--ink-mid);
-    background: var(--paper);
-  }
-
-  .int-pill.official {
-    border-color: #5dcaa5;
-    color: var(--green-text);
-  }
-
-  /* QUOTE BLOCK */
-  .quote-block {
-    border-left: 2px solid var(--rule);
-    padding: 1.25rem 0 1.25rem 1.75rem;
-  }
-
-  .quote-text {
-    font-family: var(--serif);
-    font-style: italic;
-    font-size: 1.3rem;
-    line-height: 1.55;
-    color: var(--ink);
-    margin-bottom: 0.6rem;
-  }
-
-  .quote-attr {
-    font-family: var(--mono);
-    font-size: 10px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--ink-light);
-  }
-
-  /* SECTION TITLES */
-  .section-title {
-    font-family: var(--serif);
-    font-size: clamp(1.8rem, 3vw, 2.4rem);
-    line-height: 1.2;
-    color: var(--ink);
-    margin-bottom: 1rem;
-    max-width: 560px;
-  }
-
-  .section-sub {
-    font-size: 0.95rem;
-    line-height: 1.8;
-    color: var(--ink-mid);
-    max-width: 500px;
-    font-weight: 300;
-    margin-bottom: 2rem;
-  }
-
-  /* CTA SECTION */
-  .cta-section {
-    background: var(--paper-off);
-    border-top: 1px solid var(--rule);
-    border-bottom: 1px solid var(--rule);
-    padding: 5rem 0;
-    text-align: center;
-  }
-
-  .cta-section .section-title { margin: 0 auto 1rem; }
-  .cta-section .section-sub { margin: 0 auto 2.5rem; }
-  .cta-section .cta-row { justify-content: center; }
-
-  /* FOOTER */
-  footer {
-    padding: 3rem 2rem;
-    border-top: 1px solid var(--rule);
-  }
-
-  .footer-inner {
-    max-width: 1100px;
-    margin: 0 auto;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 1.5rem;
-  }
-
-  .footer-logo {
-    font-family: var(--mono);
-    font-size: 12px;
-    color: var(--ink-mid);
-    text-decoration: none;
-  }
-
-  .footer-links {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1.25rem;
-    list-style: none;
-  }
-
-  .footer-links a {
-    font-size: 12px;
-    color: var(--ink-light);
-    text-decoration: none;
-  }
-
-  .footer-links a:hover { color: var(--ink-mid); }
-
-  .footer-copy {
-    font-size: 11px;
-    color: var(--ink-faint);
-    font-family: var(--mono);
-  }
-
-  /* AVIATION NARRATIVE */
-  .aviation-block {
-    background: var(--paper-off);
-    border: 1px solid var(--rule);
-    border-radius: 3px;
-    padding: 2.5rem;
-    margin-top: 3rem;
-  }
-
-  .aviation-label {
-    font-family: var(--mono);
-    font-size: 10px;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--ink-light);
-    margin-bottom: 1rem;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .aviation-label::before {
-    content: '';
-    display: inline-block;
-    width: 14px;
-    height: 1px;
-    background: var(--ink-faint);
-  }
-
-  .aviation-headline {
-    font-family: var(--serif);
-    font-size: clamp(1.5rem, 2.5vw, 1.9rem);
-    line-height: 1.25;
-    color: var(--ink);
-    margin-bottom: 1.25rem;
-    max-width: 580px;
-  }
-
-  .aviation-body {
-    font-size: 0.95rem;
-    line-height: 1.85;
-    color: var(--ink-mid);
-    max-width: 580px;
-    font-weight: 300;
-  }
-
-  .aviation-body p { margin-bottom: 1rem; }
-  .aviation-body p:last-child { margin-bottom: 0; }
-  .aviation-body strong { color: var(--ink); font-weight: 500; }
-
-  .aviation-pillars {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 0;
-    border-top: 1px solid var(--rule);
-    margin-top: 2.5rem;
-  }
-
-  .av-pillar {
-    padding: 1.75rem 1.5rem 1.75rem 0;
-    border-right: 1px solid var(--rule);
-  }
-
-  .av-pillar:last-child { border-right: none; }
-  .av-pillar:not(:first-child) { padding-left: 1.5rem; }
-
-  .av-pillar-label {
-    font-family: var(--mono);
-    font-size: 9px;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--red);
-    margin-bottom: 0.6rem;
-  }
-
-  .av-pillar-title {
-    font-family: var(--serif);
-    font-size: 1rem;
-    color: var(--ink);
-    margin-bottom: 0.4rem;
-    line-height: 1.3;
-  }
-
-  .av-pillar-body {
-    font-size: 0.82rem;
-    line-height: 1.65;
-    color: var(--ink-mid);
-    font-weight: 300;
-  }
-
-  /* FAILURE MOMENT */
-  .failure-section { }
-
-  .failure-scenario {
-    font-family: var(--serif);
-    font-style: italic;
-    font-size: clamp(1.2rem, 2vw, 1.5rem);
-    line-height: 1.5;
-    color: var(--ink);
-    max-width: 620px;
-    margin-bottom: 1.5rem;
-  }
-
-  .failure-body {
-    font-size: 0.95rem;
-    line-height: 1.85;
-    color: var(--ink-mid);
-    max-width: 580px;
-    font-weight: 300;
-    margin-bottom: 1rem;
-  }
-
-  .failure-body strong { color: var(--ink); font-weight: 500; }
-
-  /* RESPONSIVE */
-  @media (max-width: 700px) {
-    .pillars { grid-template-columns: 1fr; }
-    .pillar { border-right: none; border-bottom: 1px solid var(--rule); padding: 1.5rem 0; }
-    .pillar:last-child { border-bottom: none; }
-    .pillar:not(:first-child) { padding-left: 0; }
-    .without-with { grid-template-columns: 1fr; }
-    .feature-grid { grid-template-columns: 1fr; }
-    .aviation-pillars { grid-template-columns: 1fr; }
-    .av-pillar { border-right: none; border-bottom: 1px solid var(--rule); padding: 1.25rem 0; }
-    .av-pillar:last-child { border-bottom: none; }
-    .av-pillar:not(:first-child) { padding-left: 0; }
-    nav .nav-links { display: none; }
-  }
-
-/* ── DM NAV / FOOTER ── */
-.dm-nav{position:sticky;top:0;z-index:300;height:60px;background:#fff;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;padding:0 40px;}
-.dm-nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none;flex-shrink:0;z-index:1;}
-.dm-nav-name{font-family:'IBM Plex Mono',monospace;font-size:17px;font-weight:700;color:#111827;letter-spacing:-0.03em;}
-.dm-nav-grad{background:linear-gradient(90deg,#7C3AED,#2563EB,#0891b2);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
-.dm-nav-links{position:absolute;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:4px;list-style:none;}
-.dm-nav-links a{font-size:13.5px;color:#6b7280;padding:5px 10px;border-radius:6px;transition:color .12s,background .12s;white-space:nowrap;text-decoration:none;}
-.dm-nav-links a:hover,.dm-nav-links a.active{color:#111827;background:#f3f4f6;}
-.dm-nav-right{margin-left:auto;display:flex;align-items:center;gap:10px;z-index:1;}
-.dm-nav-icon{display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:7px;color:#6b7280;transition:color .12s,background .12s;text-decoration:none;}
-.dm-nav-icon:hover{color:#111827;background:#f3f4f6;}
-.dm-footer{border-top:1px solid #e5e7eb;padding:28px 40px;display:flex;align-items:center;flex-wrap:wrap;gap:16px;}
-.dm-footer-brand{display:flex;align-items:center;gap:8px;text-decoration:none;flex-shrink:0;}
-.dm-footer-name{font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:700;color:#111827;letter-spacing:-.02em;}
-.dm-footer-links{display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin-left:auto;}
-.dm-footer-links a{font-size:12.5px;color:#9ca3af;padding:3px 8px;text-decoration:none;transition:color .12s;}
-.dm-footer-links a:hover{color:#374151;}
-.dm-footer-copy{font-size:12px;color:#d1d5db;padding:3px 8px;}
-@media(max-width:768px){.dm-nav{padding:0 16px;}.dm-nav-links{display:none;}.dm-footer{padding:20px 16px;}.dm-footer-links{margin-left:0;}}
+:root{
+  --void:38 30% 97%; --void-elevated:38 24% 94%; --void-line:38 14% 84%;
+  --paper:38 30% 97%; --ink:220 20% 10%;
+  --trace:220 10% 38%; --trace-dim:220 8% 55%;
+  --signal:152 64% 34%; --signal-dim:152 30% 60%;
+  --background:var(--paper); --foreground:var(--ink);
+}
+*{box-sizing:border-box;margin:0;padding:0;border:0 solid hsl(var(--void-line))}
+html,body{background:hsl(var(--background));color:hsl(var(--foreground));font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;font-feature-settings:"ss01","cv11"}
+::selection{background:hsl(var(--signal)/.3);color:hsl(var(--foreground))}
+a{color:inherit;text-decoration:none}
+.mono{font-family:'JetBrains Mono',ui-monospace,monospace;font-feature-settings:"calt" 0}
+.wrap{max-width:80rem;margin:0 auto;padding:0 1.5rem}
+.balance{text-wrap:balance}
+.hairline{height:1px;background:hsl(var(--void-line))}
+.eyebrow{display:flex;align-items:center;gap:.75rem;font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:hsl(var(--trace))}
+.eyebrow .rule{height:1px;width:2rem;background:hsl(var(--trace-dim))}
+.section{border-bottom:1px solid hsl(var(--void-line))}
+.grid-noise{background-image:linear-gradient(hsl(var(--void-line)/.35) 1px,transparent 1px),linear-gradient(90deg,hsl(var(--void-line)/.35) 1px,transparent 1px);background-size:64px 64px;background-position:-1px -1px}
+
+/* Nav */
+.nav{position:sticky;top:0;z-index:40;border-bottom:1px solid hsl(var(--void-line));background:hsl(var(--void)/.8);backdrop-filter:blur(8px)}
+.nav-inner{display:flex;height:3.5rem;align-items:center;justify-content:space-between;max-width:80rem;margin:0 auto;padding:0 1.5rem}
+.wordmark{display:flex;align-items:center;gap:.75rem;font-family:'JetBrains Mono',monospace}
+.wordmark .sigil{position:relative;display:inline-flex;height:2rem;width:2rem;align-items:center;justify-content:center}
+.wordmark .name{display:flex;align-items:baseline;gap:1px;line-height:1}
+.wordmark .name .d{font-size:16px;font-weight:600;letter-spacing:.02em;color:hsl(var(--foreground))}
+.wordmark .name .m{font-size:16px;font-weight:300;letter-spacing:.02em;color:hsl(var(--trace))}
+.nav-links{display:none;gap:2rem;align-items:center}
+@media(min-width:768px){.nav-links{display:flex}}
+.nav-links a{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:hsl(var(--trace));transition:color .15s}
+.nav-links a:hover{color:hsl(var(--foreground))}
+.nav-cta{display:flex;align-items:center;gap:.5rem}
+.nav-cta .signin{display:none;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:hsl(var(--trace));padding:.5rem .75rem}
+@media(min-width:640px){.nav-cta .signin{display:inline-flex}}
+.nav-cta .signin:hover{color:hsl(var(--foreground))}
+.nav-cta .commit{display:inline-flex;align-items:center;gap:.5rem;border:1px solid hsl(var(--signal)/.4);background:hsl(var(--signal)/.1);padding:.5rem .75rem;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:hsl(var(--signal));transition:background .15s}
+.nav-cta .commit:hover{background:hsl(var(--signal)/.2)}
+.dot{display:inline-block;height:.375rem;width:.375rem;border-radius:9999px;background:hsl(var(--signal));animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* Hero */
+.hero{position:relative;overflow:hidden;border-bottom:1px solid hsl(var(--void-line))}
+.hero .noise{position:absolute;inset:0;opacity:.4}
+.hero .topline{position:absolute;left:0;right:0;top:0;height:1px;background:linear-gradient(90deg,transparent,hsl(var(--signal)/.4),transparent)}
+.hero .inner{position:relative;max-width:80rem;margin:0 auto;padding:5rem 1.5rem 6rem}
+@media(min-width:1024px){.hero .inner{padding:7rem 1.5rem 8rem}}
+.hero h1{font-size:34px;line-height:1.02;letter-spacing:-.022em;font-weight:500}
+@media(min-width:640px){.hero h1{font-size:44px}}
+@media(min-width:1024px){.hero h1{font-size:54px}}
+.hero h1 em{color:hsl(var(--trace));font-style:italic;font-weight:300}
+.hero p{margin-top:2rem;max-width:36rem;font-size:16px;line-height:1.6;color:hsl(var(--trace))}
+.hero-grid{display:grid;grid-template-columns:1fr;gap:3rem;align-items:start}
+@media(min-width:1024px){.hero-grid{grid-template-columns:repeat(12,1fr);gap:4rem}.hero-left{grid-column:span 7}.hero-right{grid-column:span 5}}
+.btn-primary{display:inline-flex;align-items:center;gap:.75rem;background:hsl(var(--foreground));color:hsl(var(--background));padding:.875rem 1.25rem;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.2em;text-transform:uppercase;transition:background .15s,color .15s}
+.btn-primary:hover{background:hsl(var(--signal));color:hsl(var(--background))}
+.btn-ghost{display:inline-flex;align-items:center;gap:.75rem;border:1px solid hsl(var(--void-line));padding:.875rem 1.25rem;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:hsl(var(--trace));transition:color .15s,border-color .15s}
+.btn-ghost:hover{color:hsl(var(--foreground));border-color:hsl(var(--trace))}
+.actions{margin-top:2.5rem;display:flex;flex-wrap:wrap;align-items:center;gap:.75rem}
+.trust{margin-top:3.5rem;display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem;max-width:32rem}
+.trust > div{border-top:1px solid hsl(var(--void-line));padding-top:.75rem}
+.trust .k{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:hsl(var(--signal))}
+.trust .v{margin-top:.25rem;font-size:12px;color:hsl(var(--trace))}
+.cap{margin-top:.75rem;display:flex;align-items:center;justify-content:flex-end;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:hsl(var(--trace-dim))}
+
+/* Verifier card */
+.card{position:relative}
+.card .brackets svg{position:absolute;height:.75rem;width:.75rem;color:hsl(var(--signal)/.6)}
+.card .brackets .tl{top:-1px;left:-1px}
+.card .brackets .tr{top:-1px;right:-1px;transform:rotate(90deg)}
+.card .brackets .br{bottom:-1px;right:-1px;transform:rotate(180deg)}
+.card .brackets .bl{bottom:-1px;left:-1px;transform:rotate(-90deg)}
+.card .body{border:1px solid hsl(var(--void-line));background:hsl(var(--void-elevated))}
+.card .titlebar,.card .footbar{display:flex;align-items:center;justify-content:space-between;padding:.625rem 1rem;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:hsl(var(--trace-dim))}
+.card .titlebar{border-bottom:1px solid hsl(var(--void-line))}
+.card .footbar{border-top:1px solid hsl(var(--void-line))}
+.card .footbar a{color:hsl(var(--trace))}
+.card .footbar a:hover{color:hsl(var(--signal))}
+.card .content{padding:1.25rem 1rem;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.6}
+.card .prompt{color:hsl(var(--trace-dim))}
+.card .checks{margin-top:.75rem;display:flex;flex-direction:column;gap:.375rem}
+.card .row{display:flex;align-items:baseline;gap:.5rem}
+.card .row .ok{color:hsl(var(--signal));width:.75rem}
+.card .row .lbl{color:hsl(var(--foreground)/.9);width:170px}
+.card .row .val{color:hsl(var(--trace));overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card .summary{margin-top:1.25rem;border-top:1px solid hsl(var(--void-line));padding-top:1rem;display:flex;align-items:center;justify-content:space-between}
+.card .summary .ok-text{color:hsl(var(--signal));font-size:13px}
+.card .summary .ts{color:hsl(var(--trace-dim));font-size:10px;margin-top:.25rem;text-transform:uppercase;letter-spacing:.2em}
+.card .summary .l3{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.2em;color:hsl(var(--signal));border:1px solid hsl(var(--signal)/.4);padding:.25rem .5rem}
+
+/* Ticker */
+.tickerwrap{border-top:1px solid hsl(var(--void-line));background:hsl(var(--void-elevated)/.4)}
+.ticker{overflow:hidden;mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);-webkit-mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent)}
+.ticker .row{display:flex;gap:3rem;white-space:nowrap;padding:.75rem 0;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:hsl(var(--trace-dim));animation:tick 40s linear infinite}
+.ticker .group{display:flex;gap:3rem;flex-shrink:0}
+.ticker .item{display:flex;align-items:center;gap:.75rem}
+.ticker .item .sq{height:4px;width:4px;background:hsl(var(--signal)/.6)}
+@keyframes tick{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+
+/* Properties */
+.props .header{display:flex;align-items:center;gap:.75rem;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:hsl(var(--trace));margin-bottom:3rem}
+.props .header .rule{height:1px;width:2rem;background:hsl(var(--trace-dim))}
+.props-grid{display:grid;grid-template-columns:1fr;gap:1px;background:hsl(var(--void-line));border:1px solid hsl(var(--void-line))}
+@media(min-width:768px){.props-grid{grid-template-columns:repeat(3,1fr)}}
+.prop{background:hsl(var(--void));padding:2rem;transition:background .15s}
+.prop:hover{background:hsl(var(--void-elevated))}
+.prop .top{display:flex;align-items:center;justify-content:space-between;margin-bottom:2.5rem}
+.prop .tag{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:hsl(var(--signal));border:1px solid hsl(var(--signal)/.4);padding:.25rem .5rem}
+.prop .idx{font-family:'JetBrains Mono',monospace;font-size:10px;color:hsl(var(--trace-dim))}
+.prop h3{font-size:1.5rem;letter-spacing:-.01em;margin-bottom:1rem;font-weight:500}
+.prop p{font-size:14px;line-height:1.6;color:hsl(var(--trace))}
+.section-pad{padding:6rem 1.5rem}
+
+/* Aviation */
+.aviation{border-bottom:1px solid hsl(var(--void-line));background:hsl(var(--void-elevated)/.3)}
+.aviation .inner{max-width:56rem;margin:0 auto;padding:7rem 1.5rem}
+.aviation h2{font-size:36px;line-height:1.02;letter-spacing:-.02em;font-weight:500;margin-top:2rem}
+@media(min-width:640px){.aviation h2{font-size:48px}}
+.aviation h2 em{display:block;color:hsl(var(--trace));font-style:italic;font-weight:300}
+.aviation .copy{margin-top:2rem;display:flex;flex-direction:column;gap:1.25rem;font-size:16px;line-height:1.6;color:hsl(var(--trace));max-width:42rem}
+.aviation .copy strong{color:hsl(var(--foreground));font-weight:600}
+
+/* CodeBlock */
+.codeblock{border-bottom:1px solid hsl(var(--void-line))}
+.codeblock .inner{max-width:80rem;margin:0 auto;padding:7rem 1.5rem}
+.codeblock .grid{display:grid;grid-template-columns:1fr;gap:3rem}
+@media(min-width:1024px){.codeblock .grid{grid-template-columns:repeat(12,1fr)}.codeblock .left{grid-column:span 5}.codeblock .right{grid-column:span 7}}
+.codeblock .left h2{font-size:34px;line-height:1.05;letter-spacing:-.02em;font-weight:500}
+@media(min-width:640px){.codeblock .left h2{font-size:44px}}
+.codeblock .left h2 em{display:block;color:hsl(var(--trace));font-style:italic;font-weight:300;margin-top:.5rem}
+.codeblock .left p{margin-top:1.5rem;font-size:16px;line-height:1.6;color:hsl(var(--trace))}
+.codeblock .left p strong{color:hsl(var(--foreground));font-weight:600}
+.codeblock .left .more{display:inline-flex;align-items:center;gap:.5rem;margin-top:2rem;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:hsl(var(--signal));transition:gap .15s}
+.codeblock .left .more:hover{gap:.75rem}
+
+/* Section dark — only the agent.py panel */
+.term{
+  --void:220 18% 6%; --void-elevated:220 16% 9%; --void-line:220 12% 18%;
+  --ink:38 20% 96%; --trace:220 10% 68%; --trace-dim:220 8% 48%;
+  --signal:152 70% 56%;
+  --background:var(--void); --foreground:var(--ink);
+  background:hsl(var(--void));
+  color:hsl(var(--ink));
+  border:1px solid hsl(var(--void-line));
+}
+.term .titlebar{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid hsl(var(--void-line));padding:.625rem 1rem;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:hsl(var(--trace-dim))}
+.term .titlebar .dots{display:flex;align-items:center;gap:.5rem}
+.term .titlebar .d1{height:8px;width:8px;border-radius:9999px;background:hsl(12 72% 46%/.6)}
+.term .titlebar .d2{height:8px;width:8px;border-radius:9999px;background:hsl(var(--trace-dim)/.6)}
+.term .titlebar .d3{height:8px;width:8px;border-radius:9999px;background:hsl(var(--signal)/.6)}
+.term .titlebar .file{margin-left:.75rem}
+.term pre{overflow-x:auto;padding:1.25rem;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.6;color:hsl(var(--ink)/.9);white-space:pre}
+
+/* Levels */
+.levels{border-bottom:1px solid hsl(var(--void-line))}
+.levels .inner{max-width:80rem;margin:0 auto;padding:7rem 1.5rem}
+.levels h2{max-width:48rem;font-size:34px;line-height:1.05;letter-spacing:-.02em;font-weight:500;margin-top:1rem}
+@media(min-width:640px){.levels h2{font-size:44px}}
+.levels h2 em{color:hsl(var(--trace));font-style:italic;font-weight:300}
+.levels .table{margin-top:3.5rem;border-top:1px solid hsl(var(--void-line))}
+.levels .row{display:grid;grid-template-columns:1fr;gap:1.5rem;border-bottom:1px solid hsl(var(--void-line));padding:2rem .5rem;transition:background .15s}
+@media(min-width:768px){.levels .row{grid-template-columns:repeat(12,1fr)}}
+.levels .row:hover{background:hsl(var(--void-elevated)/.4)}
+.levels .c-tag{display:flex;align-items:flex-start;gap:.75rem}
+.levels .tag{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:hsl(var(--signal));border:1px solid hsl(var(--signal)/.4);padding:.25rem .5rem}
+.levels .num{font-family:'JetBrains Mono',monospace;font-size:10px;color:hsl(var(--trace-dim));margin-top:.5rem}
+.levels .name{font-size:18px;letter-spacing:-.01em}
+.levels .means{font-size:13px;line-height:1.6;color:hsl(var(--trace))}
+.levels .how{font-size:13px;line-height:1.6;color:hsl(var(--foreground)/.8);font-family:'JetBrains Mono',monospace}
+.cmd{background:hsl(var(--foreground)/.06);border:1px solid hsl(var(--void-line));padding:1px 6px;border-radius:2px;color:hsl(var(--foreground));font-family:'JetBrains Mono',monospace}
+@media(min-width:768px){.levels .c-tag{grid-column:span 2}.levels .c-name{grid-column:span 3}.levels .c-means{grid-column:span 4}.levels .c-how{grid-column:span 3}}
+
+/* CTA */
+.cta{border-bottom:1px solid hsl(var(--void-line));position:relative;overflow:hidden}
+.cta .noise{position:absolute;inset:0;opacity:.3}
+.cta .inner{position:relative;max-width:80rem;margin:0 auto;padding:8rem 1.5rem;text-align:center}
+.cta .ey{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:hsl(var(--signal));margin-bottom:2rem}
+.cta h2{margin:0 auto;max-width:56rem;font-size:44px;line-height:1;letter-spacing:-.025em;font-weight:500}
+@media(min-width:640px){.cta h2{font-size:60px}}
+.cta h2 em{display:block;color:hsl(var(--trace));font-style:italic;font-weight:300;margin-top:.5rem}
+.cta p{margin:2rem auto 0;max-width:36rem;font-size:15px;color:hsl(var(--trace));line-height:1.6}
+.cta .actions{margin-top:2.5rem;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:.75rem}
+.cta .run{display:inline-flex;align-items:center;gap:.75rem;background:hsl(var(--signal));color:hsl(var(--background));padding:1rem 1.5rem;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.2em;text-transform:uppercase;transition:background .15s}
+.cta .run:hover{background:hsl(var(--signal)/.9)}
+.cta .docs{display:inline-flex;align-items:center;gap:.75rem;border:1px solid hsl(var(--void-line));padding:1rem 1.5rem;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:hsl(var(--trace));transition:color .15s,border-color .15s}
+.cta .docs:hover{color:hsl(var(--foreground));border-color:hsl(var(--trace))}
+
+/* Footer */
+footer{background:hsl(var(--void))}
+footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;grid-template-columns:1fr;gap:2.5rem}
+@media(min-width:768px){footer .top{grid-template-columns:repeat(12,1fr)}}
+.footer-brand{grid-column:span 5}
+.footer-brand p{margin-top:1.25rem;max-width:24rem;font-size:13px;color:hsl(var(--trace));line-height:1.6}
+.footer-col{grid-column:span 2}
+.footer-col .h{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:hsl(var(--trace-dim));margin-bottom:1rem}
+.footer-col ul{list-style:none;display:flex;flex-direction:column;gap:.625rem}
+.footer-col a{font-size:13px;color:hsl(var(--trace))}
+.footer-col a:hover{color:hsl(var(--foreground))}
+.footer-bottom{border-top:1px solid hsl(var(--void-line))}
+.footer-bottom .inner{max-width:80rem;margin:0 auto;padding:1.25rem 1.5rem;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:hsl(var(--trace-dim))}
 </style>
 </head>
 <body>
 
-<nav class="dm-nav">
-  <a class="dm-nav-logo" href="/">
-    <svg style="width:28px;height:28px;flex-shrink:0;" viewBox="0 0 40 40" fill="none">
-    <defs><linearGradient id="dlg-n" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#7C3AED"/><stop offset="55%" stop-color="#2563EB"/><stop offset="100%" stop-color="#0891b2"/></linearGradient></defs>
-    <circle cx="20" cy="20" r="17" stroke="#e5e7eb" stroke-width="0.8" stroke-dasharray="2 3"/>
-    <circle cx="20" cy="20" r="12" stroke="#d1d5db" stroke-width="0.5" opacity="0.6"/>
-    <circle cx="20" cy="5"  r="3.2" fill="#7C3AED" opacity="0.95"/>
-    <circle cx="33" cy="28" r="2.6" fill="#2563EB" opacity="0.95"/>
-    <circle cx="7"  cy="28" r="2.2" fill="#22D3EE" opacity="0.9"/>
-    <line x1="20" y1="8" x2="31" y2="26" stroke="url(#dlg-n)" stroke-width="0.6" opacity="0.5"/>
-    <line x1="20" y1="8" x2="9"  y2="26" stroke="#7C3AED" stroke-width="0.6" opacity="0.4"/>
-    <line x1="30" y1="27" x2="10" y2="27" stroke="#22D3EE" stroke-width="0.6" opacity="0.4"/>
-    <circle cx="20" cy="20" r="2.5" fill="url(#dlg-n)" opacity="0.6"/>
-  </svg>
-    <span class="dm-nav-name">Dark<span class="dm-nav-grad">Matter</span></span>
-  </a>
-  <ul class="dm-nav-links">
-    <li><a href="/demo">Demo</a></li>
-    <li><a href="/docs">Docs</a></li>
-    <li><a href="/pricing">Pricing</a></li>
-    <li><a href="/compare">Compare</a></li>
-    <li><a href="/integrity">Integrity</a></li>
-  </ul>
-  <div class="dm-nav-right">
-    <a href="/login" class="dm-nav-icon" title="Sign in" aria-label="Sign in">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:18px;height:18px;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
-  </a>
+<header class="nav">
+  <div class="nav-inner">
+    <a href="/" class="wordmark" aria-label="DarkMatter">
+      <span class="sigil" aria-hidden="true">
+        <svg viewBox="0 0 32 32" width="32" height="32" fill="none">
+          <circle cx="16" cy="16" r="10" stroke="hsl(var(--foreground))" stroke-opacity="0.45" stroke-width="0.8"/>
+          <path d="M 16 6 L 24.66 21 L 7.34 21 Z" stroke="hsl(var(--foreground))" stroke-opacity="0.18" stroke-width="0.5" stroke-dasharray="1 1.5"/>
+          <circle cx="16" cy="16" r="0.8" fill="hsl(var(--foreground))" fill-opacity="0.55"/>
+          <circle cx="16" cy="6" r="2.1" fill="hsl(var(--signal))"/>
+          <circle cx="16" cy="6" r="3.4" stroke="hsl(var(--signal))" stroke-opacity="0.3" stroke-width="0.45"/>
+          <circle cx="24.66" cy="21" r="1.5" fill="hsl(var(--foreground))"/>
+          <circle cx="7.34" cy="21" r="1.5" fill="hsl(var(--foreground))" fill-opacity="0.85"/>
+        </svg>
+      </span>
+      <span class="name"><span class="d">DARK</span><span class="m">MATTER</span></span>
+    </a>
+    <nav class="nav-links">
+      <a href="/demo">Demo</a><a href="/docs">Docs</a><a href="/pricing">Pricing</a><a href="/compare">Compare</a><a href="/integrity">Integrity</a>
+    </nav>
+    <div class="nav-cta">
+      <a href="/login" class="signin">Sign in</a>
+      <a href="/signup" class="commit"><span class="dot"></span>Commit a record</a>
+    </div>
   </div>
-</nav>
+</header>
+
+<main>
 
 <!-- HERO -->
 <section class="hero">
-  <div class="container">
-    <p class="eyebrow">The black box for AI systems</p>
-    <h1 class="hero-headline">
-      Your AI agents are making decisions.<br>
-      <em>Who's keeping the record?</em>
-    </h1>
-    <p class="hero-sub">
-      DarkMatter is the independent record of what actually happened. Every agent action, every decision, every output — recorded outside your system, outside the model provider, and independently verifiable by anyone who needs to know what happened.
-    </p>
-    <div class="cta-row">
-      <a href="/signup" class="btn-primary">Start recording agent activity</a>
-      <a href="/demo" class="btn-ghost">See a live record</a>
-    </div>
-
-    <div class="verify-block">
-      <p class="verify-label">Verify this yourself</p>
-      <pre class="verify-snippet"><span class="v-tick">✔</span> Payload hash
-<span class="v-tick">✔</span> Metadata hash
-<span class="v-tick">✔</span> Envelope hash
-<span class="v-tick">✔</span> Ed25519 signature valid
-<span class="v-tick">✔</span> All checks passed — L3 verified</pre>
-      <a href="https://github.com/darkmatter-hub/darkmatter-l3-example" class="verify-cta" target="_blank" rel="noopener">Run this verification locally →</a>
-    </div>
-
-    <div class="pillars">
-      <div class="pillar">
-        <p class="pillar-num">01</p>
-        <p class="pillar-title">Out of band</p>
-        <p class="pillar-body">Recorded outside the system that produced the decision. Not inside your agent. Not inside the model provider. Outside both.</p>
+  <div class="noise grid-noise"></div>
+  <div class="topline"></div>
+  <div class="inner">
+    <div class="eyebrow"><span class="rule"></span><span>The black box for AI systems</span></div>
+    <div class="hero-grid" style="margin-top:2.5rem">
+      <div class="hero-left">
+        <h1 class="balance">The independent record of what your <em>AI agents</em> actually did.</h1>
+        <p>DarkMatter records every agent action outside your system, seals it the moment it happens, and lets anyone — a regulator, an auditor, a counterparty — verify it without asking you to vouch for anything.</p>
+        <div class="actions">
+          <a href="/signup" class="btn-primary">Commit your first record <span>→</span></a>
+          <a href="/demo" class="btn-ghost"><span class="dot"></span>ctx_7f3a9b · see a live one</a>
+        </div>
+        <div class="trust">
+          <div><div class="k">Out of band</div><div class="v">outside the system</div></div>
+          <div><div class="k">Tamper-evident</div><div class="v">sealed at commit</div></div>
+          <div><div class="k">Reconstructable</div><div class="v">step-by-step replay</div></div>
+        </div>
       </div>
-      <div class="pillar">
-        <p class="pillar-num">02</p>
-        <p class="pillar-title">Tamper-evident</p>
-        <p class="pillar-body">Every action is cryptographically sealed at the moment it happens. Any modification after the fact is mathematically detectable by anyone.</p>
+      <div class="hero-right">
+        <div class="card">
+          <div class="brackets" aria-hidden="true">
+            <svg class="tl" viewBox="0 0 12 12" fill="none"><path d="M0 0H6M0 0V6" stroke="currentColor" stroke-width="1"/></svg>
+            <svg class="tr" viewBox="0 0 12 12" fill="none"><path d="M0 0H6M0 0V6" stroke="currentColor" stroke-width="1"/></svg>
+            <svg class="br" viewBox="0 0 12 12" fill="none"><path d="M0 0H6M0 0V6" stroke="currentColor" stroke-width="1"/></svg>
+            <svg class="bl" viewBox="0 0 12 12" fill="none"><path d="M0 0H6M0 0V6" stroke="currentColor" stroke-width="1"/></svg>
+          </div>
+          <div class="body">
+            <div class="titlebar">
+              <div style="display:flex;align-items:center;gap:.5rem"><span class="dot"></span><span>ctx_7f3a9b · live record</span></div>
+              <span>verifier.local · v1.3</span>
+            </div>
+            <div class="content">
+              <div class="prompt">$ darkmatter verify ctx_7f3a9b</div>
+              <div class="checks">
+                <div class="row"><span class="ok">✓</span><span class="lbl">Payload hash</span><span class="val">sha256:a9c4e1·8f2b·7d10·e44c</span></div>
+                <div class="row"><span class="ok">✓</span><span class="lbl">Metadata hash</span><span class="val">sha256:31bd·772a·09cf·b6e2</span></div>
+                <div class="row"><span class="ok">✓</span><span class="lbl">Envelope hash</span><span class="val">sha256:fe04·1c8a·5503·ddaf</span></div>
+                <div class="row"><span class="ok">✓</span><span class="lbl">Ed25519 signature</span><span class="val">ed25519:5d2a·…·valid</span></div>
+                <div class="row"><span class="ok">✓</span><span class="lbl">Chain linkage</span><span class="val">parent → ctx_7f3a9a · OK</span></div>
+              <div class="row"><span class="ok">✓</span><span class="lbl">OpenTimestamps</span><span class="val">anchored · recent</span></div>
+              </div>
+              <div class="summary">
+                <div>
+                  <div class="ok-text">All checks passed — L3 verified</div>
+                  <div class="ts">sealed at commit time · verified locally</div>
+                </div>
+                <div class="l3">L3</div>
+              </div>
+            </div>
+            <div class="footbar">
+              <span>ed25519 · sha-256 · opentimestamps</span>
+              <a href="https://github.com/darkmatter-hub/darkmatter-l3-example" target="_blank" rel="noopener">run locally →</a>
+            </div>
+          </div>
+        </div>
+        <div class="cap">no account · no internet · no trust required</div>
       </div>
-      <div class="pillar">
-        <p class="pillar-num">03</p>
-        <p class="pillar-title">Reconstructable</p>
-        <p class="pillar-body">Replay the full sequence of decisions, step by step, after the fact. Not just what was logged. What actually happened, in order.</p>
+    </div>
+  </div>
+  <div class="tickerwrap">
+    <div class="ticker">
+      <div class="row">
+        <div class="group">
+          <span class="item"><span class="sq"></span>Python SDK</span>
+          <span class="item"><span class="sq"></span>TypeScript SDK</span>
+          <span class="item"><span class="sq"></span>LangGraph · soon</span>
+          <span class="item"><span class="sq"></span>Anthropic SDK</span>
+          <span class="item"><span class="sq"></span>OpenAI SDK</span>
+          <span class="item"><span class="sq"></span>CrewAI · soon</span>
+          <span class="item"><span class="sq"></span>AWS Bedrock · soon</span>
+          <span class="item"><span class="sq"></span>Local models</span>
+          <span class="item"><span class="sq"></span>REST API</span>
+          <span class="item"><span class="sq"></span>Self-host · soon</span>
+        </div>
+        <div class="group">
+          <span class="item"><span class="sq"></span>Python SDK</span>
+          <span class="item"><span class="sq"></span>TypeScript SDK</span>
+          <span class="item"><span class="sq"></span>LangGraph · soon</span>
+          <span class="item"><span class="sq"></span>Anthropic SDK</span>
+          <span class="item"><span class="sq"></span>OpenAI SDK</span>
+          <span class="item"><span class="sq"></span>CrewAI · soon</span>
+          <span class="item"><span class="sq"></span>AWS Bedrock · soon</span>
+          <span class="item"><span class="sq"></span>Local models</span>
+          <span class="item"><span class="sq"></span>REST API</span>
+          <span class="item"><span class="sq"></span>Self-host · soon</span>
+        </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- AVIATION NARRATIVE -->
-<section>
-  <div class="container">
-    <p class="eyebrow">Why it exists</p>
-    <h2 class="section-title">Every commercial flight has a black box. Every AI agent should too.</h2>
-    <p class="section-sub">Aviation didn't put flight data recorders in planes because pilots were untrustworthy. It put them there because when something goes wrong at altitude, memory is unreliable, incentives are misaligned, and the only thing that matters is what actually happened.</p>
-
-    <div class="aviation-block">
-      <p class="aviation-label">The aviation parallel</p>
-      <p class="aviation-headline">The flight data recorder is independent by design. It doesn't live inside the cockpit systems. It doesn't report to the airline. It survives the crash and tells investigators the truth.</p>
-      <div class="aviation-body">
-        <p>Nobody argues the recorder should be optional. Nobody argues the airline should keep its own records and report honestly. <strong>The independence is the point.</strong> Without it, every investigation starts with the question: who do you trust?</p>
-        <p>AI agents are making consequential decisions right now — approving payments, flagging contracts, routing customers, generating outputs that reach real people. When something goes wrong, the record of what happened lives inside the same system that made the decision. That system is controlled by the same team that needs the investigation to go well.</p>
-        <p>That's not a black box. That's a system vouching for itself.</p>
-        <p><strong>DarkMatter is the flight data recorder for AI systems.</strong> Every agent action recorded outside the system that produced it, sealed at the moment it happens, and reconstructable by anyone who needs to know what actually occurred.</p>
+<!-- PROPERTIES -->
+<section class="props section">
+  <div class="wrap section-pad">
+    <div class="header"><span class="rule"></span><span>Three properties · non-negotiable</span></div>
+    <div class="props-grid">
+      <div class="prop">
+        <div class="top"><span class="tag">L1</span><span class="idx">01 / 03</span></div>
+        <h3>Recorded outside the system</h3>
+        <p>The record does not live inside your agent runtime, or inside the model provider. It lives in an independent layer neither party controls.</p>
       </div>
-
-      <div class="aviation-pillars">
-        <div class="av-pillar">
-          <p class="av-pillar-label">Property 01</p>
-          <p class="av-pillar-title">Recorded outside the system</p>
-          <p class="av-pillar-body">The record does not live inside your agent runtime or inside the model provider. It lives in an independent layer neither party controls.</p>
-        </div>
-        <div class="av-pillar">
-          <p class="av-pillar-label">Property 02</p>
-          <p class="av-pillar-title">Sealed at the moment it happens</p>
-          <p class="av-pillar-body">Each event is cryptographically chained and signed client-side before transmission. Modification after the fact is mathematically detectable by anyone.</p>
-        </div>
-        <div class="av-pillar">
-          <p class="av-pillar-label">Property 03</p>
-          <p class="av-pillar-title">Reconstructable after failure</p>
-          <p class="av-pillar-body">Replay the full sequence of decisions, tool calls, and outputs step by step. Not a summary. The actual chain, in the actual order it happened.</p>
-        </div>
+      <div class="prop">
+        <div class="top"><span class="tag">L2</span><span class="idx">02 / 03</span></div>
+        <h3>Sealed at the moment it happens</h3>
+        <p>Each event is cryptographically chained and signed client-side before transmission. Modification after the fact is mathematically detectable by anyone.</p>
+      </div>
+      <div class="prop">
+        <div class="top"><span class="tag">L3</span><span class="idx">03 / 03</span></div>
+        <h3>Customer-verified, not vendor-verified</h3>
+        <p>Signed with keys only you hold. DarkMatter cannot forge a record on your behalf — non-repudiation by construction, not by policy.</p>
       </div>
     </div>
   </div>
 </section>
 
-<!-- FAILURE MOMENT -->
-<section>
-  <div class="container">
-    <p class="eyebrow">When something goes wrong</p>
-    <p class="failure-scenario">"Your agent just approved an $84,000 payment to a vendor you've never heard of. It happened in 340 milliseconds. Nobody was watching. What do you do next?"</p>
-    <p class="failure-body">If your logs live inside your own infrastructure, you're starting from a position of defending yourself with evidence you control. A regulator, an auditor, a counterparty — they have every reason to question it. <strong>Evidence you produced is the weakest kind of evidence.</strong></p>
-    <p class="failure-body">If the record lives in DarkMatter, the answer is a URL. You send it to anyone who needs it. They open it. The chain is there — every step, every input, every output, sealed at the moment it happened. They verify it themselves without asking you to vouch for anything.</p>
-    <p class="failure-body">The record was written before you knew you'd need it. That's what makes it credible.</p>
+<!-- AVIATION -->
+<section class="aviation">
+  <div class="inner">
+    <div class="eyebrow"><span class="rule"></span><span>The aviation parallel</span></div>
+    <h2 class="balance">Every commercial flight has a black box.<em>Every AI agent should too.</em></h2>
+    <div class="copy">
+      <p>Aviation didn't put flight data recorders in planes because pilots were untrustworthy. It put them there because when something goes wrong at altitude, memory is unreliable, incentives are misaligned, and the only thing that matters is what actually happened.</p>
+      <p>Nobody argues the recorder should be optional. Nobody argues the airline should keep its own records and report honestly. <strong>The independence is the point.</strong></p>
+      <p>DarkMatter is the flight data recorder for AI systems. Recorded outside the system that produced the action, sealed the moment it happens, reconstructable by anyone who needs to know.</p>
+    </div>
+  </div>
+</section>
 
-    <div class="code-strip">
-      <div class="code-header">
-        <div class="code-dot"></div>
-        <div class="code-dot"></div>
-        <div class="code-dot"></div>
-        <span class="code-filename">agent.py &nbsp;·&nbsp; one call at decision time. that's it.</span>
+<!-- CODEBLOCK (paper section, dark only on terminal) -->
+<section class="codeblock">
+  <div class="inner">
+    <div class="grid">
+      <div class="left">
+        <div class="eyebrow" style="margin-bottom:2rem"><span class="rule"></span><span>One call. At decision time.</span></div>
+        <h2 class="balance">The record was written before you knew you'd need it.<em>That's what makes it credible.</em></h2>
+        <p>Evidence you produced after the fact is the weakest kind of evidence. <strong>DarkMatter inverts that.</strong> The chain is sealed at the moment of action and lives somewhere you don't control — which is exactly why it can be trusted.</p>
+        <a href="/docs" class="more">Read the SDK reference →</a>
       </div>
-      <div class="code-body">
-<span class="c-comment"># At the moment of the decision — before anyone knew it would matter.</span>
-
+      <div class="right">
+        <div class="term">
+          <div class="titlebar">
+            <div class="dots"><span class="d1"></span><span class="d2"></span><span class="d3"></span><span class="file">agent.py</span></div>
+            <span>ctx_7f3a9b · 340 ms</span>
+          </div>
+<pre><code># At the moment of the decision — before anyone knew it would matter.
 dm.commit(payload={
-  <span class="c-key">"input"</span>:  <span class="c-val">"Approve payment to Acme Corp — $84,000"</span>,
-  <span class="c-key">"output"</span>: <span class="c-val">"Payment approved. Scheduled for Friday."</span>,
-  <span class="c-key">"model"</span>:  <span class="c-val">"claude-sonnet-4-6"</span>
+    "input":  "Approve payment to Acme Corp — $84,000",
+    "output": "Payment approved. Scheduled for Friday.",
+    "model":  "claude-sonnet-4-6",
 })
 
-<div class="code-return"><span class="c-comment"># Returns instantly. The record exists outside your system from this moment.</span>
+# Returns instantly. The record exists outside your system from this moment.
 {
-  <span class="c-highlight">"id"</span>:               <span class="c-val">"ctx_7f3a9b..."</span>,
-  <span class="c-highlight">"integrity"</span>: {
-    <span class="c-key">"payload_hash"</span>:       <span class="c-val">"sha256:a9c4e1..."</span>,
-    <span class="c-key">"verification_status"</span>: <span class="c-val">"valid"</span>
-  },
-  <span class="c-highlight">"verification_url"</span>:  <span class="c-val">"darkmatterhub.ai/r/ctx_7f3a9b"</span>
+    "id": "ctx_7f3a9b…",
+    "integrity": {
+        "payload_hash":        "sha256:a9c4e1…",
+        "verification_status": "valid"
+    },
+    "verification_url": "https://darkmatterhub.ai/r/ctx_7f3a9b"
 }
-<span class="c-comment"># Six months later, when the question is asked: send that URL.</span>
-<span class="c-comment"># No login. No account. The record proves itself.</span></div>
+</code></pre>
+        </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- HOW IT WORKS -->
-<section>
-  <div class="container">
-    <p class="eyebrow">How it works</p>
-    <h2 class="section-title">Record now. Reconstruct later. Verify without asking anyone.</h2>
-    <p class="section-sub">DarkMatter does three things. It doesn't run your agents, manage your prompts, or judge whether the output was good. It records, replays, and proves.</p>
-
-    <div class="feature-grid">
-      <div class="feature-card">
-        <p class="feature-tag">dm.commit()</p>
-        <p class="feature-title">Record every decision outside your system</p>
-        <p class="feature-body">Every agent action becomes an immutable node — input, output, model, tool calls, timestamp — chained to the action before it, written outside your infrastructure the moment it happens. Not a log. A sealed record.</p>
+<!-- LEVELS -->
+<section class="levels">
+  <div class="inner">
+    <div class="eyebrow"><span class="rule"></span><span>Verification levels</span></div>
+    <h2 class="balance">Not every record carries the same weight. <em>DarkMatter makes that explicit.</em></h2>
+    <div class="table">
+      <div class="row">
+        <div class="c-tag"><span class="tag">L1</span><span class="num">01</span></div>
+        <div class="c-name"><div class="name">Verifiable record</div></div>
+        <div class="c-means means">SHA-256 payload hash + parent chain linkage. Tampering at any node breaks every downstream hash. Independent offline verifier included.</div>
+        <div class="c-how how">Default with every <code class="cmd">dm.commit()</code> call. No extra steps.</div>
       </div>
-      <div class="feature-card">
-        <p class="feature-tag">dm.replay() / dm.fork()</p>
-        <p class="feature-title">Reconstruct exactly what happened</p>
-        <p class="feature-body">Walk the full decision chain step by step, root to tip. Branch from any checkpoint to investigate what would have happened differently. The original is always intact. Nothing is overwritten.</p>
+      <div class="row">
+        <div class="c-tag"><span class="tag">L2</span><span class="num">02</span></div>
+        <div class="c-name"><div class="name">Independent verification</div></div>
+        <div class="c-means means">Signed checkpoint bundles anchored via OpenTimestamps. Timestamp proof lives outside DarkMatter's infrastructure entirely.</div>
+        <div class="c-how how">Automatic. Every checkpoint batch is anchored and signed.</div>
       </div>
-      <div class="feature-card">
-        <p class="feature-tag">dm.export() / dm.verify()</p>
-        <p class="feature-title">Prove it without asking anyone to trust you</p>
-        <p class="feature-body">Export a self-contained proof bundle with an embedded standalone verifier. No DarkMatter account, no internet connection, no asking you to vouch. Anyone can run it. The record proves itself.</p>
+      <div class="row">
+        <div class="c-tag"><span class="tag">L3</span><span class="num">03</span></div>
+        <div class="c-name"><div class="name">Non-repudiation</div></div>
+        <div class="c-means means">Customer-held signing keys. Even DarkMatter cannot forge a record — only your key can sign a valid commit.</div>
+        <div class="c-how how">Available now. Generate a key with <code class="cmd">darkmatter keys generate</code>.</div>
       </div>
-    </div>
-  </div>
-</section>
-
-<!-- PROOF LEVELS -->
-<section>
-  <div class="container">
-    <p class="eyebrow">Verification levels</p>
-    <h2 class="section-title">Not every record carries the same weight. DarkMatter makes that explicit.</h2>
-    <p class="section-sub">Every commit starts at Level 1. Move to Level 2 or 3 as your compliance requirements grow. The difference is visible in every record and verifiable independently.</p>
-
-    <table class="proof-table">
-      <thead>
-        <tr>
-          <th style="width:140px">Level</th>
-          <th>What it means</th>
-          <th>How you get it</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td><span class="proof-label">Verifiable record</span></td>
-          <td>SHA-256 payload hash + parent chain linkage. Tampering at any node breaks every downstream hash. Independent offline verifier included.</td>
-          <td>Default with every <code>dm.commit()</code> call. No extra steps.</td>
-        </tr>
-        <tr>
-          <td><span class="proof-label">Independent verification</span></td>
-          <td>Signed checkpoint bundles anchored to Bitcoin via OpenTimestamps. Timestamp proof lives outside DarkMatter's infrastructure entirely.</td>
-          <td>Automatic. Every checkpoint batch is anchored and signed.</td>
-        </tr>
-        <tr>
-          <td><span class="proof-label">Non-repudiation</span></td>
-          <td>Customer-held signing keys. Even DarkMatter cannot forge a record — only your key can sign a valid commit. Verification works without revealing the payload.</td>
-          <td>SDK with your own Ed25519 key (BYOK). Roadmap.</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-</section>
-
-<!-- INTEGRATIONS -->
-<section>
-  <div class="container">
-    <p class="eyebrow">Integrations</p>
-    <h2 class="section-title">Works with any stack.</h2>
-    <p class="section-sub">Python, TypeScript, LangGraph, OpenAI, Anthropic, local models, or plain HTTP. One API key. Any framework.</p>
-
-    <div class="integrations-grid">
-      <span class="int-pill official">Python SDK</span>
-      <span class="int-pill official">TypeScript SDK</span>
-      <span class="int-pill">LangGraph</span>
-      <span class="int-pill">Anthropic SDK</span>
-      <span class="int-pill">OpenAI SDK</span>
-      <span class="int-pill">CrewAI</span>
-      <span class="int-pill">AWS Bedrock</span>
-      <span class="int-pill">Local models</span>
-      <span class="int-pill">REST API</span>
-      <span class="int-pill">Self-host (MIT)</span>
-    </div>
-  </div>
-</section>
-
-<!-- CLOSING QUOTE -->
-<section>
-  <div class="container">
-    <div class="quote-block">
-      <p class="quote-text">When the system fails, logs are not enough. DarkMatter is the record that exists outside the system that failed — independent, sealed, and reconstructable after the fact.</p>
-      <p class="quote-attr">DarkMatter — the black box for AI systems</p>
     </div>
   </div>
 </section>
 
 <!-- CTA -->
-<div class="cta-section">
-  <div class="container">
-    <h2 class="section-title">See it before you need it.</h2>
-    <p class="section-sub">Run the demo. Commit a record, replay the chain, export a proof bundle — and verify it yourself with zero DarkMatter dependency. Before writing any production code.</p>
-    <div class="cta-row">
-      <a href="/demo" class="btn-primary">Run the demo</a>
-      <a href="/integrity" class="btn-ghost">See the integrity model</a>
+<section class="cta">
+  <div class="noise grid-noise"></div>
+  <div class="inner">
+    <div class="ey">See it before you need it</div>
+    <h2 class="balance">When the system fails, logs are not enough.<em>DarkMatter is the record that survives it.</em></h2>
+    <p>Commit a record, replay the chain, export a proof bundle — and verify it yourself with zero DarkMatter dependency. Before writing any production code.</p>
+    <div class="actions">
+      <a href="/signup" class="run">Run the demo →</a>
+      <a href="/docs" class="docs">Read the docs</a>
     </div>
   </div>
-</div>
+</section>
 
-<footer class="dm-footer">
-  <a class="dm-footer-brand" href="/">
-    <svg style="width:22px;height:22px;flex-shrink:0;" viewBox="0 0 40 40" fill="none">
-    <defs><linearGradient id="dlg-f" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#7C3AED"/><stop offset="55%" stop-color="#2563EB"/><stop offset="100%" stop-color="#0891b2"/></linearGradient></defs>
-    <circle cx="20" cy="20" r="17" stroke="#e5e7eb" stroke-width="0.8" stroke-dasharray="2 3"/>
-    <circle cx="20" cy="20" r="12" stroke="#d1d5db" stroke-width="0.5" opacity="0.6"/>
-    <circle cx="20" cy="5"  r="3.2" fill="#7C3AED" opacity="0.95"/>
-    <circle cx="33" cy="28" r="2.6" fill="#2563EB" opacity="0.95"/>
-    <circle cx="7"  cy="28" r="2.2" fill="#22D3EE" opacity="0.9"/>
-    <line x1="20" y1="8" x2="31" y2="26" stroke="url(#dlg-f)" stroke-width="0.6" opacity="0.5"/>
-    <line x1="20" y1="8" x2="9"  y2="26" stroke="#7C3AED" stroke-width="0.6" opacity="0.4"/>
-    <line x1="30" y1="27" x2="10" y2="27" stroke="#22D3EE" stroke-width="0.6" opacity="0.4"/>
-    <circle cx="20" cy="20" r="2.5" fill="url(#dlg-f)" opacity="0.6"/>
-  </svg>
-    <span class="dm-footer-name">Dark<span class="dm-nav-grad">Matter</span></span>
-  </a>
-  <div class="dm-footer-links">
-    <a href="/demo">Demo</a>
-    <a href="/docs">Docs</a>
-    <a href="/pricing">Pricing</a>
-    <a href="/why">Why</a>
-    <a href="/integrity">Integrity</a>
-    <a href="/blog">Blog</a>
-    <a href="/enterprise">Enterprise</a>
-    <a href="/security">Security</a>
-    <a href="/compare">Compare</a>
-    <a href="https://contextpassport.com" target="_blank">Context Passport</a>
-    <a href="https://github.com/darkmatter-hub/darkmatter" target="_blank">GitHub</a>
-    <span class="dm-footer-copy">© 2026 DarkMatter</span>
+</main>
+
+<footer>
+  <div class="top">
+    <div class="footer-brand">
+      <div class="wordmark">
+        <span class="sigil" aria-hidden="true">
+          <svg viewBox="0 0 32 32" width="32" height="32" fill="none">
+            <circle cx="16" cy="16" r="10" stroke="hsl(var(--foreground))" stroke-opacity="0.45" stroke-width="0.8"/>
+            <path d="M 16 6 L 24.66 21 L 7.34 21 Z" stroke="hsl(var(--foreground))" stroke-opacity="0.18" stroke-width="0.5" stroke-dasharray="1 1.5"/>
+            <circle cx="16" cy="16" r="0.8" fill="hsl(var(--foreground))" fill-opacity="0.55"/>
+            <circle cx="16" cy="6" r="2.1" fill="hsl(var(--signal))"/>
+            <circle cx="24.66" cy="21" r="1.5" fill="hsl(var(--foreground))"/>
+            <circle cx="7.34" cy="21" r="1.5" fill="hsl(var(--foreground))" fill-opacity="0.85"/>
+          </svg>
+        </span>
+        <span class="name"><span class="d">DARK</span><span class="m">MATTER</span></span>
+      </div>
+      <p>The independent record for AI systems. Sealed at the moment of action. Verifiable by anyone, anywhere.</p>
+    </div>
+    <div class="footer-col">
+      <div class="h">Product</div>
+      <ul><li><a href="/demo">Demo</a></li><li><a href="/docs">Docs</a></li><li><a href="/pricing">Pricing</a></li><li><a href="/compare">Compare</a></li><li><a href="/integrity">Integrity</a></li></ul>
+    </div>
+    <div class="footer-col">
+      <div class="h">SDK</div>
+      <ul><li><a href="/docs#quickstart">Python</a></li><li><a href="/docs">TypeScript</a></li><li><a href="/docs">REST API</a></li><li><a href="#" style="cursor:default;opacity:.5;">LangGraph (soon)</a></li><li><a href="#" style="cursor:default;opacity:.5;">Self-host (soon)</a></li></ul>
+    </div>
+    <div class="footer-col">
+      <div class="h">Company</div>
+      <ul><li><a href="/">About</a></li><li><a href="/integrity">Security</a></li><li><a href="mailto:hello@darkmatterhub.ai?subject=DarkMatter inquiry">Contact</a></li></ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <div class="inner">© 2026 DarkMatter</div>
   </div>
 </footer>
 
