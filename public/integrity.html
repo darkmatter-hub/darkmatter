@@ -1,596 +1,223 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"/>
+<meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Integrity Model — DarkMatter</title>
-<meta name="description" content="How DarkMatter makes AI agent execution records verifiable without trusting DarkMatter. Client-side hashing, envelope signing, Merkle proofs, signed checkpoints, external witnesses."/>
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<title>DarkMatter &#8212; Integrity model</title>
+<meta name="description" content="Verifiable by anyone. Trusted by no one. Our guarantees are mathematical, not contractual."/>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
 <style>
+/* DarkMatter design system — extracted from homepage */
+/* Include after Google Fonts link */
+
 :root{
-  --text:#111827;--text2:#4b5563;--text3:#9ca3af;
-  --border:#e5e7eb;--bg:#fff;--bg2:#f9fafb;--bg3:#f3f4f6;
-  --violet:#7C3AED;--blue:#2563EB;--cyan:#0891b2;--green:#059669;
-  --mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;
+  --void:38 30% 97%; --void-elevated:38 24% 94%; --void-line:38 14% 84%;
+  --paper:38 30% 97%; --ink:220 20% 10%;
+  --trace:220 10% 38%; --trace-dim:220 8% 55%;
+  --signal:152 64% 34%; --signal-dim:152 30% 60%;
+  --background:var(--paper); --foreground:var(--ink);
 }
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:var(--sans);color:var(--text);background:var(--bg);-webkit-font-smoothing:antialiased;}
-a{color:inherit;text-decoration:none;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;border:0 solid hsl(var(--void-line))}
+html,body{background:hsl(var(--background));color:hsl(var(--foreground));font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;font-feature-settings:"ss01","cv11"}
+::selection{background:hsl(var(--signal)/.3);color:hsl(var(--foreground))}
+a{color:inherit;text-decoration:none}
+.mono{font-family:'JetBrains Mono',ui-monospace,monospace;font-feature-settings:"calt" 0}
+.wrap{max-width:80rem;margin:0 auto;padding:0 1.5rem}
+.balance{text-wrap:balance}
+.hairline{height:1px;background:hsl(var(--void-line))}
+.eyebrow{display:flex;align-items:center;gap:.75rem;font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:hsl(var(--trace))}
+.eyebrow .rule{height:1px;width:2rem;background:hsl(var(--trace-dim))}
+.section{border-bottom:1px solid hsl(var(--void-line))}
+.section-pad{padding:6rem 1.5rem}
+.grid-noise{background-image:linear-gradient(hsl(var(--void-line)/.35) 1px,transparent 1px),linear-gradient(90deg,hsl(var(--void-line)/.35) 1px,transparent 1px);background-size:64px 64px;background-position:-1px -1px}
 
-/* NAV */
-.dm-nav{position:sticky;top:0;z-index:300;height:60px;background:#fff;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;padding:0 40px;}
-.dm-nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none;flex-shrink:0;z-index:1;}
-.dm-nav-name{font-family:var(--mono);font-size:17px;font-weight:700;color:#111827;letter-spacing:-0.03em;}
-.dm-nav-links{position:absolute;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:4px;list-style:none;}
-.dm-nav-links a{font-size:13.5px;color:#6b7280;padding:5px 10px;border-radius:6px;transition:color .12s,background .12s;white-space:nowrap;}
-.dm-nav-links a:hover{color:#111827;background:#f3f4f6;}
-.dm-nav-right{margin-left:auto;display:flex;align-items:center;gap:10px;z-index:1;}
-.dm-nav-icon{display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:7px;color:#6b7280;transition:color .12s,background .12s;}
-.dm-nav-icon:hover{color:#111827;background:#f3f4f6;}
-.dm-nav-icon svg{width:18px;height:18px;stroke-width:1.6;}
-.dm-nav-cta{font-family:var(--mono);font-size:12.5px;font-weight:700;background:#111827;color:#fff;padding:8px 18px;border-radius:7px;transition:opacity .15s;}
-.dm-nav-cta:hover{opacity:.85;}
-@media(max-width:768px){.dm-nav{padding:0 16px;}.dm-nav-links{display:none;}}
+/* Nav */
+.nav{position:sticky;top:0;z-index:40;border-bottom:1px solid hsl(var(--void-line));background:hsl(var(--void)/.8);backdrop-filter:blur(8px)}
+.nav-inner{display:flex;height:3.5rem;align-items:center;justify-content:space-between;max-width:80rem;margin:0 auto;padding:0 1.5rem}
+.wordmark{display:flex;align-items:center;gap:.75rem;font-family:'JetBrains Mono',monospace}
+.wordmark .sigil{position:relative;display:inline-flex;height:2rem;width:2rem;align-items:center;justify-content:center}
+.wordmark .name{display:flex;align-items:baseline;gap:1px;line-height:1}
+.wordmark .name .d{font-size:16px;font-weight:600;letter-spacing:.02em;color:hsl(var(--foreground))}
+.wordmark .name .m{font-size:16px;font-weight:300;letter-spacing:.02em;color:hsl(var(--trace))}
+.nav-links{display:none;gap:2rem;align-items:center}
+@media(min-width:768px){.nav-links{display:flex}}
+.nav-links a{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:hsl(var(--trace));transition:color .15s}
+.nav-links a:hover{color:hsl(var(--foreground))}
+.nav-links a.active{color:hsl(var(--foreground))}
+.nav-cta{display:flex;align-items:center;gap:.5rem}
+.nav-cta .signin{display:none;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:hsl(var(--trace));padding:.5rem .75rem}
+@media(min-width:640px){.nav-cta .signin{display:inline-flex}}
+.nav-cta .signin:hover{color:hsl(var(--foreground))}
+.nav-cta .commit{display:inline-flex;align-items:center;gap:.5rem;border:1px solid hsl(var(--signal)/.4);background:hsl(var(--signal)/.1);padding:.5rem .75rem;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:hsl(var(--signal));transition:background .15s}
+.nav-cta .commit:hover{background:hsl(var(--signal)/.2)}
+.dot{display:inline-block;height:.375rem;width:.375rem;border-radius:9999px;background:hsl(var(--signal));animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 
-/* LAYOUT */
-.page{display:grid;grid-template-columns:240px 1fr;min-height:calc(100vh - 60px);max-width:1200px;margin:0 auto;}
-@media(max-width:900px){.page{grid-template-columns:1fr;}}
+/* Buttons */
+.btn-primary{display:inline-flex;align-items:center;gap:.75rem;background:hsl(var(--foreground));color:hsl(var(--background));padding:.875rem 1.25rem;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.2em;text-transform:uppercase;transition:background .15s,color .15s}
+.btn-primary:hover{background:hsl(var(--signal));color:hsl(var(--background))}
+.btn-ghost{display:inline-flex;align-items:center;gap:.75rem;border:1px solid hsl(var(--void-line));padding:.875rem 1.25rem;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:hsl(var(--trace));transition:color .15s,border-color .15s}
+.btn-ghost:hover{color:hsl(var(--foreground));border-color:hsl(var(--trace))}
+.btn-run{display:inline-flex;align-items:center;gap:.75rem;background:hsl(var(--signal));color:hsl(var(--background));padding:.875rem 1.25rem;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.2em;text-transform:uppercase;transition:background .15s}
+.btn-run:hover{background:hsl(var(--signal)/.85)}
 
-/* SIDEBAR */
-.sidebar{position:sticky;top:60px;height:calc(100vh - 60px);overflow-y:auto;padding:32px 24px;border-right:1px solid var(--border);}
-.sb-section{margin-bottom:28px;}
-.sb-label{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--text3);margin-bottom:10px;}
-.sb-link{display:block;font-size:13px;color:var(--text2);padding:4px 8px;border-radius:5px;margin-bottom:2px;transition:color .12s,background .12s;}
-.sb-link:hover{color:var(--text);background:var(--bg3);}
-.sb-link.active{color:var(--violet);background:rgba(124,58,237,.06);}
-@media(max-width:900px){.sidebar{display:none;}}
+/* Tags */
+.tag{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:hsl(var(--signal));border:1px solid hsl(var(--signal)/.4);padding:.25rem .5rem}
 
-/* CONTENT */
-.content{padding:48px 56px 80px;max-width:800px;}
-@media(max-width:900px){.content{padding:32px 20px 60px;}}
+/* Code chips */
+.cmd{background:hsl(var(--foreground)/.06);border:1px solid hsl(var(--void-line));padding:1px 6px;border-radius:2px;color:hsl(var(--foreground));font-family:'JetBrains Mono',monospace}
 
-/* PROSE */
-.content h1{font-size:clamp(26px,3vw,36px);font-weight:700;letter-spacing:-.04em;color:var(--text);line-height:1.1;margin-bottom:16px;}
-.content .lead{font-size:17px;color:var(--text2);line-height:1.75;margin-bottom:40px;padding-bottom:32px;border-bottom:1px solid var(--border);}
-.content h2{font-size:20px;font-weight:700;letter-spacing:-.03em;color:var(--text);margin:3rem 0 1rem;line-height:1.2;}
-.content h3{font-size:15px;font-weight:600;color:var(--text);margin:2rem 0 .75rem;text-transform:uppercase;letter-spacing:.06em;font-family:var(--mono);}
-.content p{font-size:15.5px;line-height:1.8;color:var(--text2);margin-bottom:1.2rem;}
-.content strong{color:var(--text);font-weight:600;}
-.content code{font-family:var(--mono);font-size:.83em;background:var(--bg3);border:1px solid var(--border);padding:.1rem .35rem;border-radius:4px;color:var(--cyan);}
-.content pre{background:#0f1117;border-radius:8px;padding:20px 24px;margin:1.5rem 0;overflow-x:auto;}
-.content pre code{background:none;border:none;padding:0;color:#e2e8f0;font-size:13px;line-height:1.7;}
-.content ul,ol{padding-left:1.5rem;margin-bottom:1.2rem;}
-.content li{font-size:15.5px;line-height:1.8;color:var(--text2);margin-bottom:.4rem;}
-.content a{color:var(--violet);text-decoration:underline;text-decoration-color:rgba(124,58,237,.3);}
-.content hr{border:none;border-top:1px solid var(--border);margin:3rem 0;}
+/* Terminal block */
+.term{
+  --void:220 18% 6%; --void-elevated:220 16% 9%; --void-line:220 12% 18%;
+  --ink:38 20% 96%; --trace:220 10% 68%; --trace-dim:220 8% 48%;
+  --signal:152 70% 56%;
+  background:hsl(var(--void));color:hsl(var(--ink));border:1px solid hsl(var(--void-line));
+}
+.term .titlebar{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid hsl(var(--void-line));padding:.625rem 1rem;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:hsl(var(--trace-dim))}
+.term .titlebar .dots{display:flex;align-items:center;gap:.5rem}
+.term .titlebar .d1{height:8px;width:8px;border-radius:9999px;background:hsl(12 72% 46%/.6)}
+.term .titlebar .d2{height:8px;width:8px;border-radius:9999px;background:hsl(var(--trace-dim)/.6)}
+.term .titlebar .d3{height:8px;width:8px;border-radius:9999px;background:hsl(var(--signal)/.6)}
+.term pre{overflow-x:auto;padding:1.25rem;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.6;color:hsl(var(--ink)/.9);white-space:pre}
 
-/* PHASE BADGES */
-.phase-header{display:flex;align-items:center;gap:12px;margin:3rem 0 1rem;}
-.phase-badge{font-family:var(--mono);font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;white-space:nowrap;}
-.badge-complete{background:rgba(5,150,105,.1);color:#059669;border:1px solid rgba(5,150,105,.2);}
-.badge-live{background:rgba(37,99,235,.1);color:var(--blue);border:1px solid rgba(37,99,235,.2);}
+/* Props grid */
+.props-grid{display:grid;grid-template-columns:1fr;gap:1px;background:hsl(var(--void-line));border:1px solid hsl(var(--void-line))}
+@media(min-width:768px){.props-grid{grid-template-columns:repeat(3,1fr)}}
+.prop{background:hsl(var(--void));padding:2rem;transition:background .15s}
+.prop:hover{background:hsl(var(--void-elevated))}
+.prop .top{display:flex;align-items:center;justify-content:space-between;margin-bottom:2.5rem}
+.prop .idx{font-family:'JetBrains Mono',monospace;font-size:10px;color:hsl(var(--trace-dim))}
+.prop h3{font-size:1.5rem;letter-spacing:-.01em;margin-bottom:1rem;font-weight:500}
+.prop p{font-size:14px;line-height:1.6;color:hsl(var(--trace))}
 
-/* CALLOUTS */
-.callout{border-radius:8px;padding:16px 20px;margin:1.5rem 0;font-size:14.5px;line-height:1.7;}
-.callout-title{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px;}
-.callout.info{background:rgba(37,99,235,.05);border:1px solid rgba(37,99,235,.15);}
-.callout.info .callout-title{color:var(--blue);}
-.callout.warn{background:#fefce8;border:1px solid #fde68a;}
-.callout.warn .callout-title{color:#92400e;}
-.callout.green{background:rgba(5,150,105,.05);border:1px solid rgba(5,150,105,.15);}
-.callout.green .callout-title{color:#059669;}
+/* Levels table */
+.levels-table{margin-top:3.5rem;border-top:1px solid hsl(var(--void-line))}
+.level-row{display:grid;grid-template-columns:1fr;gap:1.5rem;border-bottom:1px solid hsl(var(--void-line));padding:2rem .5rem;transition:background .15s}
+@media(min-width:768px){.level-row{grid-template-columns:repeat(12,1fr)}}
+.level-row:hover{background:hsl(var(--void-elevated)/.4)}
+.level-c-tag{display:flex;align-items:flex-start;gap:.75rem}
+.level-num{font-family:'JetBrains Mono',monospace;font-size:10px;color:hsl(var(--trace-dim));margin-top:.5rem}
+.level-name{font-size:18px;letter-spacing:-.01em}
+.level-means{font-size:13px;line-height:1.6;color:hsl(var(--trace))}
+.level-how{font-size:13px;line-height:1.6;color:hsl(var(--foreground)/.8);font-family:'JetBrains Mono',monospace}
+@media(min-width:768px){.level-c-tag{grid-column:span 2}.level-c-name{grid-column:span 3}.level-c-means{grid-column:span 4}.level-c-how{grid-column:span 3}}
 
-/* GUARANTEE TIERS */
-.tier-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin:1.5rem 0 2.5rem;}
-.tier-card{background:var(--bg);padding:1.5rem 1.25rem;}
-.tier-card.tier-live{background:#fff;}
-.tier-level{font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--text3);margin-bottom:.5rem;}
-.tier-name{font-size:15px;font-weight:700;color:var(--text);margin-bottom:.4rem;letter-spacing:-.02em;}
-.tier-claim{font-family:var(--mono);font-size:11px;color:var(--green);margin-bottom:1rem;line-height:1.55;}
-.tier-items{list-style:none;padding:0;display:flex;flex-direction:column;gap:.35rem;margin-bottom:1rem;}
-.tier-items li{font-size:13px;color:var(--text2);line-height:1.5;display:flex;gap:8px;}
-.tier-items li::before{content:'·';color:var(--text3);flex-shrink:0;}
-.tier-closes{font-family:var(--mono);font-size:10px;color:var(--text3);padding-top:.75rem;border-top:1px solid var(--border);line-height:1.5;}
-@media(max-width:700px){.tier-grid{grid-template-columns:1fr;}}
+/* Footer */
+footer{background:hsl(var(--void))}
+footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;grid-template-columns:1fr;gap:2.5rem}
+@media(min-width:768px){footer .top{grid-template-columns:repeat(12,1fr)}}
+.footer-brand{grid-column:span 5}
+.footer-brand p{margin-top:1.25rem;max-width:24rem;font-size:13px;color:hsl(var(--trace));line-height:1.6}
+.footer-col{grid-column:span 2}
+.footer-col .h{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:hsl(var(--trace-dim));margin-bottom:1rem}
+.footer-col ul{list-style:none;display:flex;flex-direction:column;gap:.625rem}
+.footer-col a{font-size:13px;color:hsl(var(--trace))}
+.footer-col a:hover{color:hsl(var(--foreground))}
+.footer-bottom{border-top:1px solid hsl(var(--void-line))}
+.footer-bottom .inner{max-width:80rem;margin:0 auto;padding:1.25rem 1.5rem;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:hsl(var(--trace-dim))}
 
-/* CLAIM BOXES */
-.claim-box{background:var(--bg2);border:1px solid var(--border);border-left:3px solid var(--violet);border-radius:0 8px 8px 0;padding:16px 20px;margin:1.5rem 0;font-size:14.5px;color:var(--text2);font-style:italic;line-height:1.7;}
-.claim-box strong{color:var(--text);font-style:normal;}
-
-/* VERIFICATION TABLE */
-.vtable{width:100%;border-collapse:collapse;margin:1.5rem 0;font-size:14px;}
-.vtable th{text-align:left;font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);padding:8px 12px;border-bottom:2px solid var(--border);}
-.vtable td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:top;color:var(--text2);}
-.vtable td:first-child{font-weight:500;color:var(--text);white-space:nowrap;}
-.vtable .yes{color:var(--green);font-family:var(--mono);font-size:12px;font-weight:600;}
-.vtable .no{color:var(--text3);font-family:var(--mono);font-size:12px;}
-
-/* FOOTER */
-.dm-footer{border-top:1px solid #e5e7eb;padding:28px 40px;display:flex;align-items:center;flex-wrap:wrap;gap:16px;}
-.dm-footer-brand{display:flex;align-items:center;gap:8px;text-decoration:none;flex-shrink:0;}
-.dm-footer-name{font-family:var(--mono);font-size:14px;font-weight:700;color:#111827;letter-spacing:-.02em;}
-.dm-footer-links{display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin-left:auto;}
-.dm-footer-links a{font-size:12.5px;color:#9ca3af;padding:3px 8px;transition:color .12s;}
-.dm-footer-links a:hover{color:#374151;}
-.dm-footer-copy{font-size:12px;color:#d1d5db;padding:3px 8px;}
-
-  /* ── Footer ────────────────────────────────── */
-  .dm-footer{border-top:1px solid #e5e7eb;padding:40px;display:grid;grid-template-columns:auto 1fr;gap:48px;align-items:start;}
-  .dm-footer-brand{display:flex;align-items:center;gap:8px;text-decoration:none;}
-  .dm-footer-name{font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:700;color:#111827;letter-spacing:-.02em;}
-  .dm-footer-groups{display:flex;gap:48px;flex-wrap:wrap;}
-  .dm-footer-group{display:flex;flex-direction:column;gap:8px;min-width:100px;}
-  .dm-footer-group-label{font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#9ca3af;margin-bottom:4px;}
-  .dm-footer-group a{font-size:13px;color:#6b7280;text-decoration:none;transition:color .12s;}
-  .dm-footer-group a:hover{color:#111827;}
-  .dm-footer-bottom{grid-column:1/-1;display:flex;align-items:center;gap:12px;padding-top:20px;border-top:1px solid #f3f4f6;font-size:12px;color:#9ca3af;}
-  .dm-footer-bottom a{color:#9ca3af;text-decoration:none;}
-  .dm-footer-bottom a:hover{color:#374151;}
-  @media(max-width:768px){.dm-footer{grid-template-columns:1fr;gap:32px;}.dm-footer-groups{gap:32px;}}
+.int-grid{display:grid;grid-template-columns:1fr;gap:1px;background:hsl(var(--void-line));border:1px solid hsl(var(--void-line))}
+@media(min-width:768px){.int-grid{grid-template-columns:repeat(2,1fr)}}
+.int-cell{background:hsl(var(--void));padding:2.5rem 2rem}
+.int-cell:hover{background:hsl(var(--void-elevated))}
+.int-cell .label{font-family:"JetBrains Mono",monospace;font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:hsl(var(--signal));margin-bottom:1rem}
+.int-cell h3{font-size:20px;font-weight:500;letter-spacing:-.01em;margin-bottom:.75rem}
+.int-cell p{font-size:14px;line-height:1.6;color:hsl(var(--trace))}
+.spec-row{display:grid;grid-template-columns:1fr;gap:1.5rem;border-bottom:1px solid hsl(var(--void-line));padding:2rem .5rem;transition:background .15s}
+@media(min-width:768px){.spec-row{grid-template-columns:repeat(12,1fr)}}
+.spec-row:hover{background:hsl(var(--void-elevated)/.4)}
+.spec-row:first-child{border-top:1px solid hsl(var(--void-line))}
+.spec-lbl{font-family:"JetBrains Mono",monospace;font-size:11px;color:hsl(var(--trace))}
+.spec-val{font-family:"JetBrains Mono",monospace;font-size:11px;color:hsl(var(--foreground)/.8)}
 </style>
 </head>
 <body>
-<nav class="dm-nav">
-  <a class="dm-nav-logo" href="/">
-    <svg style="width:28px;height:28px;flex-shrink:0;" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <defs><linearGradient id="dlg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#7C3AED"/><stop offset="55%" stop-color="#2563EB"/><stop offset="100%" stop-color="#0891b2"/></linearGradient></defs>
-      <circle cx="20" cy="20" r="17" stroke="#e5e7eb" stroke-width="0.8" stroke-dasharray="2 3"/>
-      <circle cx="20" cy="20" r="12" stroke="#d1d5db" stroke-width="0.5" opacity="0.6"/>
-      <circle cx="20" cy="5"  r="3.2" fill="#7C3AED" opacity="0.95"/>
-      <circle cx="33" cy="28" r="2.6" fill="#2563EB" opacity="0.95"/>
-      <circle cx="7"  cy="28" r="2.2" fill="#22D3EE" opacity="0.9"/>
-      <line x1="20" y1="8"  x2="31" y2="26" stroke="url(#dlg)" stroke-width="0.6" opacity="0.5"/>
-      <line x1="20" y1="8"  x2="9"  y2="26" stroke="#7C3AED" stroke-width="0.6" opacity="0.4"/>
-      <line x1="30" y1="27" x2="10" y2="27" stroke="#22D3EE" stroke-width="0.6" opacity="0.4"/>
-      <circle cx="20" cy="20" r="2.5" fill="url(#dlg)" opacity="0.6"/>
-    </svg>
-    <span class="dm-nav-name">Dark<span style="background:linear-gradient(90deg,#7C3AED,#2563EB,#0891b2);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Matter</span></span>
-  </a>
-  <ul class="dm-nav-links">
-    <li><a href="/demo">Demo</a></li>
-    <li><a href="/docs">Docs</a></li>
-    <li><a href="/pricing">Pricing</a></li>
-    <li><a href="/compare">Compare</a></li>
-    <li><a href="/integrity">Integrity</a></li>
-  </ul>
-  <div class="dm-nav-right">
-    <a href="/login" class="dm-nav-icon" title="Sign in"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:18px;height:18px;stroke-width:1.6;"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/></svg></a>
-    <a href="/signup" class="dm-nav-cta">Start free</a>
+<header class="nav"><div class="nav-inner"><a href="/" class="wordmark" aria-label="DarkMatter"><span class="sigil" aria-hidden="true"><svg viewBox="0 0 32 32" width="32" height="32" fill="none"><circle cx="16" cy="16" r="10" stroke="hsl(var(--foreground))" stroke-opacity="0.45" stroke-width="0.8"/><path d="M 16 6 L 24.66 21 L 7.34 21 Z" stroke="hsl(var(--foreground))" stroke-opacity="0.18" stroke-width="0.5" stroke-dasharray="1 1.5"/><circle cx="16" cy="16" r="0.8" fill="hsl(var(--foreground))" fill-opacity="0.55"/><circle cx="16" cy="6" r="2.1" fill="hsl(var(--signal))"/><circle cx="16" cy="6" r="3.4" stroke="hsl(var(--signal))" stroke-opacity="0.3" stroke-width="0.45"/><circle cx="24.66" cy="21" r="1.5" fill="hsl(var(--foreground))"/><circle cx="7.34" cy="21" r="1.5" fill="hsl(var(--foreground))" fill-opacity="0.85"/></svg></span><span class="name"><span class="d">DARK</span><span class="m">MATTER</span></span></a><nav class="nav-links"><a href="/demo">Demo</a><a href="/docs">Docs</a><a href="/pricing">Pricing</a><a href="/compare">Compare</a><a href="/integrity" class="active">Integrity</a></nav><div class="nav-cta"><a href="/login" class="signin">Sign in</a><a href="/signup" class="commit"><span class="dot"></span>Commit a record</a></div></div></header>
+<main>
+<section class="section" style="position:relative;overflow:hidden"><div class="noise grid-noise" style="position:absolute;inset:0;opacity:.35"></div><div class="wrap section-pad" style="position:relative"><div class="eyebrow" style="margin-bottom:1.5rem"><span class="rule"></span><span>Integrity model</span></div><h1 class="balance" style="font-size:34px;line-height:1.05;letter-spacing:-.022em;font-weight:500;max-width:42rem">Verifiable by anyone. Trusted by no one.</h1><p style="margin-top:1.5rem;max-width:34rem;font-size:15px;line-height:1.6;color:hsl(var(--trace))">DarkMatter&#8217;s guarantees are mathematical, not contractual. Here is exactly what we claim &#8212; and how to verify it yourself.</p><div style="margin-top:2rem;display:flex;flex-wrap:wrap;gap:.75rem"><a href="https://github.com/darkmatter-hub/darkmatter-l3-example" target="_blank" rel="noopener" class="btn-primary">Run the verifier &#8594;</a><a href="/docs" class="btn-ghost">Read ENVELOPE_SPEC_V1</a></div></div></section>
+<section class="section">
+  <div class="wrap section-pad">
+    <div class="eyebrow" style="margin-bottom:3rem"><span class="rule"></span><span>Three properties &#183; non-negotiable</span></div>
+    <div class="props-grid">
+      <div class="prop"><div class="top"><span class="tag">L1</span><span class="idx">01 / 03</span></div><h3>Recorded outside the system</h3><p>The record does not live inside your agent runtime, or inside the model provider. It lives in an independent layer neither party controls.</p></div>
+      <div class="prop"><div class="top"><span class="tag">L2</span><span class="idx">02 / 03</span></div><h3>Sealed at the moment it happens</h3><p>Each event is cryptographically chained and signed client-side before transmission. Modification after the fact is mathematically detectable by anyone.</p></div>
+      <div class="prop"><div class="top"><span class="tag">L3</span><span class="idx">03 / 03</span></div><h3>Non-repudiation</h3><p>Signed with keys only you hold. DarkMatter cannot forge a record on your behalf &#8212; non-repudiation by construction, not by policy.</p></div>
+    </div>
   </div>
-</nav>
+</section>
 
-
-
-<div class="page">
-  <!-- Sidebar -->
-  <nav class="sidebar">
-    <div class="sb-section">
-      <div class="sb-label">Overview</div>
-      <a class="sb-link" href="#principle">Core principle</a>
-      <a class="sb-link" href="#what-is-signed">What is signed</a>
-      <a class="sb-link" href="#what-is-hashed">What is hashed</a>
-      <a class="sb-link" href="#what-is-logged">What is logged</a>
-      <a class="sb-link" href="#what-is-checkpointed">What is checkpointed</a>
-    </div>
-    <div class="sb-section">
-      <div class="sb-label">Trust architecture</div>
-      <a class="sb-link" href="#guarantee-tiers">Three levels of guarantee</a>
-    </div>
-    <div class="sb-section">
-      <div class="sb-label">Phases</div>
-      <a class="sb-link" href="#phase1">Phase 1 — Client signing</a>
-      <a class="sb-link" href="#phase2">Phase 2 — Append-only log</a>
-      <a class="sb-link" href="#phase3">Phase 3 — Merkle proofs</a>
-      <a class="sb-link" href="#phase4a">Phase 4A — Witnesses</a>
-    </div>
-    <div class="sb-section">
-      <div class="sb-label">Verification</div>
-      <a class="sb-link" href="#proof-receipt">Proof receipt</a>
-      <a class="sb-link" href="#offline-verification">Offline verification</a>
-      <a class="sb-link" href="#claims">What we claim</a>
-      <a class="sb-link" href="#timestamps">Timestamps</a>
-      <a class="sb-link" href="#key-lifecycle">Key lifecycle</a>
-    </div>
-    <div class="sb-section">
-      <div class="sb-label">Reference</div>
-      <a class="sb-link" href="#spec">Spec v1.0</a>
-      <a class="sb-link" href="#public-endpoints">Public endpoints</a>
-      <a class="sb-link" href="#test-vectors">Test vectors</a>
-    </div>
-  </nav>
-
-  <!-- Content -->
-  <div class="content">
-
-    <div style="font-family:var(--mono);font-size:11px;color:var(--text3);letter-spacing:.12em;text-transform:uppercase;margin-bottom:16px;">Integrity model</div>
-    <h1>Verification without trust</h1>
-    <p class="lead">DarkMatter is an execution record you can verify without trusting DarkMatter. Your agent hashes each step client-side, signs the commit envelope with its own Ed25519 key, and submits it to an append-only log with Merkle inclusion proofs and signed checkpoints. Verification works offline — use the provided verifier or build your own from the published spec.</p>
-
-    <!-- CORE PRINCIPLE -->
-    <h2 id="principle">Core principle</h2>
-    <p>The fundamental question DarkMatter answers is: <strong>when something goes wrong with an AI agent, can you prove what it actually did?</strong> Not what the logs say. Not what the operator claims. Prove it — cryptographically, to anyone, offline, without depending on DarkMatter to be honest.</p>
-
-    <div class="callout green">
-      <div class="callout-title">Design target</div>
-      Even if DarkMatter wanted to alter a record, any modification would be mathematically detectable by anyone holding a commit receipt or a signed checkpoint.
-    </div>
-
-    <p>This is achieved by moving the trust burden from institutional promises to cryptographic proof. The system is designed so that DarkMatter's servers are a convenience, not a requirement for verification.</p>
-
-    <!-- WHAT IS SIGNED -->
-    <h2 id="what-is-signed">What is signed</h2>
-    <p>Agents sign a <strong>commit envelope</strong> with their own Ed25519 private key before sending anything to DarkMatter. The private key never leaves the agent's machine.</p>
-
-    <p>The envelope contains:</p>
-    <pre><code>{
-  "schema_version":        "2",
-  "agent_id":              "dm_abc123",
-  "key_id":                "default",
-  "timestamp":             "2026-04-09T12:00:00Z",   // client-asserted time
-  "payload_hash":          "sha256 of canonical(payload)",
-  "parent_integrity_hash": "sha256 of parent envelope | \"root\""
-}</code></pre>
-
-    <p>The agent signs <code>canonical(envelope)</code> — the canonical JSON serialization of this object. Signing the full envelope (not just the payload) means the agent authenticates: what was submitted, where in the chain it links, who submitted it, under which key, and at what time.</p>
-
-    <div class="callout info">
-      <div class="callout-title">What this prevents</div>
-      The operator cannot alter commit metadata (timestamp, chain position, agent identity) while keeping a valid agent signature. Any such alteration breaks the signature and is immediately detectable.
-    </div>
-
-    <!-- WHAT IS HASHED -->
-    <h2 id="what-is-hashed">What is hashed</h2>
-
-    <h3>Payload hash</h3>
-    <pre><code>payload_hash = SHA-256( canonical(payload) )</code></pre>
-    <p>Computed by the SDK <strong>before transmission</strong>. The server recomputes and flags any mismatch. DarkMatter cannot silently alter a payload without the client detecting it on the next read.</p>
-
-    <h3>Integrity hash</h3>
-    <pre><code>integrity_hash = SHA-256( canonical(envelope) )</code></pre>
-    <p>The integrity hash uniquely identifies a commit. Two commits with identical payloads and parents but different agents, keys, or timestamps produce different integrity hashes. This is what makes each commit cryptographically unique.</p>
-
-    <h3>Canonical serialization</h3>
-    <p>All hashing goes through canonical serialization first — a deterministic JSON encoding where object keys are sorted lexicographically, <code>null</code> values are kept, and floats follow a precisely specified rule. This ensures Python, TypeScript, and any future SDK produce identical byte sequences for the same data.</p>
-
-    <p>The canonical serialization spec is published in <a href="https://github.com/darkmatter-hub/darkmatter/blob/main/INTEGRITY_SPEC_V1.md" target="_blank">INTEGRITY_SPEC_V1.md</a> and validated by 18 cross-language test vectors.</p>
-
-    <!-- WHAT IS LOGGED -->
-    <h2 id="what-is-logged">What is logged</h2>
-    <p>Every accepted commit is appended to an append-only log table in Supabase. The table has no UPDATE or DELETE row-level security policies — inserts only. Each log entry records:</p>
-    <ul>
-      <li><code>log_position</code> — sequential integer, immutable once assigned</li>
-      <li><code>integrity_hash</code> — the commit's integrity hash</li>
-      <li><code>leaf_hash</code> — RFC 6962 Merkle leaf hash binding commit to its position</li>
-      <li><code>tree_root</code> — Merkle root of all leaves 0..position at time of append</li>
-      <li><code>accepted_at</code> — server ledger timestamp (distinct from client_timestamp)</li>
-    </ul>
-
-    <h3>Dual timestamps</h3>
-    <p>Every commit carries two separate timestamps that are never conflated:</p>
-    <table class="vtable">
-      <thead><tr><th>Field</th><th>Set by</th><th>Meaning</th><th>In signed envelope</th></tr></thead>
-      <tbody>
-        <tr><td><code>client_timestamp</code></td><td>Agent</td><td>What the agent asserted</td><td class="yes">YES</td></tr>
-        <tr><td><code>accepted_at</code></td><td>Server ledger</td><td>When DarkMatter accepted the commit</td><td class="no">NO</td></tr>
-      </tbody>
-    </table>
-
-    <p>The <code>accepted_at</code> timestamp is used in the Merkle leaf envelope, binding each commit to its position in server time. The <code>client_timestamp</code> is part of the signed surface — the agent authenticates what time they claimed when they submitted.</p>
-
-    <!-- WHAT IS CHECKPOINTED -->
-    <h2 id="what-is-checkpointed">What is checkpointed</h2>
-    <p>Every 10 minutes, DarkMatter signs the current Merkle tree root and publishes it to. This is a surface DarkMatter cannot unilaterally modify — GitHub's commit history makes past checkpoints tamper-evident.</p>
-
-    <p>A checkpoint contains:</p>
-    <pre><code>{
-  "schema_version":     "3",
-  "checkpoint_id":      "cp_1775746920457_ce1b057f",
-  "tree_root":          "c26618dd...",  // Merkle root of entire log
-  "tree_size":          318,            // number of commits in tree
-  "log_root":           "0bfa92fa...",  // running hash of all entries
-  "log_position":       317,
-  "timestamp":          "2026-04-09T15:20:54Z",
-  "previous_cp_id":     "cp_...",       // chain linkage
-  "previous_tree_root": "...",
-  "server_sig":         "..."           // Ed25519 over canonical(above)
-}</code></pre>
-
-    <p>The checkpoint is signed over its canonical form — the same signing rules as commits. Anyone can verify the checkpoint signature using DarkMatter's public key at <a href="/api/log/pubkey"><code>GET /api/log/pubkey</code></a>.</p>
-
-    <hr/>
-
-    <!-- GUARANTEE TIERS -->
-    <h2 id="guarantee-tiers">Three levels of guarantee</h2>
-    <p>Each level answers a different question a skeptic can ask. All three levels are live. L3 requires one-time client-side key setup — see the <a href="/docs#l3">L3 setup guide</a>.</p>
-
-    <div class="tier-grid">
-      <div class="tier-card tier-live">
-        <p class="tier-level">Level 1 &mdash; Live</p>
-        <p class="tier-name">Verifiable record</p>
-        <p class="tier-claim">"You don't have to trust us<br>to verify it."</p>
-        <ul class="tier-items">
-          <li>Hash chain — any alteration breaks the chain</li>
-          <li>Full replay — decision chain reconstructable root to tip</li>
-          <li>Offline verification — no network, no DarkMatter</li>
-          <li>Signed checkpoints published to GitHub every 10 minutes</li>
-        </ul>
-        <p class="tier-closes">Closes: "Did DarkMatter alter the record after the fact?"</p>
+<section class="section">
+  <div class="wrap section-pad">
+    <div class="eyebrow" style="margin-bottom:3rem"><span class="rule"></span><span>Verification levels</span></div>
+    <div class="levels-table">
+      <div class="level-row">
+        <div class="level-c-tag"><span class="tag">L1</span><span class="level-num">01</span></div>
+        <div class="level-c-name"><div class="level-name">Verifiable record</div></div>
+        <div class="level-c-means level-means">SHA-256 payload hash &#43; parent chain linkage. Tampering at any node breaks every downstream hash. Independent offline verifier included.</div>
+        <div class="level-c-how level-how">Default with every <code class="cmd">dm.commit()</code> call. No extra steps.</div>
       </div>
-      <div class="tier-card tier-live">
-        <p class="tier-level">Level 2 &mdash; Live</p>
-        <p class="tier-name">Independent verification</p>
-        <p class="tier-claim">"Verification does not<br>depend on DarkMatter."</p>
-        <ul class="tier-items">
-          <li>Self-contained proof bundle — complete without any external call</li>
-          <li>Embedded verifier script — no SDK, no account required</li>
-          <li>External timestamp anchoring — record cannot be backdated</li>
-          <li>Bundle survives DarkMatter going offline or being compromised</li>
-        </ul>
-        <p class="tier-closes">Closes: "What if DarkMatter disappears or can't be trusted?"</p>
+      <div class="level-row">
+        <div class="level-c-tag"><span class="tag">L2</span><span class="level-num">02</span></div>
+        <div class="level-c-name"><div class="level-name">Independent verification</div></div>
+        <div class="level-c-means level-means">Signed checkpoint bundles anchored via OpenTimestamps. Timestamp proof lives outside DarkMatter&#8217;s infrastructure entirely.</div>
+        <div class="level-c-how level-how">Automatic. Every checkpoint batch is anchored and signed.</div>
       </div>
-      <div class="tier-card tier-live">
-        <p class="tier-level">Level 3 &mdash; Live</p>
-        <p class="tier-name">Non-repudiation</p>
-        <p class="tier-claim">"We couldn't forge it<br>even if we wanted to."</p>
-        <ul class="tier-items">
-          <li>Customer-held Ed25519 signing keys — DarkMatter never sees your private key</li>
-          <li>Signatures cryptographically impossible for DarkMatter to forge</li>
-          <li><code>dm.commit()</code> unchanged — signing is one-time config via <code>SigningConfig</code></li>
-          <li>L3 badge shown on <code>/r/:traceId</code> verify page with key ID</li>
-        </ul>
-        <p class="tier-closes">Closes: "Could DarkMatter have fabricated this record entirely?"</p>
-        <p style="margin-top:1rem;"><a href="https://github.com/darkmatter-hub/darkmatter-l3-example" style="font-size:0.85rem;color:var(--accent);">See a reproducible L3 verification example →</a></p>
+      <div class="level-row">
+        <div class="level-c-tag"><span class="tag">L3</span><span class="level-num">03</span></div>
+        <div class="level-c-name"><div class="level-name">Non-repudiation</div></div>
+        <div class="level-c-means level-means">Customer-held signing keys. Even DarkMatter cannot forge a record &#8212; only your key can sign a valid commit.</div>
+        <div class="level-c-how level-how">Available now. Generate a key with <code class="cmd">darkmatter keys generate</code>.</div>
       </div>
     </div>
-
-    <hr/>
-
-    <!-- PHASE 1 -->
-    <div class="phase-header">
-      <h2 id="phase1" style="margin:0;">Phase 1 — Client-side hashing + envelope signing</h2>
-      <span class="phase-badge badge-complete">Complete</span>
-    </div>
-
-    <p>The SDK computes <code>payload_hash</code> and <code>integrity_hash</code> locally before transmission. The agent signs the commit envelope with its Ed25519 private key. The server validates all hashes and signatures — mismatches are flagged in the commit receipt.</p>
-
-    <div class="claim-box">
-      <strong>What you can claim:</strong> "Commits are hashed and signed client-side. Any alteration to a payload or envelope is detectable offline, without contacting DarkMatter."
-    </div>
-
-    <!-- PHASE 2 -->
-    <div class="phase-header">
-      <h2 id="phase2" style="margin:0;">Phase 2 — Append-only log + signed checkpoints</h2>
-      <span class="phase-badge badge-complete">Complete</span>
-    </div>
-
-    <p>Every commit is appended to the log. Every 10 minutes, DarkMatter signs the log root and publishes it to GitHub. The append-only log means DarkMatter cannot silently delete a commit — deletion changes the log root, making it detectable by anyone holding the previous checkpoint.</p>
-
-    <div class="claim-box">
-      <strong>What you can claim:</strong> "DarkMatter cannot silently rewrite history. Any deletion or modification of a past commit changes the Merkle tree root, which would be inconsistent with the signed and published checkpoint."
-    </div>
-
-    <!-- PHASE 3 -->
-    <div class="phase-header">
-      <h2 id="phase3" style="margin:0;">Phase 3 — Merkle inclusion proofs</h2>
-      <span class="phase-badge badge-complete">Complete</span>
-    </div>
-
-    <p>Every commit gets a Merkle inclusion proof at commit time, returned in the commit receipt. The proof is a set of sibling hashes (O(log n) in size) that lets anyone verify a specific commit is included in a signed tree root — without downloading the entire log.</p>
-
-    <h3>Merkle leaf format</h3>
-    <pre><code>leaf_hash = SHA-256( 0x00 || UTF-8( canonical({
-  "accepted_at":    "2026-04-09T15:00:00Z",
-  "commit_id":      "ctx_...",
-  "integrity_hash": "hex...",
-  "log_position":   317
-}) ) )</code></pre>
-
-    <p>The <code>0x00</code> domain separation prefix (RFC 6962) prevents second-preimage attacks. Each leaf binds the commit to its exact position in the log — position forgery is detectable.</p>
-
-    <div class="claim-box">
-      <strong>What you can claim:</strong> "You don't need to trust DarkMatter at all. Given any commit receipt and any published checkpoint, you can verify offline that the commit is included in the signed Merkle tree root — with no network calls."
-    </div>
-
-    <!-- PHASE 4A -->
-    <div class="phase-header">
-      <h2 id="phase4a" style="margin:0;">Phase 4A — External witnesses</h2>
-      <span class="phase-badge badge-live">Live</span>
-    </div>
-
-    <p>Independent witnesses co-sign each checkpoint with their own Ed25519 keys. A witness verifies DarkMatter's server signature before co-signing — refusing to sign any checkpoint where DarkMatter's signature is invalid.</p>
-
-    <p>What a witness signature proves: <em>"At timestamp T, [witness] independently confirmed that the DarkMatter log had Merkle tree root R at tree size N, and that DarkMatter's server signature on this checkpoint is cryptographically valid."</em></p>
-
-    <p>Witness signatures are included in export bundles and verifiable offline using only the witness public key — no DarkMatter servers required.</p>
-
-    <div class="callout warn">
-      <div class="callout-title">Current state</div>
-      Phase 4A has one active witness node operated by the DarkMatter team on separate infrastructure. We are actively seeking independent organisations to operate witness nodes. <a href="/cdn-cgi/l/email-protection#563e333a3a39163237243d3b37222233243e233478373f">Contact us</a> to run a witness node.
-    </div>
-
-    <div class="claim-box">
-      <strong>What you can claim:</strong> "Each checkpoint is co-signed by an independently operated witness. Tampering with history requires compromising both DarkMatter's infrastructure and the witness infrastructure simultaneously."
-    </div>
-
-    <div class="callout info">
-      <div class="callout-title">What Phase 4A does NOT yet claim</div>
-      Independent log reconstruction by witnesses. Multi-party consensus (2-of-3 quorum). Censorship resistance. Those are Phase 4B.
-    </div>
-
-    <hr/>
-
-    <!-- PROOF RECEIPT -->
-    <h2 id="proof-receipt">What a proof receipt contains</h2>
-    <p>Every commit returns a <code>_proof</code> receipt containing everything needed to verify inclusion offline:</p>
-    <pre><code>{
-  "_proof": {
-    "log_position":    317,
-    "leaf_hash":       "hex...",
-    "tree_root":       "hex...",
-    "tree_size":       318,
-    "accepted_at":     "2026-04-09T15:00:00Z",
-    "client_timestamp": "2026-04-09T14:59:59Z",
-    "inclusion_proof": {
-      "leaf_index": 317,
-      "tree_size":  318,
-      "proof": [
-        { "hash": "hex...", "direction": "left" },
-        { "hash": "hex...", "direction": "right" }
-      ]
-    },
-    "proof_status":    "checkpointed_witnessed",
-    "verify_url":      "https://darkmatterhub.ai/api/log/proof/ctx_..."
-  }
-}</code></pre>
-
-    <!-- OFFLINE VERIFICATION -->
-    <h2 id="offline-verification">Offline verification</h2>
-    <p>The standalone verifier works with zero DarkMatter dependencies. It is included in every export bundle.</p>
-
-    <pre><code># Verify chain structure only (Phase 1)
-python verify_darkmatter_chain.py bundle.json
-
-# Full verification — structure + checkpoint sig + Merkle proofs + witnesses
-python verify_darkmatter_chain.py bundle.json \
-  --checkpoint checkpoint.json \
-  --pubkey server_pubkey.pem
-
-# Check checkpoint consistency between two snapshots (Phase 3.5)
-python verify_darkmatter_chain.py bundle.json \
-  --checkpoint old_checkpoint.json \
-  --checkpoint-b new_checkpoint.json \
-  --pubkey server_pubkey.pem
-
-# Run the full phase validation suite against a live system
-python validate_phases.py \
-  --api-key dm_sk_... \
-  --base-url https://darkmatterhub.ai</code></pre>
-
-    <p>Exit codes: <code>0</code> = verified, <code>1</code> = failed, <code>2</code> = malformed input.</p>
-
-    <h3>What the verifier checks</h3>
-    <table class="vtable">
-      <thead><tr><th>Check</th><th>What it proves</th><th>Requires DarkMatter</th></tr></thead>
-      <tbody>
-        <tr><td>Phase 1 — Chain structure</td><td>Payload hashes and integrity chain are intact</td><td class="no">No — offline</td></tr>
-        <tr><td>Phase 1 — Agent signatures</td><td>Commits signed by claiming agent</td><td class="no">No — offline</td></tr>
-        <tr><td>Phase 2 — Checkpoint sig</td><td>DarkMatter attested to this Merkle root</td><td class="no">No — offline with pubkey</td></tr>
-        <tr><td>Phase 3 — Merkle inclusion</td><td>Specific commit is in the signed tree</td><td class="no">No — offline</td></tr>
-        <tr><td>Phase 3.5 — Consistency</td><td>No entries deleted between snapshots</td><td class="no">No — offline</td></tr>
-        <tr><td>Phase 4A — Witness sigs</td><td>Independent party attested to the checkpoint</td><td class="no">No — offline</td></tr>
-      </tbody>
-    </table>
-
-    <!-- WHAT WE CLAIM -->
-    <h2 id="claims">Precise claims</h2>
-    <p>We are deliberate about what we claim and what we don't. The following statements are accurate given the current implementation.</p>
-
-    <p><strong>We do claim:</strong></p>
-    <ul>
-      <li>Commits are hashed client-side before transmission</li>
-      <li>Agents sign the full commit envelope with their own Ed25519 key</li>
-      <li>Records are verifiable offline without DarkMatter servers</li>
-      <li>Missing integrity fields fail verification by default</li>
-      <li>Canonicalization is cross-language specified and test-vector backed</li>
-      <li>Each checkpoint is co-signed by an independently operated witness</li>
-      <li>Checkpoint continuity between snapshots is verifiable</li>
-      <li>The signing key is persistent across server restarts</li>
-    </ul>
-
-    <p><strong>We do not yet claim:</strong></p>
-    <ul>
-      <li>Witnesses independently reconstruct the Merkle tree from raw data (Phase 4B)</li>
-      <li>Multi-party consensus (2-of-3 witness quorum) (Phase 4B)</li>
-      <li>Blockchain anchoring</li>
-      <li>Censorship resistance</li>
-    </ul>
-
-    <!-- TIMESTAMPS -->
-    <h2 id="timestamps">Timestamp semantics</h2>
-    <p><code>client_timestamp</code> is what the agent asserts at commit time. It is part of the signed envelope and authenticated by the agent signature. DarkMatter cannot alter it without breaking the signature.</p>
-    <p><code>accepted_at</code> is when the DarkMatter ledger accepted the commit. It is set by the server, not alterable by the client, and used in the Merkle leaf binding.</p>
-    <p>These are deliberately separate. A commit submitted at 3pm but accepted at 3:01pm has both timestamps recorded. Auditors can distinguish between what the agent claimed and when the ledger actually recorded it.</p>
-
-    <!-- KEY LIFECYCLE -->
-    <h2 id="key-lifecycle">Key lifecycle</h2>
-    <p>Agent signing keys follow a defined lifecycle:</p>
-    <ul>
-      <li><strong>Registration</strong> — public key PEM registered with DarkMatter. Private key never transmitted.</li>
-      <li><strong>Rotation</strong> — old key marked with <code>valid_until</code>. Remains valid for historical verification of past commits. New key takes over for new commits.</li>
-      <li><strong>Revocation</strong> — key explicitly invalidated with a reason. Commits signed after revocation are flagged <code>revoked_key</code>. Commits signed before revocation are flagged <code>revoked_post_commit</code> — integrity unaffected.</li>
-    </ul>
-
-    <p>Historical verification uses <code>GET /api/agents/:agentId/pubkey?at=&lt;ISO&gt;</code> to retrieve the key that was valid at a specific point in time. Verification after rotation always uses the correct key for the commit's <code>accepted_at</code> timestamp.</p>
-
-    <hr/>
-
-    <!-- SPEC -->
-    <h2 id="spec">Integrity Spec v1.0</h2>
-    <p>The complete protocol specification is published at <a href="https://github.com/darkmatter-hub/darkmatter/blob/main/INTEGRITY_SPEC_V1.md" target="_blank">INTEGRITY_SPEC_V1.md</a>. It is frozen — changes require a new version number. Every commit records its <code>spec_version</code>.</p>
-    <p>The spec covers: canonical serialization rules, commit envelope schema, agent signatures, dual timestamps, Merkle leaf format, checkpoint format v3, proof receipt format, export bundle format v3.0, verifier behaviour, and spec versioning policy.</p>
-
-    <!-- PUBLIC ENDPOINTS -->
-    <h2 id="public-endpoints">Public verification endpoints</h2>
-    <p>No authentication required. These endpoints exist for independent verification.</p>
-    <table class="vtable">
-      <thead><tr><th>Endpoint</th><th>Returns</th></tr></thead>
-      <tbody>
-        <tr><td><code>GET /api/log/pubkey</code></td><td>DarkMatter server Ed25519 public key PEM</td></tr>
-        <tr><td><code>GET /api/log/checkpoint</code></td><td>Latest signed checkpoint with witness signatures</td></tr>
-        <tr><td><code>GET /api/log/checkpoints</code></td><td>Recent checkpoints for consistency verification</td></tr>
-        <tr><td><code>GET /api/log/proof/:commitId</code></td><td>Merkle inclusion proof for any commit</td></tr>
-        <tr><td><code>GET /api/log/consistency?from=&to=</code></td><td>Checkpoint consistency between two snapshots</td></tr>
-        <tr><td><code>GET /api/witnesses</code></td><td>List of registered witness nodes</td></tr>
-        <tr><td><code>GET /api/log/checkpoint/:id/witnesses</code></td><td>Witness signatures on a specific checkpoint</td></tr>
-        <tr><td><code>GET /api/agents/:id/pubkey?at=&lt;ISO&gt;</code></td><td>Agent public key at a point in time</td></tr>
-      </tbody>
-    </table>
-
-    <!-- TEST VECTORS -->
-    <h2 id="test-vectors">Test vectors</h2>
-    <p>Any SDK implementation must pass all test vectors before release. Vectors are published in the GitHub repository.</p>
-    <ul>
-      <li><a href="https://github.com/darkmatter-hub/darkmatter/blob/main/github-template/integrity_test_vectors.json" target="_blank">integrity_test_vectors.json</a> — 18 canonical serialization vectors</li>
-      <li><a href="https://github.com/darkmatter-hub/darkmatter/blob/main/github-template/merkle_test_vectors.json" target="_blank">merkle_test_vectors.json</a> — 11 Merkle tree vectors (leaf hashes, roots, proofs)</li>
-    </ul>
-
-    <pre><code># Run test vectors against the verifier
-python verify_darkmatter_chain.py dummy \
-  --test-vectors integrity_test_vectors.json
-
-python verify_darkmatter_chain.py dummy \
-  --test-vectors-merkle merkle_test_vectors.json
-
-# TypeScript SDK
-cd sdk/typescript && npm test
-# ✓ All 46 tests passed</code></pre>
-
-    <p style="margin-top:3rem;padding-top:2rem;border-top:1px solid var(--border);font-size:13px;color:var(--text3);">
-      Spec version: 1.0 — frozen 2026-04-09 &nbsp;·&nbsp;
-      <a href="https://github.com/darkmatter-hub/darkmatter/blob/main/INTEGRITY_SPEC_V1.md" target="_blank">Full spec →</a> &nbsp;·&nbsp;
-    </p>
-
   </div>
-</div>
+</section>
 
-<footer class="dm-footer">
-  <a class="dm-footer-brand" href="/">
-    <svg style="width:22px;height:22px;flex-shrink:0;" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <defs><linearGradient id="dlgf" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#7C3AED"/><stop offset="55%" stop-color="#2563EB"/><stop offset="100%" stop-color="#0891b2"/></linearGradient></defs>
-      <circle cx="20" cy="20" r="17" stroke="#e5e7eb" stroke-width="0.8" stroke-dasharray="2 3"/>
-      <circle cx="20" cy="20" r="12" stroke="#d1d5db" stroke-width="0.5" opacity="0.6"/>
-      <circle cx="20" cy="5"  r="3.2" fill="#7C3AED" opacity="0.95"/>
-      <circle cx="33" cy="28" r="2.6" fill="#2563EB" opacity="0.95"/>
-      <circle cx="7"  cy="28" r="2.2" fill="#22D3EE" opacity="0.9"/>
-      <line x1="20" y1="8"  x2="31" y2="26" stroke="url(#dlgf)" stroke-width="0.6" opacity="0.5"/>
-      <line x1="20" y1="8"  x2="9"  y2="26" stroke="#7C3AED" stroke-width="0.6" opacity="0.4"/>
-      <line x1="30" y1="27" x2="10" y2="27" stroke="#22D3EE" stroke-width="0.6" opacity="0.4"/>
-      <circle cx="20" cy="20" r="2.5" fill="url(#dlgf)" opacity="0.6"/>
-    </svg>
-    <span class="dm-footer-name">Dark<span style="background:linear-gradient(90deg,#7C3AED,#2563EB,#0891b2);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Matter</span></span>
-  </a>
-  <div class="dm-footer-links">
-    <a href="/demo">Demo</a><a href="/docs">Docs</a><a href="/pricing">Pricing</a>
-    <a href="/integrity">Integrity</a><a href="/blog">Blog</a><a href="/enterprise">Enterprise</a>
-    <a href="/security">Security</a><a href="/compare">Compare</a><span class="dm-footer-copy">© 2026 DarkMatte
+<section class="section" style="background:hsl(var(--void-elevated)/.3)">
+  <div class="wrap section-pad">
+    <div class="eyebrow" style="margin-bottom:3rem"><span class="rule"></span><span>What we claim &#183; and what we don&#8217;t</span></div>
+    <div class="int-grid">
+      <div class="int-cell"><div class="label">We claim</div><h3>Payload wasn&#8217;t altered after commit</h3><p>The SHA-256 hash is computed client-side before transmission. Any modification breaks the hash. Verifiable offline.</p></div>
+      <div class="int-cell"><div class="label">We claim</div><h3>Record predates any dispute</h3><p>OpenTimestamps anchors checkpoint bundles to the Bitcoin blockchain. The timestamp proof is external and independently verifiable.</p></div>
+      <div class="int-cell"><div class="label">We claim &#40;L3&#41;</div><h3>DarkMatter cannot forge a record</h3><p>Customer-held Ed25519 keys sign the envelope before it reaches our servers. We never see the private key. We cannot produce a valid signature.</p></div>
+      <div class="int-cell"><div class="label">We do not claim</div><h3>Payload confidentiality</h3><p>Payloads are stored in plaintext by default. DarkMatter personnel with database access can read them. BYOK encryption addresses this for Enterprise customers.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap section-pad">
+    <div class="eyebrow" style="margin-bottom:2rem"><span class="rule"></span><span>Technical specification</span></div>
+    <div style="max-width:56rem">
+      <div class="spec-row" style="border-top:1px solid hsl(var(--void-line))">
+        <div style="grid-column:span 4"><div class="spec-lbl">Hash algorithm</div></div>
+        <div style="grid-column:span 8"><div class="spec-val">SHA-256 &#183; canonical JSON serialization</div></div>
+      </div>
+      <div class="spec-row">
+        <div style="grid-column:span 4"><div class="spec-lbl">Signature algorithm</div></div>
+        <div style="grid-column:span 8"><div class="spec-val">Ed25519 &#183; ENVELOPE_SPEC_V1</div></div>
+      </div>
+      <div class="spec-row">
+        <div style="grid-column:span 4"><div class="spec-lbl">Timestamp anchor</div></div>
+        <div style="grid-column:span 8"><div class="spec-val">OpenTimestamps &#183; Bitcoin blockchain</div></div>
+      </div>
+      <div class="spec-row">
+        <div style="grid-column:span 4"><div class="spec-lbl">Key management</div></div>
+        <div style="grid-column:span 8"><div class="spec-val">Customer-generated Ed25519 keypair &#183; public key registered &#183; private key never transmitted</div></div>
+      </div>
+      <div class="spec-row">
+        <div style="grid-column:span 4"><div class="spec-lbl">Offline verifier</div></div>
+        <div style="grid-column:span 8"><div class="spec-val">Open-source &#183; <a href="https://github.com/darkmatter-hub/darkmatter-l3-example" target="_blank" rel="noopener" style="color:hsl(var(--signal))">github.com/darkmatter-hub/darkmatter-l3-example</a></div></div>
+      </div>
+      <div class="spec-row">
+        <div style="grid-column:span 4"><div class="spec-lbl">Spec</div></div>
+        <div style="grid-column:span 8"><div class="spec-val"><a href="/ENVELOPE_SPEC_V1.md" style="color:hsl(var(--signal))">ENVELOPE_SPEC_V1.md</a></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+<section class="section" style="background:hsl(var(--void-elevated)/.3)"><div class="wrap section-pad" style="text-align:center"><div class="eyebrow" style="justify-content:center;margin-bottom:2rem"><span class="rule"></span><span>Get started</span><span class="rule"></span></div><h2 class="balance" style="font-size:34px;font-weight:500;letter-spacing:-.02em;margin-bottom:1rem">Verify it yourself.</h2><p style="font-size:15px;color:hsl(var(--trace));max-width:32rem;margin:0 auto 2rem;line-height:1.6">Download a proof bundle and run the offline verifier. No DarkMatter account required.</p><div style="display:flex;flex-wrap:wrap;gap:.75rem;justify-content:center"><a href="https://github.com/darkmatter-hub/darkmatter-l3-example" class="btn-primary">Run the verifier &#8594;</a><a href="/docs" class="btn-ghost">Read the docs</a></div></div></section>
+</main>
+<footer><div class="top"><div class="footer-brand"><div class="wordmark"><span class="sigil" aria-hidden="true"><svg viewBox="0 0 32 32" width="32" height="32" fill="none"><circle cx="16" cy="16" r="10" stroke="hsl(var(--foreground))" stroke-opacity="0.45" stroke-width="0.8"/><path d="M 16 6 L 24.66 21 L 7.34 21 Z" stroke="hsl(var(--foreground))" stroke-opacity="0.18" stroke-width="0.5" stroke-dasharray="1 1.5"/><circle cx="16" cy="16" r="0.8" fill="hsl(var(--foreground))" fill-opacity="0.55"/><circle cx="16" cy="6" r="2.1" fill="hsl(var(--signal))"/><circle cx="16" cy="6" r="3.4" stroke="hsl(var(--signal))" stroke-opacity="0.3" stroke-width="0.45"/><circle cx="24.66" cy="21" r="1.5" fill="hsl(var(--foreground))"/><circle cx="7.34" cy="21" r="1.5" fill="hsl(var(--foreground))" fill-opacity="0.85"/></svg></span><span class="name"><span class="d">DARK</span><span class="m">MATTER</span></span></div><p>The independent record for AI systems. Sealed at the moment of action. Verifiable by anyone, anywhere.</p></div><div class="footer-col"><div class="h">Product</div><ul><li><a href="/demo">Demo</a></li><li><a href="/docs">Docs</a></li><li><a href="/pricing">Pricing</a></li><li><a href="/compare">Compare</a></li><li><a href="/integrity">Integrity</a></li></ul></div><div class="footer-col"><div class="h">SDK</div><ul><li><a href="/docs#quickstart">Python</a></li><li><a href="/docs">TypeScript</a></li><li><a href="/docs">REST API</a></li><li><a href="#" style="cursor:default;opacity:.5;">LangGraph (soon)</a></li><li><a href="#" style="cursor:default;opacity:.5;">Self-host (soon)</a></li></ul></div><div class="footer-col"><div class="h">Company</div><ul><li><a href="/">About</a></li><li><a href="/integrity">Security</a></li><li><a href="mailto:hello@darkmatterhub.ai?subject=DarkMatter inquiry">Contact</a></li></ul></div></div><div class="footer-bottom"><div class="inner">&#169; 2026 DarkMatter</div></div></footer>
+</body>
+</html>

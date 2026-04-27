@@ -1,483 +1,228 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pricing — DarkMatter</title>
-<meta name="description" content="Every plan includes the full Black Box: independent record, replay, and verification. You only choose how much you record and how long you retain it.">
-<link rel="icon" href="/favicon.ico">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>DarkMatter &#8212; Pricing</title>
+<meta name="description" content="Full access to every feature on the free plan. Scale when it matters."/>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
 <style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+/* DarkMatter design system — extracted from homepage */
+/* Include after Google Fonts link */
+
 :root{
-  --ink:#0e0e0e;--ink-mid:#444;--ink-light:#888;--ink-faint:#ccc;
-  --paper:#fff;--paper-off:#f8f7f5;--paper-dim:#f1efeb;--rule:#e2dfd8;
-  --accent:#6b4fbb;
-  --mono:'DM Mono','Courier New',monospace;
-  --serif:'DM Serif Display',Georgia,serif;
-  --sans:'DM Sans',system-ui,sans-serif;
+  --void:38 30% 97%; --void-elevated:38 24% 94%; --void-line:38 14% 84%;
+  --paper:38 30% 97%; --ink:220 20% 10%;
+  --trace:220 10% 38%; --trace-dim:220 8% 55%;
+  --signal:152 64% 34%; --signal-dim:152 30% 60%;
+  --background:var(--paper); --foreground:var(--ink);
 }
-html{font-size:16px;scroll-behavior:smooth;}
-body{font-family:var(--sans);background:var(--paper);color:var(--ink);line-height:1.6;-webkit-font-smoothing:antialiased;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;border:0 solid hsl(var(--void-line))}
+html,body{background:hsl(var(--background));color:hsl(var(--foreground));font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;font-feature-settings:"ss01","cv11"}
+::selection{background:hsl(var(--signal)/.3);color:hsl(var(--foreground))}
+a{color:inherit;text-decoration:none}
+.mono{font-family:'JetBrains Mono',ui-monospace,monospace;font-feature-settings:"calt" 0}
+.wrap{max-width:80rem;margin:0 auto;padding:0 1.5rem}
+.balance{text-wrap:balance}
+.hairline{height:1px;background:hsl(var(--void-line))}
+.eyebrow{display:flex;align-items:center;gap:.75rem;font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:hsl(var(--trace))}
+.eyebrow .rule{height:1px;width:2rem;background:hsl(var(--trace-dim))}
+.section{border-bottom:1px solid hsl(var(--void-line))}
+.section-pad{padding:6rem 1.5rem}
+.grid-noise{background-image:linear-gradient(hsl(var(--void-line)/.35) 1px,transparent 1px),linear-gradient(90deg,hsl(var(--void-line)/.35) 1px,transparent 1px);background-size:64px 64px;background-position:-1px -1px}
 
-nav{position:sticky;top:0;z-index:100;background:rgba(255,255,255,0.96);backdrop-filter:blur(8px);border-bottom:1px solid var(--rule);padding:0 2.5rem;display:flex;align-items:center;justify-content:space-between;height:58px;}
-.nav-logo{display:flex;align-items:center;gap:9px;text-decoration:none;}
-.nav-wordmark{font-family:var(--mono);font-size:13px;font-weight:500;color:var(--ink);letter-spacing:.03em;}
-.nav-wordmark span{color:var(--accent);}
-.nav-links{display:flex;align-items:center;gap:2rem;list-style:none;}
-.nav-links a{font-size:13px;color:var(--ink-mid);text-decoration:none;transition:color .15s;}
-.nav-links a:hover{color:var(--ink);}
-.nav-cta{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;padding:.5rem 1.2rem;background:var(--ink);color:#fff !important;border-radius:3px;}
+/* Nav */
+.nav{position:sticky;top:0;z-index:40;border-bottom:1px solid hsl(var(--void-line));background:hsl(var(--void)/.8);backdrop-filter:blur(8px)}
+.nav-inner{display:flex;height:3.5rem;align-items:center;justify-content:space-between;max-width:80rem;margin:0 auto;padding:0 1.5rem}
+.wordmark{display:flex;align-items:center;gap:.75rem;font-family:'JetBrains Mono',monospace}
+.wordmark .sigil{position:relative;display:inline-flex;height:2rem;width:2rem;align-items:center;justify-content:center}
+.wordmark .name{display:flex;align-items:baseline;gap:1px;line-height:1}
+.wordmark .name .d{font-size:16px;font-weight:600;letter-spacing:.02em;color:hsl(var(--foreground))}
+.wordmark .name .m{font-size:16px;font-weight:300;letter-spacing:.02em;color:hsl(var(--trace))}
+.nav-links{display:none;gap:2rem;align-items:center}
+@media(min-width:768px){.nav-links{display:flex}}
+.nav-links a{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:hsl(var(--trace));transition:color .15s}
+.nav-links a:hover{color:hsl(var(--foreground))}
+.nav-links a.active{color:hsl(var(--foreground))}
+.nav-cta{display:flex;align-items:center;gap:.5rem}
+.nav-cta .signin{display:none;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:hsl(var(--trace));padding:.5rem .75rem}
+@media(min-width:640px){.nav-cta .signin{display:inline-flex}}
+.nav-cta .signin:hover{color:hsl(var(--foreground))}
+.nav-cta .commit{display:inline-flex;align-items:center;gap:.5rem;border:1px solid hsl(var(--signal)/.4);background:hsl(var(--signal)/.1);padding:.5rem .75rem;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:hsl(var(--signal));transition:background .15s}
+.nav-cta .commit:hover{background:hsl(var(--signal)/.2)}
+.dot{display:inline-block;height:.375rem;width:.375rem;border-radius:9999px;background:hsl(var(--signal));animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 
-.container{max-width:960px;margin:0 auto;padding:0 2rem;}
-.container-wide{max-width:1080px;margin:0 auto;padding:0 2rem;}
-section{padding:5.5rem 0;}
-section+section{border-top:1px solid var(--rule);}
-.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-light);margin-bottom:1.5rem;display:flex;align-items:center;gap:10px;}
-.eyebrow::before{content:'';display:inline-block;width:18px;height:1px;background:var(--ink-faint);flex-shrink:0;}
+/* Buttons */
+.btn-primary{display:inline-flex;align-items:center;gap:.75rem;background:hsl(var(--foreground));color:hsl(var(--background));padding:.875rem 1.25rem;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.2em;text-transform:uppercase;transition:background .15s,color .15s}
+.btn-primary:hover{background:hsl(var(--signal));color:hsl(var(--background))}
+.btn-ghost{display:inline-flex;align-items:center;gap:.75rem;border:1px solid hsl(var(--void-line));padding:.875rem 1.25rem;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:hsl(var(--trace));transition:color .15s,border-color .15s}
+.btn-ghost:hover{color:hsl(var(--foreground));border-color:hsl(var(--trace))}
+.btn-run{display:inline-flex;align-items:center;gap:.75rem;background:hsl(var(--signal));color:hsl(var(--background));padding:.875rem 1.25rem;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.2em;text-transform:uppercase;transition:background .15s}
+.btn-run:hover{background:hsl(var(--signal)/.85)}
 
-.hero{padding:7rem 0 5.5rem;}
-.hero-trust{display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-light);border:1px solid var(--rule);border-radius:2px;padding:5px 12px;margin-bottom:2.5rem;}
-.hero-trust::before{content:'✓';color:var(--accent);font-size:10px;}
-.hero h1{font-family:var(--serif);font-size:clamp(2.4rem,5vw,3.8rem);font-weight:400;line-height:1.15;color:var(--ink);margin-bottom:1.5rem;max-width:720px;}
-.hero-sub{font-size:1.05rem;color:var(--ink-mid);max-width:540px;line-height:1.7;margin-bottom:2.5rem;}
-.hero-note{font-family:var(--mono);font-size:11px;color:var(--ink-light);letter-spacing:.02em;}
+/* Tags */
+.tag{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:hsl(var(--signal));border:1px solid hsl(var(--signal)/.4);padding:.25rem .5rem}
 
-.guarantees-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:0;border:1px solid var(--rule);border-radius:4px;overflow:hidden;margin-top:3rem;}
-.guarantee-item{padding:2rem 1.5rem;border-right:1px solid var(--rule);}
-.guarantee-item:last-child{border-right:none;}
-.guarantee-num{font-family:var(--mono);font-size:10px;color:var(--ink-faint);margin-bottom:.75rem;}
-.guarantee-label{font-family:var(--serif);font-size:1.15rem;color:var(--ink);margin-bottom:.5rem;}
-.guarantee-desc{font-size:12px;color:var(--ink-light);line-height:1.5;}
+/* Code chips */
+.cmd{background:hsl(var(--foreground)/.06);border:1px solid hsl(var(--void-line));padding:1px 6px;border-radius:2px;color:hsl(var(--foreground));font-family:'JetBrains Mono',monospace}
 
-.pricing-intro{max-width:600px;margin-bottom:3.5rem;}
-.pricing-intro h2{font-family:var(--serif);font-size:2rem;font-weight:400;margin-bottom:1rem;}
-.pricing-intro p{font-size:1rem;color:var(--ink-mid);line-height:1.7;}
+/* Terminal block */
+.term{
+  --void:220 18% 6%; --void-elevated:220 16% 9%; --void-line:220 12% 18%;
+  --ink:38 20% 96%; --trace:220 10% 68%; --trace-dim:220 8% 48%;
+  --signal:152 70% 56%;
+  background:hsl(var(--void));color:hsl(var(--ink));border:1px solid hsl(var(--void-line));
+}
+.term .titlebar{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid hsl(var(--void-line));padding:.625rem 1rem;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:hsl(var(--trace-dim))}
+.term .titlebar .dots{display:flex;align-items:center;gap:.5rem}
+.term .titlebar .d1{height:8px;width:8px;border-radius:9999px;background:hsl(12 72% 46%/.6)}
+.term .titlebar .d2{height:8px;width:8px;border-radius:9999px;background:hsl(var(--trace-dim)/.6)}
+.term .titlebar .d3{height:8px;width:8px;border-radius:9999px;background:hsl(var(--signal)/.6)}
+.term pre{overflow-x:auto;padding:1.25rem;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.6;color:hsl(var(--ink)/.9);white-space:pre}
 
-.pricing-grid{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--rule);border-radius:4px;overflow:visible;}
-.plan{padding:2.5rem 2rem;border-right:1px solid var(--rule);position:relative;}
-.plan:last-child{border-right:none;}
-.plan.highlighted{background:var(--ink);color:#fff;}
-.plan-label{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:1.25rem;}
-.plan:not(.highlighted) .plan-label{color:var(--ink-light);}
-.plan.highlighted .plan-label{color:rgba(255,255,255,.5);}
-.plan-price{font-family:var(--serif);font-size:2.8rem;line-height:1;margin-bottom:.25rem;}
-.plan-period{font-size:12px;margin-bottom:2rem;}
-.plan:not(.highlighted) .plan-period{color:var(--ink-light);}
-.plan.highlighted .plan-period{color:rgba(255,255,255,.5);}
-.plan-limits{margin-bottom:2rem;display:flex;flex-direction:column;gap:.75rem;}
-.limit-row{display:flex;flex-direction:column;gap:2px;}
-.limit-val{font-family:var(--mono);font-size:15px;font-weight:500;}
-.plan.highlighted .limit-val{color:#fff;}
-.limit-key{font-size:11px;}
-.plan:not(.highlighted) .limit-key{color:var(--ink-light);}
-.plan.highlighted .limit-key{color:rgba(255,255,255,.45);}
-.plan-divider{border:none;border-top:1px solid var(--rule);margin:0 0 1.75rem;}
-.plan.highlighted .plan-divider{border-color:rgba(255,255,255,.12);}
-.plan-features{display:flex;flex-direction:column;gap:.6rem;margin-bottom:2rem;}
-.plan-feature{font-size:12.5px;display:flex;align-items:flex-start;gap:7px;}
-.plan:not(.highlighted) .plan-feature{color:var(--ink-mid);}
-.plan.highlighted .plan-feature{color:rgba(255,255,255,.75);}
-.plan-feature::before{content:'✔';font-size:10px;margin-top:2px;flex-shrink:0;}
-.plan:not(.highlighted) .plan-feature::before{color:var(--accent);}
-.plan.highlighted .plan-feature::before{color:rgba(255,255,255,.5);}
-.plan-best{font-size:11px;margin-bottom:1.5rem;font-style:italic;}
-.plan:not(.highlighted) .plan-best{color:var(--ink-light);}
-.plan.highlighted .plan-best{color:rgba(255,255,255,.4);}
-.plan-cta{display:block;width:100%;padding:.75rem 1rem;font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;text-align:center;text-decoration:none;border-radius:3px;cursor:pointer;transition:all .15s;border:1px solid transparent;}
-.plan:not(.highlighted) .plan-cta{background:var(--ink);color:#fff;}
-.plan:not(.highlighted) .plan-cta:hover{opacity:.85;}
-.plan.highlighted .plan-cta{background:#fff;color:var(--ink);}
-.plan.highlighted .plan-cta:hover{background:var(--paper-off);}
+/* Props grid */
+.props-grid{display:grid;grid-template-columns:1fr;gap:1px;background:hsl(var(--void-line));border:1px solid hsl(var(--void-line))}
+@media(min-width:768px){.props-grid{grid-template-columns:repeat(3,1fr)}}
+.prop{background:hsl(var(--void));padding:2rem;transition:background .15s}
+.prop:hover{background:hsl(var(--void-elevated))}
+.prop .top{display:flex;align-items:center;justify-content:space-between;margin-bottom:2.5rem}
+.prop .idx{font-family:'JetBrains Mono',monospace;font-size:10px;color:hsl(var(--trace-dim))}
+.prop h3{font-size:1.5rem;letter-spacing:-.01em;margin-bottom:1rem;font-weight:500}
+.prop p{font-size:14px;line-height:1.6;color:hsl(var(--trace))}
 
-.diff-block{display:grid;grid-template-columns:1fr 1fr;gap:6rem;align-items:start;}
-.diff-left h2{font-family:var(--serif);font-size:2rem;font-weight:400;margin-bottom:1.5rem;line-height:1.25;}
-.diff-left p{font-size:.95rem;color:var(--ink-mid);line-height:1.8;margin-bottom:1.25rem;}
-.diff-items{display:flex;flex-direction:column;gap:0;}
-.diff-item{display:flex;gap:1.25rem;align-items:flex-start;padding:1.25rem 0;border-bottom:1px solid var(--rule);}
-.diff-item:last-child{border-bottom:none;}
-.diff-icon{font-family:var(--mono);font-size:10px;color:var(--ink-faint);padding-top:3px;flex-shrink:0;width:20px;}
-.diff-text-label{font-size:13.5px;font-weight:500;color:var(--ink);margin-bottom:2px;}
-.diff-text-desc{font-size:12.5px;color:var(--ink-light);line-height:1.5;}
+/* Levels table */
+.levels-table{margin-top:3.5rem;border-top:1px solid hsl(var(--void-line))}
+.level-row{display:grid;grid-template-columns:1fr;gap:1.5rem;border-bottom:1px solid hsl(var(--void-line));padding:2rem .5rem;transition:background .15s}
+@media(min-width:768px){.level-row{grid-template-columns:repeat(12,1fr)}}
+.level-row:hover{background:hsl(var(--void-elevated)/.4)}
+.level-c-tag{display:flex;align-items:flex-start;gap:.75rem}
+.level-num{font-family:'JetBrains Mono',monospace;font-size:10px;color:hsl(var(--trace-dim));margin-top:.5rem}
+.level-name{font-size:18px;letter-spacing:-.01em}
+.level-means{font-size:13px;line-height:1.6;color:hsl(var(--trace))}
+.level-how{font-size:13px;line-height:1.6;color:hsl(var(--foreground)/.8);font-family:'JetBrains Mono',monospace}
+@media(min-width:768px){.level-c-tag{grid-column:span 2}.level-c-name{grid-column:span 3}.level-c-means{grid-column:span 4}.level-c-how{grid-column:span 3}}
 
-.levels-intro{max-width:520px;margin-bottom:3rem;}
-.levels-intro h2{font-family:var(--serif);font-size:2rem;font-weight:400;margin-bottom:1rem;}
-.levels-intro p{font-size:.95rem;color:var(--ink-mid);line-height:1.7;}
-.levels-table{width:100%;border-collapse:collapse;}
-.levels-table th{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-light);text-align:left;padding:.75rem 1.25rem;border-bottom:1px solid var(--rule);}
-.levels-table td{padding:1.25rem;border-bottom:1px solid var(--rule);vertical-align:top;}
-.levels-table tr:last-child td{border-bottom:none;}
-.level-code{font-family:var(--mono);font-size:11px;color:var(--accent);background:rgba(107,79,187,.06);padding:2px 8px;border-radius:2px;}
-.level-name{font-size:13.5px;font-weight:500;color:var(--ink);}
-.level-desc{font-size:13px;color:var(--ink-mid);line-height:1.55;}
-.status-live{font-family:var(--mono);font-size:10px;color:#0f7b4d;}
-.status-roadmap{font-family:var(--mono);font-size:10px;color:var(--ink-faint);}
-.levels-note{margin-top:1.75rem;font-family:var(--mono);font-size:11px;color:var(--ink-light);}
+/* Footer */
+footer{background:hsl(var(--void))}
+footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;grid-template-columns:1fr;gap:2.5rem}
+@media(min-width:768px){footer .top{grid-template-columns:repeat(12,1fr)}}
+.footer-brand{grid-column:span 5}
+.footer-brand p{margin-top:1.25rem;max-width:24rem;font-size:13px;color:hsl(var(--trace));line-height:1.6}
+.footer-col{grid-column:span 2}
+.footer-col .h{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:hsl(var(--trace-dim));margin-bottom:1rem}
+.footer-col ul{list-style:none;display:flex;flex-direction:column;gap:.625rem}
+.footer-col a{font-size:13px;color:hsl(var(--trace))}
+.footer-col a:hover{color:hsl(var(--foreground))}
+.footer-bottom{border-top:1px solid hsl(var(--void-line))}
+.footer-bottom .inner{max-width:80rem;margin:0 auto;padding:1.25rem 1.5rem;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:hsl(var(--trace-dim))}
 
-.independence{background:var(--paper-off);border-radius:4px;padding:3.5rem;}
-.independence h2{font-family:var(--serif);font-size:1.8rem;font-weight:400;margin-bottom:1.25rem;}
-.independence p{font-size:.95rem;color:var(--ink-mid);line-height:1.7;max-width:560px;margin-bottom:1.5rem;}
-.independence-list{display:flex;flex-direction:column;gap:.6rem;}
-.independence-item{font-size:13px;color:var(--ink-mid);display:flex;gap:10px;align-items:flex-start;}
-.independence-item::before{content:'—';font-family:var(--mono);color:var(--ink-faint);flex-shrink:0;}
-
-.faq-grid{display:flex;flex-direction:column;gap:0;max-width:720px;}
-.faq-item{padding:2rem 0;border-bottom:1px solid var(--rule);}
-.faq-item:first-child{border-top:1px solid var(--rule);}
-.faq-q{font-family:var(--serif);font-size:1.1rem;color:var(--ink);margin-bottom:.75rem;}
-.faq-a{font-size:.9rem;color:var(--ink-mid);line-height:1.7;}
-.faq-a code{font-family:var(--mono);font-size:.85em;background:var(--paper-dim);padding:1px 5px;border-radius:2px;}
-
-.final-cta{text-align:center;padding:7rem 0;}
-.final-cta h2{font-family:var(--serif);font-size:clamp(1.8rem,4vw,3rem);font-weight:400;margin-bottom:1rem;max-width:600px;margin-left:auto;margin-right:auto;}
-.final-cta p{font-size:.95rem;color:var(--ink-light);margin-bottom:2.5rem;}
-.cta-group{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;}
-.btn-primary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:.85rem 2rem;background:var(--ink);color:#fff;border:none;border-radius:3px;cursor:pointer;text-decoration:none;transition:opacity .15s;}
-.btn-primary:hover{opacity:.82;}
-.btn-secondary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:.85rem 2rem;background:transparent;color:var(--ink);border:1px solid var(--rule);border-radius:3px;cursor:pointer;text-decoration:none;transition:border-color .15s;}
-.btn-secondary:hover{border-color:var(--ink);}
-
-footer{padding:3rem 2.5rem;border-top:1px solid var(--rule);}
-.footer-inner{max-width:1080px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1.5rem;}
-.footer-logo{display:flex;align-items:center;gap:8px;text-decoration:none;}
-.footer-wordmark{font-family:var(--mono);font-size:12px;color:var(--ink-mid);}
-.footer-wordmark span{color:var(--accent);}
-.footer-links{display:flex;gap:2rem;list-style:none;}
-.footer-links a{font-size:12px;color:var(--ink-light);text-decoration:none;}
-.footer-links a:hover{color:var(--ink);}
-
-.hero-anchor-note { font-family: var(--mono); font-size: 11px; color: var(--ink-light); margin-top: 1.25rem; letter-spacing: .02em; }
-
-.what-happens-grid { display: flex; flex-direction: column; gap: 0; max-width: 640px; }
-.wh-step { display: flex; gap: 1.5rem; align-items: flex-start; padding: 1.5rem 0; border-bottom: 1px solid var(--rule); }
-.wh-step:last-child { border-bottom: none; }
-.wh-num { font-family: var(--mono); font-size: 16px; color: var(--accent); flex-shrink: 0; width: 20px; margin-top: 1px; }
-.wh-label { font-size: 14px; font-weight: 500; color: var(--ink); margin-bottom: 3px; }
-.wh-desc { font-size: 13px; color: var(--ink-light); line-height: 1.55; }
+.plans{display:grid;grid-template-columns:1fr;gap:1px;background:hsl(var(--void-line));border:1px solid hsl(var(--void-line));margin:3rem 0}
+@media(min-width:768px){.plans{grid-template-columns:repeat(3,1fr)}}
+.plan{background:hsl(var(--void));padding:2.5rem 2rem;display:flex;flex-direction:column}
+.plan.hl{background:hsl(var(--foreground));color:hsl(var(--background))}
+.plan.hl .plan-label,.plan.hl .plan-price,.plan.hl .plan-desc,.plan.hl .plan-features li{color:hsl(var(--background)/.85)}
+.plan.hl .plan-cta{background:hsl(var(--background));color:hsl(var(--foreground))}
+.plan.hl .plan-cta:hover{background:hsl(var(--signal));color:hsl(var(--background))}
+.plan.hl .plan-divider{background:hsl(var(--background)/.2)}
+.plan-label{font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:hsl(var(--trace));margin-bottom:2rem}
+.plan-price{font-size:42px;font-weight:500;letter-spacing:-.03em;line-height:1;margin-bottom:.5rem}
+.plan-price span{font-size:14px;font-weight:400;color:hsl(var(--trace))}
+.plan-desc{font-size:13px;line-height:1.6;color:hsl(var(--trace));margin-bottom:2rem;flex:1}
+.plan-divider{height:1px;background:hsl(var(--void-line));margin-bottom:1.5rem}
+.plan-features{list-style:none;display:flex;flex-direction:column;gap:.75rem;margin-bottom:2rem;flex:2}
+.plan-features li{display:flex;align-items:flex-start;gap:.5rem;font-size:13px;line-height:1.4;color:hsl(var(--trace))}
+.plan-features li::before{content:"&#10003;";color:hsl(var(--signal));font-family:"JetBrains Mono",monospace;flex-shrink:0}
+.plan-cta{display:block;text-align:center;background:hsl(var(--foreground));color:hsl(var(--background));padding:.875rem;font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.2em;text-transform:uppercase;transition:background .15s;margin-top:auto}
+.plan-cta:hover{background:hsl(var(--signal));color:hsl(var(--background))}
+.faq-item{border-bottom:1px solid hsl(var(--void-line));padding:2rem 0}
+.faq-item:first-child{border-top:1px solid hsl(var(--void-line))}
+.faq-q{font-size:16px;font-weight:500;margin-bottom:.75rem}
+.faq-a{font-size:14px;line-height:1.6;color:hsl(var(--trace));max-width:48rem}
 </style>
 </head>
 <body>
-
-<nav>
-  <a href="/" class="nav-logo">
-    <svg width="20" height="20" viewBox="0 0 80 80" fill="none">
-      <circle cx="40" cy="40" r="34" stroke="#c4bce8" stroke-width="1.4" stroke-dasharray="4 3"/>
-      <line x1="40" y1="13" x2="16" y2="55" stroke="#b0c8e8" stroke-width="1.8"/>
-      <line x1="40" y1="13" x2="64" y2="55" stroke="#b0c8e8" stroke-width="1.8"/>
-      <line x1="16" y1="55" x2="64" y2="55" stroke="#7edce8" stroke-width="1.8"/>
-      <circle cx="40" cy="13" r="5" fill="#6b4fbb"/>
-      <circle cx="16" cy="55" r="4" fill="#4ab8c8"/>
-      <circle cx="64" cy="55" r="4" fill="#3d6fd4"/>
-    </svg>
-    <span class="nav-wordmark">Dark<span>Matter</span></span>
-  </a>
-  <ul class="nav-links">
-    <li><a href="/demo">Demo</a></li>
-    <li><a href="/docs">Docs</a></li>
-    <li><a href="/pricing">Pricing</a></li>
-    <li><a href="/compare">Compare</a></li>
-    <li><a href="/integrity">Integrity</a></li>
-    <li><a href="/login" class="nav-cta">Sign in</a></li>
-  </ul>
-</nav>
-
-<section class="hero">
-  <div class="container">
-    <div class="hero-trust">Verification does not depend on DarkMatter</div>
-    <h1>Pricing for recording and&nbsp;proving AI decisions</h1>
-    <p class="hero-sub">Every plan includes the full Black Box: independent record, replay, and verification. You only choose how much you record and how long you retain it.</p>
-    <p class="hero-note">No feature is locked behind higher tiers.</p>
-    <p class="hero-anchor-note">Timestamps are independently anchored. They cannot be backdated.</p>
-    <div class="guarantees-grid">
-      <div class="guarantee-item">
-        <div class="guarantee-num">01</div>
-        <div class="guarantee-label">Recorded</div>
-        <div class="guarantee-desc">Every input and output captured at commit time</div>
-      </div>
-      <div class="guarantee-item">
-        <div class="guarantee-num">02</div>
-        <div class="guarantee-label">Reconstructed</div>
-        <div class="guarantee-desc">Replay any decision step-by-step from root to tip</div>
-      </div>
-      <div class="guarantee-item">
-        <div class="guarantee-num">03</div>
-        <div class="guarantee-label">Proven</div>
-        <div class="guarantee-desc">Cryptographically verifiable hash chain</div>
-      </div>
-      <div class="guarantee-item">
-        <div class="guarantee-num">04</div>
-        <div class="guarantee-label">Audited</div>
-        <div class="guarantee-desc">Exportable, self-contained proof bundles</div>
-      </div>
-      <div class="guarantee-item">
-        <div class="guarantee-num">05</div>
-        <div class="guarantee-label">Trusted</div>
-        <div class="guarantee-desc">Verifiable without DarkMatter in the loop</div>
-      </div>
+<header class="nav"><div class="nav-inner"><a href="/" class="wordmark" aria-label="DarkMatter"><span class="sigil" aria-hidden="true"><svg viewBox="0 0 32 32" width="32" height="32" fill="none"><circle cx="16" cy="16" r="10" stroke="hsl(var(--foreground))" stroke-opacity="0.45" stroke-width="0.8"/><path d="M 16 6 L 24.66 21 L 7.34 21 Z" stroke="hsl(var(--foreground))" stroke-opacity="0.18" stroke-width="0.5" stroke-dasharray="1 1.5"/><circle cx="16" cy="16" r="0.8" fill="hsl(var(--foreground))" fill-opacity="0.55"/><circle cx="16" cy="6" r="2.1" fill="hsl(var(--signal))"/><circle cx="16" cy="6" r="3.4" stroke="hsl(var(--signal))" stroke-opacity="0.3" stroke-width="0.45"/><circle cx="24.66" cy="21" r="1.5" fill="hsl(var(--foreground))"/><circle cx="7.34" cy="21" r="1.5" fill="hsl(var(--foreground))" fill-opacity="0.85"/></svg></span><span class="name"><span class="d">DARK</span><span class="m">MATTER</span></span></a><nav class="nav-links"><a href="/demo">Demo</a><a href="/docs">Docs</a><a href="/pricing" class="active">Pricing</a><a href="/compare">Compare</a><a href="/integrity">Integrity</a></nav><div class="nav-cta"><a href="/login" class="signin">Sign in</a><a href="/signup" class="commit"><span class="dot"></span>Commit a record</a></div></div></header>
+<main>
+<section class="section" style="position:relative;overflow:hidden"><div class="noise grid-noise" style="position:absolute;inset:0;opacity:.35"></div><div class="wrap section-pad" style="position:relative"><div class="eyebrow" style="margin-bottom:1.5rem"><span class="rule"></span><span>Pricing</span></div><h1 class="balance" style="font-size:34px;line-height:1.05;letter-spacing:-.022em;font-weight:500;max-width:42rem">Instrument. Verify. Trust.</h1><p style="margin-top:1.5rem;max-width:34rem;font-size:15px;line-height:1.6;color:hsl(var(--trace))">Start free. Scale when it matters. No feature gating &#8212; every tier gets every capability.</p><div style="margin-top:2rem;display:flex;flex-wrap:wrap;gap:.75rem"><a href="/signup" class="btn-primary">Start free &#8594;</a><a href="mailto:hello@darkmatterhub.ai?subject=DarkMatter Enterprise" class="btn-ghost">Talk to us</a></div></div></section>
+<div class="wrap">
+  <div class="plans">
+    <div class="plan">
+      <div class="plan-label">Free</div>
+      <div class="plan-price">$0<span> / month</span></div>
+      <div class="plan-desc">For developers getting started. Full access to every feature.</div>
+      <div class="plan-divider"></div>
+      <ul class="plan-features">
+        <li>10,000 commits / month</li>
+        <li>Unlimited agents</li>
+        <li>L1 &#183; L2 &#183; L3 verification</li>
+        <li>Python &#43; OpenAI SDK wrappers</li>
+        <li>Proof bundle export</li>
+        <li>Share page (/r/:id)</li>
+        <li>30-day retention</li>
+      </ul>
+      <a href="/signup" class="plan-cta">Start free</a>
+    </div>
+    <div class="plan hl">
+      <div class="plan-label">Pro</div>
+      <div class="plan-price">$49<span> / month</span></div>
+      <div class="plan-desc">For teams running production agents. Higher volume, longer retention.</div>
+      <div class="plan-divider"></div>
+      <ul class="plan-features">
+        <li>500,000 commits / month</li>
+        <li>Unlimited agents</li>
+        <li>L1 &#183; L2 &#183; L3 verification</li>
+        <li>All SDK wrappers</li>
+        <li>Proof bundle export</li>
+        <li>1-year retention</li>
+        <li>Priority support</li>
+      </ul>
+      <a href="/signup" class="plan-cta">Start Pro</a>
+    </div>
+    <div class="plan">
+      <div class="plan-label">Enterprise</div>
+      <div class="plan-price">Custom</div>
+      <div class="plan-desc">For regulated industries, legal/compliance use cases, and large-scale deployments.</div>
+      <div class="plan-divider"></div>
+      <ul class="plan-features">
+        <li>Unlimited commits</li>
+        <li>Unlimited agents</li>
+        <li>BYOK encryption</li>
+        <li>Custom retention policy</li>
+        <li>Dedicated support</li>
+        <li>MSA / DPA on request</li>
+        <li>Audit-ready export formats</li>
+      </ul>
+      <a href="mailto:hello@darkmatterhub.ai?subject=DarkMatter Enterprise" class="plan-cta">Talk to us</a>
     </div>
   </div>
-</section>
+</div>
 
-<section>
-  <div class="container">
-    <div class="diff-block">
-      <div class="diff-left">
-        <div class="eyebrow">Why this isn't typical SaaS pricing</div>
-        <h2>You're not paying for features. You're paying for how much of reality you record.</h2>
-        <p>Most software charges you for capabilities. DarkMatter charges for usage and retention — because the capability is the same at every tier.</p>
-        <p>Every plan includes the full verification model. No audit trail is locked behind a higher tier.</p>
-      </div>
-      <div class="diff-right">
-        <div class="diff-items">
-          <div class="diff-item">
-            <div class="diff-icon">01</div>
-            <div><div class="diff-text-label">Hash chaining</div><div class="diff-text-desc">SHA-256 linked chain — tampering at any node breaks every downstream hash</div></div>
-          </div>
-          <div class="diff-item">
-            <div class="diff-icon">02</div>
-            <div><div class="diff-text-label">Signed records</div><div class="diff-text-desc">Client-side hashing before transmission — any alteration is mathematically detectable</div></div>
-          </div>
-          <div class="diff-item">
-            <div class="diff-icon">03</div>
-            <div><div class="diff-text-label">Replay and export</div><div class="diff-text-desc">Walk any decision chain root-to-tip and export a self-contained proof bundle</div></div>
-          </div>
-          <div class="diff-item">
-            <div class="diff-icon">04</div>
-            <div><div class="diff-text-label">Independent verification</div><div class="diff-text-desc">Externally anchored timestamps — proof exists outside DarkMatter</div></div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section>
-  <div class="container">
-    <div class="eyebrow">After your first commit</div>
-    <h2 style="font-family:var(--serif);font-size:2rem;font-weight:400;margin-bottom:2rem;max-width:480px;">Here's what happens the moment you call <code style="font-family:var(--mono);font-size:1.5rem;color:var(--accent);">dm.commit()</code></h2>
-    <div class="what-happens-grid">
-      <div class="wh-step">
-        <div class="wh-num">→</div>
-        <div><div class="wh-label">A record is created</div><div class="wh-desc">Payload hash computed client-side, chained to its parent, written to an append-only log</div></div>
-      </div>
-      <div class="wh-step">
-        <div class="wh-num">→</div>
-        <div><div class="wh-label">A verification URL is generated</div><div class="wh-desc">Share it with anyone — they can independently verify the record without an account</div></div>
-      </div>
-      <div class="wh-step">
-        <div class="wh-num">→</div>
-        <div><div class="wh-label">A proof bundle is available</div><div class="wh-desc">Download a self-contained .json file — verifiable offline, no DarkMatter dependency</div></div>
-      </div>
-      <div class="wh-step">
-        <div class="wh-num">→</div>
-        <div><div class="wh-label">That's the product</div><div class="wh-desc">No setup, no configuration, no integrations required before you can prove what your agent decided</div></div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section>
-  <div class="container-wide">
-    <div class="pricing-intro">
-      <div class="eyebrow">Plans</div>
-      <h2>Choose how much you record</h2>
-      <p>All features are available on every plan. The only difference is commits per month and how long records are retained.</p>
-    </div>
-    <div class="pricing-grid">
-      <div class="plan">
-        <div class="plan-label">Free</div>
-        <div class="plan-price">$0</div>
-        <div class="plan-period">forever</div>
-        <div class="plan-limits">
-          <div class="limit-row"><span class="limit-val">500</span><span class="limit-key">commits / month</span></div>
-          <div class="limit-row"><span class="limit-val">30 days</span><span class="limit-key">retention</span></div>
-        </div>
-        <hr class="plan-divider">
-        <div class="plan-features">
-          <div class="plan-feature">Commit, replay, verify</div>
-          <div class="plan-feature">Public verification links</div>
-          <div class="plan-feature">Export proof bundle (.json)</div>
-          <div class="plan-feature">API access + SDK</div>
-        </div>
-        <div class="plan-best">Best for evaluating and local development</div>
-        <a href="/signup" class="plan-cta">Start free</a>
-      </div>
-      <div class="plan">
-        <div class="plan-label">Pro</div>
-        <div class="plan-price">$19</div>
-        <div class="plan-period">/ month</div>
-        <div class="plan-limits">
-          <div class="limit-row"><span class="limit-val">2,000</span><span class="limit-key">commits / month</span></div>
-          <div class="limit-row"><span class="limit-val">90 days</span><span class="limit-key">retention</span></div>
-        </div>
-        <hr class="plan-divider">
-        <div class="plan-features">
-          <div class="plan-feature">Everything in Free</div>
-          <div class="plan-feature">Higher API rate limits</div>
-          <div class="plan-feature">Stable shareable record URLs</div>
-          <div class="plan-feature">Unlimited API keys</div>
-        </div>
-        <div class="plan-best">Best for individual builders and production prototypes</div>
-        <a href="/signup" class="plan-cta">Upgrade to Pro</a>
-      </div>
-      <div class="plan highlighted">
-        <div class="plan-label">Teams</div>
-        <div class="plan-price">$49</div>
-        <div class="plan-period">/ month</div>
-        <div class="plan-limits">
-          <div class="limit-row"><span class="limit-val">10,000</span><span class="limit-key">commits / month</span></div>
-          <div class="limit-row"><span class="limit-val">Unlimited</span><span class="limit-key">retention</span></div>
-        </div>
-        <hr class="plan-divider">
-        <div class="plan-features">
-          <div class="plan-feature">Everything in Pro</div>
-          <div class="plan-feature">Unlimited record retention</div>
-          <div class="plan-feature">Multiple API keys per workspace</div>
-          <div class="plan-feature">Priority support</div>
-        </div>
-        <div class="plan-best">Best for startups and small teams</div>
-        <a href="/signup" class="plan-cta">Start with Teams</a>
-      </div>
-      <div class="plan">
-        <div class="plan-label">Enterprise</div>
-        <div class="plan-price">$199</div>
-        <div class="plan-period">/ month</div>
-        <div class="plan-limits">
-          <div class="limit-row"><span class="limit-val">Unlimited</span><span class="limit-key">commits / month</span></div>
-          <div class="limit-row"><span class="limit-val">Unlimited</span><span class="limit-key">retention</span></div>
-        </div>
-        <hr class="plan-divider">
-        <div class="plan-features">
-          <div class="plan-feature">Everything in Teams</div>
-          <div class="plan-feature">Dedicated storage integration</div>
-          <div class="plan-feature">Audit export workflows (S3 / webhook)</div>
-          <div class="plan-feature">Volume pricing available</div>
-        </div>
-        <div class="plan-best">Best for production systems and regulated environments</div>
-        <a href="/signup" class="plan-cta">Get started</a>
-        <div style="margin-top:.75rem;text-align:center;"><a href="mailto:support@darkmatterhub.ai" style="font-family:var(--mono);font-size:10px;color:var(--ink-light);letter-spacing:.06em;text-decoration:none;">Need volume pricing? Contact us →</a></div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section>
-  <div class="container">
-    <div class="levels-intro">
-      <div class="eyebrow">Levels of assurance</div>
-      <h2>Three levels of assurance.</h2>
-      <p>All plans include L1 and L2. L3 — customer-held signing keys — is live. <a href="/integrity" style="color:var(--accent);">Setup guide →</a></p>
-    </div>
-    <table class="levels-table">
-      <thead>
-        <tr><th>Level</th><th>What it means</th><th>Status</th></tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td><div style="margin-bottom:5px;"><span class="level-code">L1</span></div><div class="level-name">Verifiable record</div></td>
-          <td class="level-desc">SHA-256 payload hash and parent chain linkage. Tampering at any node breaks every downstream hash. Independent offline verifier included with every export.</td>
-          <td><span class="status-live">Live</span> <a href="https://github.com/darkmatter-hub/darkmatter-l3-example" style="font-size:0.78rem;color:var(--ink3);margin-left:6px;">Verify L3 yourself →</a></td>
-        </tr>
-        <tr>
-          <td><div style="margin-bottom:5px;"><span class="level-code">L2</span></div><div class="level-name">Independent verification</div></td>
-          <td class="level-desc">Signed checkpoint bundles with independently anchored timestamps. The timestamp proof lives outside DarkMatter's infrastructure, so verification does not depend on us.</td>
-          <td><span class="status-live">Live</span> <a href="https://github.com/darkmatter-hub/darkmatter-l3-example" style="font-size:0.78rem;color:var(--ink3);margin-left:6px;">Verify L3 yourself →</a></td>
-        </tr>
-        <tr>
-          <td><div style="margin-bottom:5px;"><span class="level-code">L3</span></div><div class="level-name">Non-repudiation</div></td>
-          <td class="level-desc">Customer-held Ed25519 signing keys (BYOK). Even DarkMatter cannot forge a record. Verification works without revealing the payload content.</td>
-          <td><span class="status-live">Live</span> <a href="https://github.com/darkmatter-hub/darkmatter-l3-example" style="font-size:0.78rem;color:var(--ink3);margin-left:6px;">Verify L3 yourself →</a></td>
-        </tr>
-      </tbody>
-    </table>
-    <p class="levels-note">Full integrity model: <a href="/integrity" style="color:inherit;">darkmatterhub.ai/integrity →</a></p>
-  </div>
-</section>
-
-<section>
-  <div class="container">
-    <div class="independence">
-      <div class="eyebrow">Designed for independent verification</div>
-      <h2>Verification does not depend on our infrastructure</h2>
-      <p>DarkMatter is built so that a third party can verify any record without accessing our servers, creating an account, or trusting us to be honest.</p>
-      <div class="independence-list">
-        <div class="independence-item">Records can be verified offline using the exported proof bundle</div>
-        <div class="independence-item">Proof bundles stand on their own — no DarkMatter dependency</div>
-        <div class="independence-item">Timestamp proof is stored outside DarkMatter's infrastructure</div>
-        <div class="independence-item">If DarkMatter disappeared tomorrow, every exported record remains provable</div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section>
-  <div class="container">
-    <div class="eyebrow">FAQ</div>
-    <div class="faq-grid">
+<section class="section">
+  <div class="wrap section-pad">
+    <div class="eyebrow" style="margin-bottom:3rem"><span class="rule"></span><span>Common questions</span></div>
+    <div style="max-width:56rem">
       <div class="faq-item">
-        <div class="faq-q">Do I need to trust DarkMatter to verify a record?</div>
-        <div class="faq-a">No. Verification works independently using exported proof bundles. The hash chain, signatures, and timestamp proof are all self-contained. You can verify any record offline without ever contacting DarkMatter.</div>
+        <div class="faq-q">What counts as a commit?</div>
+        <div class="faq-a">One call to <code class="cmd">dm.commit()</code> &#8212; one record sealed. Tool calls committed separately each count as one commit.</div>
       </div>
       <div class="faq-item">
-        <div class="faq-q">Are features limited by plan?</div>
-        <div class="faq-a">No. Every plan includes the full Black Box: commit, replay, verify, export, share links, and API access. Plans differ only by commits per month and retention period.</div>
+        <div class="faq-q">Is L3 signing available on the free plan?</div>
+        <div class="faq-a">Yes. L3 non-repudiation with customer-held keys is available on every plan. Generate a key with <code class="cmd">darkmatter keys generate</code> and register the public key &#8212; no plan upgrade required.</div>
       </div>
       <div class="faq-item">
-        <div class="faq-q">What happens when I hit my monthly commit limit?</div>
-        <div class="faq-a">The API returns a <code>429</code> with a clear message and an upgrade link. Records already committed are never affected — the limit only applies to new commits in the current billing month.</div>
+        <div class="faq-q">Can DarkMatter read my commit payloads?</div>
+        <div class="faq-a">Yes &#8212; payloads are stored in plaintext by default, same as any cloud service. BYOK encryption (Enterprise) lets you encrypt before committing so only you can read the content. The hash chain and signature verification work on the encrypted payload.</div>
       </div>
       <div class="faq-item">
-        <div class="faq-q">What happens if I stop using DarkMatter?</div>
-        <div class="faq-a">Export your records before canceling. Every exported proof bundle is self-contained and verifiable offline forever — no account or subscription required to verify.</div>
-      </div>
-      <div class="faq-item">
-        <div class="faq-q">Is this a logging tool?</div>
-        <div class="faq-a">No. DarkMatter is a system of record for AI decisions with cryptographic verification. Logs can be edited. DarkMatter records cannot — tampering is mathematically detectable.</div>
-      </div>
-      <div class="faq-item">
-        <div class="faq-q">Should the proof bundle be encrypted before sharing with an auditor?</div>
-        <div class="faq-a">For L1 and L2 records: no. The auditor verifies the hash chain against the payload — encrypting the payload breaks their ability to verify. Share under NDA, not encryption. L3 (BYOK) handles cases where payload confidentiality is required alongside verification — <a href="/integrity" style="color:inherit;">setup guide →</a>.</div>
+        <div class="faq-q">What happens if DarkMatter goes down?</div>
+        <div class="faq-a">Records already committed are exported as proof bundles that verify offline &#8212; no DarkMatter dependency. The offline verifier is open-source and ships with the SDK.</div>
       </div>
     </div>
   </div>
 </section>
-
-<section class="final-cta">
-  <div class="container">
-    <h2>Create a record. Verify it. Share it.</h2>
-    <p>Free to start. No credit card. Your first commit takes under a minute.</p>
-    <div class="cta-group">
-      <a href="/signup" class="btn-primary">Start free</a>
-      <a href="/demo" class="btn-secondary">View demo</a>
-    </div>
-  </div>
-</section>
-
-<footer>
-  <div class="footer-inner">
-    <a href="/" class="footer-logo">
-      <svg width="18" height="18" viewBox="0 0 80 80" fill="none">
-        <circle cx="40" cy="40" r="34" stroke="#c4bce8" stroke-width="1.4" stroke-dasharray="4 3"/>
-        <line x1="40" y1="13" x2="16" y2="55" stroke="#b0c8e8" stroke-width="1.8"/>
-        <line x1="40" y1="13" x2="64" y2="55" stroke="#b0c8e8" stroke-width="1.8"/>
-        <line x1="16" y1="55" x2="64" y2="55" stroke="#7edce8" stroke-width="1.8"/>
-        <circle cx="40" cy="13" r="5" fill="#6b4fbb"/>
-        <circle cx="16" cy="55" r="4" fill="#4ab8c8"/>
-        <circle cx="64" cy="55" r="4" fill="#3d6fd4"/>
-      </svg>
-      <span class="footer-wordmark">Dark<span>Matter</span></span>
-    </a>
-    <ul class="footer-links">
-      <li><a href="/">Home</a></li>
-      <li><a href="/demo">Demo</a></li>
-      <li><a href="/docs">Docs</a></li>
-      <li><a href="/pricing">Pricing</a></li>
-      <li><a href="/integrity">Integrity</a></li>
-      <li><a href="/compare">Compare</a></li>
-      <li><a href="https://github.com/darkmatter-hub/darkmatter-feedback">Feedback</a></li>
-    </ul>
-  </div>
-</footer>
+<section class="section" style="background:hsl(var(--void-elevated)/.3)"><div class="wrap section-pad" style="text-align:center"><div class="eyebrow" style="justify-content:center;margin-bottom:2rem"><span class="rule"></span><span>Get started</span><span class="rule"></span></div><h2 class="balance" style="font-size:34px;font-weight:500;letter-spacing:-.02em;margin-bottom:1rem">Start recording before you need to.</h2><p style="font-size:15px;color:hsl(var(--trace));max-width:32rem;margin:0 auto 2rem;line-height:1.6">Full access on the free plan. No credit card required.</p><div style="display:flex;flex-wrap:wrap;gap:.75rem;justify-content:center"><a href="/signup" class="btn-primary">Commit your first record &#8594;</a><a href="/docs" class="btn-ghost">Read the docs</a></div></div></section>
+</main>
+<footer><div class="top"><div class="footer-brand"><div class="wordmark"><span class="sigil" aria-hidden="true"><svg viewBox="0 0 32 32" width="32" height="32" fill="none"><circle cx="16" cy="16" r="10" stroke="hsl(var(--foreground))" stroke-opacity="0.45" stroke-width="0.8"/><path d="M 16 6 L 24.66 21 L 7.34 21 Z" stroke="hsl(var(--foreground))" stroke-opacity="0.18" stroke-width="0.5" stroke-dasharray="1 1.5"/><circle cx="16" cy="16" r="0.8" fill="hsl(var(--foreground))" fill-opacity="0.55"/><circle cx="16" cy="6" r="2.1" fill="hsl(var(--signal))"/><circle cx="16" cy="6" r="3.4" stroke="hsl(var(--signal))" stroke-opacity="0.3" stroke-width="0.45"/><circle cx="24.66" cy="21" r="1.5" fill="hsl(var(--foreground))"/><circle cx="7.34" cy="21" r="1.5" fill="hsl(var(--foreground))" fill-opacity="0.85"/></svg></span><span class="name"><span class="d">DARK</span><span class="m">MATTER</span></span></div><p>The independent record for AI systems. Sealed at the moment of action. Verifiable by anyone, anywhere.</p></div><div class="footer-col"><div class="h">Product</div><ul><li><a href="/demo">Demo</a></li><li><a href="/docs">Docs</a></li><li><a href="/pricing">Pricing</a></li><li><a href="/compare">Compare</a></li><li><a href="/integrity">Integrity</a></li></ul></div><div class="footer-col"><div class="h">SDK</div><ul><li><a href="/docs#quickstart">Python</a></li><li><a href="/docs">TypeScript</a></li><li><a href="/docs">REST API</a></li><li><a href="#" style="cursor:default;opacity:.5;">LangGraph (soon)</a></li><li><a href="#" style="cursor:default;opacity:.5;">Self-host (soon)</a></li></ul></div><div class="footer-col"><div class="h">Company</div><ul><li><a href="/">About</a></li><li><a href="/integrity">Security</a></li><li><a href="mailto:hello@darkmatterhub.ai?subject=DarkMatter inquiry">Contact</a></li></ul></div></div><div class="footer-bottom"><div class="inner">&#169; 2026 DarkMatter</div></div></footer>
 </body>
 </html>
