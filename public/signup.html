@@ -1,187 +1,257 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Sign Up — DarkMatter</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :root {
-      --bg:#ffffff; --bg2:#f8f9fa; --bg3:#f1f3f5;
-      --border:#e5e7eb; --border2:#d1d5db;
-      --text:#111827; --text2:#4b5563; --text3:#9ca3af;
-      --accent:#58a6ff; --green:#3fb950; --red:#f85149;
-      --mono:'IBM Plex Mono',monospace; --sans:'Inter',sans-serif; --display:'Space Grotesk',sans-serif;
-    }
-    body { background:var(--bg); color:var(--text); font-family:var(--sans); min-height:100vh; display:flex; flex-direction:column; -webkit-font-smoothing:antialiased; }
-    header { background:var(--bg2); border-bottom:1px solid var(--border); height:66px; display:flex; align-items:center; padding:0 2rem; }
-    .logo { display:flex; align-items:center; gap:0.65rem; text-decoration:none; }
-    .logo-mark { width:38px; height:38px; }
-    .logo-name { font-weight:700; font-size:1.25rem; color:var(--text); letter-spacing:-0.02em; font-family:var(--display); }
-    .matter-grad { background:linear-gradient(90deg,#7C3AED 0%,#2563EB 55%,#22D3EE 100%); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
-    
-    .wrap { flex:1; display:flex; align-items:center; justify-content:center; padding:2rem; }
-    .card { background:var(--bg2); border:1px solid var(--border); border-radius:10px; width:100%; max-width:380px; overflow:hidden; }
-    .card-head { padding:1.5rem 1.5rem 0; }
-    .card-title { font-size:1.2rem; font-weight:700; color:var(--text); margin-bottom:0.3rem; }
-    .card-sub { font-size:0.82rem; color:var(--text2); }
-    .card-body { padding:1.5rem; display:flex; flex-direction:column; gap:1rem; }
-    .github-btn { display:flex; align-items:center; justify-content:center; gap:0.6rem; background:var(--bg3); border:1px solid var(--border); color:var(--text); font-weight:600; font-size:0.85rem; padding:0.65rem 1rem; border-radius:6px; text-decoration:none; transition:background 0.15s; cursor:pointer; width:100%; }
-    .github-btn:hover { background:var(--border); }
-    .github-btn svg { width:18px; height:18px; fill:var(--text); }
-    .divider { display:flex; align-items:center; gap:0.75rem; }
-    .div-line { flex:1; height:1px; background:var(--border); }
-    .div-text { font-size:0.72rem; color:var(--text3); letter-spacing:0.05em; }
-    .field { display:flex; flex-direction:column; gap:0.35rem; }
-    .field label { font-size:0.78rem; font-weight:600; color:var(--text2); }
-    .field input { background:var(--bg); border:1px solid var(--border); border-radius:6px; padding:0.6rem 0.8rem; color:var(--text); font-family:var(--sans); font-size:0.85rem; outline:none; transition:border-color 0.15s; }
-    .field input:focus { border-color:var(--accent); }
-    .field input::placeholder { color:var(--text3); }
-    .submit-btn { background:var(--green); color:#ffffff; font-weight:700; font-size:0.85rem; padding:0.65rem 1rem; border-radius:6px; border:none; cursor:pointer; transition:filter 0.15s; width:100%; font-family:var(--sans); }
-    .submit-btn:hover { filter:brightness(1.1); }
-    .submit-btn:disabled { opacity:0.5; cursor:not-allowed; }
-    .error-msg { background:rgba(248,81,73,0.1); border:1px solid rgba(248,81,73,0.3); border-radius:6px; padding:0.6rem 0.8rem; font-size:0.78rem; color:var(--red); display:none; }
-    .success-msg { background:rgba(63,185,80,0.1); border:1px solid rgba(63,185,80,0.3); border-radius:6px; padding:0.6rem 0.8rem; font-size:0.78rem; color:var(--green); display:none; }
-    .footer-link { text-align:center; font-size:0.78rem; color:var(--text2); padding-bottom:1.25rem; }
-    .footer-link a { color:var(--accent); text-decoration:none; }
-    .footer-link a:hover { text-decoration:underline; }
-    .terms { font-size:0.72rem; color:var(--text3); text-align:center; line-height:1.5; }
-  </style>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Start free &#8212; DarkMatter</title>
+<meta name="description" content="Create a free DarkMatter account. Commit your first AI agent record in under 2 minutes."/>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+/* DarkMatter design system — extracted from homepage */
+/* Include after Google Fonts link */
+
+:root{
+  --void:38 30% 97%; --void-elevated:38 24% 94%; --void-line:38 14% 84%;
+  --paper:38 30% 97%; --ink:220 20% 10%;
+  --trace:220 10% 38%; --trace-dim:220 8% 55%;
+  --signal:152 64% 34%; --signal-dim:152 30% 60%;
+  --background:var(--paper); --foreground:var(--ink);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;border:0 solid hsl(var(--void-line))}
+html,body{background:hsl(var(--background));color:hsl(var(--foreground));font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;font-feature-settings:"ss01","cv11"}
+::selection{background:hsl(var(--signal)/.3);color:hsl(var(--foreground))}
+a{color:inherit;text-decoration:none}
+.mono{font-family:'JetBrains Mono',ui-monospace,monospace;font-feature-settings:"calt" 0}
+.wrap{max-width:80rem;margin:0 auto;padding:0 1.5rem}
+.balance{text-wrap:balance}
+.hairline{height:1px;background:hsl(var(--void-line))}
+.eyebrow{display:flex;align-items:center;gap:.75rem;font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:hsl(var(--trace))}
+.eyebrow .rule{height:1px;width:2rem;background:hsl(var(--trace-dim))}
+.section{border-bottom:1px solid hsl(var(--void-line))}
+.section-pad{padding:6rem 1.5rem}
+.grid-noise{background-image:linear-gradient(hsl(var(--void-line)/.35) 1px,transparent 1px),linear-gradient(90deg,hsl(var(--void-line)/.35) 1px,transparent 1px);background-size:64px 64px;background-position:-1px -1px}
+
+/* Nav */
+.nav{position:sticky;top:0;z-index:40;border-bottom:1px solid hsl(var(--void-line));background:hsl(var(--void)/.8);backdrop-filter:blur(8px)}
+.nav-inner{display:flex;height:3.5rem;align-items:center;justify-content:space-between;max-width:80rem;margin:0 auto;padding:0 1.5rem}
+.wordmark{display:flex;align-items:center;gap:.75rem;font-family:'JetBrains Mono',monospace}
+.wordmark .sigil{position:relative;display:inline-flex;height:2rem;width:2rem;align-items:center;justify-content:center}
+.wordmark .name{display:flex;align-items:baseline;gap:1px;line-height:1}
+.wordmark .name .d{font-size:16px;font-weight:600;letter-spacing:.02em;color:hsl(var(--foreground))}
+.wordmark .name .m{font-size:16px;font-weight:300;letter-spacing:.02em;color:hsl(var(--trace))}
+.nav-links{display:none;gap:2rem;align-items:center}
+@media(min-width:768px){.nav-links{display:flex}}
+.nav-links a{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:hsl(var(--trace));transition:color .15s}
+.nav-links a:hover{color:hsl(var(--foreground))}
+.nav-links a.active{color:hsl(var(--foreground))}
+.nav-cta{display:flex;align-items:center;gap:.5rem}
+.nav-cta .signin{display:none;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:hsl(var(--trace));padding:.5rem .75rem}
+@media(min-width:640px){.nav-cta .signin{display:inline-flex}}
+.nav-cta .signin:hover{color:hsl(var(--foreground))}
+.nav-cta .commit{display:inline-flex;align-items:center;gap:.5rem;border:1px solid hsl(var(--signal)/.4);background:hsl(var(--signal)/.1);padding:.5rem .75rem;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:hsl(var(--signal));transition:background .15s}
+.nav-cta .commit:hover{background:hsl(var(--signal)/.2)}
+.dot{display:inline-block;height:.375rem;width:.375rem;border-radius:9999px;background:hsl(var(--signal));animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* Buttons */
+.btn-primary{display:inline-flex;align-items:center;gap:.75rem;background:hsl(var(--foreground));color:hsl(var(--background));padding:.875rem 1.25rem;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.2em;text-transform:uppercase;transition:background .15s,color .15s}
+.btn-primary:hover{background:hsl(var(--signal));color:hsl(var(--background))}
+.btn-ghost{display:inline-flex;align-items:center;gap:.75rem;border:1px solid hsl(var(--void-line));padding:.875rem 1.25rem;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:hsl(var(--trace));transition:color .15s,border-color .15s}
+.btn-ghost:hover{color:hsl(var(--foreground));border-color:hsl(var(--trace))}
+.btn-run{display:inline-flex;align-items:center;gap:.75rem;background:hsl(var(--signal));color:hsl(var(--background));padding:.875rem 1.25rem;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.2em;text-transform:uppercase;transition:background .15s}
+.btn-run:hover{background:hsl(var(--signal)/.85)}
+
+/* Tags */
+.tag{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:hsl(var(--signal));border:1px solid hsl(var(--signal)/.4);padding:.25rem .5rem}
+
+/* Code chips */
+.cmd{background:hsl(var(--foreground)/.06);border:1px solid hsl(var(--void-line));padding:1px 6px;border-radius:2px;color:hsl(var(--foreground));font-family:'JetBrains Mono',monospace}
+
+/* Terminal block */
+.term{
+  --void:220 18% 6%; --void-elevated:220 16% 9%; --void-line:220 12% 18%;
+  --ink:38 20% 96%; --trace:220 10% 68%; --trace-dim:220 8% 48%;
+  --signal:152 70% 56%;
+  background:hsl(var(--void));color:hsl(var(--ink));border:1px solid hsl(var(--void-line));
+}
+.term .titlebar{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid hsl(var(--void-line));padding:.625rem 1rem;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:hsl(var(--trace-dim))}
+.term .titlebar .dots{display:flex;align-items:center;gap:.5rem}
+.term .titlebar .d1{height:8px;width:8px;border-radius:9999px;background:hsl(12 72% 46%/.6)}
+.term .titlebar .d2{height:8px;width:8px;border-radius:9999px;background:hsl(var(--trace-dim)/.6)}
+.term .titlebar .d3{height:8px;width:8px;border-radius:9999px;background:hsl(var(--signal)/.6)}
+.term pre{overflow-x:auto;padding:1.25rem;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.6;color:hsl(var(--ink)/.9);white-space:pre}
+
+/* Props grid */
+.props-grid{display:grid;grid-template-columns:1fr;gap:1px;background:hsl(var(--void-line));border:1px solid hsl(var(--void-line))}
+@media(min-width:768px){.props-grid{grid-template-columns:repeat(3,1fr)}}
+.prop{background:hsl(var(--void));padding:2rem;transition:background .15s}
+.prop:hover{background:hsl(var(--void-elevated))}
+.prop .top{display:flex;align-items:center;justify-content:space-between;margin-bottom:2.5rem}
+.prop .idx{font-family:'JetBrains Mono',monospace;font-size:10px;color:hsl(var(--trace-dim))}
+.prop h3{font-size:1.5rem;letter-spacing:-.01em;margin-bottom:1rem;font-weight:500}
+.prop p{font-size:14px;line-height:1.6;color:hsl(var(--trace))}
+
+/* Levels table */
+.levels-table{margin-top:3.5rem;border-top:1px solid hsl(var(--void-line))}
+.level-row{display:grid;grid-template-columns:1fr;gap:1.5rem;border-bottom:1px solid hsl(var(--void-line));padding:2rem .5rem;transition:background .15s}
+@media(min-width:768px){.level-row{grid-template-columns:repeat(12,1fr)}}
+.level-row:hover{background:hsl(var(--void-elevated)/.4)}
+.level-c-tag{display:flex;align-items:flex-start;gap:.75rem}
+.level-num{font-family:'JetBrains Mono',monospace;font-size:10px;color:hsl(var(--trace-dim));margin-top:.5rem}
+.level-name{font-size:18px;letter-spacing:-.01em}
+.level-means{font-size:13px;line-height:1.6;color:hsl(var(--trace))}
+.level-how{font-size:13px;line-height:1.6;color:hsl(var(--foreground)/.8);font-family:'JetBrains Mono',monospace}
+@media(min-width:768px){.level-c-tag{grid-column:span 2}.level-c-name{grid-column:span 3}.level-c-means{grid-column:span 4}.level-c-how{grid-column:span 3}}
+
+/* Footer */
+footer{background:hsl(var(--void))}
+footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;grid-template-columns:1fr;gap:2.5rem}
+@media(min-width:768px){footer .top{grid-template-columns:repeat(12,1fr)}}
+.footer-brand{grid-column:span 5}
+.footer-brand p{margin-top:1.25rem;max-width:24rem;font-size:13px;color:hsl(var(--trace));line-height:1.6}
+.footer-col{grid-column:span 2}
+.footer-col .h{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:hsl(var(--trace-dim));margin-bottom:1rem}
+.footer-col ul{list-style:none;display:flex;flex-direction:column;gap:.625rem}
+.footer-col a{font-size:13px;color:hsl(var(--trace))}
+.footer-col a:hover{color:hsl(var(--foreground))}
+.footer-bottom{border-top:1px solid hsl(var(--void-line))}
+.footer-bottom .inner{max-width:80rem;margin:0 auto;padding:1.25rem 1.5rem;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:hsl(var(--trace-dim))}
+
+.auth-wrap{flex:1;display:flex;min-height:calc(100vh - 3.5rem)}
+.auth-left{display:none;flex:1;background:hsl(var(--void-elevated));border-right:1px solid hsl(var(--void-line));padding:4rem 3rem;flex-direction:column;justify-content:center}
+@media(min-width:900px){.auth-left{display:flex}}
+.auth-right{flex:1;display:flex;align-items:center;justify-content:center;padding:3rem 1.5rem}
+.auth-card{width:100%;max-width:360px}
+.auth-title{font-size:20px;font-weight:500;letter-spacing:-.01em;margin-bottom:.25rem}
+.auth-sub{font-size:13px;color:hsl(var(--trace));margin-bottom:1.75rem;line-height:1.6}
+.field{display:flex;flex-direction:column;gap:.35rem;margin-bottom:1rem}
+.field label{font-family:"JetBrains Mono",monospace;font-size:9px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:hsl(var(--trace))}
+.field input{background:hsl(var(--void-elevated));border:1px solid hsl(var(--void-line));padding:.625rem .75rem;color:hsl(var(--foreground));font-family:"Inter",sans-serif;font-size:13px;outline:none;transition:border-color .15s;width:100%}
+.field input:focus{border-color:hsl(var(--signal));background:hsl(var(--void))}
+.field input::placeholder{color:hsl(var(--trace-dim))}
+.submit-btn{width:100%;background:hsl(var(--foreground));color:hsl(var(--background));font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.2em;text-transform:uppercase;padding:.875rem;border:none;cursor:pointer;transition:background .15s,color .15s;margin-top:.25rem}
+.submit-btn:hover{background:hsl(var(--signal));color:hsl(var(--background))}
+.submit-btn:disabled{opacity:.45;cursor:not-allowed}
+.divider{display:flex;align-items:center;gap:.75rem;margin:.75rem 0;font-family:"JetBrains Mono",monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:hsl(var(--trace-dim))}
+.divider::before,.divider::after{content:"";flex:1;height:1px;background:hsl(var(--void-line))}
+.github-btn{width:100%;background:hsl(var(--void));border:1px solid hsl(var(--void-line));color:hsl(var(--trace));font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.15em;text-transform:uppercase;padding:.75rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:.5rem;transition:border-color .15s,color .15s}
+.github-btn:hover{border-color:hsl(var(--trace));color:hsl(var(--foreground))}
+.error-msg{background:hsl(var(--void-elevated));border-left:2px solid hsl(0 60% 50%);padding:.625rem .75rem;font-size:12px;color:hsl(0 60% 55%);display:none;margin-bottom:1rem;font-family:"JetBrains Mono",monospace}
+.auth-footer{text-align:center;font-size:13px;color:hsl(var(--trace));margin-top:1.25rem}
+.auth-footer a{color:hsl(var(--signal));text-decoration:none}
+.auth-footer a:hover{text-decoration:underline}
+.pitch-item{display:flex;gap:.75rem;margin-bottom:1.5rem;align-items:flex-start}
+.pitch-icon{font-family:"JetBrains Mono",monospace;font-size:11px;color:hsl(var(--signal));width:1.25rem;flex-shrink:0;padding-top:2px}
+.pitch-title{font-size:14px;font-weight:500;margin-bottom:.25rem}
+.pitch-body{font-size:13px;line-height:1.5;color:hsl(var(--trace))}
+body{display:flex;flex-direction:column;min-height:100vh}
+</style>
 </head>
 <body>
-<header>
-  <a class="logo" href="/">
-    <div class="logo-mark">
-<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <linearGradient id="lg" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stop-color="#7C3AED"/>
-            <stop offset="55%" stop-color="#2563EB"/>
-            <stop offset="100%" stop-color="#22D3EE"/>
-          </linearGradient>
-        </defs>
-        <circle cx="20" cy="20" r="17" stroke="#e5e7eb" stroke-width="0.8" stroke-dasharray="2 3"/>
-        <circle cx="20" cy="20" r="12" stroke="#d1d5db" stroke-width="0.5" opacity="0.6"/>
-        <circle cx="20" cy="5"  r="3.2" fill="#7C3AED" opacity="0.95"/>
-        <circle cx="20" cy="5"  r="5.5" stroke="#7C3AED" stroke-width="0.4" opacity="0.2"/>
-        <circle cx="33" cy="28" r="2.6" fill="#2563EB" opacity="0.95"/>
-        <circle cx="33" cy="28" r="4.5" stroke="#2563EB" stroke-width="0.4" opacity="0.2"/>
-        <circle cx="7"  cy="28" r="2.2" fill="#0891b2" opacity="0.9"/>
-        <circle cx="7"  cy="28" r="3.8" stroke="#22D3EE" stroke-width="0.4" opacity="0.2"/>
-        <line x1="20" y1="8"  x2="31" y2="26" stroke="url(#lg)" stroke-width="0.6" opacity="0.5"/>
-        <line x1="20" y1="8"  x2="9"  y2="26" stroke="#7C3AED" stroke-width="0.6" opacity="0.4"/>
-        <line x1="30" y1="27" x2="10" y2="27" stroke="#22D3EE" stroke-width="0.6" opacity="0.4"/>
-        <circle cx="20" cy="20" r="2.5" fill="url(#lg)" opacity="0.6"/>
-      </svg>
+<header class="nav">
+  <div class="nav-inner">
+    <a href="/" class="wordmark" aria-label="DarkMatter">
+      <span class="sigil" aria-hidden="true"><svg viewBox="0 0 32 32" width="32" height="32" fill="none"><circle cx="16" cy="16" r="10" stroke="hsl(var(--foreground))" stroke-opacity="0.45" stroke-width="0.8"/><path d="M 16 6 L 24.66 21 L 7.34 21 Z" stroke="hsl(var(--foreground))" stroke-opacity="0.18" stroke-width="0.5" stroke-dasharray="1 1.5"/><circle cx="16" cy="16" r="0.8" fill="hsl(var(--foreground))" fill-opacity="0.55"/><circle cx="16" cy="6" r="2.1" fill="hsl(var(--signal))"/><circle cx="16" cy="6" r="3.4" stroke="hsl(var(--signal))" stroke-opacity="0.3" stroke-width="0.45"/><circle cx="24.66" cy="21" r="1.5" fill="hsl(var(--foreground))"/><circle cx="7.34" cy="21" r="1.5" fill="hsl(var(--foreground))" fill-opacity="0.85"/></svg></span>
+      <span class="name"><span class="d">DARK</span><span class="m">MATTER</span></span>
+    </a>
+    <nav class="nav-links">
+      <a href="/demo">Demo</a><a href="/docs">Docs</a><a href="/pricing">Pricing</a><a href="/compare">Compare</a><a href="/integrity">Integrity</a>
+    </nav>
+    <div class="nav-cta">
+      <a href="/login" class="signin">Sign in</a>
     </div>
-    <div class="logo-name">Dark<span class="matter-grad">Matter</span></div>
-  </a>
+  </div>
 </header>
 
-<div class="wrap">
-  <div class="card">
-    <div class="card-head">
-      <div class="card-title">Create your account</div>
-      <div class="card-sub">Start connecting your AI agents</div>
+<div class="auth-wrap">
+  <div class="auth-left">
+    <div style="margin-bottom:3rem">
+      <div class="eyebrow" style="margin-bottom:1.5rem"><span class="rule"></span><span>Free plan</span></div>
+      <h2 style="font-size:24px;font-weight:500;letter-spacing:-.01em;line-height:1.2;margin-bottom:.75rem">Every decision recorded.<br>Every record verifiable.</h2>
+      <p style="font-size:14px;line-height:1.6;color:hsl(var(--trace))">Start committing AI agent records in under 2 minutes. No credit card required.</p>
     </div>
-    <div class="card-body">
+    <div>
+      <div class="pitch-item"><div class="pitch-icon">&#10003;</div><div><div class="pitch-title">10,000 commits / month</div><div class="pitch-body">Full L1 &#183; L2 &#183; L3 verification on every plan.</div></div></div>
+      <div class="pitch-item"><div class="pitch-icon">&#10003;</div><div><div class="pitch-title">One import. Auto-instrumented.</div><div class="pitch-body">Anthropic and OpenAI SDK wrappers auto-commit every call.</div></div></div>
+      <div class="pitch-item"><div class="pitch-icon">&#10003;</div><div><div class="pitch-title">Share links. No account needed to verify.</div><div class="pitch-body">Anyone can verify a record from the <code class="cmd">/r/:id</code> URL. No login required.</div></div></div>
+      <div class="pitch-item"><div class="pitch-icon">&#10003;</div><div><div class="pitch-title">L3 non-repudiation available now.</div><div class="pitch-body">Generate your Ed25519 key with <code class="cmd">darkmatter keys generate</code>. DarkMatter cannot forge your records.</div></div></div>
+    </div>
+  </div>
 
-      <a class="github-btn" href="/auth/github">
-        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+  <div class="auth-right">
+    <div class="auth-card">
+      <div class="auth-title">Create a free account</div>
+      <div class="auth-sub">No credit card required. Full access from day one.</div>
+
+      <div id="error-msg" class="error-msg"></div>
+
+      <button class="github-btn" onclick="handleGitHub()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="hsl(var(--foreground))" aria-hidden="true"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
         Continue with GitHub
-      </a>
+      </button>
 
-      <div class="divider">
-        <div class="div-line"></div>
-        <div class="div-text">or</div>
-        <div class="div-line"></div>
-      </div>
-
-      <div class="error-msg" id="error-msg"></div>
-      <div class="success-msg" id="success-msg"></div>
+      <div class="divider">or</div>
 
       <div class="field">
-        <label>Email address</label>
-        <input type="email" id="email" placeholder="you@example.com" autocomplete="email" />
+        <label for="name">Full name</label>
+        <input type="text" id="name" placeholder="Your name" autocomplete="name"/>
       </div>
-
       <div class="field">
-        <label>Password</label>
-        <input type="password" id="password" placeholder="8+ characters" autocomplete="new-password" />
+        <label for="email">Email</label>
+        <input type="email" id="email" placeholder="you@yourfirm.com" autocomplete="email"/>
       </div>
-
-      <button class="submit-btn" id="submit-btn" onclick="handleSignup()">Create account</button>
-
-      <div class="terms">
-        By creating an account you agree that your agents' context
-        is transmitted securely and your private keys never leave your machine.
+      <div class="field">
+        <label for="password">Password</label>
+        <input type="password" id="password" placeholder="&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;" autocomplete="new-password"/>
       </div>
-
-      <div class="footer-link">
-        Already have an account? <a href="/login">Sign in</a>
-      </div>
+      <button class="submit-btn" id="submit-btn" onclick="handleSignup()">Create free account &#8594;</button>
+      <div class="auth-footer">Already have an account? <a href="/login">Sign in</a></div>
     </div>
   </div>
 </div>
 
 <script>
-  const session = localStorage.getItem('dm_session');
-  if (session) window.location.href = '/dashboard';
+(function(){
+  var raw=localStorage.getItem('dm_session');
+  if(!raw)return;
+  var s;try{s=JSON.parse(raw);}catch(e){return;}
+  if(s&&s.access_token)window.location.href='/dashboard';
+})();
 
-  async function handleSignup() {
-    const email    = document.getElementById('email').value.trim();
-    const password = document.getElementById('password').value;
-    const btn      = document.getElementById('submit-btn');
-
-    if (!email || !password) { showError('Please enter your email and password.'); return; }
-    if (password.length < 8) { showError('Password must be at least 8 characters.'); return; }
-
-    btn.disabled = true;
-    btn.textContent = 'Creating account...';
-    hideMessages();
-
-    try {
-      const res  = await fetch('/auth/signup', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ email, password }),
-      });
-      const data = await res.json();
-
-      if (data.error) { showError(data.error); btn.disabled = false; btn.textContent = 'Create account'; return; }
-
-      if (data.session) {
-        localStorage.setItem('dm_session', JSON.stringify(data.session));
-        window.location.href = '/dashboard';
-      } else {
-        showSuccess('Account created! Check your email to confirm, then sign in.');
-        btn.textContent = 'Account created';
-      }
-    } catch (e) {
-      showError('Something went wrong. Please try again.');
-      btn.disabled = false;
-      btn.textContent = 'Create account';
+async function handleSignup(){
+  var name=document.getElementById('name').value.trim();
+  var email=document.getElementById('email').value.trim();
+  var password=document.getElementById('password').value;
+  var btn=document.getElementById('submit-btn');
+  if(!email||!password){showError('Please enter your email and password.');return;}
+  if(password.length<8){showError('Password must be at least 8 characters.');return;}
+  btn.disabled=true;btn.textContent='Creating account…';
+  document.getElementById('error-msg').style.display='none';
+  try{
+    var res=await fetch('/auth/signup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,email,password})});
+    var data=await res.json();
+    if(data.error){showError(data.error);btn.disabled=false;btn.textContent='Create free account →';return;}
+    if(data.session){
+      localStorage.setItem('dm_session',JSON.stringify(data.session));
+      window.location.href='/dashboard';
+    } else {
+      // Email confirmation required
+      document.querySelector('.auth-card').innerHTML='<div style="text-align:center;padding:2rem 0"><div style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:hsl(var(--signal));margin-bottom:1rem">Check your email</div><p style="font-size:14px;color:hsl(var(--trace));line-height:1.6">We sent a confirmation link to <strong style="color:hsl(var(--foreground))">'+email+'</strong>.<br>Click it to activate your account.</p><a href="/login" style="display:inline-block;margin-top:1.5rem;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:hsl(var(--signal))">Back to sign in</a></div>';
     }
-  }
+  }catch(e){showError('Something went wrong. Please try again.');btn.disabled=false;btn.textContent='Create free account →';}
+}
 
-  function showError(msg) {
-    const el = document.getElementById('error-msg');
-    el.textContent = msg; el.style.display = 'block';
-    document.getElementById('success-msg').style.display = 'none';
-  }
+async function handleGitHub(){
+  try{
+    var res=await fetch('/auth/github',{method:'POST',headers:{'Content-Type':'application/json'}});
+    var data=await res.json();
+    if(data.url)window.location.href=data.url;
+    else showError('GitHub sign-in is not available right now.');
+  }catch(e){showError('Something went wrong.');}
+}
 
-  function showSuccess(msg) {
-    const el = document.getElementById('success-msg');
-    el.textContent = msg; el.style.display = 'block';
-    document.getElementById('error-msg').style.display = 'none';
-  }
-
-  function hideMessages() {
-    document.getElementById('error-msg').style.display   = 'none';
-    document.getElementById('success-msg').style.display = 'none';
-  }
+function showError(msg){var el=document.getElementById('error-msg');el.textContent=msg;el.style.display='block';}
+document.addEventListener('keydown',function(e){if(e.key==='Enter')handleSignup();});
 </script>
 </body>
 </html>

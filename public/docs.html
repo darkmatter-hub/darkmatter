@@ -45,7 +45,7 @@ a{color:inherit;text-decoration:none}
 @media(min-width:768px){.nav-links{display:flex}}
 .nav-links a{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:hsl(var(--trace));transition:color .15s}
 .nav-links a:hover{color:hsl(var(--foreground))}
-.nav-links a.active{color:hsl(var(--foreground))}
+.nav-links a.active{color:hsl(var(--foreground));border-bottom:1px solid hsl(var(--signal));padding-bottom:calc(.25rem - 1px)}
 .nav-cta{display:flex;align-items:center;gap:.5rem}
 .nav-cta .signin{display:none;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:hsl(var(--trace));padding:.5rem .75rem}
 @media(min-width:640px){.nav-cta .signin{display:inline-flex}}
@@ -126,10 +126,10 @@ footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;gri
 .docs-sidebar::-webkit-scrollbar-thumb{background:hsl(var(--void-line))}
 @media(max-width:860px){.docs-sidebar{display:none}}
 .docs-sb-group{padding:0 12px;margin-bottom:1.25rem}
-.docs-sb-label{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:hsl(var(--trace-dim));padding:0 8px;margin-bottom:4px;display:block}
+.docs-sb-label{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:hsl(var(--trace-dim));padding:0 8px;margin-bottom:4px;margin-top:4px;display:block}
 .docs-sb-link{display:block;font-size:12px;color:hsl(var(--trace));padding:4px 8px;border-left:2px solid transparent;transition:all .12s;text-decoration:none;line-height:1.4}
 .docs-sb-link:hover{color:hsl(var(--foreground));background:hsl(var(--void-elevated));border-left-color:hsl(var(--void-line))}
-.docs-sb-link.active{color:hsl(var(--signal));border-left-color:hsl(var(--signal));font-weight:500}
+.docs-sb-link.active{color:hsl(var(--signal));border-left:2px solid hsl(var(--signal));padding-left:6px;font-weight:500;background:hsl(var(--signal)/.04)}
 .docs-content{flex:1;max-width:780px;padding:3rem 3rem 6rem;overflow:hidden}
 @media(max-width:860px){.docs-content{padding:2rem 1.5rem 4rem}}
 

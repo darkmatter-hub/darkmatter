@@ -43,7 +43,7 @@ a{color:inherit;text-decoration:none}
 @media(min-width:768px){.nav-links{display:flex}}
 .nav-links a{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:hsl(var(--trace));transition:color .15s}
 .nav-links a:hover{color:hsl(var(--foreground))}
-.nav-links a.active{color:hsl(var(--foreground))}
+.nav-links a.active{color:hsl(var(--foreground));border-bottom:1px solid hsl(var(--signal));padding-bottom:calc(.25rem - 1px)}
 .nav-cta{display:flex;align-items:center;gap:.5rem}
 .nav-cta .signin{display:none;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:hsl(var(--trace));padding:.5rem .75rem}
 @media(min-width:640px){.nav-cta .signin{display:inline-flex}}
@@ -140,9 +140,9 @@ footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;gri
   <div class="wrap section-pad">
     <div class="eyebrow" style="margin-bottom:3rem"><span class="rule"></span><span>Three properties &#183; non-negotiable</span></div>
     <div class="props-grid">
-      <div class="prop"><div class="top"><span class="tag">L1</span><span class="idx">01 / 03</span></div><h3>Recorded outside the system</h3><p>The record does not live inside your agent runtime, or inside the model provider. It lives in an independent layer neither party controls.</p></div>
-      <div class="prop"><div class="top"><span class="tag">L2</span><span class="idx">02 / 03</span></div><h3>Sealed at the moment it happens</h3><p>Each event is cryptographically chained and signed client-side before transmission. Modification after the fact is mathematically detectable by anyone.</p></div>
-      <div class="prop"><div class="top"><span class="tag">L3</span><span class="idx">03 / 03</span></div><h3>Non-repudiation</h3><p>Signed with keys only you hold. DarkMatter cannot forge a record on your behalf &#8212; non-repudiation by construction, not by policy.</p></div>
+      <div class="prop" style="border-top:2px solid hsl(var(--signal)/.25)"><div class="top"><span class="tag">L1</span><span class="idx">01 / 03</span></div><h3>Recorded outside the system</h3><p>The record does not live inside your agent runtime, or inside the model provider. It lives in an independent layer neither party controls.</p></div>
+      <div class="prop" style="border-top:2px solid hsl(var(--signal)/.55)"><div class="top"><span class="tag">L2</span><span class="idx">02 / 03</span></div><h3>Sealed at the moment it happens</h3><p>Each event is cryptographically chained and signed client-side before transmission. Modification after the fact is mathematically detectable by anyone.</p></div>
+      <div class="prop" style="border-top:2px solid hsl(var(--signal))"><div class="top"><span class="tag">L3</span><span class="idx">03 / 03</span></div><h3>Non-repudiation</h3><p>Signed with keys only you hold. DarkMatter cannot forge a record on your behalf &#8212; non-repudiation by construction, not by policy.</p></div>
     </div>
   </div>
 </section>
