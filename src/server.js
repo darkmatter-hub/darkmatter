@@ -27,11 +27,6 @@ const {
   verifyWitnessSignature,
 } = require('./witness');
 
-const {
-  mountBillingRoutes, checkCommitLimit, incrementCommitUsage,
-} = require('./billing');
-
-const { verifyAttestation, canonicalJson } = require('./attestation');
 const app = express();
 
 // ── Trust proxy — required for Railway/Heroku/etc behind reverse proxy ────────
@@ -102,36 +97,6 @@ app.use((req, res, next) => {
   res.setHeader('Access-Control-Max-Age', '86400');
   if (req.method === 'OPTIONS') return res.sendStatus(204);
   next();
-});
-
-// ── Stripe webhook — MUST be before express.json() ───────────────────────────
-// Stripe signature verification requires raw bytes. express.json() would parse
-// the body first, making signature verification impossible.
-app.post('/api/billing/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
-  const sig    = req.headers['stripe-signature'];
-  const secret = process.env.STRIPE_WEBHOOK_SECRET;
-  const key    = process.env.STRIPE_SECRET_KEY;
-  if (!secret || !key) return res.sendStatus(200);
-
-  let event;
-  try {
-    const stripe = require('stripe')(key);
-    event = stripe.webhooks.constructEvent(req.body, sig, secret);
-  } catch(e) {
-    console.error('[webhook] signature verification failed:', e.message);
-    return res.status(400).send(`Webhook Error: ${e.message}`);
-  }
-
-  // supabaseService is defined later in the file but JS hoisting means
-  // by the time a request arrives the server is fully initialized.
-  try {
-    const { handleStripeEventExport } = require('./billing');
-    await handleStripeEventExport(event, supabaseService);
-  } catch(e) {
-    console.error('[webhook] handler error:', e.message);
-  }
-
-  res.sendStatus(200);
 });
 
 app.use(express.json({ limit: '10mb' })); // increased for rich content from extension
@@ -239,23 +204,7 @@ async function requireApiKey(req, res, next) {
       return res.status(401).json({ error: 'Invalid API key' });
     }
 
-    // ── Failure-safe: ensure agent context is complete ──────────────
-    // API key is valid but agent row may be missing expected fields.
-    // Auto-heal silently — never surface config errors to the user.
-    const agent = data[0];
-    if (!agent.agent_id) {
-      console.error('[requireApiKey] valid key but missing agent_id — auto-healing', apiKey.slice(0, 12));
-      agent.agent_id   = 'dm_' + require('crypto').randomBytes(8).toString('hex');
-      agent.agent_name = agent.agent_name || 'default';
-      try {
-        await supabaseService.from('agents').update({
-          agent_id:   agent.agent_id,
-          agent_name: agent.agent_name,
-        }).eq('api_key', apiKey);
-      } catch(_) {}
-    }
-
-    req.agent = agent;
+    req.agent = data[0];
     next();
   } catch(e) {
     console.error('[requireApiKey]', e.message);
@@ -336,15 +285,8 @@ async function flexAuth(req, res, next) {
   // API key path (SDK, CLI, agents)
   try {
     const keyHash = require('crypto').createHash('sha256').update(auth).digest('hex');
-    // Try hash lookup first (new agents store hash)
-    let { data: agent } = await supabaseService.from('agents')
+    const { data: agent } = await supabaseService.from('agents')
       .select('agent_id, agent_name, user_id').eq('api_key_hash', keyHash).single();
-    // Fallback: plain key lookup (agents created via /api/provision store plain key)
-    if (!agent) {
-      const { data: agent2 } = await supabaseService.from('agents')
-        .select('agent_id, agent_name, user_id').eq('api_key', auth).single();
-      agent = agent2;
-    }
     if (agent) {
       req.agent = agent;
       req.authType = 'apikey';
@@ -361,10 +303,6 @@ async function flexAuth(req, res, next) {
 
 // ── GET / ── serve homepage
 // Handled by express.static above
-
-// ── Billing routes — mounted here so supabaseService + requireAuth exist ─────
-// Webhook handler uses express.raw() internally — registered before routes.
-mountBillingRoutes(app, supabaseService, requireAuth);
 
 // ── POST /api/provision ─────────────────────────────
 // Frictionless agent creation — no account needed.
@@ -469,7 +407,7 @@ app.post('/api/provision', provisionLimiter, async (req, res) => {
       next: [
         `export DARKMATTER_API_KEY=${apiKey}`,
         'import darkmatter as dm',
-        'ctx = dm.commit(payload={"input": prompt, "output": result})',
+        'ctx = dm.commit(to_agent_id, payload={"output": result})',
       ],
       note: 'Your API key is active immediately. Check your email to set a password and access the dashboard.',
     });
@@ -493,119 +431,10 @@ app.get('/signup', (req, res) => {
 app.get('/dashboard', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/dashboard.html'));
 });
-app.get('/dashboard/keys/:keyId', (req, res) => {
-  res.sendFile(path.join(__dirname, '../public/dashboard.html'));
-});
 
 // ── GET /demo ── live interactive demo (no login required)
 app.get('/demo', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/demo.html'));
-});
-
-// ── POST /api/demo/commit ─────────────────────────────
-// Server-side demo endpoint. No API key exposed in browser.
-// Constrained payload shape. Rate-limited. Returns real commit
-// id, verify_url, proof_level, and export bundle URL.
-// ─────────────────────────────────────────────────────
-const demoLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour
-  max: 120,                  // 120 demo commits per IP per hour
-  message: { error: 'Demo rate limit reached. Get your own API key at darkmatterhub.ai/signup' },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
-const DEMO_AGENT_ID = process.env.DEMO_AGENT_ID || 'dm_demo_public';
-
-app.post('/api/demo/commit', demoLimiter, async (req, res) => {
-  try {
-    const ALLOWED_SCENARIOS = ['codereview', 'support', 'research'];
-    const { scenario } = req.body;
-    if (!scenario || !ALLOWED_SCENARIOS.includes(scenario)) {
-      return res.status(400).json({ error: 'Invalid scenario' });
-    }
-
-    const payloads = {
-      codereview: {
-        input:      'Customer dispute — order #84721, sarah.chen@email.com claims item defective on day 3',
-        output:     'Refund approved. $1,240.00 returned. Basis: defect claim within 30-day policy window (returns-policy-v6).',
-        model:      'claude-sonnet-4-6',
-        agent_role: 'refund-agent',
-      },
-      support: {
-        input:      '11 failed login attempts from new location (IP: 185.23.91.12) — account j.torres@acme.com',
-        output:     'Access revoked. Session terminated. MFA reset required. Basis: SEC-RULE-07, risk score 0.94. Reversible pending user verification.',
-        model:      'claude-sonnet-4-6',
-        agent_role: 'security-agent',
-      },
-      research: {
-        input:      'Post 9f3a2c by @marcus_dev flagged for policy review — community-policy-v12 § 4.2',
-        output:     'Content removed. Category: abusive_language. Confidence: 0.92. Decision is appealable.',
-        model:      'claude-sonnet-4-6',
-        agent_role: 'moderation-agent',
-      },
-    };
-
-    const p = payloads[scenario];
-    const traceId  = 'trc_demo_' + Date.now();
-    const commitId = 'ctx_' + Date.now() + '_' + crypto.randomBytes(6).toString('hex');
-    const timestamp = new Date().toISOString();
-    const normalizedPayload = JSON.stringify({ input: p.input, output: p.output, model: p.model }, ['input','model','output']);
-    const payloadHash    = crypto.createHash('sha256').update(normalizedPayload).digest('hex');
-    const integrityHash  = crypto.createHash('sha256').update(payloadHash + 'root').digest('hex');
-
-    // Insert into commits using demo agent
-    const { error } = await supabaseService
-      .from('commits')
-      .insert({
-        id:                  commitId,
-        schema_version:      '1.0',
-        from_agent:          DEMO_AGENT_ID,
-        to_agent:            DEMO_AGENT_ID,
-        payload:             { input: p.input, output: p.output, model: p.model },
-        context:             { input: p.input, output: p.output },
-        event_type:          'commit',
-        trace_id:            traceId,
-        branch_key:          'main',
-        agent_info:          { id: DEMO_AGENT_ID, name: 'DarkMatter Demo', role: p.agent_role, model: p.model },
-        integrity_hash:      integrityHash,
-        payload_hash:        payloadHash,
-        parent_hash:         null,
-        verified:            true,
-        verification_reason: 'Demo commit — API key authenticated',
-        capture_mode:        'client_signed',
-        timestamp,
-        accepted_at:         timestamp,
-      });
-
-    if (error) {
-      console.error('[demo/commit] insert error:', error.message);
-      return res.status(500).json({ error: 'Failed to create demo record' });
-    }
-
-    const baseUrl   = process.env.BASE_URL || 'https://darkmatterhub.ai';
-    const verifyUrl = `${baseUrl}/r/${commitId}`;
-    const exportUrl = `${baseUrl}/api/export/${commitId}`;
-
-    res.status(201).json({
-      id:           commitId,
-      trace_id:     traceId,
-      verify_url:   verifyUrl,
-      export_url:   exportUrl,
-      proof_level:  'signed',   // all demo commits are signed by server key
-      integrity: {
-        payload_hash:        'sha256:' + payloadHash,
-        integrity_hash:      'sha256:' + integrityHash,
-        verification_status: 'valid',
-      },
-      scenario,
-      timestamp,
-      _demo: true,
-    });
-  } catch (err) {
-    console.error('[demo/commit] error:', err.message);
-    res.status(500).json({ error: err.message });
-  }
 });
 
 // ── GET /blog ── blog index
@@ -665,53 +494,6 @@ app.post('/auth/login', authLimiter, async (req, res) => {
 
     const { data, error } = await supabaseAnon.auth.signInWithPassword({ email, password });
     if (error) return res.status(400).json({ error: error.message });
-
-    // ── Backfill: link all null-user_id agents to this user ──────────────
-    // Agents created via SDK have user_id=null. We find them by email prefix
-    // in agent_name and stamp user_id so the dashboard can list them.
-    if (data.user?.id && data.user?.email) {
-      try {
-        const userId      = data.user.id;
-        const emailPrefix = data.user.email.split('@')[0].toLowerCase();
-
-        // Find any agents with this email prefix that aren't yet linked
-        const { data: unlinked } = await supabaseService
-          .from('agents')
-          .select('agent_id')
-          .ilike('agent_name', `%${emailPrefix}%`)
-          .is('user_id', null)
-          .limit(100);
-
-        if (unlinked && unlinked.length > 0) {
-          await supabaseService
-            .from('agents')
-            .update({ user_id: userId })
-            .in('agent_id', unlinked.map(a => a.agent_id));
-        }
-
-        // Also stamp any agents that have a matching api_key stored
-        // in user_recording_keys (from the old chat proxy flow)
-        const { data: rkRows } = await supabaseService
-          .from('user_recording_keys')
-          .select('encrypted_key')
-          .eq('user_id', userId)
-          .limit(10);
-
-        if (rkRows && rkRows.length > 0) {
-          for (const rk of rkRows) {
-            if (!rk.encrypted_key) continue;
-            await supabaseService
-              .from('agents')
-              .update({ user_id: userId })
-              .eq('api_key', rk.encrypted_key)
-              .is('user_id', null);
-          }
-        }
-      } catch (backfillErr) {
-        // Non-fatal — log and continue, login still succeeds
-        console.warn('[login backfill]', backfillErr.message);
-      }
-    }
 
     res.json({ user: data.user, session: data.session });
   } catch (err) {
@@ -1081,16 +863,6 @@ function buildContext(c, agentMap = {}) {
     },
 
     created_at: c.timestamp,
-
-    // L3 non-repudiation fields
-    assurance_level: c.assurance_level || 'L1',
-    ...(c.completeness_claim !== null && c.completeness_claim !== undefined ? {
-      completeness_claim: c.completeness_claim,
-    } : {}),
-    ...(c.client_key_id ? {
-      client_key_id:    c.client_key_id,
-      client_signature: c.client_signature || null,
-    } : {}),
   };
 }
 
@@ -1133,28 +905,9 @@ app.post('/api/commit', apiLimiter, requireApiKey, async (req, res) => {
 
     // Accept either payload (v1) or context (legacy)
     const resolvedPayload = payload || (context ? { output: context } : null);
-    if (!resolvedPayload) {
-      return res.status(400).json({ error: 'payload (or context) required' });
+    if (!toAgentId || !resolvedPayload) {
+      return res.status(400).json({ error: 'toAgentId and payload (or context) required' });
     }
-
-    // ── Commit limit check ────────────────────────────────────────────────────
-    const userId = req.agent.user_id;
-    if (userId) {
-      const limitCheck = await checkCommitLimit(userId, supabaseService);
-      if (!limitCheck.allowed) {
-        return res.status(429).json({
-          error: limitCheck.error,
-          plan: limitCheck.plan,
-          limit: limitCheck.limit,
-          upgrade_url: 'https://darkmatterhub.ai/dashboard',
-        });
-      }
-    }
-
-    // toAgentId is optional — defaults to the committing agent's own ID.
-    // This removes the "create a second agent" requirement for single-agent workflows.
-    // Multi-agent pipelines still pass an explicit toAgentId as before.
-    const resolvedToAgentId = toAgentId || req.agent.agent_id;
 
     // Validate eventType
     const VALID_TYPES = ['commit', 'revert', 'override', 'branch', 'merge', 'error', 'spawn', 'timeout', 'retry', 'checkpoint', 'consent', 'redact', 'escalate', 'audit'];
@@ -1167,76 +920,7 @@ app.post('/api/commit', apiLimiter, requireApiKey, async (req, res) => {
     // client_timestamp: what the agent asserted in their envelope (may differ from accepted_at)
     const clientTimestamp = req.body.envelope?.timestamp || acceptedAt;
 
-    // ── L3 attestation (optional) ─────────────────────────────────────────────
-    let assuranceLevel = 'L1';
-    let attestationFields = {};
-    const clientAttestation = req.body.client_attestation;
-
-    if (clientAttestation) {
-      // Resolve public key — inline or from registry
-      let publicKey = clientAttestation.public_key;
-      if (!publicKey && clientAttestation.key_id) {
-        const { data: sigKey } = await supabaseService
-          .from('signing_keys')
-          .select('public_key, status')
-          .eq('user_id', userId)
-          .eq('key_id', clientAttestation.key_id)
-          .single();
-        if (!sigKey) {
-          return res.status(400).json({ error: 'attestation_failed', reason: 'unknown_key_id',
-            message: `Signing key '${clientAttestation.key_id}' not registered. Use POST /api/signing-keys to register.` });
-        }
-        if (sigKey.status === 'revoked') {
-          return res.status(400).json({ error: 'attestation_failed', reason: 'revoked_key',
-            message: `Signing key '${clientAttestation.key_id}' has been revoked.` });
-        }
-        publicKey = sigKey.public_key;
-      }
-      if (!publicKey) {
-        return res.status(400).json({ error: 'attestation_failed', reason: 'missing_public_key',
-          message: 'Provide public_key inline or register key_id via POST /api/signing-keys.' });
-      }
-
-      const verifyResult = verifyAttestation({
-        attestation: { ...clientAttestation, public_key: publicKey },
-        payload: resolvedPayload,
-        metadata: req.body.metadata || null,
-        agentId: req.agent.agent_id,
-        parentId: req.body.parentId || null,
-        completenessClaim: req.body.completeness_claim !== undefined ? req.body.completeness_claim : undefined,
-      });
-
-      if (!verifyResult.valid) {
-        return res.status(400).json({ error: 'attestation_failed', reason: verifyResult.reason,
-          message: verifyResult.message });
-      }
-
-      assuranceLevel = 'L3';
-
-      // Clock skew check (never reject, just flag)
-      const serverNow = Date.now();
-      const clientTs  = new Date(clientAttestation.client_timestamp).getTime();
-      const skewMs    = Math.abs(serverNow - clientTs);
-      const skewWarning = skewMs > 5 * 60 * 1000;
-
-      attestationFields = {
-        assurance_level:            'L3',
-        client_signature:           clientAttestation.signature,
-        client_public_key:          publicKey,
-        client_key_id:              clientAttestation.key_id,
-        client_signature_algorithm: clientAttestation.algorithm || 'Ed25519',
-        client_envelope_version:    clientAttestation.version || 'dm-envelope-v1',
-        client_payload_hash:        clientAttestation.payload_hash,
-        client_metadata_hash:       clientAttestation.metadata_hash || null,
-        client_envelope_hash:       clientAttestation.envelope_hash,
-        client_attestation_ts:      clientAttestation.client_timestamp,
-        client_attestation_ts_text: clientAttestation.client_timestamp,
-        timestamp_skew_warning:     skewWarning,
-        completeness_claim:         req.body.completeness_claim !== undefined
-                                      ? Boolean(req.body.completeness_claim)
-                                      : null,
-      };
-    }
+    // ── Phase 1: Client-side hashing support ──────────────────────────────
     // If the client supplied pre-computed hashes (commit_verified / Phase 1 SDK),
     // we use THOSE hashes — the server recomputes and cross-checks, but stores
     // what the client computed. This makes the server a dumb notary:
@@ -1294,7 +978,7 @@ app.post('/api/commit', apiLimiter, requireApiKey, async (req, res) => {
     const { data: toAgent } = await supabaseService
       .from('agents')
       .select('agent_id')
-      .eq('agent_id', resolvedToAgentId)
+      .eq('agent_id', toAgentId)
       .single();
 
     if (!toAgent) {
@@ -1322,14 +1006,14 @@ app.post('/api/commit', apiLimiter, requireApiKey, async (req, res) => {
           accepted_at:         acceptedAt,
           spec_version:        '1.0',
           verified:            false,
-          verification_reason: `Recipient agent ${resolvedToAgentId} not found`,
+          verification_reason: `Recipient agent ${toAgentId} not found`,
           timestamp,
         });
 
       return res.status(404).json({
         id:        commitId,
         verified:  false,
-        reason:    `Agent ${resolvedToAgentId} not found`,
+        reason:    `Agent ${toAgentId} not found`,
         timestamp,
       });
     }
@@ -1340,7 +1024,7 @@ app.post('/api/commit', apiLimiter, requireApiKey, async (req, res) => {
         id:                  commitId,
         schema_version:      schemaVersion,
         from_agent:          req.agent.agent_id,
-        to_agent:            resolvedToAgentId,
+        to_agent:            toAgentId,
         context:             { ...resolvedPayload, _eventType: resolvedType },
         payload:             resolvedPayload,
         event_type:          resolvedType,
@@ -1354,16 +1038,11 @@ app.post('/api/commit', apiLimiter, requireApiKey, async (req, res) => {
         hash_mismatch:       hashMismatch || false,
         verified:            true,
         verification_reason: 'API key authenticated',
-        capture_mode: 'client_signed',
+      capture_mode: 'client_signed',
         timestamp,
-        metadata:     req.body.metadata || null,
-        ...attestationFields,
       });
 
     if (error) throw error;
-
-    // Track usage for billing (non-fatal)
-    if (userId) incrementCommitUsage(userId, supabaseService).catch(() => {});
 
     // Update last_active
     await supabaseService
@@ -1375,33 +1054,30 @@ app.post('/api/commit', apiLimiter, requireApiKey, async (req, res) => {
     const { data: recipientAgent } = await supabaseService
       .from('agents')
       .select('agent_id, agent_name, webhook_url, webhook_secret')
-      .eq('agent_id', resolvedToAgentId)
+      .eq('agent_id', toAgentId)
       .single();
 
     // Fire event hooks (post-commit)
-    if (typeof fireEventHooks === 'function') {
-      fireEventHooks(req.agent.agent_id, 'commit', {
-        ctxId: commitId, toAgentId: resolvedToAgentId, traceId, eventType: resolvedType,
-      }).catch(() => {});
-    }
+    fireEventHooks(req.agent.agent_id, 'commit', {
+      ctxId: commitId, toAgentId, traceId, eventType: resolvedType,
+    }).catch(() => {});
 
     if (recipientAgent?.webhook_url) {
       deliverWebhook(recipientAgent, {
         id:         commitId,
         from_agent: req.agent.agent_id,
-        to_agent:   resolvedToAgentId,
+        to_agent:   toAgentId,
         context:    resolvedPayload,
         verified:   true,
         timestamp,
       }).catch(err => console.error('webhook delivery error:', err));
     }
 
-    const baseUrl  = process.env.APP_URL || process.env.BASE_URL || 'https://darkmatterhub.ai';
     const receipt = buildContext({
       id:                  commitId,
       schema_version:      schemaVersion,
       from_agent:          req.agent.agent_id,
-      to_agent:            resolvedToAgentId,
+      to_agent:            toAgentId,
       payload:             resolvedPayload,
       event_type:          resolvedType,
       parent_id:           parentId  || null,
@@ -1415,11 +1091,7 @@ app.post('/api/commit', apiLimiter, requireApiKey, async (req, res) => {
       verification_reason: 'API key authenticated',
       capture_mode: 'client_signed',
       timestamp,
-      ...attestationFields,
-    }, { [req.agent.agent_id]: req.agent.agent_name, [resolvedToAgentId]: recipientAgent?.agent_name || resolvedToAgentId });
-
-    // Always include verify_url in response
-    receipt.verify_url = `${baseUrl}/r/${commitId}`;
+    }, { [req.agent.agent_id]: req.agent.agent_name, [toAgentId]: recipientAgent?.agent_name || toAgentId });
 
     // ── Phase 3: append to log + Merkle tree ──────────
     let logEntry = null;
@@ -1642,35 +1314,11 @@ app.get('/api/replay/:ctxId', requireApiKey, async (req, res) => {
 });
 
 
-app.get('/api/me', flexAuth, async (req, res) => {
-  // API key path — agent context already loaded
-  if (req.authType === 'apikey' && req.agent) {
-    return res.json({
-      agentId:   req.agent.agent_id,
-      agentName: req.agent.agent_name,
-      apiKey:    req.agent.api_key,
-    });
-  }
-
-  // JWT path — look up the user's primary agent to surface their API key
-  if (req.user) {
-    const { data: agents } = await supabaseService
-      .from('agents')
-      .select('agent_id, agent_name, api_key')
-      .eq('user_id', req.user.id)
-      .order('created_at', { ascending: true })
-      .limit(1);
-
-    const agent = agents?.[0];
-    return res.json({
-      agentId:   agent?.agent_id  || null,
-      agentName: agent?.agent_name || null,
-      apiKey:    agent?.api_key   || null,
-      email:     req.user.email,
-    });
-  }
-
-  res.status(401).json({ error: 'Not authenticated' });
+app.get('/api/me', requireApiKey, async (req, res) => {
+  res.json({
+    agentId:   req.agent.agent_id,
+    agentName: req.agent.agent_name,
+  });
 });
 
 // ── POST /api/fork/:ctxId ── branch from a checkpoint ─
@@ -1864,7 +1512,7 @@ app.get('/api/verify/:ctxId', flexAuth, async (req, res) => {
 //   commits         — ordered commits, each with _proof receipt
 //   export_hash     — SHA-256 of the entire bundle (uniquely identifies this export)
 //
-app.get('/api/export/:ctxId', async (req, res) => {
+app.get('/api/export/:ctxId', flexAuth, async (req, res) => {
   try {
     const { ctxId } = req.params;
 
@@ -1910,31 +1558,6 @@ app.get('/api/export/:ctxId', async (req, res) => {
     // Build commits array with proof receipts
     const commitsWithProofs = chain.map(c => {
       const built    = buildContext(c);
-
-      // Reconstruct client_attestation for L3 offline verification
-      // Fields are stored as individual columns, not as a JSON blob
-      if (c.assurance_level === 'L3' && c.client_signature) {
-        built.client_attestation = {
-          version:          'dm-envelope-v1',
-          algorithm:        c.client_signature_algorithm || 'Ed25519',
-          key_id:           c.client_key_id,
-          public_key:       c.client_public_key || null,
-          client_timestamp: c.client_attestation_ts_text || c.client_attestation_ts || c.client_timestamp,
-          agent_id:         c.from_agent || c.agent_id,
-          payload_hash:     c.client_payload_hash   || (c.payload_hash   ? 'sha256:' + c.payload_hash   : null),
-          metadata_hash:    c.client_metadata_hash  || null,
-          envelope_hash:    c.client_envelope_hash  || null,
-          parent_id:        c.parent_id             || null,
-          signature:        c.client_signature,
-        };
-      }
-
-      // Include metadata for hash verification
-      if (c.metadata) built.metadata = c.metadata;
-
-      // Include trace_id at top level for verifier
-      if (c.trace_id && !built.trace_id) built.trace_id = c.trace_id;
-
       const logEntry = logByCommit[c.id];
       if (logEntry) {
         let inclusionProof = null;
@@ -2020,9 +1643,9 @@ app.get('/api/export/:ctxId', async (req, res) => {
         ctx_id:         ctxId,
         chain_length:   chain.length,
         lineage_root:   root?.lineage_root || root?.id,
-        trace_id:       tip?.trace_id || root?.trace_id || ctxId,
+        trace_id:       tip?.trace_id || null,
         exported_at:    exportedAt,
-        exported_by:    req.agent?.agent_id || req.user?.id || 'anonymous',
+        exported_by:    req.agent.agent_id,
       },
       integrity: {
         chain_intact:    chainIntact,
@@ -2701,6 +2324,47 @@ app.post('/enterprise/inquiry', feedbackLimiter, async (req, res) => {
   }
 });
 
+// ── POST /api/contact — footer contact modal ─────────────────────────────────
+app.post('/api/contact', feedbackLimiter, async (req, res) => {
+  try {
+    const { name, email, message } = req.body || {};
+    if (!email || !message) return res.status(400).json({ error: 'Email and message are required.' });
+    const safeName    = sanitizeText(name,    200);
+    const safeEmail   = sanitizeText(email,   200);
+    const safeMessage = sanitizeText(message, 2000);
+    if (process.env.RESEND_API_KEY && process.env.FEEDBACK_EMAIL) {
+      fetch('https://api.resend.com/emails', {
+        method:  'POST',
+        headers: { 'Authorization': `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          from:    'DarkMatter <hello@darkmatterhub.ai>',
+          to:      [process.env.FEEDBACK_EMAIL],
+          subject: `[DarkMatter Contact] ${escapeHtml(safeEmail)}`,
+          html:    `<p><b>Name:</b> ${escapeHtml(safeName) || '(not provided)'}</p>
+                    <p><b>Email:</b> ${escapeHtml(safeEmail)}</p>
+                    <p><b>Message:</b></p>
+                    <blockquote style="border-left:3px solid #ccc;padding-left:12px;color:#444">
+                      ${escapeHtml(safeMessage).replace(/\n/g, '<br>')}
+                    </blockquote>`,
+        }),
+      }).catch(e => console.error('[contact] Resend failed:', e.message));
+    } else {
+      console.log('[contact] form submission (RESEND not configured):', { name: safeName, email: safeEmail });
+    }
+    res.json({ received: true });
+  } catch (err) {
+    console.error('[contact]', err.message);
+    res.status(500).json({ error: 'Something went wrong.' });
+  }
+});
+
+// ── POST /api/enterprise-inquiry — alias for /enterprise/inquiry ──────────────
+// enterprise.html posts here; delegate to the canonical handler
+app.post('/api/enterprise-inquiry', feedbackLimiter, (req, res, next) => {
+  req.url = '/enterprise/inquiry';
+  app._router.handle(req, res, next);
+});
+
 // ── GET /enterprise/report/:traceId ── compliance PDF report
 app.get('/enterprise/report/:traceId', requireApiKey, requireEnterprise, async (req, res) => {
   try {
@@ -2800,13 +2464,10 @@ app.get('/enterprise/report/:traceId', requireApiKey, requireEnterprise, async (
 
 // Page routes for new pages
 app.get('/security',   (req, res) => res.sendFile(path.join(__dirname, '../public/security.html')));
-app.get('/pricing',           (req, res) => res.sendFile(path.join(__dirname, '../public/pricing.html')));
-app.get('/why',               (req, res) => res.sendFile(path.join(__dirname, '../public/why.html')));
-app.get('/docs',              (req, res) => res.sendFile(path.join(__dirname, '../public/docs.html')));
-app.get('/docs/quickstart',   (req, res) => res.sendFile(path.join(__dirname, '../public/docs/quickstart.html')));
-app.get('/docs/cheatsheet',   (req, res) => res.sendFile(path.join(__dirname, '../public/docs/cheatsheet.html')));
-app.get('/docs/cookbook',     (req, res) => res.sendFile(path.join(__dirname, '../public/docs/cookbook.html')));
-app.get('/enterprise',        (req, res) => res.sendFile(path.join(__dirname, '../public/enterprise.html')));
+app.get('/pricing',    (req, res) => res.sendFile(path.join(__dirname, '../public/pricing.html')));
+app.get('/why',        (req, res) => res.sendFile(path.join(__dirname, '../public/why.html')));
+app.get('/docs',       (req, res) => res.sendFile(path.join(__dirname, '../public/docs.html')));
+app.get('/enterprise', (req, res) => res.sendFile(path.join(__dirname, '../public/enterprise.html')));
 
 
 // ═══════════════════════════════════════════════════
@@ -2940,139 +2601,7 @@ app.get('/api/diff/:ctxIdA/:ctxIdB', requireApiKey, async (req, res) => {
 // WEEK 1: SHARED READ-ONLY CHAIN LINKS
 // ═══════════════════════════════════════════════════
 
-// ── SIGNING KEY REGISTRY — Phase 2 ──────────────────────────────────────────
-
-// ── Signing key routes use flexAuth — accept both JWT (dashboard) and dm_sk_ (CLI/SDK) ──
-function _signingUserId(req) {
-  // JWT auth → req.user.id, API key auth → req.agent.user_id
-  return req.user?.id || req.agent?.user_id || null;
-}
-
-// POST /api/signing-keys — register a public key for L3 commits
-app.post('/api/signing-keys', flexAuth, async (req, res) => {
-  try {
-    const userId = _signingUserId(req);
-    if (!userId) return res.status(401).json({ error: 'Could not resolve user ID' });
-    const { key_id, public_key, algorithm, description } = req.body;
-    if (!key_id || !public_key) {
-      return res.status(400).json({ error: 'key_id and public_key are required' });
-    }
-    if (algorithm && algorithm !== 'Ed25519') {
-      return res.status(400).json({ error: 'Only Ed25519 is supported' });
-    }
-    // Validate public key is valid base64url (32 bytes decoded)
-    try {
-      const raw = Buffer.from(public_key.replace(/-/g,'+').replace(/_/g,'/') + '==', 'base64');
-      if (raw.length !== 32) throw new Error('wrong length');
-    } catch {
-      return res.status(400).json({ error: 'public_key must be base64url of a 32-byte Ed25519 public key' });
-    }
-    const { data, error } = await supabaseService
-      .from('signing_keys')
-      .upsert({
-        user_id:     userId,
-        key_id:      sanitizeText(key_id, 100),
-        public_key,
-        algorithm:   'Ed25519',
-        status:      'active',
-        description: description ? sanitizeText(description, 200) : null,
-        created_at:  new Date().toISOString(),
-      }, { onConflict: 'user_id,key_id' })
-      .select()
-      .single();
-    if (error) throw error;
-    res.status(201).json({ key_id: data.key_id, algorithm: data.algorithm,
-      status: data.status, created_at: data.created_at });
-  } catch(e) {
-    console.error('[signing-keys POST]', e.message);
-    res.status(500).json({ error: e.message });
-  }
-});
-
-// GET /api/signing-keys — list registered keys
-app.get('/api/signing-keys', flexAuth, async (req, res) => {
-  try {
-    const userId = _signingUserId(req);
-    if (!userId) return res.status(401).json({ error: 'Could not resolve user ID' });
-    const { data, error } = await supabaseService
-      .from('signing_keys')
-      .select('key_id, algorithm, status, description, created_at, revoked_at')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
-    if (error) throw error;
-    res.json({ keys: data || [] });
-  } catch(e) {
-    res.status(500).json({ error: e.message });
-  }
-});
-
-// DELETE /api/signing-keys/:keyId — revoke a key
-app.delete('/api/signing-keys/:keyId', flexAuth, async (req, res) => {
-  try {
-    const userId = _signingUserId(req);
-    if (!userId) return res.status(401).json({ error: 'Could not resolve user ID' });
-    const { keyId } = req.params;
-    const { data, error } = await supabaseService
-      .from('signing_keys')
-      .update({ status: 'revoked', revoked_at: new Date().toISOString() })
-      .eq('user_id', userId)
-      .eq('key_id', keyId)
-      .select()
-      .single();
-    if (error || !data) return res.status(404).json({ error: 'Key not found' });
-    res.json({ key_id: data.key_id, status: 'revoked', revoked_at: data.revoked_at });
-  } catch(e) {
-    res.status(500).json({ error: e.message });
-  }
-});
-
-// ── POST /api/workspace/share/:traceId — generate on-demand share token ────────
-// Called from dashboard when user explicitly clicks Share or Verify.
-// Returns a signed URL valid for 30 days. No token = no public access.
-app.post('/api/workspace/share/:traceId', requireAuth, async (req, res) => {
-  try {
-    const { traceId } = req.params;
-    const secret = process.env.APP_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY || 'dm_fallback_secret';
-    const { days } = req.body;
-    const expiryDays = Math.min(Math.max(parseInt(days) || 30, 1), 365);
-    const expiresAt = Math.floor(Date.now() / 1000) + (expiryDays * 24 * 3600);
-
-    // Verify the commit belongs to this user
-    const { data: commit } = await supabaseService
-      .from('commits')
-      .select('id, trace_id, from_agent, agent_id')
-      .or(`trace_id.eq."${traceId}",trace_id.eq.${traceId},id.eq.${traceId}`)
-      .limit(1)
-      .single();
-
-    if (!commit) return res.status(404).json({ error: 'Record not found' });
-
-    // Check ownership via agent
-    const agentId = commit.agent_id || commit.from_agent;
-    if (agentId) {
-      const { data: agent } = await supabaseService
-        .from('agents').select('user_id').eq('agent_id', agentId).single();
-      if (agent?.user_id && agent.user_id !== req.user.id) {
-        return res.status(403).json({ error: 'Not your record' });
-      }
-    }
-
-    // Generate HMAC token: sign "traceId:expiresAt" with secret
-    const payload = `${traceId}:${expiresAt}`;
-    const token = require('crypto').createHmac('sha256', secret).update(payload).digest('hex');
-
-    const baseUrl = process.env.APP_URL || 'https://darkmatterhub.ai';
-    const shareUrl = `${baseUrl}/r/${encodeURIComponent(traceId)}?token=${token}&exp=${expiresAt}`;
-    const verifyUrl = shareUrl;
-
-    res.json({ shareUrl, verifyUrl, expiresAt: new Date(expiresAt * 1000).toISOString() });
-  } catch(e) {
-    console.error('[share]', e.message);
-    res.status(500).json({ error: e.message });
-  }
-});
-
-
+// POST /api/share/:ctxId — create a shareable read-only link
 app.post('/api/share/:ctxId', apiLimiter, requireApiKey, async (req, res) => {
   try {
     const { ctxId } = req.params;
@@ -4158,52 +3687,10 @@ app.get('/r/:traceId', async (req, res) => {
     const { traceId } = req.params;
     if (!traceId || traceId.length > 120) return res.status(400).json({ error: 'Invalid ID' });
 
-    // ── Access control: require valid signed token OR authenticated user ────────
-    const { token, exp } = req.query;
-    const secret = process.env.APP_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY || 'dm_fallback_secret';
-    let authorized = false;
-
-    if (token && exp) {
-      // Verify HMAC token
-      const now = Math.floor(Date.now() / 1000);
-      if (parseInt(exp) >= now) {
-        const expected = require('crypto').createHmac('sha256', secret)
-          .update(`${traceId}:${exp}`).digest('hex');
-        authorized = (token === expected);
-      }
-    }
-
-    if (!authorized) {
-      // Check for auth header (dashboard user)
-      const authHeader = req.headers.authorization;
-      if (authHeader?.startsWith('Bearer ')) {
-        try {
-          const { data: { user } } = await supabaseService.auth.getUser(
-            authHeader.replace('Bearer ', '').trim()
-          );
-          authorized = !!user;
-        } catch(_) {}
-      }
-    }
-
-    if (!authorized) {
-      if (req.query.format === 'json') {
-        return res.status(401).json({ error: 'This record requires a share link to access. Open in DarkMatter dashboard to generate one.' });
-      }
-      return res.status(401).send(`<!DOCTYPE html><html><head><title>Access required — DarkMatter</title>
-        <meta charset="UTF-8"/><style>body{font-family:system-ui;display:flex;align-items:center;justify-content:center;height:100vh;background:#f9fafb;margin:0;}
-        .card{max-width:440px;text-align:center;padding:40px;background:#fff;border:1px solid #e5e7eb;border-radius:12px;box-shadow:0 4px 24px rgba(0,0,0,.06);}
-        h2{font-size:1.2rem;margin-bottom:8px;color:#111827;}p{color:#6b7280;font-size:.875rem;line-height:1.6;}
-        a{display:inline-block;margin-top:20px;padding:10px 20px;background:#111827;color:#fff;border-radius:7px;text-decoration:none;font-size:.85rem;}</style></head>
-        <body><div class="card"><h2>Share link required</h2>
-        <p>This record is private. To share it for verification, open it in your DarkMatter dashboard and click <strong>Share link</strong> or <strong>Verify →</strong>.</p>
-        <a href="/">Go to DarkMatter</a></div></body></html>`);
-    }
-
     const { data: commits, error } = await supabaseService
       .from('commits')
-      .select('id, trace_id, from_agent, agent_id, agent_info, payload, timestamp, client_timestamp, event_type, integrity_hash, payload_hash, parent_hash, verified, assurance_level, client_signature, client_key_id, client_signature_algorithm, completeness_claim')
-      .or(`trace_id.eq."${traceId}",trace_id.eq.${traceId},id.eq.${traceId}`)
+      .select('id, trace_id, from_agent, agent_id, agent_info, payload, timestamp, client_timestamp, event_type, integrity_hash, payload_hash, parent_hash, verified')
+      .or('trace_id.eq."' + traceId + '",trace_id.eq.' + traceId)
       .order('timestamp', { ascending: true });
 
     if (error || !commits || !commits.length) {
@@ -4224,9 +3711,6 @@ app.get('/r/:traceId', async (req, res) => {
     }
 
     if (req.query.format === 'json') {
-      const filename = `darkmatter_proof_${traceId.slice(-12)}.json`;
-      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-      res.setHeader('Content-Type', 'application/json');
       return res.json({
         trace_id: traceId, chain_intact: chainIntact, step_count: commits.length,
         commits: commits.map(function(c) { return {
@@ -4258,7 +3742,7 @@ app.get('/r/:traceId', async (req, res) => {
         var p = commits[i].payload || {};
         if (p.role === 'user' && p.text) return p.text.slice(0, 60) + (p.text.length > 60 ? '...' : '');
       }
-      return 'AI Decision Record';
+      return 'AI Conversation Record';
     })();
 
     var platform = (commits[0] && commits[0].payload && commits[0].payload.platform) || 'AI';
@@ -4268,39 +3752,6 @@ app.get('/r/:traceId', async (req, res) => {
     var statusText  = chainIntact ? '\u2713 Record intact' : '\u2717 Mismatch detected';
     var statusBg    = chainIntact ? 'rgba(16,185,129,.06)' : 'rgba(239,68,68,.06)';
     var statusBd    = chainIntact ? 'rgba(16,185,129,.2)'  : 'rgba(239,68,68,.2)';
-
-    // L3 detection — check any commit in the chain for customer attestation
-    var l3Commit = commits.find(function(c) { return c.assurance_level === 'L3' && c.client_signature; });
-    var isL3 = !!l3Commit;
-    var l3KeyId = l3Commit ? (l3Commit.client_key_id || 'customer key') : null;
-    var skewWarning = l3Commit ? l3Commit.timestamp_skew_warning : false;
-
-    // Assurance level badge
-    var assuranceBadge = isL3
-      ? '<span style="font-family:var(--mono);font-size:10px;font-weight:700;padding:2px 8px;border-radius:3px;background:rgba(107,79,187,.08);color:#6b4fbb;border:1px solid rgba(107,79,187,.2);letter-spacing:.06em;margin-left:6px;">L3 NON-REPUDIATION</span>'
-      : '<span style="font-family:var(--mono);font-size:10px;padding:2px 8px;border-radius:3px;background:var(--bg2);color:var(--ink4);border:1px solid var(--border);letter-spacing:.05em;margin-left:6px;">L1/L2</span>';
-
-    // Integrity description line
-    var integrityDesc = isL3
-      ? 'This record was signed by a customer-controlled key before DarkMatter received it. DarkMatter cannot forge or alter this record — verification requires only the customer public key.'
-      : (chainIntact
-          ? 'This record has been cryptographically verified. Nothing has been added, removed, or altered since it was captured.'
-          : 'This record could not be fully verified. Download the proof file for independent investigation.');
-
-    var l3CustomerLine = isL3
-      ? '  <div style="font-size:12px;color:#6b4fbb;font-family:var(--mono);margin-bottom:4px;letter-spacing:.01em;">\u2713 Customer-signed &middot; key: ' + escH(l3KeyId) + (skewWarning ? ' &middot; <span style="color:#b45309;">timestamp skew &gt;5 min</span>' : '') + '</div>\n'
-      : '';
-
-    // Completeness claim — shown only when explicitly set
-    var ccCommit = isL3 ? commits.find(function(c) { return c.completeness_claim !== null && c.completeness_claim !== undefined; }) : null;
-    var ccValue  = ccCommit ? ccCommit.completeness_claim : undefined;
-    var completenessLine = '';
-    if (ccValue === true) {
-      completenessLine = '  <div style="font-size:12px;color:#0f7b4d;font-family:var(--mono);margin-bottom:4px;">\u2713 Agent asserted this record is complete (nothing omitted)</div>\n';
-    } else if (ccValue === false) {
-      completenessLine = '  <div style="font-size:12px;color:var(--ink4);font-family:var(--mono);margin-bottom:4px;">&mdash; Partial record (agent did not assert completeness)</div>\n';
-    }
-    // ccValue === undefined/null → no line shown (neutral)
 
     // Build messages HTML
     var messagesHTML = '';
@@ -4323,12 +3774,7 @@ app.get('/r/:traceId', async (req, res) => {
 
     var verifyUrl = (process.env.APP_URL || 'https://darkmatterhub.ai') + '/r/' + traceId;
     var jsonUrl   = verifyUrl + '?format=json';
-    var dateStr = firstTs ? (function() {
-      var d = new Date(firstTs);
-      var date = d.toLocaleDateString('en-GB', { month:'short', day:'numeric', year:'numeric', timeZone:'UTC' });
-      var time = d.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit', timeZone:'UTC', hour12:false });
-      return date + ' \u00b7 ' + time + ' UTC';
-    })() : '';
+    var dateStr = firstTs ? new Date(firstTs).toLocaleDateString(undefined, {month:'short',day:'numeric',year:'numeric'}) : '';
 
     var html = '<!DOCTYPE html>\n<html lang="en">\n<head>\n'
       + '<meta charset="UTF-8"/>\n'
@@ -4423,24 +3869,18 @@ app.get('/r/:traceId', async (req, res) => {
       + '  <div class="fs-title">' + escH(title) + '</div>\n'
       + '  <div class="fs-meta">\n'
       + '    <span class="fs-status" style="background:' + statusBg + ';color:' + statusColor + ';border-color:' + statusBd + ';">' + statusText + '</span>\n'
-      + assuranceBadge + '\n'
       + '    <span class="fs-sep">\u00b7</span>\n'
       + '    <span class="fs-chip">' + stepCount + ' step' + (stepCount !== 1 ? 's' : '') + '</span>\n'
       + '    <span class="fs-sep">\u00b7</span>\n'
       + '    <span class="fs-chip">' + escH(platform) + '</span>\n'
       + (dateStr ? '    <span class="fs-sep">\u00b7</span>\n    <span class="fs-chip">' + escH(dateStr) + '</span>\n' : '')
       + '  </div>\n'
-      + l3CustomerLine
-      + completenessLine
-      + '  <div style="font-size:12px;color:#059669;font-family:var(--mono);margin-bottom:4px;letter-spacing:.01em;">This record can be verified independently — without DarkMatter.</div>\n'
-      + '  <div style="font-size:11.5px;color:var(--ink4);font-family:var(--mono);margin-bottom:12px;">Anyone can verify this record. No account required.</div>\n'
-      + '  <div class="fs-integrity">' + integrityDesc + '</div>\n'
+      + '  <div class="fs-integrity">' + (chainIntact ? 'This record has been cryptographically verified. Nothing has been added, removed, or altered since it was captured.' : 'This record could not be fully verified. Download the proof file for independent investigation.') + '</div>\n'
       + '  <div class="fs-actions">\n'
-      + '    <button class="fs-btn-p" onclick="switchView(this.dataset.v,this)" data-v="proof">Verify independently &rarr;</button>\n'
+      + '    <button class="fs-btn-p" onclick="copyLink()">Copy link</button>\n'
       + '    <a class="fs-btn-s" href="' + escH(jsonUrl) + '">Download proof bundle (.json)</a>\n'
-      + '    <button class="fs-btn-s" onclick="copyLink()">Copy link</button>\n'
+      + '    <button class="fs-btn-s" onclick="switchView(this.dataset.v,this)" data-v="proof">View verification &rarr;</button>\n'
       + '  </div>\n'
-      + '  <div style="font-size:11.5px;color:var(--ink4);font-family:var(--mono);margin-top:10px;">Anyone can verify this record. No account required.</div>\n'
       + '</div>\n'
       + '<div class="view-switcher">\n'
       + '<div class="view-switcher">\n'
@@ -5165,24 +4605,28 @@ app.get('/api/workspace/members', wsAuth, async (req, res) => {
 
     const { data: members } = await supabaseService.from('workspace_members')
       .select('*').eq('workspace_id', me.workspace_id)
-      .order('created_at', { ascending: true });
+      .order('joined_at', { ascending: true });
 
-    // Get accepted invitations to fill in emails for members who have none
-    const { data: acceptedInvites } = await supabaseService
-      .from('workspace_invitations')
-      .select('email, accepted_at')
-      .eq('workspace_id', me.workspace_id)
-      .not('accepted_at', 'is', null);
+    // Get commit counts per member this week
+    const weekAgo = new Date(Date.now() - 7*86400000).toISOString();
+    const agentIds = members.map(m => m.agent_id).filter(Boolean);
 
-    const inviteEmails = (acceptedInvites || []).map(i => i.email);
+    const { data: recentCommits } = agentIds.length ? await supabase
+      .from('commits').select('agent_id')
+      .in('agent_id', agentIds)
+      .gte('accepted_at', weekAgo) : { data: [] };
 
-    const enriched = (members || []).map((m, idx) => ({
+    const countByAgent = {};
+    (recentCommits || []).forEach(c => {
+      countByAgent[c.agent_id] = (countByAgent[c.agent_id] || 0) + 1;
+    });
+
+    const enriched = members.map(m => ({
       ...m,
-      email:        m.email || inviteEmails[idx] || null,
-      display_name: m.display_name || (m.email || inviteEmails[idx] || '')?.split('@')[0] || '?',
+      weekCommits: countByAgent[m.agent_id] || 0,
     }));
 
-    res.json({ members: enriched, isAdmin: me.role === 'admin' || me.role === 'owner' });
+    res.json({ members: enriched, isAdmin: me.role === 'admin' });
   } catch(e) {
     res.status(500).json({ error: e.message });
   }
@@ -5191,29 +4635,12 @@ app.get('/api/workspace/members', wsAuth, async (req, res) => {
 // ── Invite member ─────────────────────────────────────────────────────
 app.post('/api/workspace/invite', wsAuth, async (req, res) => {
   try {
-    // Accept both { email } (singular) and { emails } (array) from dashboard
-    const emailInput = req.body.emails || req.body.email;
-    const emails = Array.isArray(emailInput) ? emailInput : (emailInput ? [emailInput] : []);
-    const role   = req.body.role || 'member';
+    const { email, role = 'member' } = req.body;
+    if (!email) return res.status(400).json({ error: 'Email required' });
 
-    if (!emails.length) return res.status(400).json({ error: 'Email required' });
-    const email = emails[0]; // process first email (loop below handles rest)
-
-    let { data: me } = await supabaseService.from('workspace_members')
+    const { data: me } = await supabaseService.from('workspace_members')
       .select('workspace_id, role').eq('user_id', req.user.id).single();
-
-    // Auto-create workspace if user has none yet (solo founder flow)
-    if (!me) {
-      const wsName = (req.user.email || 'workspace').split('@')[0];
-      const { data: ws, error: wsErr } = await supabaseService
-        .from('workspaces')
-        .insert({ name: wsName, owner_user_id: req.user.id })
-        .select().single();
-      if (wsErr) throw wsErr;
-      await supabaseService.from('workspace_members')
-        .insert({ workspace_id: ws.id, user_id: req.user.id, role: 'owner' });
-      me = { workspace_id: ws.id, role: 'owner' };
-    }
+    if (!me || !['admin','owner'].includes(me.role)) return res.status(403).json({ error: 'Admin only' });
 
     const { data: inv, error } = await supabaseService.from('workspace_invitations')
       .insert({ workspace_id: me.workspace_id, email, role, invited_by: req.user.id })
@@ -5266,145 +4693,6 @@ app.post('/api/workspace/invite', wsAuth, async (req, res) => {
   }
 });
 
-
-// ── GET /api/workspace/invite/validate — validate invite token (public) ──────
-app.get('/api/workspace/invite/validate', async (req, res) => {
-  try {
-    const { token } = req.query;
-    if (!token) return res.status(400).json({ error: 'Token required' });
-
-    const { data: inv } = await supabaseService
-      .from('workspace_invitations')
-      .select('id, email, role, workspace_id, created_at')
-      .or(`token.eq.${token},id.eq.${token}`)
-      .single();
-
-    if (!inv) return res.status(404).json({ error: 'Invite not found or expired' });
-
-    const { data: ws } = await supabaseService
-      .from('workspaces')
-      .select('name')
-      .eq('id', inv.workspace_id)
-      .single();
-
-    res.json({
-      valid:          true,
-      email:          inv.email,
-      workspace_name: ws?.name || 'DarkMatter workspace',
-    });
-  } catch(e) {
-    res.status(500).json({ error: e.message });
-  }
-});
-
-// ── POST /api/workspace/invite/accept — accept invite (creates account if needed) ──
-app.post('/api/workspace/invite/accept', async (req, res) => {
-  try {
-    const { token, password } = req.body;
-    if (!token) return res.status(400).json({ error: 'Token required' });
-
-    // Look up invitation
-    const { data: inv } = await supabaseService
-      .from('workspace_invitations')
-      .select('id, email, role, workspace_id')
-      .or(`token.eq.${token},id.eq.${token}`)
-      .single();
-
-    if (!inv) return res.status(404).json({ error: 'Invite not found or expired' });
-
-    let userId, session = null;
-
-    // Check if user is already authenticated (header)
-    const authHeader = req.headers.authorization;
-    if (authHeader?.startsWith('Bearer ')) {
-      const t = authHeader.replace('Bearer ', '').trim();
-      const { data: { user } } = await supabaseService.auth.getUser(t);
-      if (user) userId = user.id;
-    }
-
-    // If not authenticated and password provided — create account
-    if (!userId && password) {
-      const { data: signUpData, error: signUpErr } = await supabaseAnon.auth.signUp({
-        email:    inv.email,
-        password: password,
-        options:  { emailRedirectTo: `${process.env.BASE_URL || 'https://darkmatterhub.ai'}/dashboard` },
-      });
-      if (signUpErr) return res.status(400).json({ error: signUpErr.message });
-      userId  = signUpData.user?.id;
-      session = signUpData.session;
-
-      // Also sign in immediately so they get a session
-      if (!session) {
-        const { data: signInData } = await supabaseAnon.auth.signInWithPassword({ email: inv.email, password });
-        session = signInData?.session;
-        userId  = signInData?.user?.id || userId;
-      }
-    }
-
-    if (!userId) return res.status(401).json({ error: 'Authentication required' });
-
-    // Add to workspace — store email so it shows in team list
-    await supabaseService.from('workspace_members').upsert({
-      workspace_id:  inv.workspace_id,
-      user_id:       userId,
-      role:          inv.role || 'member',
-      email:         inv.email,
-      display_name:  inv.email.split('@')[0],
-    }, { onConflict: 'workspace_id,user_id' });
-
-    // Mark invitation used
-    await supabaseService.from('workspace_invitations')
-      .update({ accepted_at: new Date().toISOString() })
-      .or(`token.eq.${token},id.eq.${token}`);
-
-    res.json({ success: true, session });
-  } catch(e) {
-    console.error('[invite accept]', e.message);
-    res.status(500).json({ error: e.message });
-  }
-});
-
-// ── GET /api/workspace/invitations — list pending invites sent from this workspace ──
-app.get('/api/workspace/invitations', wsAuth, async (req, res) => {
-  try {
-    const { data: me } = await supabaseService.from('workspace_members')
-      .select('workspace_id').eq('user_id', req.user.id).single();
-    if (!me) return res.json({ invitations: [] });
-
-    const { data: invitations } = await supabaseService
-      .from('workspace_invitations')
-      .select('id, email, role, created_at, accepted_at')
-      .eq('workspace_id', me.workspace_id)
-      .order('created_at', { ascending: false });
-
-    // Backfill email on workspace_members rows that are missing it
-    // (covers invites accepted before the email column was stored)
-    const accepted = (invitations || []).filter(i => i.accepted_at && i.email);
-    if (accepted.length > 0) {
-      for (const inv of accepted) {
-        // Find member with this email missing
-        const { data: member } = await supabaseService
-          .from('workspace_members')
-          .select('user_id, email')
-          .eq('workspace_id', me.workspace_id)
-          .is('email', null)
-          .limit(1)
-          .single();
-        if (member) {
-          await supabaseService
-            .from('workspace_members')
-            .update({ email: inv.email, display_name: inv.email.split('@')[0] })
-            .eq('workspace_id', me.workspace_id)
-            .eq('user_id', member.user_id);
-        }
-      }
-    }
-
-    res.json({ invitations: invitations || [] });
-  } catch(e) {
-    res.status(500).json({ error: e.message });
-  }
-});
 
 // ── Alias: /api/workspace/invitations → /api/workspace/invite ───────────────
 // Compatibility for clients that call the plural form
@@ -5859,42 +5147,8 @@ app.get('/proxy/status', proxyAuth, (req, res) => {
 });
 
 // ── Join page (for invite links) ──────────────────────────────────────
-app.get('/join',          (req, res) => res.sendFile(path.join(__dirname, '../public/join.html')));
-app.get('/organizations', (req, res) => res.sendFile(path.join(__dirname, '../public/organizations.html')));
-
-// ── GET /api/workspace/my-organizations ─────────────────────────────────────
-app.get('/api/workspace/my-organizations', requireAuth, async (req, res) => {
-  try {
-    const { data: memberships } = await supabaseService
-      .from('workspace_members')
-      .select('workspace_id, role, workspaces(id, name, owner_user_id)')
-      .eq('user_id', req.user.id);
-
-    const orgs = (memberships || []).map(m => ({
-      id:         m.workspace_id,
-      name:       m.workspaces?.name || req.user.email,
-      email:      req.user.email,
-      role:       m.role,
-      role_label: m.role === 'owner' ? 'Owner' : m.role === 'admin' ? 'Admin' : 'Member',
-      is_current: true,
-    }));
-
-    // If no workspaces, return a default entry
-    if (!orgs.length) {
-      orgs.push({
-        id:         'default',
-        name:       req.user.email,
-        email:      req.user.email,
-        role:       'owner',
-        role_label: 'Owner',
-        is_current: true,
-      });
-    }
-
-    res.json({ organizations: orgs });
-  } catch(e) {
-    res.status(500).json({ error: e.message });
-  }
+app.get('/join', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/join.html'));
 });
 
 
@@ -5930,27 +5184,6 @@ app.get('/chat', (req, res) => {
 });
 
 
-// ── /admin routes — MUST be before catch-all ─────────────────────────────────
-app.get('/admin/', (req, res) => res.redirect(301, '/admin'));
-app.get('/admin', (req, res) => {
-  res.sendFile(require('path').join(__dirname, '../public/admin.html'));
-});
-
-// ── /admindashboard — consolidated admin (no redirect loop risk) ──────────────
-app.get('/admindashboard', (req, res) => {
-  res.sendFile(require('path').join(__dirname, '../public/admindashboard.html'));
-});
-
-// ── /usage — SDK usage dashboard ─────────────────────────────────────────────
-app.get('/usage', (req, res) => {
-  res.sendFile(require('path').join(__dirname, '../public/usage.html'));
-});
-
-// ── /ops — internal operations dashboard ─────────────────────────────────────
-app.get('/ops', (req, res) => {
-  res.sendFile(require('path').join(__dirname, '../public/ops.html'));
-});
-
 app.get('*', (req, res, next) => {
   // API routes: pass through to registered handlers (or Express default 404)
   if (req.path.startsWith('/api/') || req.path.startsWith('/proxy/')) {
@@ -5969,7 +5202,7 @@ app.get('*', (req, res, next) => {
 app.get('/admin/stats', requireAuth, async (req, res) => {
   try {
     // Check if the authenticated user is an admin email
-    const adminEmails = (process.env.SUPERUSER_EMAIL || process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim()).filter(Boolean);
+    const adminEmails = (process.env.ADMIN_EMAILS || 'hello@darkmatterhub.ai').split(',').map(e => e.trim());
     if (!adminEmails.includes(req.user.email)) {
       return res.status(403).json({ error: 'Admin only' });
     }
@@ -5992,162 +5225,9 @@ app.get('/admin/stats', requireAuth, async (req, res) => {
   }
 });
 
-// ── GET /api/workspace/stats/usage — SDK + L3 adoption metrics (admin only) ──
-app.get('/api/workspace/stats/usage', requireAuth, async (req, res) => {
-  try {
-    const adminEmails = (process.env.SUPERUSER_EMAIL || process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim()).filter(Boolean);
-    if (!adminEmails.includes(req.user.email)) {
-      return res.status(403).json({ error: 'Admin only' });
-    }
-
-    // ── Run all queries in parallel ───────────────────────────────────────────
-    const [
-      totalRes,
-      wrapperRes,
-      l3Res,
-      agentCommitsRes,
-      activeRes7,
-      activeRes30,
-      agentCountRes,
-      newAgents7dRes,
-      newL3_7dRes,
-      firstCommitRes,
-      lastCommitRes,
-    ] = await Promise.all([
-
-      // Total commits
-      supabaseService.from('commits')
-        .select('id', { count: 'exact', head: true }),
-
-      // Wrapper usage — derive from metadata->>'wrapper'
-      (async () => { try { return await supabaseService.rpc('usage_wrapper_breakdown'); } catch { return null; } })(),
-
-      // L3 usage
-      supabaseService.from('commits')
-        .select('id', { count: 'exact', head: true })
-        .eq('assurance_level', 'L3'),
-
-      // Commits per agent (for p50/p90)
-      supabaseService.from('commits')
-        .select('from_agent')
-        .not('from_agent', 'is', null),
-
-      // 7-day active agents
-      supabaseService.from('commits')
-        .select('from_agent', { count: 'exact', head: false })
-        .gte('timestamp', new Date(Date.now() - 7 * 86400000).toISOString()),
-
-      // 30-day active agents
-      supabaseService.from('commits')
-        .select('from_agent', { count: 'exact', head: false })
-        .gte('timestamp', new Date(Date.now() - 30 * 86400000).toISOString()),
-
-      // New agents last 7d (agents created in last 7 days)
-      supabaseService.from('agents')
-        .select('agent_id', { count: 'exact', head: true })
-        .gte('created_at', new Date(Date.now() - 7 * 86400000).toISOString()),
-
-      // New L3 commits last 7d
-      supabaseService.from('commits')
-        .select('id', { count: 'exact', head: true })
-        .eq('assurance_level', 'L3')
-        .gte('timestamp', new Date(Date.now() - 7 * 86400000).toISOString()),
-
-      // First and last commit times — use created_at which is always set
-      supabaseService.from('commits')
-        .select('created_at')
-        .order('created_at', { ascending: true })
-        .limit(1),
-
-      supabaseService.from('commits')
-        .select('created_at')
-        .order('created_at', { ascending: false })
-        .limit(1),
-    ]);
-
-    const totalCommits = totalRes.count || 0;
-    const l3Count      = l3Res.count || 0;
-    const uniqueAgents = agentCountRes.count || 0;
-
-    // ── Wrapper breakdown — parse from metadata if RPC unavailable ────────────
-    let wrapperAnthropicCount = 0;
-    let wrapperOpenAICount    = 0;
-    let wrapperManualCount    = 0;
-
-    if (wrapperRes && wrapperRes.data) {
-      // RPC result
-      for (const row of wrapperRes.data) {
-        if (row.wrapper?.includes('anthropic')) wrapperAnthropicCount = row.count;
-        else if (row.wrapper?.includes('openai')) wrapperOpenAICount = row.count;
-        else wrapperManualCount = row.count;
-      }
-    } else {
-      // Fallback: fetch recent commits and check metadata.wrapper
-      const { data: sample } = await supabaseService
-        .from('commits')
-        .select('metadata')
-        .limit(2000)
-        .order('timestamp', { ascending: false });
-
-      for (const c of sample || []) {
-        const w = c.metadata?.wrapper || '';
-        if (w.includes('anthropic'))      wrapperAnthropicCount++;
-        else if (w.includes('openai'))    wrapperOpenAICount++;
-        else                              wrapperManualCount++;
-      }
-    }
-
-    // ── Commits per agent — p50, p90 ─────────────────────────────────────────
-    const agentCounts = {};
-    for (const c of agentCommitsRes.data || []) {
-      if (c.from_agent) agentCounts[c.from_agent] = (agentCounts[c.from_agent] || 0) + 1;
-    }
-    const countValues = Object.values(agentCounts).sort((a, b) => a - b);
-    const p50 = countValues[Math.floor(countValues.length * 0.5)] || 0;
-    const p90 = countValues[Math.floor(countValues.length * 0.9)] || 0;
-
-    // ── Active users — distinct agents with commits in window ─────────────────
-    const active7d  = new Set((activeRes7.data  || []).map(c => c.from_agent)).size;
-    const active30d = new Set((activeRes30.data || []).map(c => c.from_agent)).size;
-
-    // ── L3 percent ────────────────────────────────────────────────────────────
-    const l3Percent = totalCommits > 0 ? Math.round((l3Count / totalCommits) * 1000) / 10 : 0;
-
-    res.json({
-      total_commits:   totalCommits,
-      unique_agents:   uniqueAgents,
-      wrapper_usage: {
-        anthropic: wrapperAnthropicCount,
-        openai:    wrapperOpenAICount,
-        manual:    wrapperManualCount,
-      },
-      l3_usage: {
-        count:       l3Count,
-        percent:     l3Percent,
-        last_7d:     newL3_7dRes?.count || 0,
-      },
-      commits_per_agent: {
-        p50,
-        p90,
-        total_agents_with_commits: countValues.length,
-      },
-      active_agents: {
-        last_7d:  active7d,
-        last_30d: active30d,
-      },
-      momentum: {
-        new_agents_7d:    newAgents7dRes?.count || 0,
-        first_commit_at:  firstCommitRes?.data?.[0]?.created_at || null,
-        last_commit_at:   lastCommitRes?.data?.[0]?.created_at  || null,
-      },
-      _note: 'wrapper_usage derived from metadata.wrapper — only counts commits via SDK wrappers after v1.3.0',
-      _generated_at: new Date().toISOString(),
-    });
-
-  } catch(e) {
-    console.error('[usage stats]', e.message);
-    res.status(500).json({ error: e.message });
-  }
+// ── GET /admin — serve admin panel ────────────────────────────────────────
+app.get('/admin', requireAuth, (req, res) => {
+  res.sendFile(require('path').join(__dirname, '../public/admin.html'));
 });
 
 // ── GET /api/debug/me — diagnostic for "no records" issue (admin only) ──────
@@ -6481,73 +5561,101 @@ app.post('/api/workspace/chat', requireAuth, async (req, res) => {
 // ─────────────────────────────────────────────────────────────────────────────
 app.get('/api/workspace/activity', requireAuth, async (req, res) => {
   try {
-    const limit = Math.min(parseInt(req.query.limit) || 25, 200);
+    const limit = Math.min(parseInt(req.query.limit) || 50, 200);
 
-    // Run membership and agents queries in parallel
-    const [membership, agentsRes] = await Promise.all([
-      getMembership(req.user.id),
-      supabaseService.from('agents').select('agent_id, agent_name').eq('user_id', req.user.id).limit(100),
-    ]);
+    // Get membership
+    const membership = await getMembership(req.user.id);
 
-    const userAgents   = agentsRes.data || [];
-    const userAgentIds = userAgents.map(a => a.agent_id);
-    const agentNameMap = {};
-    userAgents.forEach(a => { agentNameMap[a.agent_id] = a.agent_name; });
-
-    let allAgentIds = [...userAgentIds];
+    // Collect all agent IDs we should show
+    let agentIds = [];
 
     if (membership) {
+      // Workspace member — show all workspace members' activity (admin) or own (member)
       if (membership.role === 'admin') {
         const { data: members } = await supabaseService
           .from('workspace_members')
           .select('agent_id')
           .eq('workspace_id', membership.workspace_id)
           .not('agent_id', 'is', null);
-        const wsIds = (members || []).map(m => m.agent_id).filter(Boolean);
-        allAgentIds = [...new Set([...allAgentIds, ...wsIds])];
-      } else if (membership.agent_id) {
-        allAgentIds = [...new Set([...allAgentIds, membership.agent_id])];
+        agentIds = (members || []).map(m => m.agent_id).filter(Boolean);
+      } else {
+        if (membership.agent_id) agentIds = [membership.agent_id];
       }
     }
 
-    if (allAgentIds.length === 0) return res.json({ activity: [], total: 0 });
+    // Always include user's own agents
+    const { data: userAgents } = await supabaseService
+      .from('agents')
+      .select('agent_id, agent_name')
+      .eq('user_id', req.user.id);
+
+    const userAgentIds = (userAgents || []).map(a => a.agent_id);
+    const allAgentIds  = [...new Set([...agentIds, ...userAgentIds])];
+
+    if (allAgentIds.length === 0) {
+      return res.json({ activity: [], total: 0 });
+    }
 
     const idList = allAgentIds.map(id => `"${id}"`).join(',');
     const { data: commits, error } = await supabaseService
       .from('commits')
-      .select('id, trace_id, from_agent, agent_id, agent_info, payload, timestamp, event_type, verified, capture_mode, assurance_level, completeness_claim')
+      .select('id, trace_id, from_agent, agent_id, agent_info, payload, timestamp, event_type, verified, capture_mode')
       .or(`from_agent.in.(${idList}),agent_id.in.(${idList})`)
       .order('timestamp', { ascending: false })
       .limit(limit);
 
     if (error) throw error;
 
+    // Build an agent name map
+    const agentNameMap = {};
+    (userAgents || []).forEach(a => { agentNameMap[a.agent_id] = a.agent_name; });
+
+    // If workspace, also pull member names
+    if (membership) {
+      const { data: members } = await supabaseService
+        .from('workspace_members')
+        .select('agent_id, display_name, email')
+        .eq('workspace_id', membership.workspace_id);
+      (members || []).forEach(m => {
+        if (m.agent_id) agentNameMap[m.agent_id] = m.display_name || m.email;
+      });
+    }
+
+    // Format for dashboard
     const activity = (commits || []).map(c => {
       const agentKey  = c.agent_id || c.from_agent;
       const agentName = agentNameMap[agentKey] || c.agent_info?.name || agentKey || 'Agent';
       const provider  = c.agent_info?.provider || c.payload?._provider || null;
       const model     = c.agent_info?.model     || c.payload?._model    || null;
       const source    = c.capture_mode || c.payload?._source || 'api';
-      const p         = c.payload || {};
-      let title = p.decision ? 'Decision: ' + p.decision
-                : p.action   ? 'Action: '   + p.action
-                : p.output   ? String(p.output).slice(0, 80)
-                : p.input    ? String(p.input).slice(0, 80)
-                : p.convTitle ? p.convTitle
-                : p.prompt   ? p.prompt.slice(0, 80)
-                : 'Commit ' + c.id.slice(0, 12);
+
+      // Build a human-readable title from payload
+      const p = c.payload || {};
+      let title = 'AI conversation recorded';
+      if (p.prompt || p.output) {
+        const preview = (p.prompt || p.output || '').slice(0, 80);
+        title = preview ? `"${preview}${preview.length >= 80 ? '…' : ''}"` : title;
+      } else if (p.convTitle) {
+        title = p.convTitle;
+      }
 
       return {
-        id: c.id, traceId: c.trace_id || c.id, agentId: agentKey,
-        agentName, provider: provider || 'unknown', model: model || 'unknown',
-        eventType: c.event_type || 'commit', title, timestamp: c.timestamp,
-        verified: c.verified || false, source,
-        assurance_level:  c.assurance_level  || null,
-        completeness_claim: c.completeness_claim !== undefined ? c.completeness_claim : null,
+        id:         c.id,
+        traceId:    c.trace_id || c.id,
+        agentId:    agentKey,
+        agentName,
+        provider:   provider || 'unknown',
+        model:      model    || 'unknown',
+        eventType:  c.event_type || 'commit',
+        title,
+        timestamp:  c.timestamp,
+        verified:   c.verified || false,
+        source,
       };
     });
 
     res.json({ activity, total: activity.length });
+
   } catch(err) {
     console.error('[workspace/activity]', err.message);
     res.status(500).json({ error: err.message });
@@ -6771,180 +5879,6 @@ app.patch('/api/workspace/provider-keys/:id', requireAuth, async (req, res) => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ── GET /api/workspace/profile — get current user's display name ─────────────
-app.get('/api/workspace/profile', requireAuth, async (req, res) => {
-  try {
-    const user = req.user;
-    const meta = user.user_metadata || {};
-    const full_name = meta.full_name || meta.name || meta.display_name || '';
-    res.json({
-      email:      user.email,
-      full_name,
-      avatar_url: meta.avatar_url || null,
-    });
-  } catch(e) {
-    res.status(500).json({ error: e.message });
-  }
-});
-
-// ── PATCH /api/workspace/profile — update display name ───────────────────────
-app.patch('/api/workspace/profile', requireAuth, async (req, res) => {
-  try {
-    const { full_name } = req.body;
-    if (!full_name || typeof full_name !== 'string' || !full_name.trim()) {
-      return res.status(400).json({ error: 'full_name is required' });
-    }
-    const name = full_name.trim().slice(0, 100);
-    const { data, error } = await supabaseService.auth.admin.updateUserById(
-      req.user.id,
-      { user_metadata: { ...req.user.user_metadata, full_name: name } }
-    );
-    if (error) throw error;
-    res.json({ full_name: name });
-  } catch(e) {
-    console.error('[profile patch]', e.message);
-    res.status(500).json({ error: e.message });
-  }
-});
-
-// ── GET /api/debug/whoami ── temporary debug endpoint ─────────────────────
-app.get('/api/debug/whoami', requireAuth, async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const email  = req.user.email;
-
-    // Count agents by user_id
-    const { count: byId } = await supabaseService
-      .from('agents')
-      .select('agent_id', { count: 'exact', head: true })
-      .eq('user_id', userId);
-
-    // Count all agents (no filter) for comparison
-    const { count: total } = await supabaseService
-      .from('agents')
-      .select('agent_id', { count: 'exact', head: true });
-
-    // Get sample of agents with null user_id
-    const { data: nullAgents } = await supabaseService
-      .from('agents')
-      .select('agent_id, agent_name, user_id, created_at')
-      .is('user_id', null)
-      .order('created_at', { ascending: false })
-      .limit(5);
-
-    // Get sample of agents matching this user
-    const { data: myAgents } = await supabaseService
-      .from('agents')
-      .select('agent_id, agent_name, user_id, created_at')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
-      .limit(5);
-
-    res.json({
-      auth_user_id:    userId,
-      auth_email:      email,
-      agents_by_my_id: byId,
-      agents_total:    total,
-      my_agents_sample: myAgents || [],
-      null_user_id_sample: nullAgents || [],
-    });
-  } catch(e) {
-    res.status(500).json({ error: e.message });
-  }
-});
-
-// ── GET /api/workspace/api-keys ──────────────────────
-// ─────────────────────────────────────────────────────────────────────────────
-// API KEY MANAGEMENT  (dashboard — JWT auth)
-// GET    /api/workspace/api-keys       → list user's agents/keys
-// POST   /api/workspace/api-keys       → create a new key
-// DELETE /api/workspace/api-keys/:id   → delete a key by agent_id
-// ─────────────────────────────────────────────────────────────────────────────
-
-app.get('/api/workspace/api-keys', requireAuth, async (req, res) => {
-  try {
-    const { data: agents, error } = await supabaseService
-      .from('agents')
-      .select('agent_id, agent_name, created_at')
-      .eq('user_id', req.user.id)
-      .order('created_at', { ascending: false })
-      .limit(50);
-
-    if (error) throw error;
-
-    res.json({ keys: (agents || []).map(a => ({
-      id:         a.agent_id,
-      name:       a.agent_name || 'API Key',
-      created_at: a.created_at,
-      created_by: req.user.email,
-      note:       'DarkMatter workspace',
-    })) });
-  } catch (e) {
-    console.error('[api-keys GET]', e.message);
-    res.status(500).json({ error: 'Could not load API keys' });
-  }
-});
-
-app.post('/api/workspace/api-keys', requireAuth, async (req, res) => {
-  try {
-    const name      = sanitizeText(req.body?.name || 'API Key', 100);
-    const newAgentId = generateAgentId();
-    const newApiKey  = generateApiKey();
-
-    const { data, error } = await supabaseService
-      .from('agents')
-      .insert({
-        agent_id:   newAgentId,
-        agent_name: name,
-        user_id:    req.user.id,
-        api_key:    newApiKey,
-      })
-      .select()
-      .single();
-
-    if (error) throw error;
-
-    res.status(201).json({
-      id:         data.agent_id,
-      name:       data.agent_name,
-      key:        newApiKey,
-      created_at: data.created_at,
-    });
-  } catch (e) {
-    console.error('[api-keys POST]', e.message, e.details || '');
-    res.status(500).json({ error: 'Could not create API key: ' + e.message });
-  }
-});
-
-app.delete('/api/workspace/api-keys/:keyId', requireAuth, async (req, res) => {
-  try {
-    const { keyId } = req.params;
-
-    // Verify ownership before delete
-    const { data: agent } = await supabaseService
-      .from('agents')
-      .select('agent_id, user_id')
-      .eq('agent_id', keyId)
-      .eq('user_id', req.user.id)
-      .single();
-
-    if (!agent) return res.status(404).json({ error: 'Key not found or not yours' });
-
-    const { error } = await supabaseService
-      .from('agents')
-      .delete()
-      .eq('agent_id', keyId)
-      .eq('user_id', req.user.id);
-
-    if (error) throw error;
-
-    res.json({ deleted: true, id: keyId });
-  } catch (e) {
-    console.error('[api-keys DELETE]', e.message);
-    res.status(500).json({ error: 'Could not delete key' });
-  }
-});
-
 // 4. GET /api/workspace/stats
 //    Dashboard stats cards — conversations, active people, AI services, exports
 // ─────────────────────────────────────────────────────────────────────────────

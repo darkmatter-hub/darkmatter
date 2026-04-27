@@ -9,7 +9,7 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
   /* Backgrounds — void palette from marketing site */
-  --bg:    #ffffff;
+  --bg:#ffffff;
   --bg-0:  hsl(38 30% 97%);
   --bg-1:  hsl(38 24% 94%);
   --bg-2:  hsl(38 14% 84%);
@@ -111,8 +111,8 @@ body { font-family: var(--sans); background:var(--bg); color: var(--t0); display
   text-decoration: none;
   margin-bottom: 18px;
 }
-.logo-name { font-family: var(--mono); font-size: 13px; font-weight: 600; letter-spacing: .04em; color: var(--t0); text-transform: uppercase; }
-.logo-grad { color: var(--purple); -webkit-text-fill-color: var(--purple); }
+.logo-name { font-family: var(--mono); font-size: 15px; font-weight: 700; letter-spacing: -0.03em; color: var(--t0); }
+.logo-grad { color: var(--purple); -webkit-text-fill-color: var(--purple); font-weight: 300; }
 
 .nav-links { display: flex; flex-direction: column; gap: 2px; }
 .nav-link {
@@ -1039,15 +1039,17 @@ body { font-family: var(--sans); background:var(--bg); color: var(--t0); display
     <div class="leftnav-top">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
         <a href="/" class="nav-logo">
-        <svg viewBox="0 0 32 32" width="22" height="22" fill="none" style="flex-shrink:0">
-          <circle cx="16" cy="16" r="10" stroke="currentColor" stroke-opacity="0.35" stroke-width="0.8"/>
-          <path d="M 16 6 L 24.66 21 L 7.34 21 Z" stroke="currentColor" stroke-opacity="0.15" stroke-width="0.5" stroke-dasharray="1 1.5"/>
-          <circle cx="16" cy="6"    r="2.1" fill="var(--purple)"/>
-          <circle cx="24.66" cy="21" r="1.5" fill="currentColor" fill-opacity="0.7"/>
-          <circle cx="7.34"  cy="21" r="1.5" fill="currentColor" fill-opacity="0.55"/>
-        </svg>
-        <span class="logo-name">DARK<span class="logo-grad">MATTER</span></span>
-      </a>
+          <svg viewBox="0 0 32 32" width="28" height="28" fill="none" style="flex-shrink:0">
+            <circle cx="16" cy="16" r="10" stroke="var(--t0)" stroke-opacity="0.45" stroke-width="0.8"/>
+            <path d="M 16 6 L 24.66 21 L 7.34 21 Z" stroke="var(--t0)" stroke-opacity="0.18" stroke-width="0.5" stroke-dasharray="1 1.5"/>
+            <circle cx="16" cy="16" r="0.8" fill="var(--t0)" fill-opacity="0.55"/>
+            <circle cx="16" cy="6" r="2.1" fill="var(--purple)"/>
+            <circle cx="16" cy="6" r="3.4" stroke="var(--purple)" stroke-opacity="0.3" stroke-width="0.45"/>
+            <circle cx="24.66" cy="21" r="1.5" fill="var(--t0)"/>
+            <circle cx="7.34"  cy="21" r="1.5" fill="var(--t0)" fill-opacity="0.85"/>
+          </svg>
+          <span class="logo-name">Dark<span class="logo-grad">Matter</span></span>
+        </a>
         <button onclick="document.getElementById('leftnav').classList.toggle('collapsed')" title="Toggle sidebar" class="sidebar-toggle-btn" style="background:none;border:none;cursor:pointer;color:var(--t3);padding:4px;border-radius:5px;display:flex;align-items:center;flex-shrink:0;transition:color .12s,background .12s;" onmouseover="this.style.color='var(--t0)';this.style.background='var(--bg-0)'" onmouseout="this.style.color='var(--t3)';this.style.background='none'">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
         </button>
@@ -1124,7 +1126,13 @@ body { font-family: var(--sans); background:var(--bg); color: var(--t0); display
             <div class="section-page-title">Your API keys</div>
             <div style="font-size:12.5px;color:var(--t3);margin-top:3px;">Each key lets an agent call <code style="font-family:var(--mono);font-size:11px;background:var(--bg-1);padding:1px 5px;border-radius:3px;">dm.commit()</code> to create an immutable, verifiable record.</div>
           </div>
-          <button class="section-page-btn" onclick="createApiKey()">New key</button>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div class="topbar-search" style="width:200px;">
+              <svg class="topbar-search-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" placeholder="Search keys..." name="dm-key-search" autocomplete="off" oninput="filterApiKeys(this.value)" style="border-radius:0;"/>
+            </div>
+            <button class="section-page-btn" onclick="createApiKey()">New key</button>
+          </div>
         </div>
         <!-- Key list -->
         <div id="apikeys-list">
@@ -1183,9 +1191,16 @@ body { font-family: var(--sans); background:var(--bg); color: var(--t0); display
         </div>
         <div class="activity-card" style="margin-bottom:0;">
           <div class="activity-filters">
-            <button class="filter-btn active" onclick="filterActivity(this,'all')">All</button>
-            <button class="filter-btn" onclick="filterActivity(this,'today')">Today</button>
-            <button class="filter-btn" onclick="filterActivity(this,'yesterday')">Yesterday</button>
+            <button class="filter-btn active" data-filter="all"      onclick="filterActivity(this,'all')">All</button>
+            <button class="filter-btn"         data-filter="today"     onclick="filterActivity(this,'today')">Today</button>
+            <button class="filter-btn"         data-filter="yesterday" onclick="filterActivity(this,'yesterday')">Yesterday</button>
+            <button class="filter-btn"         data-filter="7d"        onclick="filterActivity(this,'7d')">7 days</button>
+            <button class="filter-btn"         data-filter="range"     onclick="filterActivity(this,'range')" id="range-btn">Range</button>
+            <div id="date-range-picker" style="display:none;align-items:center;gap:6px;margin-left:4px">
+              <input type="date" id="range-from" style="font-family:var(--mono);font-size:11px;border:1px solid var(--brd);background:var(--bg-0);color:var(--t1);padding:3px 7px;outline:none;cursor:pointer;" oninput="applyDateRange()"/>
+              <span style="font-family:var(--mono);font-size:10px;color:var(--t3)">&#8212;</span>
+              <input type="date" id="range-to"   style="font-family:var(--mono);font-size:11px;border:1px solid var(--brd);background:var(--bg-0);color:var(--t1);padding:3px 7px;outline:none;cursor:pointer;" oninput="applyDateRange()"/>
+            </div>
           </div>
           <div id="activity-feed"></div>
         </div>
@@ -2594,12 +2609,58 @@ function filterActivity(btn, filter) {
   btn.classList.add('active');
   activeFilter = filter;
   _commitPage = 0;
+  const picker = document.getElementById('date-range-picker');
+  if (filter === 'range') {
+    picker.style.display = 'flex';
+    applyDateRange();
+    return;
+  }
+  if (picker) picker.style.display = 'none';
+  const now   = new Date();
+  const sod   = (d) => { const x = new Date(d); x.setHours(0,0,0,0); return x; };
+  const eod   = (d) => { const x = new Date(d); x.setHours(23,59,59,999); return x; };
   if (filter === 'today') {
-    const today = new Date(); today.setHours(0,0,0,0);
-    renderActivity(activityData.filter(a => new Date(a.timestamp) >= today));
+    const start = sod(now);
+    renderActivity(activityData.filter(a => new Date(a.timestamp) >= start));
+  } else if (filter === 'yesterday') {
+    const yest  = new Date(now); yest.setDate(yest.getDate() - 1);
+    const start = sod(yest);
+    const end   = eod(yest);
+    renderActivity(activityData.filter(a => {
+      const t = new Date(a.timestamp);
+      return t >= start && t <= end;
+    }));
+  } else if (filter === '7d') {
+    const start = new Date(now); start.setDate(start.getDate() - 7); start.setHours(0,0,0,0);
+    renderActivity(activityData.filter(a => new Date(a.timestamp) >= start));
   } else {
     renderActivity(activityData);
   }
+}
+
+function applyDateRange() {
+  const fromEl = document.getElementById('range-from');
+  const toEl   = document.getElementById('range-to');
+  if (!fromEl || !toEl || !fromEl.value) return;
+  const start = new Date(fromEl.value + 'T00:00:00');
+  const end   = toEl.value ? new Date(toEl.value + 'T23:59:59') : new Date(fromEl.value + 'T23:59:59');
+  _commitPage = 0;
+  renderActivity(activityData.filter(a => {
+    const t = new Date(a.timestamp);
+    return t >= start && t <= end;
+  }));
+}
+
+function filterApiKeys(val) {
+  _commitPage = 0;
+  if (!val || !val.trim()) { renderApiKeys(_apiKeys); return; }
+  const q = val.toLowerCase().trim();
+  renderApiKeys(_apiKeys.filter(k =>
+    (k.name        || '').toLowerCase().includes(q) ||
+    (k.agent_name  || '').toLowerCase().includes(q) ||
+    (k.note        || '').toLowerCase().includes(q) ||
+    (k.created_by  || '').toLowerCase().includes(q)
+  ));
 }
 
 function filterActivityBySearch(val) {
