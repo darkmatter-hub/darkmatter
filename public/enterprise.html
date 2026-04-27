@@ -196,7 +196,7 @@ document.getElementById('enterprise-form')?.addEventListener('submit', async (e)
   const btn = document.getElementById('ent-btn');
   btn.textContent = 'Sending…'; btn.disabled = true;
   try {
-    await fetch('/api/enterprise-inquiry', {
+    await fetch('/enterprise/inquiry', {
       method: 'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({
         company: document.getElementById('ef-company').value,
