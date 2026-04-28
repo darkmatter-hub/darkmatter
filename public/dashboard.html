@@ -1170,7 +1170,7 @@ body { font-family: var(--sans); background:var(--bg); color: var(--t0); display
                   </div>
                 </div>
                 <div style="margin-top:16px;">
-                  <a href="/docs/quickstart" target="_blank" style="font-family:var(--mono);font-size:11px;color:var(--purple);text-decoration:none;">→ Full quickstart guide</a>
+                  <a href="/docs#quickstart" target="_blank" style="font-family:var(--mono);font-size:11px;color:var(--purple);text-decoration:none;">→ Full quickstart guide</a>
                 </div>
               </div>
             </div>
@@ -2296,6 +2296,30 @@ function renderActivity(data) {
       <div style="padding:48px 24px;text-align:center;color:var(--t3);">
         <div style="font-size:14px;font-weight:500;margin-bottom:8px;">No commits yet</div>
         <div style="font-size:12px;font-family:var(--mono);color:var(--t4);">Make your first commit with <code style="background:var(--bg-1);padding:1px 5px;border-radius:3px;">dm.commit(payload={"input":…,"output":…})</code></div>
+<div id="first-commit-hint" style="display:none;margin-top:28px;padding:20px 24px;border:1px solid var(--purple-brd);background:var(--purple-light);max-width:600px;">
+  <div style="font-family:var(--mono);font-size:9.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--purple);margin-bottom:12px;">Your first commit — 60 seconds</div>
+  <div style="display:flex;flex-direction:column;gap:10px;">
+    <div style="background:var(--bg);border:1px solid var(--brd);padding:10px 14px;font-family:var(--mono);font-size:12px;line-height:1.7;position:relative;">
+      <div style="font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--t4);margin-bottom:6px;">Step 1 — install</div>
+      <code style="color:var(--t0);">pip install darkmatter-sdk</code>
+    </div>
+    <div style="background:var(--bg);border:1px solid var(--brd);padding:10px 14px;font-family:var(--mono);font-size:12px;line-height:1.7;position:relative;">
+      <div style="font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--t4);margin-bottom:6px;">Step 2 — paste and run</div>
+      <code style="color:var(--t0);white-space:pre;" id="first-commit-code">import darkmatter as dm
+
+ctx = dm.commit(
+    api_key = "dm_sk_...",
+    payload = {
+        "input":  "Approve refund for order #84721?",
+        "output": "Approved. Reason: within 30-day window.",
+    }
+)
+print(ctx["verify_url"])  # share this link</code>
+      <button onclick="copyFirstCommit()" style="position:absolute;top:10px;right:10px;font-family:var(--mono);font-size:10px;border:1px solid var(--brd);background:var(--bg-0);padding:3px 8px;cursor:pointer;color:var(--t2);">Copy</button>
+    </div>
+    <div style="font-size:12px;color:var(--t2);line-height:1.5;">The <code style="font-family:var(--mono);font-size:11px;background:var(--bg-1);padding:1px 4px;">verify_url</code> it prints is a public link. Send it to anyone. They can verify the record without an account.</div>
+  </div>
+</div>
       </div>`;
     return;
   }
@@ -2639,6 +2663,37 @@ function filterActivity(btn, filter) {
   }
 }
 
+function showFirstCommitBanner(apiKey) {
+  const hint = document.getElementById('first-commit-hint');
+  const code = document.getElementById('first-commit-code');
+  if (!hint || !code) return;
+  if (apiKey) {
+    code.textContent = code.textContent.replace('dm_sk_...', apiKey).replace(/dm_sk_…/g, apiKey);
+  }
+  hint.style.display = 'block';
+}
+
+function copyFirstCommit() {
+  const code = document.getElementById('first-commit-code');
+  if (!code) return;
+  navigator.clipboard.writeText(code.textContent).then(() => {
+    const btn = event.target;
+    const orig = btn.textContent;
+    btn.textContent = 'Copied!';
+    setTimeout(() => { btn.textContent = orig; }, 1800);
+  });
+}
+
+// Restore key from session if user refreshes
+(function restoreKey() {
+  try {
+    const saved = sessionStorage.getItem('dm_last_api_key');
+    if (saved && saved.startsWith('dm_sk_')) {
+      setTimeout(() => { updateQuickstartKey(saved); }, 500);
+    }
+  } catch(_) {}
+})();
+
 function applyDateRange() {
   const fromEl = document.getElementById('range-from');
   const toEl   = document.getElementById('range-to');
@@ -2786,7 +2841,7 @@ function renderApiKeys(keys) {
               <div class="qs-step"><div class="qs-num">2</div><div class="qs-body"><div class="qs-title">Configure with your key</div><code class="qs-code">import darkmatter as dm<br>dm.configure(api_key="dm_sk_…")</code></div></div>
               <div class="qs-step"><div class="qs-num">3</div><div class="qs-body"><div class="qs-title">Commit your first decision</div><code class="qs-code">ctx = dm.commit(payload={"input": "…", "output": "…"})<br>print(ctx["verify_url"])</code></div></div>
             </div>
-            <div style="margin-top:16px;"><a href="/docs/quickstart" target="_blank" style="font-family:var(--mono);font-size:11px;color:var(--purple);text-decoration:none;">→ Full quickstart guide</a></div>
+            <div style="margin-top:16px;"><a href="/docs#quickstart" target="_blank" style="font-family:var(--mono);font-size:11px;color:var(--purple);text-decoration:none;">→ Full quickstart guide</a></div>
           </div>
         </div>
       </div>`;
