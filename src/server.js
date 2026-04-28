@@ -5564,6 +5564,73 @@ app.get('/api/workspace/stats/usage', requireAuth, async (req, res) => {
   }
 });
 
+// ── GET /api/admin/users — all platform users (admin only) ──────────────────
+app.get('/api/admin/users', requireAuth, async (req, res) => {
+  try {
+    const superuser   = process.env.SUPERUSER_EMAIL || '';
+    const adminList   = process.env.ADMIN_EMAILS    || '';
+    const adminEmails = [...new Set([
+      ...superuser.split(','), ...adminList.split(','),
+      'hello@darkmatterhub.ai', 'hello@darkmatterhub.ai',
+    ].map(e => e.trim()).filter(Boolean))];
+    if (!adminEmails.includes(req.user.email)) {
+      return res.status(403).json({ error: 'Admin only' });
+    }
+
+    // Fetch all auth users (paginated — Supabase returns max 1000 per page)
+    let allUsers = [];
+    let page = 1;
+    while (true) {
+      const { data, error } = await supabaseService.auth.admin.listUsers({ page, perPage: 1000 });
+      if (error || !data?.users?.length) break;
+      allUsers = allUsers.concat(data.users);
+      if (data.users.length < 1000) break;
+      page++;
+    }
+
+    // Get agent counts per user_id
+    const { data: agents } = await supabaseService
+      .from('agents').select('user_id, agent_id');
+    const agentsByUser = {};
+    (agents || []).forEach(a => {
+      if (a.user_id) agentsByUser[a.user_id] = (agentsByUser[a.user_id] || []).concat(a.agent_id);
+    });
+
+    // Get commit counts per agent (then roll up to user)
+    const agentIds = (agents || []).map(a => a.agent_id).filter(Boolean);
+    let commitsByAgent = {};
+    if (agentIds.length) {
+      const idList = agentIds.map(id => `"${id}"`).join(',');
+      const { data: commitRows } = await supabaseService
+        .from('commits')
+        .select('from_agent')
+        .or(`from_agent.in.(${idList}),agent_id.in.(${idList})`);
+      (commitRows || []).forEach(c => {
+        if (c.from_agent) commitsByAgent[c.from_agent] = (commitsByAgent[c.from_agent] || 0) + 1;
+      });
+    }
+
+    const users = allUsers.map(u => {
+      const userAgents = agentsByUser[u.id] || [];
+      const commitCount = userAgents.reduce((sum, aid) => sum + (commitsByAgent[aid] || 0), 0);
+      return {
+        id:            u.id,
+        email:         u.email,
+        created_at:    u.created_at,
+        last_sign_in:  u.last_sign_in_at,
+        confirmed:     !!u.email_confirmed_at,
+        agent_count:   userAgents.length,
+        commit_count:  commitCount,
+      };
+    }).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+    res.json({ users, total: users.length });
+  } catch (err) {
+    console.error('[admin/users]', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.get('*', (req, res, next) => {
   // API routes: pass through to registered handlers (or Express default 404)
   if (req.path.startsWith('/api/') || req.path.startsWith('/proxy/')) {

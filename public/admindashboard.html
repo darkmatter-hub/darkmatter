@@ -728,23 +728,28 @@ async function loadOrgs() {
 // ── Users ─────────────────────────────────────────────────────────────────────
 async function loadUsers() {
   const tbody = document.getElementById('users-body');
+  tbody.innerHTML = '<tr><td colspan="6" style="padding:20px 12px;font-family:var(--mono);font-size:11px;color:var(--t3);">Loading…</td></tr>';
   try {
-    const d = await fetch('/api/workspace/members', { headers: authH() }).then(r => r.json());
-    _allUsers = d?.members || [];
+    const d = await fetch('/api/admin/users', { headers: authH() }).then(r => r.json());
+    _allUsers = d?.users || [];
+    // Also update total users KPI
+    if (d?.total) document.getElementById('k-users').textContent = fmt(d.total);
     renderUsers(_allUsers);
-  } catch { tbody.innerHTML = '<tr><td colspan="6" style="padding:20px 12px;color:var(--red);font-family:var(--mono);font-size:11px;">Error</td></tr>'; }
+  } catch(e) {
+    tbody.innerHTML = '<tr><td colspan="6" style="padding:20px 12px;color:var(--red);font-family:var(--mono);font-size:11px;">Error: ' + e.message + '</td></tr>';
+  }
 }
 
 function renderUsers(users) {
   const tbody = document.getElementById('users-body');
   if (!users.length) { tbody.innerHTML = '<tr><td colspan="6" style="padding:20px 12px;font-family:var(--mono);font-size:11px;color:var(--t3);">No users found</td></tr>'; return; }
-  tbody.innerHTML = users.map(m => `<tr>
-    <td>${m.email||'—'}</td>
-    <td class="mono dim truncate" style="font-size:10px;">${(m.user_id||'').slice(0,16)}…</td>
-    <td class="mono">${fmt(m.agent_count||m.agents||1)}</td>
-    <td class="mono">${fmt(m.commit_count||m.commits||'—')}</td>
-    <td class="mono dim" style="font-size:10px;">${validDate(m.last_sign_in||m.updated_at)}</td>
-    <td class="mono dim" style="font-size:10px;">${validDate(m.created_at)}</td>
+  tbody.innerHTML = users.map(u => `<tr>
+    <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${u.email||'—'}</td>
+    <td class="mono dim" style="font-size:10px;">${(u.id||'').slice(0,14)}…</td>
+    <td class="mono">${fmt(u.agent_count)}</td>
+    <td class="mono">${fmt(u.commit_count)}</td>
+    <td class="mono dim" style="font-size:10px;">${validDate(u.last_sign_in)}</td>
+    <td class="mono dim" style="font-size:10px;">${validDate(u.created_at)}</td>
   </tr>`).join('');
 }
 
