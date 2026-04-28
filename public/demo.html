@@ -297,96 +297,82 @@ function copyPageUrl() {
   });
 }
 
-// Load real commits from the API and display them
-async function loadDemoDecisions() {
-  const feed = document.getElementById('decision-feed');
-  try {
-    const res = await fetch('/api/demo');
-    const data = await res.json();
-    // /api/demo returns { steps: [...] } — each step has id, agent, action, timestamp
-    const items = data.steps || data.commits || data.activity || [];
-
-    if (!items.length) {
-      feed.innerHTML = '<div style="padding:2rem;text-align:center;font-family:JetBrains Mono,monospace;font-size:11px;color:hsl(var(--trace-dim));">No demo commits available. <a href="/signup" style="color:hsl(var(--signal))">Create one &rarr;</a></div>';
-      return;
-    }
-
-    feed.innerHTML = items.slice(0, 6).map(c => {
-      const al      = c.assurance_level || 'L1';
-      const isL3    = al === 'L3';
-      const payload = c.payload || {};
-      // Support both real commit shape and demo step shape
-      const action  = c.action || c.event_type || payload.action || '';
-      const agent   = c.agentName || c.agent || c.from_agent || 'agent';
-      const input   = payload.input  || payload.prompt || action || '';
-      const output  = payload.output || payload.result || payload.response || c.action || '';
-      const title   = output ? output.slice(0, 80) : (input ? input.slice(0, 80) : 'Commit record');
-      const reason  = input !== output ? input.slice(0, 120) : '';
-      const hash    = (c.integrity_hash || c.integrityHash || c.payload_hash || c.id || '').slice(0, 20);
-      const ts      = c.timestamp ? timeAgo(c.timestamp) : '—';
-      const id      = c.id || c.trace_id || '';
-      const verifyUrl = id ? '/r/' + id : '/demo';
-
-      return \`<a class="decision-card \${isL3 ? 'l3' : ''}" href="\${verifyUrl}" target="_blank" rel="noopener">
-        <div class="dc-top">
-          <span class="dc-agent">\${agent.slice(0,20)}</span>
-          <div class="dc-badges">
-            \${isL3 ? '<span class="dc-badge green">L3</span>' : ''}
-            <span class="dc-badge green">&#10003; verified</span>
-          </div>
-        </div>
-        <div class="dc-decision">\${escHtml(title)}</div>
-        \${reason ? '<div class="dc-reason">' + escHtml(reason).slice(0,140) + '</div>' : ''}
-        <div class="dc-footer">
-          <span class="dc-hash">\${hash ? 'sha256:' + hash.slice(0,16) + '&#183;…' : '—'}</span>
-          <span class="dc-ts">\${ts}</span>
-          <span class="dc-verify">View proof &rarr;</span>
-        </div>
-      </a>\`;
-    }).join('');
-  } catch(e) {
-    // Show static fallback cards so page is never empty
-    renderStaticFallback(feed);
-  }
-}
-
-function renderStaticFallback(feed) {
-  const now = Date.now();
-  const cards = [
-    { agent:'refund-agent-v2', title:'Approved — Refund $284.00 for order #84721', reason:'Customer within 30-day window. No prior refund history. Auto-approval threshold met.', hash:'a9c4e18f2b7d10e4', ts: now-120000, l3:true },
-    { agent:'refund-agent-v2', title:'Escalated — Refund $1,240.00 for order #91033', reason:'Amount exceeds auto-approval threshold ($500). Flagged for human review.', hash:'31bd772a09cfb6e2', ts: now-480000, l3:true },
-    { agent:'refund-agent-v2', title:'Denied — Refund $89.00 for order #77844', reason:'Outside 30-day window (47 days since purchase). Policy does not cover.', hash:'fe041c8a5503ddaf', ts: now-900000, l3:false },
-    { agent:'refund-agent-v2', title:'Approved — Refund $44.00 for order #82019', reason:'Item not delivered. Carrier confirmed lost. Immediate approval per policy 4.2.', hash:'7c2d4f91a38be052', ts: now-1860000, l3:false },
-    { agent:'refund-agent-v2', title:'Approved — Refund $156.00 for order #78330', reason:'Defective item confirmed via photo. Customer retention risk flagged.', hash:'b81a3d52c9e7f014', ts: now-3600000, l3:false },
-  ];
-  feed.innerHTML = cards.map(c => `<a class="decision-card ${c.l3 ? 'l3' : ''}" href="/signup" target="_blank" rel="noopener">
-    <div class="dc-top">
-      <span class="dc-agent">${c.agent}</span>
-      <div class="dc-badges">
-        ${c.l3 ? '<span class="dc-badge green">L3</span>' : ''}
-        <span class="dc-badge green">&#10003; verified</span>
-      </div>
-    </div>
-    <div class="dc-decision">${escHtml(c.title)}</div>
-    <div class="dc-reason">${escHtml(c.reason)}</div>
-    <div class="dc-footer">
-      <span class="dc-hash">sha256:${c.hash.slice(0,16)}&#183;…</span>
-      <span class="dc-ts">${timeAgo(new Date(c.ts).toISOString())}</span>
-      <span class="dc-verify">View proof &rarr;</span>
-    </div>
-  </a>`).join('');
-}
-
 function escHtml(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
 function timeAgo(ts) {
   const d = Math.floor((Date.now() - new Date(ts)) / 1000);
-  if (d < 60)   return d + 's ago';
-  if (d < 3600) return Math.floor(d/60) + 'm ago';
-  if (d < 86400)return Math.floor(d/3600) + 'h ago';
+  if (d < 60)    return d + 's ago';
+  if (d < 3600)  return Math.floor(d/60) + 'm ago';
+  if (d < 86400) return Math.floor(d/3600) + 'h ago';
   return Math.floor(d/86400) + 'd ago';
+}
+
+function makeCard(agent, title, reason, hash, ts, l3, url) {
+  return '<a class="decision-card' + (l3 ? ' l3' : '') + '" href="' + url + '" target="_blank" rel="noopener">' +
+    '<div class="dc-top">' +
+      '<span class="dc-agent">' + escHtml(agent).slice(0,20) + '</span>' +
+      '<div class="dc-badges">' +
+        (l3 ? '<span class="dc-badge green">L3</span>' : '') +
+        '<span class="dc-badge green">&#10003; verified</span>' +
+      '</div>' +
+    '</div>' +
+    '<div class="dc-decision">' + escHtml(title).slice(0,80) + '</div>' +
+    (reason ? '<div class="dc-reason">' + escHtml(reason).slice(0,140) + '</div>' : '') +
+    '<div class="dc-footer">' +
+      '<span class="dc-hash">' + (hash ? 'sha256:' + hash.slice(0,16) + '&#183;&#8230;' : '&mdash;') + '</span>' +
+      '<span class="dc-ts">' + timeAgo(ts) + '</span>' +
+      '<span class="dc-verify">View proof &rarr;</span>' +
+    '</div>' +
+  '</a>';
+}
+
+function renderStaticFallback(feed) {
+  var now = Date.now();
+  var cards = [
+    { agent:'refund-agent-v2', title:'Approved — Refund $284.00 for order #84721',   reason:'Customer within 30-day window. No prior refund history. Auto-approval threshold met.', hash:'a9c4e18f2b7d10e4', ts:now-120000,   l3:true  },
+    { agent:'refund-agent-v2', title:'Escalated — Refund $1,240.00 for order #91033', reason:'Amount exceeds auto-approval threshold ($500). Flagged for human review.',             hash:'31bd772a09cfb6e2', ts:now-480000,   l3:true  },
+    { agent:'refund-agent-v2', title:'Denied — Refund $89.00 for order #77844',       reason:'Outside 30-day window (47 days). Policy does not cover. Customer informed.',          hash:'fe041c8a5503ddaf', ts:now-900000,   l3:false },
+    { agent:'refund-agent-v2', title:'Approved — Refund $44.00 for order #82019',    reason:'Item not delivered. Carrier confirmed lost. Immediate approval per policy 4.2.',       hash:'7c2d4f91a38be052', ts:now-1860000,  l3:false },
+    { agent:'refund-agent-v2', title:'Approved — Refund $156.00 for order #78330',   reason:'Defective item confirmed via photo. Customer retention risk flagged.',                 hash:'b81a3d52c9e7f014', ts:now-3600000,  l3:false },
+  ];
+  feed.innerHTML = cards.map(function(c) {
+    return makeCard(c.agent, c.title, c.reason, c.hash, c.ts, c.l3, '/signup');
+  }).join('');
+}
+
+async function loadDemoDecisions() {
+  var feed = document.getElementById('decision-feed');
+  if (!feed) return;
+  try {
+    var res  = await fetch('/api/demo');
+    var data = await res.json();
+    var items = data.activity || data.commits || data.steps || [];
+
+    if (!items.length) {
+      renderStaticFallback(feed);
+      return;
+    }
+
+    feed.innerHTML = items.slice(0, 6).map(function(c) {
+      var payload = c.payload || {};
+      var al      = c.assurance_level || 'L1';
+      var isL3    = al === 'L3';
+      var agent   = c.agentName || c.agent || c.from_agent || 'agent';
+      var input   = payload.input  || payload.prompt || c.action || '';
+      var output  = payload.output || payload.result || c.action || '';
+      var title   = (output || input || 'Commit record').slice(0,80);
+      var reason  = (input && input !== output) ? input.slice(0,120) : '';
+      var hash    = (c.integrity_hash || c.payload_hash || c.id || '').slice(0,20);
+      var ts      = c.timestamp ? c.timestamp : new Date().toISOString();
+      var id      = c.id || c.trace_id || '';
+      var url     = id ? '/r/' + id : '/signup';
+      return makeCard(agent, title, reason, hash, ts, isL3, url);
+    }).join('');
+  } catch(e) {
+    renderStaticFallback(feed);
+  }
 }
 
 loadDemoDecisions();
