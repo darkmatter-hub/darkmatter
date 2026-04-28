@@ -248,7 +248,7 @@ footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;gri
         </div>
         <div style="margin-top:.75rem;font-family:'JetBrains Mono',monospace;font-size:9.5px;color:hsl(var(--trace-dim));display:flex;align-items:center;gap:.5rem;">
           <span class="dot" style="width:5px;height:5px;"></span>
-          Real commits from the DarkMatter test agent. Each opens an independently verifiable proof record.
+          Simulated decisions showing what DarkMatter records look like. Sign up to generate real verifiable proof links for your own agent.
         </div>
 
         <div style="margin-top:2rem;border:1px solid hsl(var(--void-line));padding:1.25rem 1.5rem;">
@@ -309,72 +309,78 @@ function timeAgo(ms) {
   return Math.floor(d/86400) + 'd ago';
 }
 
-// Static display text — real /r/ links injected after fetch
-var CARD_TEXT = [
-  { agent:'refund-agent', title:'Approved — Refund $284.00 for order #84721',    reason:'Customer within 30-day window. No prior refund history. Amount within auto-approval threshold.', hash:'a9c4e18f', ms: 2*60*1000,   l3:true  },
-  { agent:'refund-agent', title:'Escalated — Refund $1,240.00 for order #91033', reason:'Amount exceeds auto-approval threshold. Flagged for human review. No action taken pending approval.', hash:'31bd772a', ms: 8*60*1000,   l3:true  },
-  { agent:'refund-agent', title:'Denied — Refund $89.00 for order #77844',       reason:'Outside 30-day window (47 days). Policy does not cover. Customer informed of outcome.',               hash:'fe041c8a', ms: 15*60*1000,  l3:false },
-  { agent:'refund-agent', title:'Approved — Refund $44.00 for order #82019',     reason:'Item not delivered. Carrier confirmed lost. Immediate approval per policy section 4.2.',             hash:'7c2d4f91', ms: 31*60*1000,  l3:false },
-  { agent:'refund-agent', title:'Approved — Refund $156.00 for order #78330',    reason:'Defective item confirmed via photo. Customer retention risk flagged. Standard approval granted.',     hash:'b81a3d52', ms: 60*60*1000,  l3:false },
+// Simulated demo decisions — not real user data
+var DEMO_CARDS = [
+  {
+    agent: 'refund-agent-v2',
+    title: 'Approved — Refund $284.00 for order #84721',
+    reason: 'Customer within 30-day window. No prior refund history. Amount within auto-approval threshold ($500).',
+    hash: 'a9c4e18f2b7d10e4', ms: 2*60*1000, l3: true
+  },
+  {
+    agent: 'refund-agent-v2',
+    title: 'Escalated — Refund $1,240.00 for order #91033',
+    reason: 'Amount exceeds auto-approval threshold. Flagged for human review. No action taken pending approval.',
+    hash: '31bd772a09cfb6e2', ms: 8*60*1000, l3: true
+  },
+  {
+    agent: 'refund-agent-v2',
+    title: 'Denied — Refund $89.00 for order #77844',
+    reason: 'Outside 30-day return window (47 days since purchase). Policy does not cover. Customer informed.',
+    hash: 'fe041c8a5503ddaf', ms: 15*60*1000, l3: false
+  },
+  {
+    agent: 'refund-agent-v2',
+    title: 'Approved — Refund $44.00 for order #82019',
+    reason: 'Item not delivered. Carrier confirmed lost in transit. Immediate approval per policy section 4.2.',
+    hash: '7c2d4f91a38be052', ms: 31*60*1000, l3: false
+  },
+  {
+    agent: 'refund-agent-v2',
+    title: 'Approved — Refund $156.00 for order #78330',
+    reason: 'Defective item confirmed via photo evidence. Customer retention risk flagged. Standard approval.',
+    hash: 'b81a3d52c9e7f014', ms: 60*60*1000, l3: false
+  }
 ];
 
-function makeCard(text, id) {
+function makeCard(c) {
   var card = document.createElement('a');
-  card.className = 'decision-card' + (text.l3 ? ' l3' : '');
-  card.href = id ? '/r/' + id : 'https://darkmatterhub.ai/signup';
+  card.className = 'decision-card' + (c.l3 ? ' l3' : '');
+  card.href = '/signup';
   card.target = '_blank';
   card.rel = 'noopener';
-  card.style.opacity = '0';
-  card.style.transform = 'translateY(8px)';
-  card.style.transition = 'opacity .35s ease, transform .35s ease';
+  card.style.cssText = 'opacity:0;transform:translateY(8px);transition:opacity .35s ease,transform .35s ease;';
   card.innerHTML = (
     '<div class="dc-top">' +
-      '<span class="dc-agent">' + escHtml(text.agent) + '</span>' +
+      '<span class="dc-agent">' + escHtml(c.agent) + '</span>' +
       '<div class="dc-badges">' +
-        (text.l3 ? '<span class="dc-badge green">L3</span>' : '') +
+        (c.l3 ? '<span class="dc-badge green">L3</span>' : '') +
         '<span class="dc-badge green">&#10003; verified</span>' +
       '</div>' +
     '</div>' +
-    '<div class="dc-decision">' + escHtml(text.title) + '</div>' +
-    '<div class="dc-reason">' + escHtml(text.reason) + '</div>' +
+    '<div class="dc-decision">' + escHtml(c.title) + '</div>' +
+    '<div class="dc-reason">' + escHtml(c.reason) + '</div>' +
     '<div class="dc-footer">' +
-      '<span class="dc-hash">sha256:' + text.hash + '&#183;&#8230;</span>' +
-      '<span class="dc-ts">' + timeAgo(text.ms) + '</span>' +
-      '<span class="dc-verify">View proof &rarr;</span>' +
+      '<span class="dc-hash">sha256:' + c.hash + '&#183;&#8230;</span>' +
+      '<span class="dc-ts">' + timeAgo(c.ms) + '</span>' +
+      '<span class="dc-verify">Try it free &rarr;</span>' +
     '</div>'
   );
   return card;
 }
 
-function renderCards(ids) {
+function loadDemoDecisions() {
   var feed = document.getElementById('decision-feed');
   if (!feed) return;
   feed.innerHTML = '';
-  CARD_TEXT.forEach(function(text, i) {
-    var id = ids && ids[i] ? ids[i] : (ids && ids[0] ? ids[0] : null);
-    var card = makeCard(text, id);
+  DEMO_CARDS.forEach(function(c, i) {
+    var card = makeCard(c);
     feed.appendChild(card);
     setTimeout(function() {
       card.style.opacity = '1';
       card.style.transform = 'translateY(0)';
     }, 120 * i + 80);
   });
-}
-
-async function loadDemoDecisions() {
-  // Show cards immediately with signup fallback, then upgrade to real links
-  renderCards(null);
-  try {
-    var res  = await fetch('/api/demo');
-    var data = await res.json();
-    var items = data.activity || data.commits || [];
-    if (items.length) {
-      var ids = items.slice(0, 5).map(function(c) { return c.id || c.trace_id || null; });
-      renderCards(ids);
-    }
-  } catch(e) {
-    // Cards already showing with signup links — that's fine
-  }
 }
 
 loadDemoDecisions();
