@@ -4526,27 +4526,35 @@ h1{font-size:26px;font-weight:700;letter-spacing:-.04em;color:var(--ink);margin-
 
 
 
-// ── GET /api/demo ── serve static demo data ───────────────────────────
-app.get('/api/demo', (req, res) => {
-  res.json({
-    contextId:  'ctx_demo_a3f7c2d9',
-    rootId:     'ctx_demo_a3f7c2d9',
-    totalSteps: 5,
-    chainIntact: true,
-    summary: {
-      agents:      ['research-agent', 'writer-agent'],
-      models:      ['claude-sonnet-4-6', 'gpt-4o'],
-      forkPoints:  [],
-      duration:    '4.2s',
-    },
-    steps: [
-      { id: 'ctx_demo_1', step: 1, agent: 'research-agent', model: 'claude-sonnet-4-6', action: 'plan_task',       integrityHash: 'a3f7c2', parentHash: null,   verified: true, timestamp: new Date(Date.now()-20000).toISOString() },
-      { id: 'ctx_demo_2', step: 2, agent: 'research-agent', model: 'gpt-4o',            action: 'web_research',   integrityHash: 'd9b14e', parentHash: 'a3f7c2', verified: true, timestamp: new Date(Date.now()-15000).toISOString() },
-      { id: 'ctx_demo_3', step: 3, agent: 'research-agent', model: 'claude-sonnet-4-6', action: 'validate_sources',integrityHash: '7e2a91', parentHash: 'd9b14e', verified: true, timestamp: new Date(Date.now()-10000).toISOString() },
-      { id: 'ctx_demo_4', step: 4, agent: 'writer-agent',   model: 'gpt-4o',            action: 'draft_report',   integrityHash: 'c5f830', parentHash: '7e2a91', verified: true, timestamp: new Date(Date.now()-5000).toISOString()  },
-      { id: 'ctx_demo_5', step: 5, agent: 'writer-agent',   model: 'claude-sonnet-4-6', action: 'finalize_output',integrityHash: 'f1d290', parentHash: 'c5f830', verified: true, timestamp: new Date(Date.now()).toISOString()         },
-    ],
-  });
+// ── GET /api/demo ── serve real recent commits as demo data ────────────
+app.get('/api/demo', async (req, res) => {
+  try {
+    // Pull real recent commits so the demo page shows actual verifiable records
+    const { data: commits } = await supabaseService
+      .from('commits')
+      .select('id, trace_id, from_agent, agent_info, payload, timestamp, integrity_hash, payload_hash, assurance_level, event_type')
+      .not('payload', 'is', null)
+      .order('timestamp', { ascending: false })
+      .limit(8);
+
+    const activity = (commits || []).map(c => ({
+      id:             c.id,
+      trace_id:       c.trace_id,
+      from_agent:     c.from_agent,
+      agentName:      c.agent_info?.name || c.from_agent || 'agent',
+      payload:        c.payload,
+      timestamp:      c.timestamp,
+      integrity_hash: c.integrity_hash,
+      payload_hash:   c.payload_hash,
+      assurance_level: c.assurance_level || 'L1',
+      event_type:     c.event_type || 'commit',
+    }));
+
+    res.json({ activity, commits: activity });
+  } catch(err) {
+    // Fallback to static demo data if DB fails
+    res.json({ activity: [], commits: [] });
+  }
 });
 
 

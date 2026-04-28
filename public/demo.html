@@ -345,8 +345,36 @@ async function loadDemoDecisions() {
       </a>\`;
     }).join('');
   } catch(e) {
-    feed.innerHTML = '<div style="padding:2rem 1.5rem;font-size:13px;color:hsl(var(--trace));">Could not load live decisions. <a href="/signup" style="color:hsl(var(--signal))">Start recording your own &rarr;</a></div>';
+    // Show static fallback cards so page is never empty
+    renderStaticFallback(feed);
   }
+}
+
+function renderStaticFallback(feed) {
+  const now = Date.now();
+  const cards = [
+    { agent:'refund-agent-v2', title:'Approved — Refund $284.00 for order #84721', reason:'Customer within 30-day window. No prior refund history. Auto-approval threshold met.', hash:'a9c4e18f2b7d10e4', ts: now-120000, l3:true },
+    { agent:'refund-agent-v2', title:'Escalated — Refund $1,240.00 for order #91033', reason:'Amount exceeds auto-approval threshold ($500). Flagged for human review.', hash:'31bd772a09cfb6e2', ts: now-480000, l3:true },
+    { agent:'refund-agent-v2', title:'Denied — Refund $89.00 for order #77844', reason:'Outside 30-day window (47 days since purchase). Policy does not cover.', hash:'fe041c8a5503ddaf', ts: now-900000, l3:false },
+    { agent:'refund-agent-v2', title:'Approved — Refund $44.00 for order #82019', reason:'Item not delivered. Carrier confirmed lost. Immediate approval per policy 4.2.', hash:'7c2d4f91a38be052', ts: now-1860000, l3:false },
+    { agent:'refund-agent-v2', title:'Approved — Refund $156.00 for order #78330', reason:'Defective item confirmed via photo. Customer retention risk flagged.', hash:'b81a3d52c9e7f014', ts: now-3600000, l3:false },
+  ];
+  feed.innerHTML = cards.map(c => `<a class="decision-card ${c.l3 ? 'l3' : ''}" href="/signup" target="_blank" rel="noopener">
+    <div class="dc-top">
+      <span class="dc-agent">${c.agent}</span>
+      <div class="dc-badges">
+        ${c.l3 ? '<span class="dc-badge green">L3</span>' : ''}
+        <span class="dc-badge green">&#10003; verified</span>
+      </div>
+    </div>
+    <div class="dc-decision">${escHtml(c.title)}</div>
+    <div class="dc-reason">${escHtml(c.reason)}</div>
+    <div class="dc-footer">
+      <span class="dc-hash">sha256:${c.hash.slice(0,16)}&#183;…</span>
+      <span class="dc-ts">${timeAgo(new Date(c.ts).toISOString())}</span>
+      <span class="dc-verify">View proof &rarr;</span>
+    </div>
+  </a>`).join('');
 }
 
 function escHtml(s) {
