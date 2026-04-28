@@ -522,32 +522,51 @@ function getSession() {
 }
 
 const session = getSession();
-if (!session) {
-  document.getElementById('not-admin').style.display = 'block';
+if (!session || !session.access_token) {
+  // No session — redirect to login
+  location.href = '/login?next=/admindashboard';
 } else {
   const userEmail = session.user?.email || '';
   document.getElementById('tb-email').textContent = userEmail;
   // Verify admin status then show layout
-  fetch('/admin/stats', { headers: { 'Authorization': `Bearer ${session.access_token}` } })
-    .then(r => r.json())
+  const _adminHeaders = { 'Authorization': `Bearer ${session.access_token}`, 'Content-Type': 'application/json' };
+  if (session.refresh_token) _adminHeaders['X-Refresh-Token'] = session.refresh_token;
+  fetch('/admin/stats', { headers: _adminHeaders })
+    .then(async r => {
+      // Handle token rotation
+      const newToken = r.headers.get('X-New-Access-Token');
+      if (newToken) {
+        session.access_token = newToken;
+        try { const s = JSON.parse(localStorage.getItem('dm_session') || '{}'); s.access_token = newToken; localStorage.setItem('dm_session', JSON.stringify(s)); } catch(_) {}
+      }
+      if (r.status === 401) {
+        // Session expired — redirect to login
+        location.href = '/login?next=/admindashboard';
+        return null;
+      }
+      return r.json();
+    })
     .then(d => {
+      if (!d) return;
       if (d.admin) {
         document.getElementById('layout').style.display = 'flex';
         loadAll();
       } else {
         document.getElementById('not-admin').style.display = 'block';
         const msg = document.getElementById('not-admin-msg');
-        if (msg) msg.innerHTML = `Not authorized as admin (signed in as <strong>${userEmail}</strong>). Contact support or check SUPERUSER_EMAIL on Railway. <a href="/dashboard" style="color:var(--signal)">Go to dashboard</a>`;
+        if (msg) msg.innerHTML = `Not authorized as admin (signed in as <strong>${userEmail}</strong>).<br>Check that SUPERUSER_EMAIL on Railway includes this address. <a href="/dashboard" style="color:var(--signal)">Go to dashboard</a>`;
       }
     })
     .catch(e => {
       console.error('[admin] stats fetch failed:', e);
       document.getElementById('not-admin').style.display = 'block';
+      const msg = document.getElementById('not-admin-msg');
+      if (msg) msg.textContent = 'Network error reaching /admin/stats. Check console.';
     });
 }
 
 function signOut() { localStorage.removeItem('dm_session'); location.href = '/login'; }
-const authH = () => ({ 'Authorization': `Bearer ${session.access_token}`, 'Content-Type': 'application/json' });
+const authH = () => { const h = { 'Authorization': `Bearer ${session.access_token}`, 'Content-Type': 'application/json' }; if (session.refresh_token) h['X-Refresh-Token'] = session.refresh_token; return h; };
 
 // ── Navigation ────────────────────────────────────────────────────────────────
 document.querySelectorAll('.sb-item[data-pane]').forEach(btn => {

@@ -5444,8 +5444,11 @@ app.get('/admin/stats', requireAuth, async (req, res) => {
       'hello@darkmatterhub.ai',
       'hello@darkmatterhub.ai',
     ].map(e => e.trim()).filter(Boolean))];
-    if (!adminEmails.includes(req.user.email)) {
-      return res.status(403).json({ error: 'Admin only' });
+    const userEmail = req.user.email || '';
+    console.log('[admin/stats] auth attempt:', userEmail, '| admin list:', adminEmails.join(','));
+    if (!adminEmails.includes(userEmail)) {
+      console.warn('[admin/stats] DENIED for:', userEmail);
+      return res.status(403).json({ error: 'Admin only', attempted: userEmail, hint: 'Add your email to SUPERUSER_EMAIL on Railway' });
     }
 
     const [agentsRes, commitsRes, usersRes] = await Promise.all([
