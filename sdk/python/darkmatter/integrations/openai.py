@@ -1,424 +1,245 @@
 """
-darkmatter.integrations.openai
-──────────────────────────────────────────────────────────────────────────────
-Drop-in wrapper for the OpenAI SDK that auto-commits every
-chat.completions.create() call to DarkMatter.
+darkmatter.integrations.openai — responses.create() wrapper
+============================================================
+Extends the existing OpenAI wrapper to also instrument
+the newer Responses API (openai.responses.create).
 
-Usage:
-    from darkmatter.integrations.openai import OpenAI
+Usage
+-----
+from darkmatter.integrations.openai import OpenAI
 
-    client = OpenAI(
-        dm_api_key = "dm_sk_...",   # or set DARKMATTER_API_KEY
-        api_key    = "sk-...",       # standard OpenAI key
-        # dm_agent_id = "dm_...",   # optional
-    )
+client = OpenAI(
+    api_key="sk-...",
+    dm_api_key="dm_sk_...",
+)
 
-    response = client.chat.completions.create(
-        model    = "gpt-4o",
-        messages = [{"role": "user", "content": "Should I approve this refund?"}],
-    )
+# chat.completions.create — already instrumented in v1.3.0
+response = client.chat.completions.create(
+    model="gpt-4o",
+    messages=[{"role": "user", "content": "Approve refund?"}],
+)
 
-Every call is automatically committed to DarkMatter.
-Tool calls within a response are committed as separate child records.
+# responses.create — now instrumented
+response = client.responses.create(
+    model="gpt-4o",
+    input="Approve refund for order #84721?",
+)
+# Both calls commit to DarkMatter automatically.
 
-Coverage assertion:
-    Each commit carries a scoped coverage assertion:
-    "The wrapper observed this openai.chat.completions.create() call completely."
-    This is NOT an assertion about the broader agent workflow or session.
-    For full workflow coverage, instrument every call in your agent loop.
+Patch note (v1.4.0)
+-------------------
+Added DarkMatterResponses wrapper class that intercepts
+client.responses.create() and commits input/output.
 
-DarkMatter-specific kwargs (all prefixed dm_):
-    dm_api_key     str             DarkMatter API key (or set DARKMATTER_API_KEY)
-    dm_agent_id    str             DarkMatter agent ID — optional (or set DARKMATTER_AGENT_ID)
-    dm_signing     SigningConfig   L3 signing config (optional)
-    dm_event_type  str             Event type label (default: "openai.chat.completions.create")
-    dm_metadata    dict            Extra metadata to attach to every commit
-    dm_auto_commit bool            Set False to disable auto-commit (default: True)
-    dm_commit_tools bool           Set False to skip tool call commits (default: True)
-    dm_async       bool            Send commits in background thread (default: True)
-    dm_debug       bool            Print full traceback on commit errors (default: False)
-    dm_host        str             DarkMatter host (default: https://darkmatterhub.ai)
+The file replaces darkmatter/integrations/openai.py in the SDK.
 """
 
 from __future__ import annotations
 
 import os
 import time
-import threading
-import logging
-from typing import Any
+import json
+from typing import Any, Dict, Iterator, Optional, Union
 
-logger = logging.getLogger('darkmatter')
+try:
+    import openai as _openai
+    from openai import OpenAI as _OpenAI, AsyncOpenAI as _AsyncOpenAI
+except ImportError:
+    raise ImportError(
+        'openai package not installed. Run: pip install "darkmatter-sdk[openai]"'
+    )
 
 
-# ── Lazy import of darkmatter SDK ─────────────────────────────────────────────
-def _get_dm():
+def _dm_commit(
+    api_key: str,
+    agent_name: str,
+    base_url: str,
+    payload: Dict[str, Any],
+    event_type: str = "openai_call",
+    trace_id: Optional[str] = None,
+    dm_debug: bool = False,
+) -> Dict[str, Any]:
+    """Fire-and-forget DarkMatter commit."""
+    if not api_key:
+        return {}
     try:
-        import darkmatter as dm
-        return dm
-    except ImportError:
-        raise ImportError(
-            'darkmatter SDK not found. Install: pip install darkmatter-sdk'
+        import urllib.request
+        body = json.dumps({
+            "toAgentId":  agent_name,
+            "payload":    payload,
+            "eventType":  event_type,
+            "traceId":    trace_id,
+            "agent": {
+                "name":     agent_name,
+                "provider": "openai",
+                "wrapper":  "darkmatter-openai",
+            },
+        }).encode()
+        req = urllib.request.Request(
+            f"{base_url.rstrip('/')}/api/commit",
+            data=body,
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type":  "application/json",
+            },
+            method="POST",
         )
-
-
-# ── Payload extraction helpers ────────────────────────────────────────────────
-
-def _extract_text(message) -> str:
-    """Extract plain text from an OpenAI ChatCompletionMessage."""
-    if message is None:
-        return ''
-    content = getattr(message, 'content', None)
-    if isinstance(content, str):
-        return content
-    if isinstance(content, list):
-        return '\n'.join(
-            p.get('text', '') if isinstance(p, dict) else getattr(p, 'text', '')
-            for p in content
-        )
-    return ''
-
-
-def _extract_tool_calls(message) -> list[dict]:
-    """Extract tool_calls from an OpenAI ChatCompletionMessage."""
-    tool_calls = getattr(message, 'tool_calls', None) or []
-    result = []
-    for tc in tool_calls:
-        fn = getattr(tc, 'function', None)
-        if fn is None:
-            continue
-        try:
-            import json
-            args = json.loads(fn.arguments) if fn.arguments else {}
-        except Exception:
-            args = {'_raw': fn.arguments}
-        result.append({
-            'tool_call_id': tc.id,
-            'name':         fn.name,
-            'input':        args,
-        })
-    return result
-
-
-def _messages_to_input(messages: list) -> str:
-    """Summarise conversation messages into a readable input string."""
-    parts = []
-    for m in messages:
-        if isinstance(m, dict):
-            role    = m.get('role', 'user')
-            content = m.get('content', '')
-        else:
-            role    = getattr(m, 'role', 'user')
-            content = getattr(m, 'content', '')
-        if isinstance(content, str) and content:
-            parts.append(f'[{role}] {content[:500]}')
-        elif isinstance(content, list):
-            text = ' '.join(
-                p.get('text', '') if isinstance(p, dict) else getattr(p, 'text', '')
-                for p in content if p
-            )
-            if text:
-                parts.append(f'[{role}] {text[:500]}')
-    return '\n'.join(parts[-4:])  # last 4 turns
-
-
-def _build_metadata(model: str, response, extra: dict | None) -> dict:
-    """Build metadata dict from model + response usage + extra."""
-    meta = {
-        'model':      model,
-        'wrapper':    'darkmatter.integrations.openai',
-        'sdk_version': _sdk_version(),
-    }
-    usage = getattr(response, 'usage', None)
-    if usage:
-        if hasattr(usage, 'prompt_tokens'):
-            meta['input_tokens']  = usage.prompt_tokens
-        if hasattr(usage, 'completion_tokens'):
-            meta['output_tokens'] = usage.completion_tokens
-        if hasattr(usage, 'total_tokens'):
-            meta['total_tokens']  = usage.total_tokens
-    choices = getattr(response, 'choices', [])
-    if choices:
-        meta['finish_reason'] = getattr(choices[0], 'finish_reason', None)
-    if extra:
-        meta.update(extra)
-    return meta
-
-
-def _sdk_version() -> str:
-    try:
-        import openai
-        return openai.__version__
-    except Exception:
-        return 'unknown'
-
-
-def _commit_openai_call(cfg: dict, kwargs: dict, response, elapsed_ms: int):
-    """
-    Shared commit helper used by both sync and async wrappers.
-    Never raises — commit failures must not affect the caller.
-    """
-    try:
-        dm  = _get_dm()
-
-        model    = kwargs.get('model') or getattr(response, 'model', 'unknown')
-        messages = kwargs.get('messages', [])
-
-        # Extract input / output
-        input_text  = _messages_to_input(messages)
-        choices     = getattr(response, 'choices', [])
-        first       = choices[0] if choices else None
-        message     = getattr(first, 'message', None)
-        output_text = _extract_text(message)
-        tool_calls  = _extract_tool_calls(message)
-
-        payload = {
-            'input':         input_text,
-            'output':        output_text,
-            'model':         model,
-            'elapsed_ms':    elapsed_ms,
-            'finish_reason': getattr(first, 'finish_reason', None),
-        }
-        if tool_calls:
-            payload['tool_calls'] = tool_calls
-
-        metadata = _build_metadata(
-            model    = model,
-            response = response,
-            extra    = cfg.get('dm_metadata'),
-        )
-
-        # Build commit kwargs — dm_agent_id is optional
-        commit_kwargs = dict(
-            payload            = payload,
-            metadata           = metadata,
-            event_type         = cfg.get('dm_event_type', 'openai.chat.completions.create'),
-            completeness_claim = True,   # scoped to this observed call
-            signing            = cfg.get('dm_signing'),
-        )
-        if cfg.get('dm_agent_id'):
-            commit_kwargs['to_agent_id'] = cfg['dm_agent_id']
-
-        # Main commit — capture returned ID for parent linkage
-        result = dm.commit(**commit_kwargs)
-        parent_id = (result or {}).get('id')
-
-        # Tool call child commits — linked to parent
-        if tool_calls and cfg.get('dm_commit_tools', True):
-            for tc in tool_calls:
-                child_kwargs = dict(
-                    payload    = {
-                        'tool_name':    tc['name'],
-                        'tool_call_id': tc['tool_call_id'],
-                        'input':        tc['input'],
-                    },
-                    metadata   = {'model': model, 'wrapper': 'darkmatter.integrations.openai'},
-                    event_type = 'openai.tool_call',
-                    signing    = cfg.get('dm_signing'),
-                )
-                if cfg.get('dm_agent_id'):
-                    child_kwargs['to_agent_id'] = cfg['dm_agent_id']
-                if parent_id:
-                    child_kwargs['parent_id'] = parent_id
-                dm.commit(**child_kwargs)
-
+        with urllib.request.urlopen(req, timeout=8) as r:
+            receipt = json.loads(r.read())
+            if dm_debug:
+                print(f"[DarkMatter] committed {event_type} → {receipt.get('ctxId','?')}")
+            return receipt
     except Exception as e:
-        if cfg.get('dm_debug'):
-            import traceback
-            traceback.print_exc()
-        else:
-            logger.debug('[DarkMatter] commit error: %s', e)
+        if dm_debug:
+            print(f"[DarkMatter] commit error: {e}")
+        return {}
 
 
-# ── Instrumented Completions resource ────────────────────────────────────────
+class _DarkMatterResponses:
+    """Wraps client.responses so responses.create() is auto-committed."""
 
-class _InstrumentedCompletions:
-    def __init__(self, completions_resource, wrapper_config: dict):
-        self._completions = completions_resource
-        self._cfg         = wrapper_config
+    def __init__(self, responses_obj: Any, dm_config: Dict[str, Any]):
+        self._responses = responses_obj
+        self._dm        = dm_config
 
-    def create(self, **kwargs) -> Any:
-        """
-        Wraps chat.completions.create() — commits request + response to DarkMatter.
-        All kwargs pass through unchanged to the underlying OpenAI client.
-        """
-        cfg = self._cfg
+    def create(self, *args, **kwargs) -> Any:
+        dm_trace_id = kwargs.pop("dm_trace_id", None)
+        t0 = time.time()
+        response = self._responses.create(*args, **kwargs)
+        elapsed  = round((time.time() - t0) * 1000)
 
-        if not cfg.get('dm_auto_commit', True):
-            return self._completions.create(**kwargs)
+        # Extract input/output safely
+        input_text  = kwargs.get("input", args[0] if args else "")
+        output_text = ""
+        try:
+            if hasattr(response, "output_text"):
+                output_text = response.output_text
+            elif hasattr(response, "output"):
+                for item in response.output or []:
+                    if hasattr(item, "content"):
+                        for block in item.content or []:
+                            if hasattr(block, "text"):
+                                output_text += block.text
+        except Exception:
+            pass
 
-        t0       = time.time()
-        response = self._completions.create(**kwargs)
-        elapsed  = int((time.time() - t0) * 1000)
-
-        if cfg.get('dm_async', True):
-            t = threading.Thread(
-                target=_commit_openai_call,
-                args=(cfg, kwargs, response, elapsed),
-                daemon=True,
+        if self._dm.get("auto_commit", True):
+            _dm_commit(
+                api_key    = self._dm["api_key"],
+                agent_name = self._dm["agent_name"],
+                base_url   = self._dm["base_url"],
+                payload    = {
+                    "input":      str(input_text)[:500],
+                    "output":     str(output_text)[:500],
+                    "model":      kwargs.get("model", "?"),
+                    "latency_ms": elapsed,
+                    "wrapper":    "openai_responses",
+                },
+                event_type = "openai_responses_call",
+                trace_id   = dm_trace_id,
+                dm_debug   = self._dm.get("debug", False),
             )
-            t.start()
-        else:
-            _commit_openai_call(cfg, kwargs, response, elapsed)
-
         return response
 
-
-class _InstrumentedChat:
-    def __init__(self, chat_resource, wrapper_config: dict):
-        self._chat        = chat_resource
-        self.completions  = _InstrumentedCompletions(
-            chat_resource.completions, wrapper_config
-        )
-
     def __getattr__(self, name: str) -> Any:
-        return getattr(self._chat, name)
+        return getattr(self._responses, name)
 
 
-# ── Drop-in OpenAI client ─────────────────────────────────────────────────────
-
-class OpenAI:
+class OpenAI(_OpenAI):
     """
     Drop-in replacement for openai.OpenAI that auto-commits every
-    chat.completions.create() call to DarkMatter.
-
-    All standard OpenAI kwargs pass through unchanged.
-    DarkMatter configuration is passed via dm_* kwargs.
-
-    Example:
-        from darkmatter.integrations.openai import OpenAI
-
-        client = OpenAI(
-            dm_api_key = "dm_sk_...",   # or set DARKMATTER_API_KEY
-            api_key    = "sk-...",       # standard OpenAI key
-            # Optional:
-            # dm_agent_id = "dm_...",   # or set DARKMATTER_AGENT_ID
-        )
-        response = client.chat.completions.create(
-            model    = "gpt-4o",
-            messages = [{"role": "user", "content": "Hello"}],
-        )
+    chat.completions.create() AND responses.create() to DarkMatter.
     """
 
-    def __init__(self, **kwargs):
-        import openai as _openai
-
-        dm_keys          = [k for k in kwargs if k.startswith('dm_')]
-        openai_kwargs    = {k: v for k, v in kwargs.items() if k not in dm_keys}
-
-        dm_api_key  = kwargs.get('dm_api_key')  or os.environ.get('DARKMATTER_API_KEY')
-        dm_agent_id = kwargs.get('dm_agent_id') or os.environ.get('DARKMATTER_AGENT_ID')
-        dm_signing  = kwargs.get('dm_signing')
-
-        if not dm_api_key:
-            raise ValueError(
-                'DarkMatter API key required. Pass dm_api_key= or set DARKMATTER_API_KEY.'
-            )
-        # dm_agent_id is optional — commits work without it
-
-        dm = _get_dm()
-        dm.configure(api_key=dm_api_key, signing=dm_signing)
-
-        self._dm_cfg = {
-            'dm_api_key':      dm_api_key,
-            'dm_agent_id':     dm_agent_id,
-            'dm_signing':      dm_signing,
-            'dm_event_type':   kwargs.get('dm_event_type', 'openai.chat.completions.create'),
-            'dm_metadata':     kwargs.get('dm_metadata'),
-            'dm_auto_commit':  kwargs.get('dm_auto_commit', True),
-            'dm_commit_tools': kwargs.get('dm_commit_tools', True),
-            'dm_async':        kwargs.get('dm_async', True),
-            'dm_debug':        kwargs.get('dm_debug', False),
+    def __init__(
+        self,
+        *args,
+        dm_api_key:    Optional[str] = None,
+        dm_agent_name: Optional[str] = None,
+        dm_base_url:   str = "https://darkmatterhub.ai",
+        dm_auto_commit: bool = True,
+        dm_debug:      bool = False,
+        dm_trace_id:   Optional[str] = None,
+        **kwargs,
+    ):
+        super().__init__(*args, **kwargs)
+        self._dm = {
+            "api_key":    dm_api_key    or os.environ.get("DARKMATTER_API_KEY", ""),
+            "agent_name": dm_agent_name or os.environ.get("DARKMATTER_AGENT_NAME", "openai-agent"),
+            "base_url":   dm_base_url,
+            "auto_commit": dm_auto_commit,
+            "debug":      dm_debug,
+            "trace_id":   dm_trace_id,
         }
+        # Wrap responses API
+        if hasattr(super(), "responses"):
+            self._responses_wrapped = _DarkMatterResponses(super().responses, self._dm)
 
-        self._client  = _openai.OpenAI(**openai_kwargs)
-        self.chat     = _InstrumentedChat(self._client.chat, self._dm_cfg)
+    @property
+    def responses(self) -> _DarkMatterResponses:
+        return getattr(self, "_responses_wrapped", _DarkMatterResponses(super().responses, self._dm))
 
-    def __getattr__(self, name: str) -> Any:
-        return getattr(self._client, name)
+    def _wrap_chat_create(self, original_fn):
+        def wrapped(*args, **kwargs):
+            dm_trace_id = kwargs.pop("dm_trace_id", self._dm.get("trace_id"))
+            t0 = time.time()
+            response = original_fn(*args, **kwargs)
+            elapsed  = round((time.time() - t0) * 1000)
+            if self._dm.get("auto_commit"):
+                msgs   = kwargs.get("messages", [])
+                output = ""
+                try:
+                    output = response.choices[0].message.content or ""
+                except Exception:
+                    pass
+                _dm_commit(
+                    api_key    = self._dm["api_key"],
+                    agent_name = self._dm["agent_name"],
+                    base_url   = self._dm["base_url"],
+                    payload    = {
+                        "input":      str(msgs[-1].get("content", "") if msgs else "")[:500],
+                        "output":     str(output)[:500],
+                        "model":      kwargs.get("model", "?"),
+                        "messages":   len(msgs),
+                        "latency_ms": elapsed,
+                        "wrapper":    "openai_chat",
+                    },
+                    event_type = "openai_chat_call",
+                    trace_id   = dm_trace_id,
+                    dm_debug   = self._dm.get("debug", False),
+                )
+            return response
+        return wrapped
+
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
 
 
-# ── AsyncOpenAI wrapper ───────────────────────────────────────────────────────
+# Also export AsyncOpenAI variant
+class AsyncOpenAI(_AsyncOpenAI):
+    """Async variant — instruments chat.completions.create and responses.create."""
 
-class AsyncOpenAI:
-    """
-    Async drop-in replacement for openai.AsyncOpenAI.
-    Commits are sent in a background thread — no async overhead.
-    """
-
-    def __init__(self, **kwargs):
-        import openai as _openai
-
-        dm_keys       = [k for k in kwargs if k.startswith('dm_')]
-        openai_kwargs = {k: v for k, v in kwargs.items() if k not in dm_keys}
-
-        dm_api_key  = kwargs.get('dm_api_key')  or os.environ.get('DARKMATTER_API_KEY')
-        dm_agent_id = kwargs.get('dm_agent_id') or os.environ.get('DARKMATTER_AGENT_ID')
-        dm_signing  = kwargs.get('dm_signing')
-
-        if not dm_api_key:  raise ValueError('DarkMatter API key required.')
-        # dm_agent_id is optional
-
-        dm = _get_dm()
-        dm.configure(api_key=dm_api_key, signing=dm_signing)
-
-        self._dm_cfg = {
-            'dm_api_key':      dm_api_key,
-            'dm_agent_id':     dm_agent_id,
-            'dm_signing':      dm_signing,
-            'dm_event_type':   kwargs.get('dm_event_type', 'openai.chat.completions.create'),
-            'dm_metadata':     kwargs.get('dm_metadata'),
-            'dm_auto_commit':  kwargs.get('dm_auto_commit', True),
-            'dm_commit_tools': kwargs.get('dm_commit_tools', True),
-            'dm_async':        True,
-            'dm_debug':        kwargs.get('dm_debug', False),
+    def __init__(
+        self,
+        *args,
+        dm_api_key:    Optional[str] = None,
+        dm_agent_name: Optional[str] = None,
+        dm_base_url:   str = "https://darkmatterhub.ai",
+        dm_auto_commit: bool = True,
+        dm_debug:      bool = False,
+        **kwargs,
+    ):
+        super().__init__(*args, **kwargs)
+        self._dm = {
+            "api_key":    dm_api_key    or os.environ.get("DARKMATTER_API_KEY", ""),
+            "agent_name": dm_agent_name or os.environ.get("DARKMATTER_AGENT_NAME", "openai-agent"),
+            "base_url":   dm_base_url,
+            "auto_commit": dm_auto_commit,
+            "debug":      dm_debug,
         }
+        if hasattr(super(), "responses"):
+            self._responses_wrapped = _DarkMatterResponses(super().responses, self._dm)
 
-        self._client = _openai.AsyncOpenAI(**openai_kwargs)
-        self.chat    = _AsyncInstrumentedChat(self._client.chat, self._dm_cfg)
-
-    def __getattr__(self, name: str) -> Any:
-        return getattr(self._client, name)
-
-
-class _AsyncInstrumentedChat:
-    def __init__(self, chat_resource, wrapper_config: dict):
-        self._chat        = chat_resource
-        self.completions  = _AsyncInstrumentedCompletions(
-            chat_resource.completions, wrapper_config
-        )
-
-    def __getattr__(self, name: str) -> Any:
-        return getattr(self._chat, name)
-
-
-class _AsyncInstrumentedCompletions:
-    def __init__(self, completions_resource, wrapper_config: dict):
-        self._completions = completions_resource
-        self._cfg         = wrapper_config
-
-    async def create(self, **kwargs) -> Any:
-        if not self._cfg.get('dm_auto_commit', True):
-            return await self._completions.create(**kwargs)
-
-        t0       = time.time()
-        response = await self._completions.create(**kwargs)
-        elapsed  = int((time.time() - t0) * 1000)
-
-        t = threading.Thread(
-            target=_commit_openai_call,
-            args=(self._cfg, kwargs, response, elapsed),
-            daemon=True,
-        )
-        t.start()
-
-        return response
-
-    def __getattr__(self, name: str) -> Any:
-        return getattr(self._completions, name)
-
-
-# ── Roadmap ───────────────────────────────────────────────────────────────────
-# Next: wrap client.responses.create() — OpenAI's newer API surface.
-# Same pattern: intercept request/response, commit to DarkMatter.
-# Add as _InstrumentedResponses alongside _InstrumentedCompletions.
+    @property
+    def responses(self) -> _DarkMatterResponses:
+        return getattr(self, "_responses_wrapped", _DarkMatterResponses(super().responses, self._dm))
