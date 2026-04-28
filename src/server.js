@@ -5631,6 +5631,21 @@ app.get('/api/admin/users', requireAuth, async (req, res) => {
   }
 });
 
+// ── GET /api/admin/ping — lightweight DB health check (admin only) ────────────
+app.get('/api/admin/ping', requireAuth, async (req, res) => {
+  try {
+    const start = Date.now();
+    // Single cheap count query — proves DB + service client are working
+    const { count, error } = await supabaseService
+      .from('commits').select('id', { count: 'exact', head: true });
+    const ms = Date.now() - start;
+    if (error) throw error;
+    res.json({ ok: true, db_ms: ms, commits: count || 0 });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
 app.get('*', (req, res, next) => {
   // API routes: pass through to registered handlers (or Express default 404)
   if (req.path.startsWith('/api/') || req.path.startsWith('/proxy/')) {
