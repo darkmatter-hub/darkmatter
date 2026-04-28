@@ -955,6 +955,27 @@ async function resolveLineageRoot(ctxId) {
 // ═══════════════════════════════════════════════════
 
 // ── POST /api/commit ─────────────────────────────────
+// ── Event hooks stub ─────────────────────────────────────────────────────────
+async function fireEventHooks(agentId, eventType, data) {
+  // Fire and forget — no-op if no hooks configured
+  try {
+    const { data: hooks } = await supabaseService
+      .from('event_hooks')
+      .select('*')
+      .eq('agent_id', agentId)
+      .eq('event_type', eventType)
+      .eq('is_active', true);
+    if (!hooks || !hooks.length) return;
+    for (const hook of hooks) {
+      fetch(hook.url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(hook.secret ? { 'X-Hook-Secret': hook.secret } : {}) },
+        body: JSON.stringify({ event: eventType, agent_id: agentId, ...data }),
+      }).catch(() => {});
+    }
+  } catch (_) {}
+}
+
 app.post('/api/commit', apiLimiter, requireApiKey, async (req, res) => {
   try {
     const {
