@@ -337,7 +337,7 @@ footer{border-top:1px solid hsl(var(--void-line));background:hsl(var(--void))}
             <span>receipt</span>
           </div>
           <div class="term-body">
-            <span class="t-grn">✓ Committed</span> <span class="t-dim">—</span> <span class="t-wht">ctx_1777000892713_d3c37a</span><br><br>
+            <span class="t-grn">✓ Committed</span> <span class="t-dim">—</span> <span class="t-wht">ctx_1777407029545_d088f4</span><br><br>
             <span class="t-yel">integrity_hash</span><span class="t-dim">:</span> <span class="t-grn">"a9c4e18f2b7d10e4f5..."</span><br>
             <span class="t-yel">chain_position</span><span class="t-dim">:</span> <span class="t-wht">1 of 1</span><br>
             <span class="t-yel">chain_intact</span><span class="t-dim">:</span> <span class="t-grn">true</span><br>
@@ -434,7 +434,7 @@ footer{border-top:1px solid hsl(var(--void-line));background:hsl(var(--void))}
           <div class="proof-rows">
             <div class="proof-row">
               <div class="proof-key">ID</div>
-              <div class="proof-val">ctx_1777000892713_d3c37a03f828</div>
+              <div class="proof-val">ctx_1777407029545_d088f43e983c</div>
             </div>
             <div class="proof-row">
               <div class="proof-key">Input</div>
@@ -473,7 +473,7 @@ footer{border-top:1px solid hsl(var(--void-line));background:hsl(var(--void))}
           <div class="proof-rows">
             <div class="proof-row">
               <div class="proof-key">ID</div>
-              <div class="proof-val">ctx_1777000892713_d3c37a03f828</div>
+              <div class="proof-val">ctx_1777407029545_d088f43e983c</div>
             </div>
             <div class="proof-row">
               <div class="proof-key">Input</div>
@@ -485,7 +485,7 @@ footer{border-top:1px solid hsl(var(--void-line));background:hsl(var(--void))}
             </div>
             <div class="proof-row">
               <div class="proof-key">Hash</div>
-              <div class="proof-val green">a9c4e18f2b7d10e4f53c9a12b8e74d01c3f2a891e0d56b23f7c8a4e9b1d0f52c</div>
+              <div class="proof-val green">e11466b0601e6ec30070a8091a0e0455f4d3e12faae8f46c806141624cedeace</div>
             </div>
             <div class="proof-row">
               <div class="proof-key">Parent hash</div>
@@ -521,7 +521,7 @@ footer{border-top:1px solid hsl(var(--void-line));background:hsl(var(--void))}
           <div class="verify-body">
             <div class="verify-title">Public verify link — no account needed</div>
             <div class="verify-sub">Anyone with this link can view the full record, verify the hash chain, and download the proof bundle. Works offline.</div>
-            <div class="verify-url">darkmatterhub.ai/r/ctx_1777000892713_d3c37a03f828</div>
+            <div class="verify-url"><a href="https://darkmatterhub.ai/r/ctx_1777407029545_d088f43e983c" target="_blank" rel="noopener" style="color:hsl(152,64%,34%)">darkmatterhub.ai/r/ctx_1777407029545_d088f43e983c</a></div>
           </div>
         </div>
 
@@ -667,13 +667,13 @@ function downloadDemoBundle() {
   var bundle = {
     darkmatter_proof_bundle: true,
     version: "1.0",
-    trace_id: "ctx_1777000892713_d3c37a03f828",
+    trace_id: "ctx_1777407029545_d088f43e983c",
     chain_intact: true,
     generated_at: new Date().toISOString(),
     note: "This is a simulated demo proof bundle. Sign up at darkmatterhub.ai to generate real verifiable bundles for your own agents.",
     commits: [
       {
-        id: "ctx_1777000892713_d3c37a03f828",
+        id: "ctx_1777407029545_d088f43e983c",
         agent: "refund-agent-v2",
         model: "claude-sonnet-4-6",
         timestamp: "2026-04-28T15:24:03.390Z",
@@ -684,13 +684,13 @@ function downloadDemoBundle() {
           amount: 284.00
         },
         integrity: {
-          payload_hash: "sha256:a9c4e18f2b7d10e4f53c9a12b8e74d01c3f2a891e0d56b23f7c8a4e9b1d0f52c",
+          payload_hash: "sha256:e11466b0601e6ec30070a8091a0e0455f4d3e12faae8f46c806141624cedeace",
           parent_hash: "root",
           chain_position: 1,
           chain_intact: true,
           assurance_level: "L2"
         },
-        verify_url: "https://darkmatterhub.ai/r/ctx_1777000892713_d3c37a03f828"
+        verify_url: "https://darkmatterhub.ai/r/ctx_1777407029545_d088f43e983c"
       }
     ],
     verification_instructions: "To verify offline: download verify_darkmatter_chain.py from darkmatterhub.ai and run: python verify_darkmatter_chain.py bundle.json"
@@ -725,7 +725,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function animateHash() {
-  var full = 'a9c4e18f2b7d10e4f53c9a12b8e74d01c3f2a891e0d56b23f7c8a4e9b1d0f52c';
+  var full = 'e11466b0601e6ec30070a8091a0e0455f4d3e12faae8f46c806141624cedeace';
   var el = document.getElementById('hash-typing');
   var caret = document.getElementById('hash-caret');
   if (!el) return;
