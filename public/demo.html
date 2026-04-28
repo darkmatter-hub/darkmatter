@@ -303,29 +303,33 @@ async function loadDemoDecisions() {
   try {
     const res = await fetch('/api/demo');
     const data = await res.json();
-    const commits = data.commits || data.activity || [];
+    // /api/demo returns { steps: [...] } — each step has id, agent, action, timestamp
+    const items = data.steps || data.commits || data.activity || [];
 
-    if (!commits.length) {
+    if (!items.length) {
       feed.innerHTML = '<div style="padding:2rem;text-align:center;font-family:JetBrains Mono,monospace;font-size:11px;color:hsl(var(--trace-dim));">No demo commits available. <a href="/signup" style="color:hsl(var(--signal))">Create one &rarr;</a></div>';
       return;
     }
 
-    feed.innerHTML = commits.slice(0, 6).map(c => {
+    feed.innerHTML = items.slice(0, 6).map(c => {
       const al      = c.assurance_level || 'L1';
       const isL3    = al === 'L3';
       const payload = c.payload || {};
-      const input   = payload.input  || payload.prompt || payload.content || '';
-      const output  = payload.output || payload.result || payload.response || '';
+      // Support both real commit shape and demo step shape
+      const action  = c.action || c.event_type || payload.action || '';
+      const agent   = c.agentName || c.agent || c.from_agent || 'agent';
+      const input   = payload.input  || payload.prompt || action || '';
+      const output  = payload.output || payload.result || payload.response || c.action || '';
       const title   = output ? output.slice(0, 80) : (input ? input.slice(0, 80) : 'Commit record');
-      const reason  = input  ? input.slice(0,  120) : '';
-      const hash    = (c.integrity_hash || c.payload_hash || c.id || '').slice(0, 20);
+      const reason  = input !== output ? input.slice(0, 120) : '';
+      const hash    = (c.integrity_hash || c.integrityHash || c.payload_hash || c.id || '').slice(0, 20);
       const ts      = c.timestamp ? timeAgo(c.timestamp) : '—';
       const id      = c.id || c.trace_id || '';
-      const verifyUrl = '/r/' + id;
+      const verifyUrl = id ? '/r/' + id : '/demo';
 
       return \`<a class="decision-card \${isL3 ? 'l3' : ''}" href="\${verifyUrl}" target="_blank" rel="noopener">
         <div class="dc-top">
-          <span class="dc-agent">\${(c.agentName || c.from_agent || 'agent').slice(0,20)}</span>
+          <span class="dc-agent">\${agent.slice(0,20)}</span>
           <div class="dc-badges">
             \${isL3 ? '<span class="dc-badge green">L3</span>' : ''}
             <span class="dc-badge green">&#10003; verified</span>
