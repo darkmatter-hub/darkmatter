@@ -23,7 +23,16 @@ function assert(cond, msg) { if (!cond) throw new Error(msg || 'assertion failed
 
 const server = fs.readFileSync(SERVER, 'utf8');
 const dash   = fs.readFileSync(DASH,   'utf8');
-const dashJS = dash.slice(dash.lastIndexOf('<script>') + 8, dash.lastIndexOf('</script>'));
+// Extract ALL script blocks from dashboard (not just the last one)
+const dashJS = (() => {
+  let js = '';
+  let re = /<script[^>]*>([\s\S]*?)<\/script>/gi;
+  let m;
+  while ((m = re.exec(dash)) !== null) {
+    if (!m[0].includes('src=')) js += m[1] + '\n';
+  }
+  return js;
+})();
 const style  = dash.slice(dash.indexOf('<style>'), dash.indexOf('</style>'));
 
 // 1. Syntax
@@ -168,7 +177,7 @@ console.log('\nDashboard ↔ Server endpoint cross-check');
   }
   var KNOWN_GAPS = [
     '/api/workspace','/api/agents','/api/commits','/api/share',
-    '/api/recording','/api/bundle','/api/hooks','/api/debug',
+    '/api/recording','/api/bundle','/api/hooks','/api/debug','/api/billing',
   ];
   endpoints.forEach(function(ep) {
     var skip = KNOWN_GAPS.some(function(p) { return ep.startsWith(p); });
@@ -256,6 +265,39 @@ var catchallPos = server.indexOf("app.get('*',");
     assert(routePos > 0 && routePos < catchallPos,
       pair[1] + ' is missing or after the catch-all route — it will never be reached');
   });
+});
+
+
+// Demo page integrity checks
+console.log('\nDemo page');
+var demo = require('fs').readFileSync(__dirname + '/../public/demo.html', 'utf8');
+test('demo has 4-step walkthrough', function() {
+  assert(demo.includes('goStep'), 'demo must have step navigation');
+  assert(demo.includes('step-tab'), 'demo must have step tabs');
+});
+test('demo has download proof bundle', function() {
+  assert(demo.includes('downloadDemoBundle'), 'demo step 4 must have download bundle button');
+});
+test('demo has hamburger nav', function() {
+  assert(demo.includes('dm-ham'), 'demo must have mobile hamburger');
+  assert(demo.includes('function dmHam'), 'demo must have dmHam function');
+});
+test('demo has no live DB fetch', function() {
+  assert(!demo.includes('fetch(\'/api/demo\''), 'demo must not fetch from DB');
+});
+
+// Homepage mobile nav checks
+console.log('\nHomepage mobile nav');
+var homepage = require('fs').readFileSync(__dirname + '/../public/index.html', 'utf8');
+test('homepage has hamburger', function() {
+  assert(homepage.includes('dm-ham'), 'homepage must have mobile hamburger button');
+  assert(homepage.includes('dm-mobile-nav'), 'homepage must have mobile nav menu');
+  assert(homepage.includes('function dmHam'), 'homepage must have dmHam function');
+});
+test('homepage mobile nav not clipped by inline style', function() {
+  var navIdx = homepage.indexOf('dm-mobile-nav');
+  var snippet = homepage.slice(navIdx, navIdx + 60);
+  assert(!snippet.includes('display:none'), 'mobile nav div must not have inline display:none');
 });
 
 // Summary

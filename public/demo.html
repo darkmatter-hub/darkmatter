@@ -556,6 +556,7 @@ footer{border-top:1px solid hsl(var(--void-line));background:hsl(var(--void))}
 
         <div style="margin-top:.875rem;display:flex;gap:.625rem;flex-wrap:wrap">
           <a href="/signup" style="display:inline-flex;align-items:center;gap:.4rem;background:hsl(var(--signal));color:#fff;padding:.625rem 1rem;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase">Record your own agents &#8594;</a>
+          <button onclick="downloadDemoBundle()" style="display:inline-flex;align-items:center;gap:.4rem;border:1px solid hsl(var(--void-line));color:hsl(var(--trace));padding:.625rem 1rem;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;background:none;cursor:pointer">&#8595; Download proof bundle (.json)</button>
           <button onclick="restartDemo()" style="display:inline-flex;align-items:center;gap:.4rem;border:1px solid hsl(var(--void-line));color:hsl(var(--trace));padding:.625rem 1rem;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;background:none;cursor:pointer">&#8635; Restart demo</button>
         </div>
       </div>
@@ -661,6 +662,49 @@ function goStep(n) {
 function nextStep() { goStep(currentStep + 1); }
 function prevStep() { goStep(currentStep - 1); }
 function restartDemo() { goStep(0); }
+
+function downloadDemoBundle() {
+  var bundle = {
+    darkmatter_proof_bundle: true,
+    version: "1.0",
+    trace_id: "ctx_1777000892713_d3c37a03f828",
+    chain_intact: true,
+    generated_at: new Date().toISOString(),
+    note: "This is a simulated demo proof bundle. Sign up at darkmatterhub.ai to generate real verifiable bundles for your own agents.",
+    commits: [
+      {
+        id: "ctx_1777000892713_d3c37a03f828",
+        agent: "refund-agent-v2",
+        model: "claude-sonnet-4-6",
+        timestamp: "2026-04-28T15:24:03.390Z",
+        payload: {
+          input: "Approve refund #84721? $284.00, 18 days old",
+          output: "Customer within 30-day window. No prior refund history. Amount within auto-approval threshold ($500). Approve immediately.",
+          order_id: "84721",
+          amount: 284.00
+        },
+        integrity: {
+          payload_hash: "sha256:a9c4e18f2b7d10e4f53c9a12b8e74d01c3f2a891e0d56b23f7c8a4e9b1d0f52c",
+          parent_hash: "root",
+          chain_position: 1,
+          chain_intact: true,
+          assurance_level: "L2"
+        },
+        verify_url: "https://darkmatterhub.ai/r/ctx_1777000892713_d3c37a03f828"
+      }
+    ],
+    verification_instructions: "To verify offline: download verify_darkmatter_chain.py from darkmatterhub.ai and run: python verify_darkmatter_chain.py bundle.json"
+  };
+  var blob = new Blob([JSON.stringify(bundle, null, 2)], {type: 'application/json'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'darkmatter_demo_proof_bundle.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
 
 function toggleMenu() {
   var ham = document.getElementById('hamburger');
