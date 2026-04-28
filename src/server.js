@@ -2604,7 +2604,7 @@ app.get('/api/billing/subscription', wsAuth, async (req, res) => {
     const adminEmails = [
       ...(process.env.SUPERUSER_EMAIL || '').split(','),
       ...(process.env.ADMIN_EMAILS    || '').split(','),
-      'hello@darkmatterhub.ai', 'hello@darkmatterhub.ai',
+      'hello@darkmatterhub.ai',
     ].map(e => e.trim()).filter(Boolean);
     if (adminEmails.includes(email)) {
       return res.json({
@@ -4298,7 +4298,7 @@ app.get('/r/:traceId', async (req, res) => {
       + '.page-footer{text-align:center;padding:24px 0;font-size:12px;color:var(--ink4);}\n'
       + '.page-footer a{color:var(--ink3);text-decoration:none;}\n'
       + '</style>\n</head>\n<body>\n'
-      + '<nav class="nav" style="height:56px;background:#fff;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;padding:0 24px;gap:12px;position:sticky;top:0;z-index:100;">\n  <a href="/" style="display:flex;align-items:center;gap:8px;text-decoration:none;">\n    <svg viewBox="0 0 32 32" width="28" height="28" fill="none"><circle cx="16" cy="16" r="10" stroke="#0a0e1a" stroke-opacity="0.45" stroke-width="0.8"/><path d="M 16 6 L 24.66 21 L 7.34 21 Z" stroke="#0a0e1a" stroke-opacity="0.18" stroke-width="0.5" stroke-dasharray="1 1.5"/><circle cx="16" cy="16" r="0.8" fill="#0a0e1a" fill-opacity="0.55"/><circle cx="16" cy="6" r="2.1" fill="hsl(152,64%,34%)"/><circle cx="16" cy="6" r="3.4" stroke="hsl(152,64%,34%)" stroke-opacity="0.3" stroke-width="0.45"/><circle cx="24.66" cy="21" r="1.5" fill="#0a0e1a"/><circle cx="7.34" cy="21" r="1.5" fill="#0a0e1a" fill-opacity="0.85"/></svg>\n    <span style="font-family:var(--mono);font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#0a0e1a;">DARK<span style="font-weight:300;color:#888;">MATTER</span></span>\n  </a>\n  <div style="margin-left:auto;display:flex;align-items:center;gap:8px;">\n    <a href="/docs" style="font-size:12px;color:#5a6480;text-decoration:none;padding:4px 8px;">Docs</a>\n    <a href="/login" style="font-size:12px;color:#5a6480;text-decoration:none;padding:4px 8px;">Sign in</a>\n    <a href="/signup" style="font-family:var(--mono);font-size:11px;font-weight:700;background:#0a0e1a;color:#fff;padding:6px 16px;text-decoration:none;">Try it free</a>\n  </div>\n</nav>\n'
+      + '<nav class="nav" style="height:56px;background:#fff;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;padding:0 24px;gap:12px;position:sticky;top:0;z-index:100;">\n  <a href="/" style="display:flex;align-items:center;gap:8px;text-decoration:none;">\n    <svg viewBox="0 0 32 32" width="28" height="28" fill="none"><circle cx="16" cy="16" r="10" stroke="#0a0e1a" stroke-opacity="0.45" stroke-width="0.8"/><path d="M 16 6 L 24.66 21 L 7.34 21 Z" stroke="#0a0e1a" stroke-opacity="0.18" stroke-width="0.5" stroke-dasharray="1 1.5"/><circle cx="16" cy="16" r="0.8" fill="#0a0e1a" fill-opacity="0.55"/><circle cx="16" cy="6" r="2.1" fill="hsl(152,64%,34%)"/><circle cx="16" cy="6" r="3.4" stroke="hsl(152,64%,34%)" stroke-opacity="0.3" stroke-width="0.45"/><circle cx="24.66" cy="21" r="1.5" fill="#0a0e1a"/><circle cx="7.34" cy="21" r="1.5" fill="#0a0e1a" fill-opacity="0.85"/></svg>\n    <span style="font-family:var(--mono);font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#0a0e1a;">DARK<span style="font-weight:300;color:#888;">MATTER</span></span>\n  </a>\n  <div style="margin-left:auto;display:flex;align-items:center;gap:8px;">\n    <a href="/docs" style="font-size:12px;color:#5a6480;text-decoration:none;padding:4px 8px;">Docs</a>\n    <a href="/login" style="font-size:12px;color:#5a6480;text-decoration:none;padding:4px 8px;">Sign in</a>\n    <a href="/signup" style="font-family:var(--mono);font-size:11px;font-weight:700;background:#0a0e1a;color:#fff;padding:6px 16px;text-decoration:none;">Try it free</a>\n  <button id=\"r-ham\" onclick=\"rHamClick()\" style=\"display:none;flex-direction:column;gap:5px;width:36px;height:36px;cursor:pointer;padding:6px;border:0;background:0;\"><span style=\"display:block;height:1.5px;background:#0a0e1a;\"></span><span style=\"display:block;height:1.5px;background:#0a0e1a;\"></span><span style=\"display:block;height:1.5px;background:#0a0e1a;\"></span></button>\n  </div>\n</nav>\n<div id=\"r-menu\" style=\"display:none;position:fixed;top:56px;left:0;right:0;bottom:0;background:#f4f6fb;z-index:39;flex-direction:column;padding:1.5rem;border-top:1px solid #e5e7eb;\">\n  <a href=\"/\" style=\"font-family:monospace;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#5a6480;padding:.875rem 0;border-bottom:1px solid #e5e7eb;text-decoration:none;display:block;\">Home</a>\n  <a href=\"/demo\" style=\"font-family:monospace;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#5a6480;padding:.875rem 0;border-bottom:1px solid #e5e7eb;text-decoration:none;display:block;\">Demo</a>\n  <a href=\"/docs\" style=\"font-family:monospace;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#5a6480;padding:.875rem 0;border-bottom:1px solid #e5e7eb;text-decoration:none;display:block;\">Docs</a>\n  <a href=\"/pricing\" style=\"font-family:monospace;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#5a6480;padding:.875rem 0;border-bottom:1px solid #e5e7eb;text-decoration:none;display:block;\">Pricing</a>\n  <a href=\"/integrity\" style=\"font-family:monospace;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#5a6480;padding:.875rem 0;border-bottom:1px solid #e5e7eb;text-decoration:none;display:block;\">Integrity</a>\n  <a href=\"/login\" style=\"font-family:monospace;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#5a6480;padding:.875rem 0;border-bottom:1px solid #e5e7eb;text-decoration:none;display:block;\">Sign in</a>\n  <a href=\"/signup\" style=\"font-family:monospace;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:hsl(152,64%,34%);padding:.875rem 0;text-decoration:none;display:block;\">Try it free</a>\n</div>\n'
       + '<div class="page">\n'
       + '<div class="first-screen">\n'
       + '  <div class="fs-title">' + escH(title) + '</div>\n'
@@ -4370,6 +4370,9 @@ app.get('/r/:traceId', async (req, res) => {
       + '</div>\n'
       + '<script>\n'
       + 'var jsonLoaded=false;\n'
+      + 'function rHamClick(){var m=document.getElementById("r-menu");var o=m.style.display==="flex";m.style.display=o?"none":"flex";document.body.style.overflow=o?"":"hidden";}\n'
+      + 'if(window.innerWidth<768){var rh=document.getElementById("r-ham");if(rh)rh.style.display="flex";}\n'
+      + 'window.addEventListener("resize",function(){var rh=document.getElementById("r-ham");if(!rh)return;rh.style.display=window.innerWidth<768?"flex":"none";if(window.innerWidth>=768){var m=document.getElementById("r-menu");if(m)m.style.display="none";document.body.style.overflow="";}});\n'
       + 'function switchView(name,btn){\n'
       + '  document.querySelectorAll(".view").forEach(function(v){v.classList.remove("on");});\n'
       + '  document.querySelectorAll(".vs-btn").forEach(function(b){b.classList.remove("on");});\n'
@@ -5640,7 +5643,7 @@ app.get('/admin/stats', requireAuth, async (req, res) => {
       ...superuser.split(','),
       ...adminList.split(','),
       'hello@darkmatterhub.ai',
-      'hello@darkmatterhub.ai',
+      
     ].map(e => e.trim()).filter(Boolean))];
     const userEmail = req.user.email || '';
     console.log('[admin/stats] auth attempt:', userEmail, '| admin list:', adminEmails.join(','));
@@ -5683,7 +5686,7 @@ app.get('/api/workspace/stats/usage', requireAuth, async (req, res) => {
       ...superuser.split(','),
       ...adminList.split(','),
       'hello@darkmatterhub.ai',
-      'hello@darkmatterhub.ai',
+      
     ].map(e => e.trim()).filter(Boolean))];
     if (!adminEmails.includes(req.user.email)) {
       return res.status(403).json({ error: 'Admin only' });
@@ -5783,7 +5786,7 @@ app.get('/api/admin/users', requireAuth, async (req, res) => {
     const adminList   = process.env.ADMIN_EMAILS    || '';
     const adminEmails = [...new Set([
       ...superuser.split(','), ...adminList.split(','),
-      'hello@darkmatterhub.ai', 'hello@darkmatterhub.ai',
+      'hello@darkmatterhub.ai',
     ].map(e => e.trim()).filter(Boolean))];
     if (!adminEmails.includes(req.user.email)) {
       return res.status(403).json({ error: 'Admin only' });
