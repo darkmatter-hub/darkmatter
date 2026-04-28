@@ -6063,6 +6063,10 @@ app.get('/api/admin/audit-log', requireAuth, async (req, res) => {
   } catch(err) { res.status(500).json({ error: err.message }); }
 });
 
+// ── Legal pages ───────────────────────────────────────────────────────────────
+app.get('/tos',     (req, res) => res.sendFile(path.join(__dirname, '../public/tos.html')));
+app.get('/privacy', (req, res) => res.sendFile(path.join(__dirname, '../public/privacy.html')));
+
 app.get('*', (req, res, next) => {
   // API routes: pass through to registered handlers (or Express default 404)
   if (req.path.startsWith('/api/') || req.path.startsWith('/proxy/')) {
