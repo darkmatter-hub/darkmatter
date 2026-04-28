@@ -35,11 +35,6 @@ a{color:inherit;text-decoration:none}
 .hamburger.open span:nth-child(1){transform:translateY(6.5px) rotate(45deg)}
 .hamburger.open span:nth-child(2){opacity:0}
 .hamburger.open span:nth-child(3){transform:translateY(-6.5px) rotate(-45deg)}
-.mobile-menu{display:none;position:fixed;inset:3.5rem 0 0 0;background:hsl(var(--void)/.97);backdrop-filter:blur(12px);z-index:39;flex-direction:column;padding:2rem 1.5rem;gap:0;border-top:1px solid hsl(var(--void-line))}
-.mobile-menu.open{display:flex}
-.mobile-menu a{font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:hsl(var(--trace));padding:1rem 0;border-bottom:1px solid hsl(var(--void-line));transition:color .15s}
-.mobile-menu a:last-child{border-bottom:none}
-.mobile-menu a:hover,.mobile-menu a.active{color:hsl(var(--foreground))}
 .nav-links a{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:hsl(var(--trace));transition:color .15s}
 .nav-links a:hover,.nav-links a.active{color:hsl(var(--foreground))}
 .nav-cta{display:flex;align-items:center;gap:.5rem}
@@ -197,7 +192,7 @@ footer{border-top:1px solid hsl(var(--void-line));background:hsl(var(--void))}
     <div class="nav-cta">
       <a href="/login" class="nav-signin">Sign in</a>
       <a href="/signup" class="nav-signup"><span class="pulse"></span>Try it free</a>
-      <button class="hamburger" id="hamburger" onclick="toggleMenu()" aria-label="Menu">
+      <button class="hamburger" id="dm-ham" onclick="dmHam()" aria-label="Menu">
         <span></span><span></span><span></span>
       </button>
     </div>
@@ -211,15 +206,6 @@ footer{border-top:1px solid hsl(var(--void-line));background:hsl(var(--void))}
   <a href="/integrity">Integrity</a>
   <a href="/login">Sign in</a>
   <a href="/signup" class="cta-link">Try it free</a>
-</div>
-<div class="mobile-menu" id="mobile-menu">
-  <a href="/demo" class="active">Demo</a>
-  <a href="/docs">Docs</a>
-  <a href="/pricing">Pricing</a>
-  <a href="/compare">Compare</a>
-  <a href="/integrity">Integrity</a>
-  <a href="/login">Sign in</a>
-  <a href="/signup" style="color:hsl(var(--signal))">Try it free</a>
 </div>
 
 <!-- STEP PROGRESS BAR -->
@@ -341,7 +327,7 @@ footer{border-top:1px solid hsl(var(--void-line));background:hsl(var(--void))}
             <span class="t-yel">integrity_hash</span><span class="t-dim">:</span> <span class="t-grn">"a9c4e18f2b7d10e4f5..."</span><br>
             <span class="t-yel">chain_position</span><span class="t-dim">:</span> <span class="t-wht">1 of 1</span><br>
             <span class="t-yel">chain_intact</span><span class="t-dim">:</span> <span class="t-grn">true</span><br>
-            <span class="t-yel">assurance_level</span><span class="t-dim">:</span> <span class="t-grn">"L2"</span><br>
+            <span class="t-yel">assurance_level</span><span class="t-dim">:</span> <span class="t-grn">"L2"</span><span class="t-dim"> &nbsp;# hash-chain verified (L3 adds customer signatures)</span><br>
             <span class="t-yel">verify_url</span><span class="t-dim">:</span> <span class="t-blu">"darkmatterhub.ai/r/ctx_..."</span><br><br>
             <span class="t-dim"># Agent can now proceed — refund issued</span><br>
             <span class="t-grn">✓ Refund processed for order #84721</span>
@@ -370,7 +356,7 @@ footer{border-top:1px solid hsl(var(--void-line));background:hsl(var(--void))}
             </div>
             <div style="display:flex;align-items:flex-start;gap:.75rem">
               <div style="color:hsl(var(--signal));font-size:13px;margin-top:1px">&#10003;</div>
-              <div><div style="font-size:13px;font-weight:500;color:hsl(var(--foreground));margin-bottom:.2rem">Your own systems</div><div style="font-size:12px;color:hsl(var(--trace));line-height:1.5">Call <span style="font-family:'JetBrains Mono',monospace">GET /api/verify/:id</span> from any service. Public endpoint — no auth required.</div></div>
+              <div><div style="font-size:13px;font-weight:500;color:hsl(var(--foreground));margin-bottom:.2rem">Your own systems</div><div style="font-size:12px;color:hsl(var(--trace));line-height:1.5">Call <span style="font-family:'JetBrains Mono',monospace">GET /api/verify/:id</span> — public endpoint, no auth required. Returns the same integrity check shown above.</div></div>
             </div>
           </div>
         </div>
@@ -501,7 +487,7 @@ footer{border-top:1px solid hsl(var(--void-line));background:hsl(var(--void))}
             </div>
             <div class="proof-row">
               <div class="proof-key">Assurance</div>
-              <div class="proof-val green">L2 — hash-chain verified</div>
+              <div class="proof-val green">L2 — hash-chain verified<br><span style="font-size:10px;color:hsl(var(--trace-dim))">L3 adds customer-held Ed25519 signatures</span></div>
             </div>
             <div class="proof-row">
               <div class="proof-key">Chain intact</div>
@@ -519,9 +505,10 @@ footer{border-top:1px solid hsl(var(--void-line));background:hsl(var(--void))}
         <div class="verify-badge fade-in">
           <div class="verify-icon">&#10003;</div>
           <div class="verify-body">
-            <div class="verify-title">Public verify link — no account needed</div>
+            <div class="verify-title">Public verify link — no account needed</div><div style="font-size:11px;font-family:'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:hsl(152,64%,34%);margin-top:.2rem;">Verification does not depend on DarkMatter.</div>
             <div class="verify-sub">Anyone with this link can view the full record, verify the hash chain, and download the proof bundle. Works offline.</div>
             <div class="verify-url"><a href="https://darkmatterhub.ai/r/ctx_1777407029545_d088f43e983c" target="_blank" rel="noopener" style="color:hsl(152,64%,34%)">darkmatterhub.ai/r/ctx_1777407029545_d088f43e983c</a></div>
+            <div style="font-size:12px;margin-top:.5rem;color:hsl(var(--trace-dim));font-family:'JetBrains Mono',monospace;">Download the bundle and verify it yourself — no DarkMatter required.</div>
           </div>
         </div>
 
@@ -537,7 +524,7 @@ footer{border-top:1px solid hsl(var(--void-line));background:hsl(var(--void))}
             </div>
             <div class="proof-row">
               <div class="proof-key">Chain order</div>
-              <div class="proof-val green">&#10003; intact — no steps inserted or removed</div>
+              <div class="proof-val green">&#10003; recorded steps were not altered or reordered</div>
             </div>
             <div class="proof-row">
               <div class="proof-key">Timestamp</div>
@@ -670,7 +657,7 @@ function downloadDemoBundle() {
     trace_id: "ctx_1777407029545_d088f43e983c",
     chain_intact: true,
     generated_at: new Date().toISOString(),
-    note: "This is a simulated demo proof bundle. Sign up at darkmatterhub.ai to generate real verifiable bundles for your own agents.",
+    note: "This bundle is derived from a real DarkMatter commit. Verification can be performed independently using the included hashes. No DarkMatter account required.",
     commits: [
       {
         id: "ctx_1777407029545_d088f43e983c",
@@ -706,23 +693,6 @@ function downloadDemoBundle() {
   URL.revokeObjectURL(url);
 }
 
-function toggleMenu() {
-  var ham = document.getElementById('hamburger');
-  var menu = document.getElementById('mobile-menu');
-  ham.classList.toggle('open');
-  menu.classList.toggle('open');
-  document.body.style.overflow = menu.classList.contains('open') ? 'hidden' : '';
-}
-// Close menu on link click
-document.addEventListener('DOMContentLoaded', function() {
-  document.querySelectorAll('.mobile-menu a').forEach(function(a) {
-    a.addEventListener('click', function() {
-      document.getElementById('hamburger').classList.remove('open');
-      document.getElementById('mobile-menu').classList.remove('open');
-      document.body.style.overflow = '';
-    });
-  });
-});
 
 function animateHash() {
   var full = 'e11466b0601e6ec30070a8091a0e0455f4d3e12faae8f46c806141624cedeace';
