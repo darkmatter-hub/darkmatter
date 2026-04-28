@@ -83,7 +83,7 @@ a{color:inherit;text-decoration:none}
 
 /* Props grid */
 .props-grid{display:grid;grid-template-columns:1fr;gap:1px;background:hsl(var(--void-line));border:1px solid hsl(var(--void-line))}
-@media(min-width:768px){.props-grid{grid-template-columns:repeat(3,1fr)}}
+@media(min-width:768px){.props-grid{grid-template-columns:repeat(4,1fr)}}
 .prop{background:hsl(var(--void));padding:2rem;transition:background .15s}
 .prop:hover{background:hsl(var(--void-elevated))}
 .prop .top{display:flex;align-items:center;justify-content:space-between;margin-bottom:2.5rem}
@@ -118,7 +118,7 @@ footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;gri
 .footer-bottom .inner{max-width:80rem;margin:0 auto;padding:1.25rem 1.5rem;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:hsl(var(--trace-dim))}
 
 .plans{display:grid;grid-template-columns:1fr;gap:1px;background:hsl(var(--void-line));border:1px solid hsl(var(--void-line));margin:3rem 0}
-@media(min-width:768px){.plans{grid-template-columns:repeat(3,1fr)}}
+@media(min-width:768px){.plans{grid-template-columns:repeat(4,1fr)}}
 .plan{background:hsl(var(--void));padding:2.5rem 2rem;display:flex;flex-direction:column}
 .plan.hl{background:hsl(var(--foreground));color:hsl(var(--background))}
 .plan.hl .plan-label,.plan.hl .plan-price,.plan.hl .plan-desc,.plan.hl .plan-features li{color:hsl(var(--background)/.85)}
@@ -180,6 +180,26 @@ footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;gri
         <li>Ed25519 signing (BYOK keys)</li>
       </ul>
       <a href="/signup" class="plan-cta">Start Pro</a>
+    </div>
+    <div class="plan" style="border:1px solid hsl(var(--signal)/.35);margin-top:-8px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2rem">
+        <div class="plan-label" style="margin-bottom:0">Teams</div>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:hsl(var(--signal));border:1px solid hsl(var(--signal)/.4);padding:2px 6px">Most popular</span>
+      </div>
+      <div class="plan-price">$49<span> / month</span></div>
+      <div class="plan-desc">For teams running production pipelines.</div>
+      <div class="plan-divider"></div>
+      <ul class="plan-features">
+        <li>10,000 commits / month</li>
+        <li>Unlimited retention</li>
+        <li>Unlimited agents</li>
+        <li>L1 &#183; L2 &#183; L3 verification</li>
+        <li>Anthropic &#43; OpenAI SDK wrappers</li>
+        <li>Proof bundle export</li>
+        <li>Share page (/r/:id)</li>
+        <li>Ed25519 signing (BYOK keys)</li>
+      </ul>
+      <a href="/signup" class="plan-cta">Upgrade to Teams</a>
     </div>
     <div class="plan">
       <div class="plan-label">Enterprise</div>

@@ -119,136 +119,44 @@ footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;gri
 .footer-bottom{border-top:1px solid hsl(var(--void-line))}
 .footer-bottom .inner{max-width:80rem;margin:0 auto;padding:1.25rem 1.5rem;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:hsl(var(--trace-dim))}
 
-.demo-xcss-placeholder { display: none; }
-
-/* Demo page specific */
-.scenario-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 2rem;
-  margin-top: 3rem;
-}
-@media (min-width: 900px) {
-  .scenario-grid { grid-template-columns: repeat(12, 1fr); }
-  .scenario-left  { grid-column: span 5; }
-  .scenario-right { grid-column: span 7; }
-}
-
-/* Terminal */
-.terminal {
-  background: hsl(220 18% 6%);
-  border: 1px solid hsl(220 12% 18%);
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 12px;
-  line-height: 1.65;
-}
-.terminal-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: .625rem 1rem;
-  border-bottom: 1px solid hsl(220 12% 18%);
-  font-size: 10px;
-  letter-spacing: .15em;
-  text-transform: uppercase;
-  color: hsl(220 8% 45%);
-}
-.terminal-dots { display: flex; gap: .4rem; }
-.terminal-dots span { width: 8px; height: 8px; border-radius: 50%; }
-.terminal-body { padding: 1.25rem 1.5rem; overflow-x: auto; }
-.t-dim  { color: hsl(220 8% 42%); }
-.t-grn  { color: hsl(152 70% 56%); }
-.t-yel  { color: hsl(38 80% 60%); }
-.t-wht  { color: hsl(38 15% 92%); }
-.t-blu  { color: hsl(207 82% 66%); }
-
-/* Decision cards */
-.decision-feed {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  border: 1px solid hsl(var(--void-line));
-}
-.decision-card {
-  padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid hsl(var(--void-line));
-  transition: background .12s;
-  cursor: pointer;
-  text-decoration: none;
-  display: block;
-  color: inherit;
-}
-.decision-card:last-child { border-bottom: none; }
-.decision-card:hover { background: hsl(var(--void-elevated)); }
-.decision-card.l3 { border-left: 2px solid hsl(var(--signal)); }
-.dc-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: .5rem; }
-.dc-agent { font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: hsl(var(--trace)); }
-.dc-badges { display: flex; gap: .4rem; align-items: center; }
-.dc-badge { font-family: 'JetBrains Mono', monospace; font-size: 9px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; padding: 2px 6px; border: 1px solid; }
-.dc-badge.green { background: hsl(var(--signal)/.07); color: hsl(var(--signal)); border-color: hsl(var(--signal)/.25); }
-.dc-badge.gray  { background: hsl(var(--void-elevated)); color: hsl(var(--trace)); border-color: hsl(var(--void-line)); }
-.dc-decision { font-size: 14px; font-weight: 500; color: hsl(var(--foreground)); margin-bottom: .35rem; line-height: 1.4; }
-.dc-reason { font-size: 12.5px; color: hsl(var(--trace)); line-height: 1.5; }
-.dc-footer { display: flex; align-items: center; gap: .75rem; margin-top: .75rem; }
-.dc-hash { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; color: hsl(var(--trace-dim)); }
-.dc-ts { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; color: hsl(var(--trace-dim)); }
-.dc-verify { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; color: hsl(var(--signal)); margin-left: auto; }
-
-/* CTA */
-.try-block {
-  border: 1px solid hsl(var(--void-line));
-  padding: 1.5rem 1.75rem;
-  margin-top: 2rem;
-  background: hsl(var(--void-elevated)/.4);
-}
-.try-title { font-size: 15px; font-weight: 500; margin-bottom: .5rem; }
-.try-sub { font-size: 13px; color: hsl(var(--trace)); line-height: 1.6; margin-bottom: 1.25rem; }
-
-/* Proof strip */
-.proof-strip {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 1px;
-  background: hsl(var(--void-line));
-  border: 1px solid hsl(var(--void-line));
-  margin-top: 1.5rem;
-}
-.proof-item { background: hsl(var(--void)); padding: 1rem; }
-.proof-check { font-size: 12px; color: hsl(var(--signal)); font-family: 'JetBrains Mono', monospace; margin-bottom: .25rem; }
-.proof-label { font-size: 11.5px; font-weight: 500; color: hsl(var(--foreground)); margin-bottom: .2rem; }
-.proof-val { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; color: hsl(var(--trace)); word-break: break-all; }
-
-/* Outreach box */
-.outreach {
-  border: 1px solid hsl(var(--signal)/.3);
-  background: hsl(var(--signal)/.04);
-  padding: 1.5rem 1.75rem;
-  margin-top: 3rem;
-}
+.scenario-grid{display:grid;grid-template-columns:1fr;gap:2rem;margin-top:3rem;}
+@media(min-width:900px){.scenario-grid{grid-template-columns:repeat(12,1fr)}.scenario-left{grid-column:span 5}.scenario-right{grid-column:span 7}}
+.terminal{background:hsl(220 18% 6%);border:1px solid hsl(220 12% 18%);font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.65;}
+.terminal-bar{display:flex;align-items:center;justify-content:space-between;padding:.625rem 1rem;border-bottom:1px solid hsl(220 12% 18%);font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:hsl(220 8% 45%);}
+.terminal-dots{display:flex;gap:.4rem;}
+.terminal-dots span{width:8px;height:8px;border-radius:50%;}
+.terminal-body{padding:1.25rem 1.5rem;overflow-x:auto;}
+.t-dim{color:hsl(220 8% 42%);} .t-grn{color:hsl(152 70% 56%);} .t-yel{color:hsl(38 80% 60%);} .t-wht{color:hsl(38 15% 92%);} .t-blu{color:hsl(207 82% 66%);}
+.decision-feed{display:flex;flex-direction:column;gap:0;border:1px solid hsl(var(--void-line));}
+.decision-card{padding:1.25rem 1.5rem;border-bottom:1px solid hsl(var(--void-line));transition:background .12s;text-decoration:none;display:block;color:inherit;}
+.decision-card:last-child{border-bottom:none;}
+.decision-card:hover{background:hsl(var(--void-elevated));}
+.decision-card.l3{border-left:2px solid hsl(var(--signal));}
+.dc-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem;}
+.dc-agent{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:hsl(var(--trace));}
+.dc-badges{display:flex;gap:.4rem;align-items:center;}
+.dc-badge{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 6px;border:1px solid;}
+.dc-badge.green{background:hsl(var(--signal)/.07);color:hsl(var(--signal));border-color:hsl(var(--signal)/.25);}
+.dc-badge.gray{background:hsl(var(--void-elevated));color:hsl(var(--trace));border-color:hsl(var(--void-line));}
+.dc-decision{font-size:14px;font-weight:500;color:hsl(var(--foreground));margin-bottom:.35rem;line-height:1.4;}
+.dc-reason{font-size:12.5px;color:hsl(var(--trace));line-height:1.5;}
+.dc-footer{display:flex;align-items:center;gap:.75rem;margin-top:.75rem;}
+.dc-hash{font-family:'JetBrains Mono',monospace;font-size:9.5px;color:hsl(var(--trace-dim));}
+.dc-ts{font-family:'JetBrains Mono',monospace;font-size:9.5px;color:hsl(var(--trace-dim));}
+.dc-verify{font-family:'JetBrains Mono',monospace;font-size:9.5px;color:hsl(var(--signal));margin-left:auto;}
+.proof-strip{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:hsl(var(--void-line));border:1px solid hsl(var(--void-line));margin-top:1.5rem;}
+.proof-item{background:hsl(var(--void));padding:1rem;}
+.proof-check{font-size:12px;color:hsl(var(--signal));font-family:'JetBrains Mono',monospace;margin-bottom:.25rem;}
+.proof-label{font-size:11.5px;font-weight:500;color:hsl(var(--foreground));margin-bottom:.2rem;}
+.proof-val{font-family:'JetBrains Mono',monospace;font-size:9.5px;color:hsl(var(--trace));line-height:1.5;}
+.try-block{border:1px solid hsl(var(--void-line));padding:1.5rem 1.75rem;margin-top:2rem;background:hsl(var(--void-elevated)/.4);}
+.outreach{border:1px solid hsl(var(--signal)/.3);background:hsl(var(--signal)/.04);padding:1.5rem 1.75rem;margin-top:3rem;}
 </style>
 </head>
 <body>
-
-<!-- Nav -->
-<header class="nav">
-  <div class="nav-inner">
-    <a href="/" class="wordmark" aria-label="DarkMatter">
-      <span class="sigil" aria-hidden="true"><svg viewBox="0 0 32 32" width="32" height="32" fill="none"><circle cx="16" cy="16" r="10" stroke="hsl(var(--foreground))" stroke-opacity="0.45" stroke-width="0.8"/><path d="M 16 6 L 24.66 21 L 7.34 21 Z" stroke="hsl(var(--foreground))" stroke-opacity="0.18" stroke-width="0.5" stroke-dasharray="1 1.5"/><circle cx="16" cy="16" r="0.8" fill="hsl(var(--foreground))" fill-opacity="0.55"/><circle cx="16" cy="6" r="2.1" fill="hsl(var(--signal))"/><circle cx="16" cy="6" r="3.4" stroke="hsl(var(--signal))" stroke-opacity="0.3" stroke-width="0.45"/><circle cx="24.66" cy="21" r="1.5" fill="hsl(var(--foreground))"/><circle cx="7.34" cy="21" r="1.5" fill="hsl(var(--foreground))" fill-opacity="0.85"/></svg></span>
-      <span class="name"><span class="d">DARK</span><span class="m">MATTER</span></span>
-    </a>
-    <nav class="nav-links">
-      <a href="/docs">Docs</a><a href="/pricing">Pricing</a><a href="/integrity">Integrity</a>
-    </nav>
-    <div class="nav-cta">
-      <a href="/login" class="signin">Sign in</a>
-      <a href="/signup" class="commit"><span class="dot"></span>Try it free</a>
-    </div>
-  </div>
-</header>
+<header class="nav"><div class="nav-inner"><a href="/" class="wordmark" aria-label="DarkMatter"><span class="sigil" aria-hidden="true"><svg viewBox="0 0 32 32" width="32" height="32" fill="none"><circle cx="16" cy="16" r="10" stroke="hsl(var(--foreground))" stroke-opacity="0.45" stroke-width="0.8"/><path d="M 16 6 L 24.66 21 L 7.34 21 Z" stroke="hsl(var(--foreground))" stroke-opacity="0.18" stroke-width="0.5" stroke-dasharray="1 1.5"/><circle cx="16" cy="16" r="0.8" fill="hsl(var(--foreground))" fill-opacity="0.55"/><circle cx="16" cy="6" r="2.1" fill="hsl(var(--signal))"/><circle cx="16" cy="6" r="3.4" stroke="hsl(var(--signal))" stroke-opacity="0.3" stroke-width="0.45"/><circle cx="24.66" cy="21" r="1.5" fill="hsl(var(--foreground))"/><circle cx="7.34" cy="21" r="1.5" fill="hsl(var(--foreground))" fill-opacity="0.85"/></svg></span><span class="name"><span class="d">DARK</span><span class="m">MATTER</span></span></a><nav class="nav-links"><a href="/demo" class="active">Demo</a><a href="/docs">Docs</a><a href="/pricing">Pricing</a><a href="/compare">Compare</a><a href="/integrity">Integrity</a></nav><div class="nav-cta"><a href="/login" class="signin">Sign in</a><a href="/signup" class="commit"><span class="dot"></span>Try it free</a></div></div></header>
 
 <main>
-
-<!-- Hero -->
 <section class="section" style="position:relative;overflow:hidden;">
   <div class="noise grid-noise" style="position:absolute;inset:0;opacity:.3;"></div>
   <div class="wrap section-pad" style="position:relative;">
@@ -262,25 +170,18 @@ footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;gri
   </div>
 </section>
 
-<!-- Main content -->
 <section class="section">
   <div class="wrap section-pad">
     <div class="scenario-grid">
-
-      <!-- Left: scenario + code -->
       <div class="scenario-left">
         <div class="eyebrow" style="margin-bottom:1.25rem;"><span class="rule"></span><span>The scenario</span></div>
-
         <div style="font-size:14px;line-height:1.75;color:hsl(var(--trace));margin-bottom:1.5rem;">
           A refund approval agent processes customer requests. For each decision, it calls <code class="cmd">dm.commit()</code> before taking any action &#8212; sealing the decision outside its own system.
         </div>
-
         <div style="font-size:13px;line-height:1.7;color:hsl(var(--trace));margin-bottom:2rem;">
           This means: if the decision is ever disputed, the record already exists. It was sealed <em>before</em> anyone knew it would matter.
         </div>
-
         <div class="eyebrow" style="margin-bottom:1.25rem;"><span class="rule"></span><span>The code</span></div>
-
         <div class="terminal">
           <div class="terminal-bar">
             <div class="terminal-dots">
@@ -299,14 +200,13 @@ footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;gri
     <span class="t-yel">api_key</span>    <span class="t-dim">=</span> <span class="t-grn">"sk-ant-..."</span><span class="t-dim">,</span>
 <span class="t-dim">)</span>
 
-<span class="t-blu">def</span> <span class="t-grn">process_refund</span><span class="t-dim">(</span><span class="t-wht">order_id</span><span class="t-dim">,</span> <span class="t-wht">amount</span><span class="t-dim">,</span> <span class="t-wht">reason</span><span class="t-dim">):</span>
-    <span class="t-dim"># Every call auto-committed to DarkMatter</span>
+<span class="t-blu">def</span> <span class="t-grn">process_refund</span><span class="t-dim">(</span><span class="t-wht">order_id</span><span class="t-dim">,</span> <span class="t-wht">amount</span><span class="t-dim">):</span>
     <span class="t-wht">response</span> <span class="t-dim">=</span> <span class="t-wht">client.messages.create</span><span class="t-dim">(</span>
-        <span class="t-yel">model</span>     <span class="t-dim">=</span> <span class="t-grn">"claude-sonnet-4-6"</span><span class="t-dim">,</span>
-        <span class="t-yel">max_tokens</span><span class="t-dim">=</span> <span class="t-wht">256</span><span class="t-dim">,</span>
-        <span class="t-yel">messages</span>  <span class="t-dim">=</span> <span class="t-dim">[{</span>
+        <span class="t-yel">model</span>      <span class="t-dim">=</span> <span class="t-grn">"claude-sonnet-4-6"</span><span class="t-dim">,</span>
+        <span class="t-yel">max_tokens</span> <span class="t-dim">=</span> <span class="t-wht">256</span><span class="t-dim">,</span>
+        <span class="t-yel">messages</span>   <span class="t-dim">=</span> <span class="t-dim">[{</span>
             <span class="t-grn">"role"</span><span class="t-dim">:</span> <span class="t-grn">"user"</span><span class="t-dim">,</span>
-            <span class="t-grn">"content"</span><span class="t-dim">:</span> <span class="t-wht">f</span><span class="t-grn">"Approve refund #{order_id}? Amount: ${amount}. Reason: {reason}"</span>
+            <span class="t-grn">"content"</span><span class="t-dim">:</span> <span class="t-grn">f"Approve refund #{order_id}? Amount: ${amount}"</span>
         <span class="t-dim">}]</span>
     <span class="t-dim">)</span>
     <span class="t-dim"># &#8593; sealed, hashed, independently verifiable</span>
@@ -314,14 +214,13 @@ footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;gri
           </div>
         </div>
 
-        <!-- What this proves -->
         <div style="margin-top:1.75rem;">
           <div class="eyebrow" style="margin-bottom:1rem;"><span class="rule"></span><span>What each record proves</span></div>
           <div class="proof-strip">
             <div class="proof-item">
               <div class="proof-check">&#10003;</div>
               <div class="proof-label">Payload hash</div>
-              <div class="proof-val">SHA-256 of input &#43; output. Tamper-evident.</div>
+              <div class="proof-val">SHA-256 of input + output. Any change breaks the hash.</div>
             </div>
             <div class="proof-item">
               <div class="proof-check">&#10003;</div>
@@ -331,7 +230,7 @@ footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;gri
             <div class="proof-item">
               <div class="proof-check">&#10003;</div>
               <div class="proof-label">Timestamp</div>
-              <div class="proof-val">Sealed server-side before any downstream action.</div>
+              <div class="proof-val">Sealed before any downstream action is taken.</div>
             </div>
             <div class="proof-item">
               <div class="proof-check">&#10003;</div>
@@ -342,157 +241,51 @@ footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;gri
         </div>
       </div>
 
-      <!-- Right: live decision feed -->
       <div class="scenario-right">
-        <div class="eyebrow" style="margin-bottom:1.25rem;"><span class="rule"></span><span>Live decisions &#183; click any to verify</span></div>
-
+        <div class="eyebrow" style="margin-bottom:1.25rem;"><span class="rule"></span><span>Live decisions &#183; click any to open its proof</span></div>
         <div class="decision-feed" id="decision-feed">
-
-          <a class="decision-card l3" href="/demo" target="_blank">
-            <div class="dc-top">
-              <span class="dc-agent">refund-agent-v2</span>
-              <div class="dc-badges">
-                <span class="dc-badge green">L3</span>
-                <span class="dc-badge green">&#10003; verified</span>
-              </div>
-            </div>
-            <div class="dc-decision">Approved &#8212; Refund $284.00 for order #84721</div>
-            <div class="dc-reason">Customer within 30-day window. No prior refund history. Amount within auto-approval threshold.</div>
-            <div class="dc-footer">
-              <span class="dc-hash">sha256:a9c4&#183;e18f&#183;2b7d&#183;10e4</span>
-              <span class="dc-ts">2 min ago</span>
-              <span class="dc-verify">View proof &#8594;</span>
-            </div>
-          </a>
-
-          <a class="decision-card l3" href="/demo" target="_blank">
-            <div class="dc-top">
-              <span class="dc-agent">refund-agent-v2</span>
-              <div class="dc-badges">
-                <span class="dc-badge green">L3</span>
-                <span class="dc-badge green">&#10003; verified</span>
-              </div>
-            </div>
-            <div class="dc-decision">Escalated &#8212; Refund $1,240.00 for order #91033</div>
-            <div class="dc-reason">Amount exceeds auto-approval threshold ($500). Flagged for human review. No action taken pending approval.</div>
-            <div class="dc-footer">
-              <span class="dc-hash">sha256:31bd&#183;772a&#183;09cf&#183;b6e2</span>
-              <span class="dc-ts">8 min ago</span>
-              <span class="dc-verify">View proof &#8594;</span>
-            </div>
-          </a>
-
-          <a class="decision-card l3" href="/demo" target="_blank">
-            <div class="dc-top">
-              <span class="dc-agent">refund-agent-v2</span>
-              <div class="dc-badges">
-                <span class="dc-badge green">L3</span>
-                <span class="dc-badge green">&#10003; verified</span>
-              </div>
-            </div>
-            <div class="dc-decision">Denied &#8212; Refund $89.00 for order #77844</div>
-            <div class="dc-reason">Outside 30-day window (47 days since purchase). Policy does not cover. Customer informed.</div>
-            <div class="dc-footer">
-              <span class="dc-hash">sha256:fe04&#183;1c8a&#183;5503&#183;ddaf</span>
-              <span class="dc-ts">15 min ago</span>
-              <span class="dc-verify">View proof &#8594;</span>
-            </div>
-          </a>
-
-          <a class="decision-card" href="/demo" target="_blank">
-            <div class="dc-top">
-              <span class="dc-agent">refund-agent-v2</span>
-              <div class="dc-badges">
-                <span class="dc-badge green">&#10003; verified</span>
-              </div>
-            </div>
-            <div class="dc-decision">Approved &#8212; Refund $44.00 for order #82019</div>
-            <div class="dc-reason">Item not delivered. Carrier confirmed lost. Immediate approval per policy section 4.2.</div>
-            <div class="dc-footer">
-              <span class="dc-hash">sha256:7c2d&#183;4f91&#183;a38b&#183;e052</span>
-              <span class="dc-ts">31 min ago</span>
-              <span class="dc-verify">View proof &#8594;</span>
-            </div>
-          </a>
-
-          <a class="decision-card" href="/demo" target="_blank">
-            <div class="dc-top">
-              <span class="dc-agent">refund-agent-v2</span>
-              <div class="dc-badges">
-                <span class="dc-badge green">&#10003; verified</span>
-              </div>
-            </div>
-            <div class="dc-decision">Approved &#8212; Refund $156.00 for order #78330</div>
-            <div class="dc-reason">Defective item confirmed via photo. Customer retention risk flagged. Standard approval.</div>
-            <div class="dc-footer">
-              <span class="dc-hash">sha256:b81a&#183;3d52&#183;c9e7&#183;f014</span>
-              <span class="dc-ts">1 hr ago</span>
-              <span class="dc-verify">View proof &#8594;</span>
-            </div>
-          </a>
-
+          <div id="loading-decisions" style="padding:2rem;text-align:center;font-family:'JetBrains Mono',monospace;font-size:11px;color:hsl(var(--trace-dim));">Loading live decisions&#8230;</div>
         </div>
-
         <div style="margin-top:.75rem;font-family:'JetBrains Mono',monospace;font-size:9.5px;color:hsl(var(--trace-dim));display:flex;align-items:center;gap:.5rem;">
           <span class="dot" style="width:5px;height:5px;"></span>
-          Live records from a running agent. Each links to an independently verifiable proof page.
+          Real commits from the DarkMatter test agent. Each opens an independently verifiable proof record.
         </div>
 
-        <!-- Why this matters -->
         <div style="margin-top:2rem;border:1px solid hsl(var(--void-line));padding:1.25rem 1.5rem;">
           <div class="eyebrow" style="margin-bottom:.75rem;font-size:9px;"><span class="rule"></span><span>Why the record exists before you need it</span></div>
           <div style="font-size:13.5px;line-height:1.75;color:hsl(var(--trace));">
             When a customer disputes refund #84721, you already have a sealed, independently verifiable record of exactly what the agent decided, why, and when &#8212; before anyone asked.
             <br><br>
-            That record wasn't created because of the dispute. It was created at the moment of decision. That's what makes it credible.
+            That record wasn&#8217;t created because of the dispute. It was created at the moment of decision. That&#8217;s what makes it credible.
           </div>
         </div>
 
-        <!-- Try it -->
         <div class="try-block">
-          <div class="try-title">Add this to your own agent &#8212; 60 seconds</div>
-          <div class="try-sub">One import change. Every decision auto-committed. No infrastructure changes.</div>
+          <div style="font-size:15px;font-weight:500;margin-bottom:.5rem;">Add this to your own agent &#8212; 60 seconds</div>
+          <div style="font-size:13px;color:hsl(var(--trace));line-height:1.6;margin-bottom:1.25rem;">One import change. Every decision auto-committed. No infrastructure changes.</div>
           <div style="display:flex;flex-wrap:wrap;gap:.75rem;">
             <a href="/signup" class="btn-primary">Start free &#8594;</a>
             <a href="/docs#integrations" class="btn-ghost">Read the docs</a>
           </div>
         </div>
-
       </div>
     </div>
 
-    <!-- What they should send to someone -->
     <div class="outreach">
       <div style="font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:hsl(var(--signal));margin-bottom:.75rem;">Share this page</div>
       <p style="font-size:14px;line-height:1.7;color:hsl(var(--trace));max-width:52rem;margin-bottom:1rem;">
-        If you work with AI agents making decisions that matter &#8212; refunds, approvals, moderation, security actions &#8212; send this to your team. The question to ask: <strong style="color:hsl(var(--foreground));">"Would having this record have helped us in the last month?"</strong>
+        If you work with AI agents making consequential decisions &#8212; send this to your team. The question to ask: <strong style="color:hsl(var(--foreground));">&#8220;Would having this record have helped us in the last month?&#8221;</strong>
       </p>
       <div style="display:flex;flex-wrap:wrap;gap:.75rem;">
         <button onclick="copyPageUrl()" class="btn-ghost" id="copy-url-btn">Copy page URL</button>
         <a href="/signup" class="btn-primary">Try it with your own agent &#8594;</a>
       </div>
     </div>
-
   </div>
 </section>
-
 </main>
 
-<footer>
-  <div class="top">
-    <div class="footer-brand">
-      <div class="wordmark"><span class="sigil" aria-hidden="true"><svg viewBox="0 0 32 32" width="32" height="32" fill="none"><circle cx="16" cy="16" r="10" stroke="hsl(var(--foreground))" stroke-opacity="0.45" stroke-width="0.8"/><path d="M 16 6 L 24.66 21 L 7.34 21 Z" stroke="hsl(var(--foreground))" stroke-opacity="0.18" stroke-width="0.5" stroke-dasharray="1 1.5"/><circle cx="16" cy="16" r="0.8" fill="hsl(var(--foreground))" fill-opacity="0.55"/><circle cx="16" cy="6" r="2.1" fill="hsl(var(--signal))"/><circle cx="16" cy="6" r="3.4" stroke="hsl(var(--signal))" stroke-opacity="0.3" stroke-width="0.45"/><circle cx="24.66" cy="21" r="1.5" fill="hsl(var(--foreground))"/><circle cx="7.34" cy="21" r="1.5" fill="hsl(var(--foreground))" fill-opacity="0.85"/></svg></span><span class="name"><span class="d">DARK</span><span class="m">MATTER</span></span></div>
-      <p>The independent record for AI systems.</p>
-    </div>
-    <div class="footer-col"><div class="h">Product</div>
-      <ul><li><a href="/demo">Demo</a></li><li><a href="/docs">Docs</a></li><li><a href="/pricing">Pricing</a></li></ul>
-    </div>
-    <div class="footer-col"><div class="h">Links</div>
-      <ul><li><a href="/about">About</a></li><li><a href="/security">Security</a></li></ul>
-    </div>
-  </div>
-  <div class="footer-bottom"><div class="inner">&#169; 2026 DarkMatter</div></div>
-</footer>
+<footer><div class="top"><div class="footer-brand"><div class="wordmark"><span class="sigil" aria-hidden="true"><svg viewBox="0 0 32 32" width="32" height="32" fill="none"><circle cx="16" cy="16" r="10" stroke="hsl(var(--foreground))" stroke-opacity="0.45" stroke-width="0.8"/><path d="M 16 6 L 24.66 21 L 7.34 21 Z" stroke="hsl(var(--foreground))" stroke-opacity="0.18" stroke-width="0.5" stroke-dasharray="1 1.5"/><circle cx="16" cy="16" r="0.8" fill="hsl(var(--foreground))" fill-opacity="0.55"/><circle cx="16" cy="6" r="2.1" fill="hsl(var(--signal))"/><circle cx="16" cy="6" r="3.4" stroke="hsl(var(--signal))" stroke-opacity="0.3" stroke-width="0.45"/><circle cx="24.66" cy="21" r="1.5" fill="hsl(var(--foreground))"/><circle cx="7.34" cy="21" r="1.5" fill="hsl(var(--foreground))" fill-opacity="0.85"/></svg></span><span class="name"><span class="d">DARK</span><span class="m">MATTER</span></span></div><p>The independent record for AI systems.</p></div><div class="footer-col"><div class="h">Product</div><ul><li><a href="/demo">Demo</a></li><li><a href="/docs">Docs</a></li><li><a href="/pricing">Pricing</a></li><li><a href="/compare">Compare</a></li><li><a href="/integrity">Integrity</a></li></ul></div><div class="footer-col"><div class="h">SDK</div><ul><li><a href="/docs#quickstart">Python</a></li><li><a href="/docs#typescript-sdk">TypeScript</a></li><li><a href="/docs#integrations">Anthropic</a></li><li><a href="/docs#openai-sdk-wrapper">OpenAI</a></li></ul></div><div class="footer-col"><div class="h">Links</div><ul><li><a href="/about">About</a></li><li><a href="/security">Security</a></li><li><a href="#" onclick="openContact();return false;">Contact</a></li></ul></div></div><div class="footer-bottom"><div class="inner">&#169; 2026 DarkMatter</div></div></footer>
 
 <script>
 function copyPageUrl() {
@@ -503,6 +296,68 @@ function copyPageUrl() {
     setTimeout(() => { btn.textContent = orig; }, 1800);
   });
 }
+
+// Load real commits from the API and display them
+async function loadDemoDecisions() {
+  const feed = document.getElementById('decision-feed');
+  try {
+    const res = await fetch('/api/demo');
+    const data = await res.json();
+    const commits = data.commits || data.activity || [];
+
+    if (!commits.length) {
+      feed.innerHTML = '<div style="padding:2rem;text-align:center;font-family:JetBrains Mono,monospace;font-size:11px;color:hsl(var(--trace-dim));">No demo commits available. <a href="/signup" style="color:hsl(var(--signal))">Create one &rarr;</a></div>';
+      return;
+    }
+
+    feed.innerHTML = commits.slice(0, 6).map(c => {
+      const al      = c.assurance_level || 'L1';
+      const isL3    = al === 'L3';
+      const payload = c.payload || {};
+      const input   = payload.input  || payload.prompt || payload.content || '';
+      const output  = payload.output || payload.result || payload.response || '';
+      const title   = output ? output.slice(0, 80) : (input ? input.slice(0, 80) : 'Commit record');
+      const reason  = input  ? input.slice(0,  120) : '';
+      const hash    = (c.integrity_hash || c.payload_hash || c.id || '').slice(0, 20);
+      const ts      = c.timestamp ? timeAgo(c.timestamp) : '—';
+      const id      = c.id || c.trace_id || '';
+      const verifyUrl = '/r/' + id;
+
+      return \`<a class="decision-card \${isL3 ? 'l3' : ''}" href="\${verifyUrl}" target="_blank" rel="noopener">
+        <div class="dc-top">
+          <span class="dc-agent">\${(c.agentName || c.from_agent || 'agent').slice(0,20)}</span>
+          <div class="dc-badges">
+            \${isL3 ? '<span class="dc-badge green">L3</span>' : ''}
+            <span class="dc-badge green">&#10003; verified</span>
+          </div>
+        </div>
+        <div class="dc-decision">\${escHtml(title)}</div>
+        \${reason ? '<div class="dc-reason">' + escHtml(reason).slice(0,140) + '</div>' : ''}
+        <div class="dc-footer">
+          <span class="dc-hash">\${hash ? 'sha256:' + hash.slice(0,16) + '&#183;…' : '—'}</span>
+          <span class="dc-ts">\${ts}</span>
+          <span class="dc-verify">View proof &rarr;</span>
+        </div>
+      </a>\`;
+    }).join('');
+  } catch(e) {
+    feed.innerHTML = '<div style="padding:2rem 1.5rem;font-size:13px;color:hsl(var(--trace));">Could not load live decisions. <a href="/signup" style="color:hsl(var(--signal))">Start recording your own &rarr;</a></div>';
+  }
+}
+
+function escHtml(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function timeAgo(ts) {
+  const d = Math.floor((Date.now() - new Date(ts)) / 1000);
+  if (d < 60)   return d + 's ago';
+  if (d < 3600) return Math.floor(d/60) + 'm ago';
+  if (d < 86400)return Math.floor(d/3600) + 'h ago';
+  return Math.floor(d/86400) + 'd ago';
+}
+
+loadDemoDecisions();
 </script>
 </body>
 </html>

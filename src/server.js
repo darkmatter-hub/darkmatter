@@ -2539,8 +2539,10 @@ app.get('/api/billing/subscription', wsAuth, async (req, res) => {
     let commitCount = 0;
     if (agentIds.length) {
       const startOfMonth = new Date(); startOfMonth.setDate(1); startOfMonth.setHours(0,0,0,0);
+      // Filter by this user's agents AND this month
       const { count } = await supabaseService
         .from('commits').select('id', { count: 'exact', head: true })
+        .in('from_agent', agentIds)
         .gte('timestamp', startOfMonth.toISOString());
       commitCount = count || 0;
     }
@@ -3930,7 +3932,7 @@ app.get('/r/:traceId', async (req, res) => {
     const { data: commits, error } = await supabaseService
       .from('commits')
       .select('id, trace_id, from_agent, agent_id, agent_info, payload, timestamp, client_timestamp, event_type, integrity_hash, payload_hash, parent_hash, verified, assurance_level, completeness_claim')
-      .or('trace_id.eq."' + traceId + '",trace_id.eq.' + traceId)
+      .or('id.eq.' + traceId + ',trace_id.eq."' + traceId + '",trace_id.eq.' + traceId)
       .order('timestamp', { ascending: true });
 
     if (error || !commits || !commits.length) {
