@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Privacy Notice &#8212; DarkMatter</title>
+<meta name="description" content="Privacy Notice for DarkMatter (darkmatterhub.ai)"/>
+<meta name="robots" content="noindex"/>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+/* DarkMatter design system — extracted from homepage */
+/* Include after Google Fonts link */
+
+:root{
+  --void:38 30% 97%; --void-elevated:38 24% 94%; --void-line:38 14% 84%;
+  --paper:38 30% 97%; --ink:220 20% 10%;
+  --trace:220 10% 38%; --trace-dim:220 8% 55%;
+  --signal:152 64% 34%; --signal-dim:152 30% 60%;
+  --background:var(--paper); --foreground:var(--ink);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;border:0 solid hsl(var(--void-line))}
+html,body{background:hsl(var(--background));color:hsl(var(--foreground));font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;font-feature-settings:"ss01","cv11"}
+::selection{background:hsl(var(--signal)/.3);color:hsl(var(--foreground))}
+a{color:inherit;text-decoration:none}
+.mono{font-family:'JetBrains Mono',ui-monospace,monospace;font-feature-settings:"calt" 0}
+.wrap{max-width:80rem;margin:0 auto;padding:0 1.5rem}
+.balance{text-wrap:balance}
+.hairline{height:1px;background:hsl(var(--void-line))}
+.eyebrow{display:flex;align-items:center;gap:.75rem;font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:hsl(var(--trace))}
+.eyebrow .rule{height:1px;width:2rem;background:hsl(var(--trace-dim))}
+.section{border-bottom:1px solid hsl(var(--void-line))}
+.section-pad{padding:6rem 1.5rem}
+.grid-noise{background-image:linear-gradient(hsl(var(--void-line)/.35) 1px,transparent 1px),linear-gradient(90deg,hsl(var(--void-line)/.35) 1px,transparent 1px);background-size:64px 64px;background-position:-1px -1px}
+
+/* Nav */
+.nav{position:sticky;top:0;z-index:40;border-bottom:1px solid hsl(var(--void-line));background:hsl(var(--void)/.8);backdrop-filter:blur(8px)}
+.nav-inner{display:flex;height:3.5rem;align-items:center;justify-content:space-between;max-width:80rem;margin:0 auto;padding:0 1.5rem}
+.wordmark{display:flex;align-items:center;gap:.75rem;font-family:'JetBrains Mono',monospace}
+.wordmark .sigil{position:relative;display:inline-flex;height:2rem;width:2rem;align-items:center;justify-content:center}
+.wordmark .name{display:flex;align-items:baseline;gap:1px;line-height:1}
+.wordmark .name .d{font-size:16px;font-weight:600;letter-spacing:.02em;color:hsl(var(--foreground))}
+.wordmark .name .m{font-size:16px;font-weight:300;letter-spacing:.02em;color:hsl(var(--trace))}
+.nav-links{display:none;gap:2rem;align-items:center}
+@media(min-width:768px){.nav-links{display:flex}}
+.nav-links a{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:hsl(var(--trace));transition:color .15s}
+.nav-links a:hover{color:hsl(var(--foreground))}
+.nav-links a.active{color:hsl(var(--foreground))}
+.nav-cta{display:flex;align-items:center;gap:.5rem}
+.nav-cta .signin{display:none;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:hsl(var(--trace));padding:.5rem .75rem}
+@media(min-width:640px){.nav-cta .signin{display:inline-flex}}
+.nav-cta .signin:hover{color:hsl(var(--foreground))}
+.nav-cta .commit{display:inline-flex;align-items:center;gap:.5rem;border:1px solid hsl(var(--signal)/.4);background:hsl(var(--signal)/.1);padding:.5rem .75rem;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:hsl(var(--signal));transition:background .15s}
+.nav-cta .commit:hover{background:hsl(var(--signal)/.2)}
+.dot{display:inline-block;height:.375rem;width:.375rem;border-radius:9999px;background:hsl(var(--signal));animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* Buttons */
+.btn-primary{display:inline-flex;align-items:center;gap:.75rem;background:hsl(var(--foreground));color:hsl(var(--background));padding:.875rem 1.25rem;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.2em;text-transform:uppercase;transition:background .15s,color .15s}
+.btn-primary:hover{background:hsl(var(--signal));color:hsl(var(--background))}
+.btn-ghost{display:inline-flex;align-items:center;gap:.75rem;border:1px solid hsl(var(--void-line));padding:.875rem 1.25rem;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:hsl(var(--trace));transition:color .15s,border-color .15s}
+.btn-ghost:hover{color:hsl(var(--foreground));border-color:hsl(var(--trace))}
+.btn-run{display:inline-flex;align-items:center;gap:.75rem;background:hsl(var(--signal));color:hsl(var(--background));padding:.875rem 1.25rem;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.2em;text-transform:uppercase;transition:background .15s}
+.btn-run:hover{background:hsl(var(--signal)/.85)}
+
+/* Tags */
+.tag{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:hsl(var(--signal));border:1px solid hsl(var(--signal)/.4);padding:.25rem .5rem}
+
+/* Code chips */
+.cmd{background:hsl(var(--foreground)/.06);border:1px solid hsl(var(--void-line));padding:1px 6px;border-radius:2px;color:hsl(var(--foreground));font-family:'JetBrains Mono',monospace}
+
+/* Terminal block */
+.term{
+  --void:220 18% 6%; --void-elevated:220 16% 9%; --void-line:220 12% 18%;
+  --ink:38 20% 96%; --trace:220 10% 68%; --trace-dim:220 8% 48%;
+  --signal:152 70% 56%;
+  background:hsl(var(--void));color:hsl(var(--ink));border:1px solid hsl(var(--void-line));
+}
+.term .titlebar{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid hsl(var(--void-line));padding:.625rem 1rem;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:hsl(var(--trace-dim))}
+.term .titlebar .dots{display:flex;align-items:center;gap:.5rem}
+.term .titlebar .d1{height:8px;width:8px;border-radius:9999px;background:hsl(12 72% 46%/.6)}
+.term .titlebar .d2{height:8px;width:8px;border-radius:9999px;background:hsl(var(--trace-dim)/.6)}
+.term .titlebar .d3{height:8px;width:8px;border-radius:9999px;background:hsl(var(--signal)/.6)}
+.term pre{overflow-x:auto;padding:1.25rem;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.6;color:hsl(var(--ink)/.9);white-space:pre}
+
+/* Props grid */
+.props-grid{display:grid;grid-template-columns:1fr;gap:1px;background:hsl(var(--void-line));border:1px solid hsl(var(--void-line))}
+@media(min-width:768px){.props-grid{grid-template-columns:repeat(3,1fr)}}
+.prop{background:hsl(var(--void));padding:2rem;transition:background .15s}
+.prop:hover{background:hsl(var(--void-elevated))}
+.prop .top{display:flex;align-items:center;justify-content:space-between;margin-bottom:2.5rem}
+.prop .idx{font-family:'JetBrains Mono',monospace;font-size:10px;color:hsl(var(--trace-dim))}
+.prop h3{font-size:1.5rem;letter-spacing:-.01em;margin-bottom:1rem;font-weight:500}
+.prop p{font-size:14px;line-height:1.6;color:hsl(var(--trace))}
+
+/* Levels table */
+.levels-table{margin-top:3.5rem;border-top:1px solid hsl(var(--void-line))}
+.level-row{display:grid;grid-template-columns:1fr;gap:1.5rem;border-bottom:1px solid hsl(var(--void-line));padding:2rem .5rem;transition:background .15s}
+@media(min-width:768px){.level-row{grid-template-columns:repeat(12,1fr)}}
+.level-row:hover{background:hsl(var(--void-elevated)/.4)}
+.level-c-tag{display:flex;align-items:flex-start;gap:.75rem}
+.level-num{font-family:'JetBrains Mono',monospace;font-size:10px;color:hsl(var(--trace-dim));margin-top:.5rem}
+.level-name{font-size:18px;letter-spacing:-.01em}
+.level-means{font-size:13px;line-height:1.6;color:hsl(var(--trace))}
+.level-how{font-size:13px;line-height:1.6;color:hsl(var(--foreground)/.8);font-family:'JetBrains Mono',monospace}
+@media(min-width:768px){.level-c-tag{grid-column:span 2}.level-c-name{grid-column:span 3}.level-c-means{grid-column:span 4}.level-c-how{grid-column:span 3}}
+
+/* Footer */
+footer{background:hsl(var(--void))}
+footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;grid-template-columns:1fr;gap:2.5rem}
+@media(min-width:768px){footer .top{grid-template-columns:repeat(12,1fr)}}
+.footer-brand{grid-column:span 5}
+.footer-brand p{margin-top:1.25rem;max-width:24rem;font-size:13px;color:hsl(var(--trace));line-height:1.6}
+.footer-col{grid-column:span 2}
+.footer-col .h{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:hsl(var(--trace-dim));margin-bottom:1rem}
+.footer-col ul{list-style:none;display:flex;flex-direction:column;gap:.625rem}
+.footer-col a{font-size:13px;color:hsl(var(--trace))}
+.footer-col a:hover{color:hsl(var(--foreground))}
+.footer-bottom{border-top:1px solid hsl(var(--void-line))}
+.footer-bottom .inner{max-width:80rem;margin:0 auto;padding:1.25rem 1.5rem;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:hsl(var(--trace-dim))}
+
+
+.legal-wrap { max-width: 780px; margin: 0 auto; padding: 4rem 1.5rem 6rem; }
+.legal-eyebrow { font-family: "JetBrains Mono", monospace; font-size: 9px; letter-spacing: .18em; text-transform: uppercase; color: hsl(var(--trace)); margin-bottom: 2rem; display: flex; align-items: center; gap: .75rem; }
+.legal-eyebrow::after { content: ""; flex: 1; height: 1px; background: hsl(var(--void-line)); }
+.legal-title { font-size: 28px; font-weight: 500; letter-spacing: -.02em; margin-bottom: .5rem; }
+.legal-date { font-family: "JetBrains Mono", monospace; font-size: 11px; color: hsl(var(--trace)); margin-bottom: 3rem; }
+.legal-body { font-size: 14.5px; line-height: 1.8; color: hsl(var(--foreground)/.85); }
+.legal-body h2 { font-size: 16px; font-weight: 600; margin: 2.5rem 0 .75rem; color: hsl(var(--foreground)); font-family: "JetBrains Mono", monospace; letter-spacing: .02em; }
+.legal-body h3 { font-size: 13.5px; font-weight: 600; margin: 1.75rem 0 .5rem; color: hsl(var(--foreground)); }
+.legal-body p { margin-bottom: 1rem; }
+.legal-body ul { margin: .75rem 0 1rem 1.25rem; display: flex; flex-direction: column; gap: .4rem; }
+.legal-body li { list-style: disc; }
+.legal-body strong { color: hsl(var(--foreground)); font-weight: 600; }
+.legal-body a { color: hsl(var(--signal)); text-decoration: none; }
+.legal-body a:hover { text-decoration: underline; }
+.legal-notice { background: hsl(var(--void-elevated)); border: 1px solid hsl(var(--void-line)); padding: 1rem 1.25rem; font-size: 13px; margin-bottom: 2.5rem; line-height: 1.6; color: hsl(var(--trace)); }
+.legal-caps { font-size: 12.5px; line-height: 1.7; color: hsl(var(--trace)); margin-bottom: 1rem; }
+
+</style>
+</head>
+<body>
+<header class="nav"><div class="nav-inner"><a href="/" class="wordmark" aria-label="DarkMatter"><span class="sigil" aria-hidden="true"><svg viewBox="0 0 32 32" width="32" height="32" fill="none"><circle cx="16" cy="16" r="10" stroke="hsl(var(--foreground))" stroke-opacity="0.45" stroke-width="0.8"/><path d="M 16 6 L 24.66 21 L 7.34 21 Z" stroke="hsl(var(--foreground))" stroke-opacity="0.18" stroke-width="0.5" stroke-dasharray="1 1.5"/><circle cx="16" cy="16" r="0.8" fill="hsl(var(--foreground))" fill-opacity="0.55"/><circle cx="16" cy="6" r="2.1" fill="hsl(var(--signal))"/><circle cx="16" cy="6" r="3.4" stroke="hsl(var(--signal))" stroke-opacity="0.3" stroke-width="0.45"/><circle cx="24.66" cy="21" r="1.5" fill="hsl(var(--foreground))"/><circle cx="7.34" cy="21" r="1.5" fill="hsl(var(--foreground))" fill-opacity="0.85"/></svg></span><span class="name"><span class="d">DARK</span><span class="m">MATTER</span></span></a><nav class="nav-links"><a href="/demo" class="active">Demo</a><a href="/docs">Docs</a><a href="/pricing">Pricing</a><a href="/compare">Compare</a><a href="/integrity">Integrity</a></nav><div class="nav-cta"><a href="/login" class="signin">Sign in</a><a href="/signup" class="commit"><span class="dot"></span>Try it free</a></div></div></header>
+<main>
+  <div class="legal-wrap">
+    <div class="legal-eyebrow">Legal</div>
+    <h1 class="legal-title">Privacy Notice</h1>
+    <div class="legal-date">Last updated: April 28, 2026</div>
+    
+<div class="legal-notice">
+  DarkMatter is operated by DarkMatter. This notice describes how we handle your information.
+</div>
+
+<div class="legal-body">
+
+<h2>1. Who We Are</h2>
+<p>DarkMatter (darkmatterhub.ai) is an independent verification and audit layer for AI agent decisions, "We," "us," and "our" refer to DarkMatter and its operators. For questions, contact us at <a href="mailto:hello@darkmatterhub.ai">hello@darkmatterhub.ai</a>.</p>
+
+<h2>2. Information We Collect</h2>
+
+<h3>Information you provide</h3>
+<ul>
+  <li><strong>Account information:</strong> Email address and password when you sign up</li>
+  <li><strong>Payment information:</strong> Billing details processed by Stripe (we do not store card numbers)</li>
+  <li><strong>Communications:</strong> Any messages you send us via email or contact forms</li>
+</ul>
+
+<h3>Information from your use of the Service</h3>
+<ul>
+  <li><strong>Commit payloads:</strong> The data you submit via API to create Records — including AI agent inputs, outputs, and metadata you choose to record</li>
+  <li><strong>API usage data:</strong> Request timestamps, volumes, error rates, and API key identifiers</li>
+  <li><strong>Agent metadata:</strong> Agent names, IDs, and assurance level settings you configure</li>
+</ul>
+
+<h3>Information collected automatically</h3>
+<ul>
+  <li><strong>Log data:</strong> IP addresses, browser type, pages visited, and timestamps</li>
+  <li><strong>Device information:</strong> Device type, operating system, and general location derived from IP</li>
+</ul>
+
+<h2>3. How We Use Your Information</h2>
+<ul>
+  <li>To provide the Service — storing, hashing, and making your Records verifiable</li>
+  <li>To manage your account and process payments</li>
+  <li>To respond to your support requests and communications</li>
+  <li>To monitor Service health, detect abuse, and prevent fraud</li>
+  <li>To improve the Service using aggregated, anonymized usage metrics</li>
+  <li>To comply with legal obligations</li>
+</ul>
+<p><strong>We do not use your commit payloads to train AI models. We do not sell your data to third parties.</strong></p>
+
+<h2>4. How We Share Your Information</h2>
+<p>We share your information only in the following circumstances:</p>
+<ul>
+  <li><strong>Service providers:</strong> Supabase (database and authentication), Railway (hosting), Stripe (payments), Cloudflare (DNS and CDN), Resend (transactional email). These providers process data on our behalf under their own privacy policies.</li>
+  <li><strong>Legal requirements:</strong> When required by law, court order, or government authority</li>
+  <li><strong>Business transfers:</strong> In connection with a sale, merger, or acquisition of the business</li>
+  <li><strong>Your direction:</strong> When you share a Record via a public /r/ link, the payload content of that Record becomes accessible to anyone with the link</li>
+</ul>
+
+<h2>5. Public Verify Links</h2>
+<p>When you share a Record using a /r/ link, the payload content of that Record is accessible to anyone with the link. You control what data you commit to Records and whether you share the resulting links. Do not commit sensitive data you do not intend to share if you plan to use public share links.</p>
+
+<h2>6. Data Retention</h2>
+<p>We retain your account information for as long as your account is active. Committed Records are retained according to your plan's retention window (30 days for Free, 90 days for Pro, unlimited for Teams and Enterprise). We retain payment records as required by law. You may request deletion of your account and data by contacting <a href="mailto:hello@darkmatterhub.ai">hello@darkmatterhub.ai</a>.</p>
+
+<h2>7. Security</h2>
+<p>We take reasonable technical and organizational measures to protect your information, including encrypted storage (Supabase), HTTPS-only transmission, and cryptographic hashing of all Records. However, no system is perfectly secure. We encourage you not to commit sensitive data you would not be comfortable disclosing in a legal proceeding or regulatory inquiry.</p>
+
+<h2>8. Your Rights</h2>
+<p>Depending on where you live, you may have rights to access, correct, delete, or port your personal data. To exercise these rights, contact us at <a href="mailto:hello@darkmatterhub.ai">hello@darkmatterhub.ai</a>. We will respond within 30 days. We will not discriminate against you for exercising these rights.</p>
+<p>California residents may also have rights under the CCPA. We do not sell personal information as defined by the CCPA.</p>
+
+<h2>9. Children</h2>
+<p>The Service is not directed at children under 13. We do not knowingly collect personal information from children under 13. If you believe we have done so inadvertently, contact us at <a href="mailto:hello@darkmatterhub.ai">hello@darkmatterhub.ai</a> and we will delete it.</p>
+
+<h2>10. Limitation of Liability and Hold Harmless</h2>
+<p>By using the Service, you agree not to hold harmless DarkMatter, its operators, founders, employees, contractors, affiliates, successors, or assigns (collectively, "DarkMatter Parties") from any claim, liability, damage, loss, or expense of any kind arising from your use of the Service or your reliance on any Record, verification result, or other output of the Service.</p>
+<p>To the maximum extent permitted by law, the DarkMatter Parties shall not be liable for any direct, indirect, incidental, special, consequential, or punitive damages arising out of or related to your use of the Service, even if a DarkMatter Party has been advised of the possibility of such damages.</p>
+
+<h2>11. Changes to This Notice</h2>
+<p>We may update this Privacy Notice. We will post the updated version with a revised date. For material changes, we will notify registered users by email where practicable. Your continued use of the Service after changes take effect constitutes acceptance of the updated notice.</p>
+
+<h2>12. Contact</h2>
+<p>For any privacy questions or to exercise your rights: <a href="mailto:hello@darkmatterhub.ai">hello@darkmatterhub.ai</a></p>
+
+</div>
+
+  </div>
+</main>
+<footer><div class="top"><div class="footer-brand"><div class="wordmark"><span class="sigil" aria-hidden="true"><svg viewBox="0 0 32 32" width="32" height="32" fill="none"><circle cx="16" cy="16" r="10" stroke="hsl(var(--foreground))" stroke-opacity="0.45" stroke-width="0.8"/><path d="M 16 6 L 24.66 21 L 7.34 21 Z" stroke="hsl(var(--foreground))" stroke-opacity="0.18" stroke-width="0.5" stroke-dasharray="1 1.5"/><circle cx="16" cy="16" r="0.8" fill="hsl(var(--foreground))" fill-opacity="0.55"/><circle cx="16" cy="6" r="2.1" fill="hsl(var(--signal))"/><circle cx="16" cy="6" r="3.4" stroke="hsl(var(--signal))" stroke-opacity="0.3" stroke-width="0.45"/><circle cx="24.66" cy="21" r="1.5" fill="hsl(var(--foreground))"/><circle cx="7.34" cy="21" r="1.5" fill="hsl(var(--foreground))" fill-opacity="0.85"/></svg></span><span class="name"><span class="d">DARK</span><span class="m">MATTER</span></span></div><p>The independent record for AI systems.</p></div><div class="footer-col"><div class="h">Product</div><ul><li><a href="/demo">Demo</a></li><li><a href="/docs">Docs</a></li><li><a href="/pricing">Pricing</a></li><li><a href="/compare">Compare</a></li><li><a href="/integrity">Integrity</a></li></ul></div><div class="footer-col"><div class="h">SDK</div><ul><li><a href="/docs#quickstart">Python</a></li><li><a href="/docs#typescript-sdk">TypeScript</a></li><li><a href="/docs#integrations">Anthropic</a></li><li><a href="/docs#openai-sdk-wrapper">OpenAI</a></li></ul></div><div class="footer-col"><div class="h">Links</div><ul><li><a href="/about">About</a></li><li><a href="/security">Security</a></li><li><a href="#" onclick="openContact();return false;">Contact</a></li></ul></div></div><div class="footer-bottom"><div class="inner">&#169; 2026 DarkMatter &nbsp;&#183;&nbsp; <a href="/tos" style="color:inherit;text-decoration:none;opacity:.7;">Terms</a> &nbsp;&#183;&nbsp; <a href="/privacy" style="color:inherit;text-decoration:none;opacity:.7;">Privacy</a></div></div></footer>
+</body>
+</html>
