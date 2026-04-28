@@ -2003,7 +2003,11 @@ async function upgradePlan(plan) {
       if (btn) { btn.textContent = orig; btn.disabled = false; }
       return;
     }
-    if (data.url) window.location.href = data.url;
+    if (data.url) {
+      window.location.href = data.url;
+      return; // don't reset — page is navigating away
+    }
+    if (btn) { btn.textContent = orig; btn.disabled = false; }
   } catch(e) {
     showToast('Error: ' + e.message);
     if (btn) { btn.textContent = orig; btn.disabled = false; }
@@ -2703,6 +2707,36 @@ function copyFirstCommit() {
       setTimeout(() => { updateQuickstartKey(saved); }, 500);
     }
   } catch(_) {}
+})();
+
+// Handle return from Stripe checkout
+(function handleBillingReturn() {
+  const params = new URLSearchParams(window.location.search);
+  const billingStatus = params.get('billing');
+  if (!billingStatus) return;
+  // Clean the URL without reloading
+  const clean = window.location.pathname;
+  window.history.replaceState({}, '', clean);
+  if (billingStatus === 'success') {
+    // Navigate to billing section and reload subscription
+    setTimeout(() => {
+      navTo('billing');
+      _billingLoaded = false; // force fresh load
+      loadBilling();
+      showToast('Plan upgraded successfully!');
+    }, 300);
+  } else if (billingStatus === 'cancelled') {
+    setTimeout(() => {
+      navTo('billing');
+      showToast('Checkout cancelled — your plan was not changed.');
+    }, 300);
+  } else if (billingStatus === 'portal_return') {
+    setTimeout(() => {
+      navTo('billing');
+      _billingLoaded = false;
+      loadBilling();
+    }, 300);
+  }
 })();
 
 function applyDateRange() {
