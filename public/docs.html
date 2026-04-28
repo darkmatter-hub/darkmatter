@@ -189,6 +189,19 @@ footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;gri
 
 /* Soon badge */
 .soon{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.08em;text-transform:uppercase;background:hsl(var(--void-elevated));border:1px solid hsl(var(--void-line));color:hsl(var(--trace-dim));padding:1px 5px;border-radius:2px;vertical-align:middle;margin-left:4px}
+
+.hamburger{display:flex;flex-direction:column;justify-content:center;gap:5px;width:36px;height:36px;cursor:pointer;padding:6px;border:none;background:none;flex-shrink:0}
+@media(min-width:768px){.hamburger{display:none}}
+.hamburger span{display:block;height:1.5px;background:hsl(var(--foreground));transition:all .25s}
+.hamburger.open span:nth-child(1){transform:translateY(6.5px) rotate(45deg)}
+.hamburger.open span:nth-child(2){opacity:0}
+.hamburger.open span:nth-child(3){transform:translateY(-6.5px) rotate(-45deg)}
+.mobile-nav{display:none;position:fixed;inset:3.5rem 0 0 0;background:hsl(var(--void)/.97);backdrop-filter:blur(12px);z-index:39;flex-direction:column;padding:1.5rem;border-top:1px solid hsl(var(--void-line))}
+.mobile-nav.open{display:flex}
+.mobile-nav a{font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:hsl(var(--trace));padding:.875rem 0;border-bottom:1px solid hsl(var(--void-line));text-decoration:none;transition:color .15s}
+.mobile-nav a:last-child{border-bottom:none}
+.mobile-nav a:hover{color:hsl(var(--foreground))}
+.mobile-nav a.cta-link{color:hsl(var(--signal))}
 </style>
 </head>
 <body>
@@ -203,10 +216,19 @@ footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;gri
     </nav>
     <div class="nav-cta">
       <a href="/login" class="signin">Sign in</a>
-      <a href="/signup" class="commit"><span class="dot"></span>Commit a record</a>
+      <button class="hamburger" id="dm-ham" onclick="dmHam()" aria-label="Menu"><span></span><span></span><span></span></button>
     </div>
   </div>
 </header>
+<div class="mobile-nav" id="dm-mobile-nav">
+  <a href="/demo">Demo</a>
+  <a href="/docs">Docs</a>
+  <a href="/pricing">Pricing</a>
+  <a href="/compare">Compare</a>
+  <a href="/integrity">Integrity</a>
+  <a href="/login">Sign in</a>
+  <a href="/signup" class="cta-link">Try it free</a>
+</div>
 <div class="docs-layout">
 <aside class="docs-sidebar">
   <div class="docs-sb-group">
