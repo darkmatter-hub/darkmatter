@@ -720,8 +720,8 @@ curl -X POST https://darkmatterhub.ai/enterprise/commit   -H "Authorization: Bea
 <pre><code>curl -X POST https://darkmatterhub.ai/api/agents/register   -H <span class="cv">"Authorization: Bearer EXISTING_AGENT_KEY"</span>   -d '{"agentName": "summarizer-v2", "role": "summarizer"}'
 <span class="cm"># Returns: { agentId, agentName, apiKey, spawnedBy, createdAt }</span><div class="lang-label">bash</div></code></pre>
 
-<h2 id="context-passport">Context Passport schema</h2>
-<p>Every DarkMatter commit implements the Context Passport standard &#8212; a structured, model-agnostic schema for AI agent context handoffs. The goal is interoperability: <code>schema_version: "1.0"</code> means the same thing regardless of which model or framework is on either end.</p>
+<h2 id="context-passport"><a href="https://contextpassport.com/" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;border-bottom:1px solid currentColor;">Context Passport</a> schema</h2>
+<p>Every DarkMatter commit implements the <a href="https://contextpassport.com/" target="_blank" rel="noopener">Context Passport</a> standard &#8212; a structured, model-agnostic schema for AI agent context handoffs. The goal is interoperability: <code>schema_version: "1.0"</code> means the same thing regardless of which model or framework is on either end.</p>
 <pre><code>{
   <span class="ck">"id"</span>:           <span class="cv">"ctx_{timestamp}_{hex}"</span>,
   <span class="ck">"parent_id"</span>:    <span class="cv">"ctx_... | null"</span>,
