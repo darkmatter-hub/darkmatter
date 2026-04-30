@@ -4142,13 +4142,17 @@ body{
 app.get('/r/:traceId', async (req, res) => {
   try {
     const { traceId } = req.params;
-    if (!traceId || traceId.length > 120) return res.status(400).json({ error: 'Invalid ID' });
+    if (!traceId || traceId.length > 120 || !/^[a-zA-Z0-9_-]+$/.test(traceId)) return res.status(400).json({ error: 'Invalid ID' });
 
-    const { data: commits, error } = await supabaseService
-      .from('commits')
-      .select('id, trace_id, from_agent, agent_id, agent_info, payload, timestamp, client_timestamp, event_type, integrity_hash, payload_hash, parent_hash, verified, assurance_level, completeness_claim')
-      .or('id.eq.' + traceId + ',trace_id.eq."' + traceId + '",trace_id.eq.' + traceId)
-      .order('timestamp', { ascending: true });
+    const rSel = 'id, trace_id, from_agent, agent_id, agent_info, payload, timestamp, client_timestamp, event_type, integrity_hash, payload_hash, parent_hash, verified, assurance_level, completeness_claim';
+    const [{ data: rById }, { data: rByTrace, error }] = await Promise.all([
+      supabaseService.from('commits').select(rSel).eq('id', traceId).order('timestamp', { ascending: true }),
+      supabaseService.from('commits').select(rSel).eq('trace_id', traceId).order('timestamp', { ascending: true }),
+    ]);
+    const rSeen = new Set();
+    const commits = [...(rById || []), ...(rByTrace || [])]
+      .filter(c => !rSeen.has(c.id) && rSeen.add(c.id))
+      .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
     if (error || !commits || !commits.length) {
       if (req.query.format === 'json') return res.status(404).json({ error: 'Record not found.' });
@@ -5932,14 +5936,22 @@ app.get('/api/admin/ping', requireAuth, async (req, res) => {
 app.post('/api/workspace/share/:traceId', wsAuth, async (req, res) => {
   try {
     const { traceId } = req.params;
+    if (!traceId || traceId.length > 120 || !/^[a-zA-Z0-9_-]+$/.test(traceId)) return res.status(400).json({ error: 'Invalid ID' });
     const days = parseInt(req.body?.days || 30);
     // Verify the commit belongs to a user the session has access to
-    const { data: commit } = await supabaseService
+    let { data: commit } = await supabaseService
       .from('commits')
       .select('id, trace_id, from_agent')
-      .or(`id.eq.${traceId},trace_id.eq.${traceId}`)
-      .limit(1)
-      .single();
+      .eq('id', traceId)
+      .maybeSingle();
+    if (!commit) {
+      ({ data: commit } = await supabaseService
+        .from('commits')
+        .select('id, trace_id, from_agent')
+        .eq('trace_id', traceId)
+        .limit(1)
+        .maybeSingle());
+    }
     if (!commit) return res.status(404).json({ error: 'Commit not found' });
     const shareId  = commit.id;
     const shareUrl = (process.env.APP_URL || 'https://darkmatterhub.ai') + '/r/' + shareId;
@@ -5961,12 +5973,17 @@ app.get('/api/workspace/share/:traceId/markdown', wsAuth, async (req, res) => {
 app.get('/api/workspace/download/:traceId', wsAuth, async (req, res) => {
   try {
     const { traceId } = req.params;
+    if (!traceId || traceId.length > 120 || !/^[a-zA-Z0-9_-]+$/.test(traceId)) return res.status(400).json({ error: 'Invalid ID' });
     // Walk the chain for this traceId
-    const { data: commits } = await supabaseService
-      .from('commits')
-      .select('id, trace_id, from_agent, agent_info, payload, timestamp, integrity_hash, payload_hash, parent_hash, event_type, verified, assurance_level, completeness_claim')
-      .or(`id.eq.${traceId},trace_id.eq.${traceId}`)
-      .order('timestamp', { ascending: true });
+    const dlSel = 'id, trace_id, from_agent, agent_info, payload, timestamp, integrity_hash, payload_hash, parent_hash, event_type, verified, assurance_level, completeness_claim';
+    const [{ data: dlById }, { data: dlByTrace }] = await Promise.all([
+      supabaseService.from('commits').select(dlSel).eq('id', traceId).order('timestamp', { ascending: true }),
+      supabaseService.from('commits').select(dlSel).eq('trace_id', traceId).order('timestamp', { ascending: true }),
+    ]);
+    const dlSeen = new Set();
+    const commits = [...(dlById || []), ...(dlByTrace || [])]
+      .filter(c => !dlSeen.has(c.id) && dlSeen.add(c.id))
+      .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
     if (!commits || !commits.length) return res.status(404).json({ error: 'Not found' });
     const bundle = {
       schema_version: '1.0',
@@ -6890,12 +6907,16 @@ app.get('/api/workspace/stats', requireAuth, async (req, res) => {
 app.get('/api/workspace/conversation/:traceId', requireAuth, async (req, res) => {
   try {
     const { traceId } = req.params;
+    if (!traceId || traceId.length > 120 || !/^[a-zA-Z0-9_-]+$/.test(traceId)) return res.status(400).json({ error: 'Invalid ID' });
 
-    const { data: commits, error } = await supabaseService
-      .from('commits')
-      .select('*')
-      .or(`trace_id.eq."${traceId}",id.eq."${traceId}"`)
-      .order('timestamp', { ascending: true });
+    const [{ data: cvById }, { data: cvByTrace, error }] = await Promise.all([
+      supabaseService.from('commits').select('*').eq('id', traceId).order('timestamp', { ascending: true }),
+      supabaseService.from('commits').select('*').eq('trace_id', traceId).order('timestamp', { ascending: true }),
+    ]);
+    const cvSeen = new Set();
+    const commits = [...(cvById || []), ...(cvByTrace || [])]
+      .filter(c => !cvSeen.has(c.id) && cvSeen.add(c.id))
+      .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
     if (error) throw error;
     if (!commits?.length) return res.status(404).json({ error: 'Conversation not found' });
