@@ -1923,7 +1923,7 @@ app.get('/api/log/checkpoint/:checkpointId/witnesses', async (req, res) => {
 // ── POST /api/admin/witnesses (superuser only) ────────────────────────────────
 // Register a new witness. Superuser only.
 app.post('/api/admin/witnesses', requireApiKey, async (req, res) => {
-  if (req.agent?.agent_id !== process.env.SUPERUSER_AGENT_ID && req.agent?.agent_name !== 'darkmatter-admin') {
+  if (req.agent?.agent_id !== process.env.SUPERUSER_AGENT_ID) {
     return res.status(403).json({ error: 'Superuser only' });
   }
   try {
@@ -4552,35 +4552,60 @@ h1{font-size:26px;font-weight:700;letter-spacing:-.04em;color:var(--ink);margin-
 
 
 
-// ── GET /api/demo ── serve real recent commits as demo data ────────────
+// ── GET /api/demo ── static fake demo data (no real user data exposed) ────────
 app.get('/api/demo', async (req, res) => {
-  try {
-    // Pull real recent commits so the demo page shows actual verifiable records
-    const { data: commits } = await supabaseService
-      .from('commits')
-      .select('id, trace_id, from_agent, agent_info, payload, timestamp, integrity_hash, payload_hash, assurance_level, event_type')
-      .not('payload', 'is', null)
-      .order('timestamp', { ascending: false })
-      .limit(8);
-
-    const activity = (commits || []).map(c => ({
-      id:             c.id,
-      trace_id:       c.trace_id,
-      from_agent:     c.from_agent,
-      agentName:      c.agent_info?.name || c.from_agent || 'agent',
-      payload:        c.payload,
-      timestamp:      c.timestamp,
-      integrity_hash: c.integrity_hash,
-      payload_hash:   c.payload_hash,
-      assurance_level: c.assurance_level || 'L1',
-      event_type:     c.event_type || 'commit',
-    }));
-
-    res.json({ activity, commits: activity });
-  } catch(err) {
-    // Fallback to static demo data if DB fails
-    res.json({ activity: [], commits: [] });
-  }
+  const now = Date.now();
+  const activity = [
+    {
+      id:              'ctx_demo_0001_a1b2c3d4e5f6',
+      trace_id:        'ctx_demo_0001_a1b2c3d4e5f6',
+      from_agent:      'dm_demo_refund_agent',
+      agentName:       'refund-approval-agent',
+      payload:         { role: 'assistant', text: 'Approved. Customer within 30-day window. No prior refund history. Amount within auto-approval threshold ($500). Approve immediately.' },
+      timestamp:       new Date(now - 120000).toISOString(),
+      integrity_hash:  'a3f8c2e1d94b7065f2a1c8e3d0b5f9a2c4e6d8f0b2a4c6e8d0f2a4b6c8e0d2f4',
+      payload_hash:    'b5d7f9a1c3e5d7f9b1d3f5a7c9e1d3f5b7d9f1a3c5e7d9f1b3d5f7a9c1e3d5f7',
+      assurance_level: 'L2',
+      event_type:      'commit',
+    },
+    {
+      id:              'ctx_demo_0002_b2c3d4e5f6a1',
+      trace_id:        'ctx_demo_0001_a1b2c3d4e5f6',
+      from_agent:      'dm_demo_refund_agent',
+      agentName:       'refund-approval-agent',
+      payload:         { role: 'user', text: 'Approve refund #84721? $284.00, 18 days since purchase.' },
+      timestamp:       new Date(now - 180000).toISOString(),
+      integrity_hash:  'c7e9a1b3d5f7a9c1e3d5f7b9d1f3a5c7e9b1d3f5a7c9e1b3d5f7a9c1e3d5f7a9',
+      payload_hash:    'd9f1a3c5e7d9f1b3d5f7a9c1e3d5f7b9d1f3a5c7e9b1d3f5a7c9e1b3d5f7a9c1',
+      assurance_level: 'L2',
+      event_type:      'commit',
+    },
+    {
+      id:              'ctx_demo_0003_c3d4e5f6a1b2',
+      trace_id:        'ctx_demo_0003_c3d4e5f6a1b2',
+      from_agent:      'dm_demo_escalation_agent',
+      agentName:       'escalation-agent',
+      payload:         { role: 'assistant', text: 'Escalating to human review. Amount exceeds $500 threshold. Customer has 2 prior refunds in 90 days.' },
+      timestamp:       new Date(now - 360000).toISOString(),
+      integrity_hash:  'e1b3d5f7a9c1e3d5f7b9d1f3a5c7e9b1d3f5a7c9e1b3d5f7a9c1e3d5f7a9c1e3',
+      payload_hash:    'f3a5c7e9b1d3f5a7c9e1b3d5f7a9c1e3d5f7b9d1f3a5c7e9b1d3f5a7c9e1b3d5',
+      assurance_level: 'L1',
+      event_type:      'commit',
+    },
+    {
+      id:              'ctx_demo_0004_d4e5f6a1b2c3',
+      trace_id:        'ctx_demo_0004_d4e5f6a1b2c3',
+      from_agent:      'dm_demo_classifier_agent',
+      agentName:       'intent-classifier',
+      payload:         { role: 'assistant', text: 'Intent: refund_request. Confidence: 0.97. Routing to refund-approval-agent.' },
+      timestamp:       new Date(now - 600000).toISOString(),
+      integrity_hash:  'a5c7e9b1d3f5a7c9e1b3d5f7a9c1e3d5f7b9d1f3a5c7e9b1d3f5a7c9e1b3d5f7',
+      payload_hash:    'b7d9f1a3c5e7d9f1b3d5f7a9c1e3d5f7b9d1f3a5c7e9b1d3f5a7c9e1b3d5f7a9',
+      assurance_level: 'L3',
+      event_type:      'commit',
+    },
+  ];
+  res.json({ activity, commits: activity });
 });
 
 
