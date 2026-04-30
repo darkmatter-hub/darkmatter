@@ -449,7 +449,7 @@ app.post('/api/provision', provisionLimiter, async (req, res) => {
     }).then(({ data }) => {
       // In production, send this via Resend/email
       // For now just log — the developer can still use the API key immediately
-      console.log(`  📧 Magic link for ${email}: ${data?.properties?.action_link || 'generated'}`);
+      console.log(`  📧 Magic link sent to: ${email}`);
     }).catch(() => {});
 
     // Track activation (fire and forget — table may not exist yet)
@@ -5880,6 +5880,15 @@ app.get('/api/admin/users', requireAuth, async (req, res) => {
 
 // ── GET /api/admin/ping — lightweight DB health check (admin only) ────────────
 app.get('/api/admin/ping', requireAuth, async (req, res) => {
+  const superuser   = process.env.SUPERUSER_EMAIL || '';
+  const adminList   = process.env.ADMIN_EMAILS    || '';
+  const adminEmails = [...new Set([
+    ...superuser.split(','), ...adminList.split(','),
+    'hello@darkmatterhub.ai',
+  ].map(e => e.trim()).filter(Boolean))];
+  if (!adminEmails.includes(req.user.email)) {
+    return res.status(403).json({ error: 'Admin only' });
+  }
   try {
     const start = Date.now();
     // Single cheap count query — proves DB + service client are working
@@ -6085,6 +6094,15 @@ async function writeAuditLog(actorId, actorEmail, action, targetType, targetId, 
 }
 
 app.get('/api/admin/audit-log', requireAuth, async (req, res) => {
+  const superuser   = process.env.SUPERUSER_EMAIL || '';
+  const adminList   = process.env.ADMIN_EMAILS    || '';
+  const adminEmails = [...new Set([
+    ...superuser.split(','), ...adminList.split(','),
+    'hello@darkmatterhub.ai',
+  ].map(e => e.trim()).filter(Boolean))];
+  if (!adminEmails.includes(req.user.email)) {
+    return res.status(403).json({ error: 'Admin only' });
+  }
   try {
     const limit  = Math.min(parseInt(req.query.limit  || 100), 500);
     const offset = parseInt(req.query.offset || 0);
