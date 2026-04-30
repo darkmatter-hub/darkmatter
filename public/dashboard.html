@@ -3232,7 +3232,11 @@ function renderInviteTags() {
   inviteEmails.forEach(email => {
     const tag = document.createElement('span');
     tag.className = 'invite-tag';
-    tag.innerHTML = `${email}<button onclick="removeInviteEmail('${email}')">×</button>`;
+    tag.appendChild(document.createTextNode(email));
+    const rmBtn = document.createElement('button');
+    rmBtn.textContent = '×';
+    rmBtn.addEventListener('click', () => removeInviteEmail(email));
+    tag.appendChild(rmBtn);
     container.appendChild(tag);
   });
   container.appendChild(input);

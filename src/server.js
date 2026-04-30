@@ -159,6 +159,7 @@ app.use((req, res, next) => {
   }
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,User-Agent');
+  res.setHeader('Access-Control-Expose-Headers', 'X-New-Access-Token,X-New-Refresh-Token,X-New-Expires-At');
   res.setHeader('Access-Control-Max-Age', '86400');
   if (req.method === 'OPTIONS') return res.sendStatus(204);
   next();
@@ -3929,7 +3930,10 @@ function buildStandaloneHtml(ctxId, content, attachments) {
   const images     = attachments.filter(a => a.type === 'image');
 
   // Convert markdown-ish text to HTML if no html_content stored
-  let bodyHtml = content.html_content || '';
+  let bodyHtml = (content.html_content || '')
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/\son\w+\s*=\s*("[^"]*"|'[^']*'|[^\s>]*)/gi, '')
+    .replace(/href\s*=\s*["']?\s*javascript:[^"'\s>]*/gi, 'href="#"');
   if (!bodyHtml && content.text_content) {
     bodyHtml = content.text_content
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
