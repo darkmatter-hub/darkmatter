@@ -608,11 +608,12 @@ app.post('/auth/reset-password', async (req, res) => {
     const { token, password } = req.body;
     if (!token || !password) return res.status(400).json({ error: 'Token and password required' });
 
-    // Exchange token for session, then update password
-    const { data: { user }, error: sessionError } = await supabaseAnon.auth.getUser(token);
+    // Verify the recovery token and get the user via service client
+    const { data: { user }, error: sessionError } = await supabaseService.auth.getUser(token);
     if (sessionError || !user) return res.status(400).json({ error: 'Invalid or expired reset link' });
 
-    const { error } = await supabaseAnon.auth.updateUser({ password });
+    // Update password via admin API (service role required)
+    const { error } = await supabaseService.auth.admin.updateUserById(user.id, { password });
     if (error) return res.status(400).json({ error: error.message });
 
     res.json({ success: true });
@@ -627,7 +628,7 @@ app.post('/auth/logout', async (req, res) => {
     const auth = req.headers['authorization'];
     if (auth) {
       const token = auth.replace('Bearer ', '');
-      await supabaseAnon.auth.admin.signOut(token);
+      await supabaseService.auth.admin.signOut(token);
     }
     res.json({ success: true });
   } catch (err) {
@@ -5038,7 +5039,7 @@ app.post('/api/workspace', wsAuth, async (req, res) => {
     const { name } = req.body;
     if (!name?.trim()) return res.status(400).json({ error: 'Name required' });
 
-    const { data: ws, error } = await supabase
+    const { data: ws, error } = await supabaseService
       .from('workspaces')
       .insert({ name: name.trim(), owner_user_id: req.user.id })
       .select().single();
@@ -5555,7 +5556,7 @@ app.all('/proxy/:provider/*', proxyAuth, async (req, res) => {
 });
 
 // ── Commit a proxied interaction to DarkMatter ────────────────────────
-async function commitProxyInteraction({ provider, upstreamPath, requestBody, responseText, statusCode, latencyMs, member, workspace, clientTs, isStreaming }) {
+async function commitProxyInteraction({ provider, upstreamPath, requestBody, responseText, statusCode, latencyMs, member, workspace, clientTs, isStreaming, captureMode }) {
   try {
     // Extract the meaningful parts of request/response
     const model    = requestBody?.model || 'unknown';
