@@ -139,7 +139,7 @@ a{color:inherit;text-decoration:none}
 .fade-in.visible{opacity:1;transform:translateY(0)}
 
 /* NAV ARROWS */
-.step-nav{padding:1.25rem 1.75rem;border-top:1px solid hsl(var(--void-line));display:flex;align-items:center;justify-content:space-between;gap:1rem;background:hsl(var(--void-elevated)/.6)}
+.step-nav{padding:1rem 1.75rem;border-bottom:1px solid hsl(var(--void-line));border-top:none;display:flex;align-items:center;justify-content:space-between;gap:1rem;background:hsl(var(--void-elevated)/.6)}
 .btn-step{display:inline-flex;align-items:center;gap:.5rem;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;padding:.625rem 1.125rem;border:1px solid hsl(var(--void-line));color:hsl(var(--trace));background:hsl(var(--background));cursor:pointer;transition:all .15s}
 .btn-step:hover{border-color:hsl(var(--trace));color:hsl(var(--foreground))}
 .btn-step.primary{border-color:hsl(var(--signal));background:hsl(var(--signal));color:#fff}
@@ -240,6 +240,11 @@ footer{border-top:1px solid hsl(var(--void-line));background:hsl(var(--void))}
       <div class="pane-title" id="left-title">Step 1 — Agent processes request</div>
       <div class="pane-sub" id="left-sub">The agent receives a refund request and decides whether to approve, escalate, or deny.</div>
     </div>
+    <div class="step-nav">
+      <button class="btn-step" id="btn-prev" onclick="prevStep()" disabled>&#8592; Back</button>
+      <span class="step-counter" id="step-counter">Step 1 of 4</span>
+      <button class="btn-step primary" id="btn-next" onclick="nextStep()">Next &#8594;</button>
+    </div>
     <div class="pane-body" id="left-body">
 
       <!-- STEP 1 content -->
@@ -272,7 +277,10 @@ footer{border-top:1px solid hsl(var(--void-line));background:hsl(var(--void))}
         <div style="font-size:12px;color:hsl(var(--trace-dim));font-family:'JetBrains Mono',monospace;line-height:1.6;">
           &#8592; The wrapper intercepts this call. Before any response is processed, DarkMatter begins constructing a commit record.
         </div>
-      </div>
+      
+        <div style="margin-top:.75rem;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:hsl(152,64%,34%);display:flex;align-items:center;gap:.4rem;">
+          <span>&#9654;</span> Click Next to begin the walkthrough
+        </div></div>
 
       <!-- STEP 2 content -->
       <div id="s1-left" class="step-content hidden">
@@ -371,11 +379,7 @@ footer{border-top:1px solid hsl(var(--void-line));background:hsl(var(--void))}
       </div>
 
     </div>
-    <div class="step-nav">
-      <button class="btn-step" id="btn-prev" onclick="prevStep()" disabled>&#8592; Back</button>
-      <span class="step-counter" id="step-counter">Step 1 of 4</span>
-      <button class="btn-step primary" id="btn-next" onclick="nextStep()">Next &#8594;</button>
-    </div>
+    
   </div>
 
   <!-- RIGHT: DARKMATTER PANE -->
