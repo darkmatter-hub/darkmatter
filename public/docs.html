@@ -528,68 +528,68 @@ class DarkMatterCallbackHandler(BaseCallbackHandler):
         self.last_ctx_id = ctx[<span class="cv">"id"</span>]<div class="lang-label">python</div></code></pre>
 
 <h2 id="crewai">Integration: CrewAI</h2>
-<p>Commit after each task using the <code>dm.commit()</code> helper. Pass the returned ID between tasks to build the lineage chain.</p>
-<pre><code>import darkmatter as dm
-from crewai import Agent, Task, Crew
+<p>Add <code>DarkMatterObserver</code> once before <code>crew.kickoff()</code>. Every task commits automatically — no changes to your agents, tasks, or crew definition.</p>
+<h3>One-line setup</h3>
+<pre><code>from darkmatter.integrations.crewai import observe_crew
+import darkmatter as dm
 
-crew   = Crew(agents=[researcher, writer], tasks=[task1, task2])
-result = crew.kickoff()
+dm.configure(api_key=<span class="cv">"dm_sk_..."</span>, agent_id=<span class="cv">"dm_agent_..."</span>)
+observer = observe_crew(to_agent_id=<span class="cv">"dm_agent_..."</span>, trace_id=<span class="cv">"trc_001"</span>)
 
-<span class="cm"># Commit after each task output</span>
-ctx1 = dm.commit(payload={<span class="ck">"input"</span>: task1.description, <span class="ck">"output"</span>: result.tasks_output[0].raw})
-ctx2 = dm.commit(payload={<span class="ck">"input"</span>: task2.description, <span class="ck">"output"</span>: result.tasks_output[1].raw},
-                 parent_id=ctx1[<span class="cv">"id"</span>])<div class="lang-label">python</div></code></pre>
+crew = Crew(agents=[researcher, writer], tasks=[task1, task2])
+crew.kickoff()
 
-<h2 id="local-models">Integration: Local models (Ollama, vLLM)</h2>
-<pre><code>import requests as req, darkmatter as dm
-
-def run_and_commit(prompt, model, parent_id=None):
-    response = req.post(<span class="cv">"http://localhost:11434/api/generate"</span>,
-        json={<span class="ck">"model"</span>: model, <span class="ck">"prompt"</span>: prompt, <span class="ck">"stream"</span>: False}).json()[<span class="cv">"response"</span>]
-    ctx = dm.commit(
-        payload   = {<span class="ck">"input"</span>: prompt, <span class="ck">"output"</span>: response, <span class="ck">"model"</span>: model},
-        parent_id = parent_id,
-    )
-    return response, ctx[<span class="cv">"id"</span>]<div class="lang-label">python</div></code></pre>
+print(observer.last_ctx_id)  <span class="cm"># ctx_...</span><div class="lang-label">python</div></code></pre>
+<p>After each <code>TaskCompletedEvent</code>: task description as <code>input</code>, task output as <code>output</code>, agent role and model captured automatically. Parent/child chain built across tasks.</p>
+<div class="callout"><strong>Requires:</strong> <code>pip install 'crewai>=0.60.0' darkmatter-sdk</code></div>
 
 <h2 id="aws-bedrock">Integration: AWS Bedrock</h2>
-<pre><code>import boto3, json, darkmatter as dm
+<p>Wrap the Bedrock runtime client once. Every <code>invoke_model()</code> call auto-commits. Works with Claude, Titan, Llama, Mistral, and Bedrock Agents.</p>
+<h3>One-line setup</h3>
+<pre><code>from darkmatter.integrations.bedrock import DarkMatterBedrockClient
+import darkmatter as dm
 
-bedrock = boto3.client(<span class="cv">"bedrock-runtime"</span>, region_name=<span class="cv">"us-east-1"</span>)
+dm.configure(api_key=<span class="cv">"dm_sk_..."</span>, agent_id=<span class="cv">"dm_agent_..."</span>)
 
-def invoke_and_commit(model_id, prompt, parent_id=None):
-    response = bedrock.invoke_model(
-        modelId = model_id,
-        body    = json.dumps({<span class="ck">"prompt"</span>: prompt, <span class="ck">"max_tokens"</span>: 1024})
-    )
-    output = json.loads(response[<span class="cv">"body"</span>].read()).get(<span class="cv">"completion"</span>, <span class="cv">""</span>)
-    ctx = dm.commit(
-        payload   = {<span class="ck">"input"</span>: prompt, <span class="ck">"output"</span>: output, <span class="ck">"model"</span>: model_id},
-        parent_id = parent_id,
-    )
-    return output, ctx[<span class="cv">"id"</span>]<div class="lang-label">python</div></code></pre>
+bedrock = DarkMatterBedrockClient(
+    region=<span class="cv">"us-east-1"</span>, to_agent_id=<span class="cv">"dm_agent_..."</span>, trace_id=<span class="cv">"trc_001"</span>
+)
+result = bedrock.invoke_model(
+    model_id=<span class="cv">"anthropic.claude-opus-4-6-v1:0"</span>,
+    prompt=<span class="cv">"Analyze this contract for risk clauses"</span>,
+)
+print(bedrock.last_ctx_id)  <span class="cm"># ctx_...</span><div class="lang-label">python</div></code></pre>
+<h3>Bedrock Agents</h3>
+<pre><code>output = bedrock.invoke_agent(
+    agent_id=<span class="cv">"ABCDEF1234"</span>, agent_alias=<span class="cv">"TSTALIASID"</span>,
+    session_id=<span class="cv">"session_001"</span>, prompt=<span class="cv">"Summarize the Q1 report"</span>,
+)  <span class="cm"># Full Bedrock Agent invocation recorded</span><div class="lang-label">python</div></code></pre>
+<div class="callout"><strong>Requires:</strong> <code>pip install boto3 darkmatter-sdk</code>. AWS credentials via environment or IAM role.</div>
 
 <h2 id="google-adk">Integration: Google ADK</h2>
-<pre><code>import darkmatter as dm
-from google.adk.agents import LlmAgent
+<p>Subclass <code>DarkMatterADKAgent</code> instead of <code>LlmAgent</code>. Every final response auto-commits. Use <code>DarkMatterADKRunner</code> for multi-turn session lineage.</p>
+<h3>Single agent</h3>
+<pre><code>from darkmatter.integrations.google_adk import DarkMatterADKAgent
+import darkmatter as dm
 
-class DarkMatterADKAgent(LlmAgent):
-    def __init__(self, *args, trace_id=None, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.trace_id    = trace_id
-        self.last_ctx_id = None
+dm.configure(api_key=<span class="cv">"dm_sk_..."</span>, agent_id=<span class="cv">"dm_agent_..."</span>)
+agent = DarkMatterADKAgent(
+    name=<span class="cv">"research_agent"</span>, model=<span class="cv">"gemini-2.0-flash"</span>,
+    instruction=<span class="cv">"You are a research assistant."</span>,
+    to_agent_id=<span class="cv">"dm_agent_..."</span>, trace_id=<span class="cv">"trc_adk_001"</span>,
+)
+print(agent.last_ctx_id)  <span class="cm"># ctx_...</span><div class="lang-label">python</div></code></pre>
+<h3>Multi-turn sessions</h3>
+<pre><code>from darkmatter.integrations.google_adk import DarkMatterADKRunner
+from google.adk import Runner
 
-    async def _run_async_impl(self, ctx):
-        async for event in super()._run_async_impl(ctx):
-            yield event
-            if event.is_final_response() and event.content:
-                output = <span class="cv">" "</span>.join(p.text for p in event.content.parts if hasattr(p, <span class="cv">"text"</span>))
-                commit = dm.commit(
-                    payload   = {<span class="ck">"input"</span>: str(ctx.user_content), <span class="ck">"output"</span>: output},
-                    parent_id = self.last_ctx_id,
-                    trace_id  = self.trace_id,
-                )
-                self.last_ctx_id = commit[<span class="cv">"id"</span>]<div class="lang-label">python</div></code></pre>
+dm_runner = DarkMatterADKRunner(
+    runner=Runner(agent=agent, app_name=<span class="cv">"my_app"</span>, session_service=session_svc),
+    to_agent_id=<span class="cv">"dm_agent_..."</span>, trace_id=<span class="cv">"trc_session_001"</span>,
+)
+async for event in dm_runner.run_async(user_id=<span class="cv">"u1"</span>, session_id=<span class="cv">"s1"</span>, new_message=msg):
+    pass  <span class="cm"># each turn committed, full chain built</span><div class="lang-label">python</div></code></pre>
+<div class="callout"><strong>Requires:</strong> <code>pip install google-adk darkmatter-sdk</code>. Requires google-adk >= 0.4.0.</div>
 
 <h2 id="otel">Integration: OpenTelemetry</h2>
 <pre><code>from opentelemetry.sdk.trace.export import SpanExporter, SpanExportResult
