@@ -249,10 +249,10 @@ footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;gri
     <span class="docs-sb-label">Framework integrations</span>
     <a class="docs-sb-link" href="#langgraph">LangGraph</a>
     <a class="docs-sb-link" href="#langchain">LangChain</a>
-    <a class="docs-sb-link" href="#crewai">CrewAI <span class="soon">manual</span></a>
+    <a class="docs-sb-link" href="#crewai">CrewAI</a>
     <a class="docs-sb-link" href="#local-models">Local models</a>
-    <a class="docs-sb-link" href="#aws-bedrock">AWS Bedrock <span class="soon">manual</span></a>
-    <a class="docs-sb-link" href="#google-adk">Google ADK <span class="soon">manual</span></a>
+    <a class="docs-sb-link" href="#aws-bedrock">AWS Bedrock</a>
+    <a class="docs-sb-link" href="#google-adk">Google ADK</a>
     <a class="docs-sb-link" href="#otel">OpenTelemetry</a>
   </div>
   <div class="docs-sb-group">
@@ -527,7 +527,7 @@ class DarkMatterCallbackHandler(BaseCallbackHandler):
         )
         self.last_ctx_id = ctx[<span class="cv">"id"</span>]<div class="lang-label">python</div></code></pre>
 
-<h2 id="crewai">Integration: CrewAI <span class="soon">manual</span></h2>
+<h2 id="crewai">Integration: CrewAI</h2>
 <p>Commit after each task using the <code>dm.commit()</code> helper. Pass the returned ID between tasks to build the lineage chain.</p>
 <pre><code>import darkmatter as dm
 from crewai import Agent, Task, Crew
@@ -552,7 +552,7 @@ def run_and_commit(prompt, model, parent_id=None):
     )
     return response, ctx[<span class="cv">"id"</span>]<div class="lang-label">python</div></code></pre>
 
-<h2 id="aws-bedrock">Integration: AWS Bedrock <span class="soon">manual</span></h2>
+<h2 id="aws-bedrock">Integration: AWS Bedrock</h2>
 <pre><code>import boto3, json, darkmatter as dm
 
 bedrock = boto3.client(<span class="cv">"bedrock-runtime"</span>, region_name=<span class="cv">"us-east-1"</span>)
@@ -569,7 +569,7 @@ def invoke_and_commit(model_id, prompt, parent_id=None):
     )
     return output, ctx[<span class="cv">"id"</span>]<div class="lang-label">python</div></code></pre>
 
-<h2 id="google-adk">Integration: Google ADK <span class="soon">manual</span></h2>
+<h2 id="google-adk">Integration: Google ADK</h2>
 <pre><code>import darkmatter as dm
 from google.adk.agents import LlmAgent
 
