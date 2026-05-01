@@ -300,6 +300,52 @@ test('homepage mobile nav not clipped by inline style', function() {
   assert(!snippet.includes('display:none'), 'mobile nav div must not have inline display:none');
 });
 
+// 12. Security fix coverage
+console.log('\nSecurity fix coverage');
+
+// H-1: admin email guard on audit-log
+test('/api/admin/audit-log has admin email guard (H-1)', function() {
+  var routeStart = server.indexOf("app.get('/api/admin/audit-log'");
+  assert(routeStart > 0, 'audit-log route not found');
+  var routeSlice = server.slice(routeStart, routeStart + 800);
+  assert(routeSlice.includes('adminEmails.includes'), 'audit-log must check adminEmails, not just requireAuth');
+});
+
+// H-2: admin email guard on ping
+test('/api/admin/ping has admin email guard (H-2)', function() {
+  var routeStart = server.indexOf("app.get('/api/admin/ping'");
+  assert(routeStart > 0, 'ping route not found');
+  var routeSlice = server.slice(routeStart, routeStart + 800);
+  assert(routeSlice.includes('adminEmails.includes'), 'ping must check adminEmails, not just requireAuth');
+});
+
+// H-4: demo endpoint is fully static — no DB query
+test('/api/demo handler has no DB query (H-4)', function() {
+  var routeStart = server.indexOf("app.get('/api/demo'");
+  assert(routeStart > 0, '/api/demo route not found');
+  var routeEnd   = server.indexOf('\n});', routeStart) + 4;
+  var routeSlice = server.slice(routeStart, routeEnd);
+  assert(!routeSlice.includes('supabaseService.from'), '/api/demo must not query DB via supabaseService');
+  assert(!routeSlice.includes('supabaseAnon.from'),    '/api/demo must not query DB via supabaseAnon');
+});
+
+// H-7: agent_name bypass removed from witness guard
+test('witness guard has no agent_name bypass (H-7)', function() {
+  var idx = server.indexOf('SUPERUSER_AGENT_ID');
+  assert(idx > 0, 'SUPERUSER_AGENT_ID check not found');
+  var snippet = server.slice(idx - 50, idx + 300);
+  assert(!snippet.includes('agent_name'), 'agent_name bypass must be removed from witness guard');
+});
+
+// H-3: no string-interpolated .or() in /r/:traceId or workspace routes
+test('/r/:traceId has no string-interpolated .or() (H-3)', function() {
+  var routeStart = server.indexOf("app.get('/r/:traceId'");
+  var routeSlice = server.slice(routeStart, routeStart + 2000);
+  assert(!routeSlice.includes(".or('id.eq.' +"),  "string-concat .or() found in /r/:traceId");
+  assert(!routeSlice.includes('.or(`id.eq.${'),   "template-literal .or() found in /r/:traceId");
+  assert(!routeSlice.includes(".or(`trace_id.eq.${"), "template-literal .or() found in /r/:traceId");
+});
+
 // Summary
 console.log('\n' + '-'.repeat(50));
 console.log('Passed: ' + passed + '  Failed: ' + failed + '  Total: ' + (passed+failed));
