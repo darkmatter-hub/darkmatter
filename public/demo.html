@@ -370,7 +370,7 @@ footer{border-top:1px solid hsl(var(--void-line));background:hsl(var(--void))}
         </div>
         <div style="border:1px solid hsl(var(--signal)/.25);background:hsl(var(--signal)/.04);padding:1.25rem;display:flex;flex-direction:column;gap:.875rem">
           <div style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:hsl(var(--signal))">Record your own agents</div>
-          <div style="font-size:13px;color:hsl(var(--trace));line-height:1.6">One import change. Every decision auto-committed, sealed, and verifiable. No infrastructure changes.</div>
+          <div style="font-size:13px;color:hsl(var(--trace));line-height:1.6">One import change. Every instrumented decision committed, sealed, and verifiable. No infrastructure changes.</div>
           <div style="display:flex;gap:.625rem;flex-wrap:wrap">
             <a href="/signup" style="display:inline-flex;align-items:center;gap:.4rem;background:hsl(var(--signal));color:#fff;padding:.625rem 1rem;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;transition:background .15s">Start free &#8594;</a>
             <a href="/docs" style="display:inline-flex;align-items:center;gap:.4rem;border:1px solid hsl(var(--void-line));color:hsl(var(--trace));padding:.625rem 1rem;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;transition:color .15s">Read docs</a>
@@ -387,7 +387,7 @@ footer{border-top:1px solid hsl(var(--void-line));background:hsl(var(--void))}
     <div class="pane-header">
       <div class="pane-eyebrow">DarkMatter</div>
       <div class="pane-title" id="right-title">Waiting for agent output&#8230;</div>
-      <div class="pane-sub" id="right-sub">DarkMatter monitors the agent call and begins constructing a commit record.</div>
+      <div class="pane-sub" id="right-sub">DarkMatter will capture the full interaction, input and output, the moment Claude responds, before any downstream action is taken.</div>
     </div>
     <div class="pane-body" id="right-body">
 
@@ -536,7 +536,7 @@ footer{border-top:1px solid hsl(var(--void-line));background:hsl(var(--void))}
             </div>
             <div class="proof-row">
               <div class="proof-key">Agent identity</div>
-              <div class="proof-val green">&#10003; cryptographically attributed</div>
+              <div class="proof-val green">&#10003; recorded as provided (cryptographically bound at L3)</div>
             </div>
             <div class="proof-row">
               <div class="proof-key">DarkMatter dependency</div>
@@ -591,7 +591,7 @@ var RIGHT_TITLES = [
   'Proof link ready'
 ];
 var RIGHT_SUBS = [
-  'DarkMatter monitors the agent call and begins constructing a commit record.',
+  'DarkMatter will capture the full interaction, input and output, the moment Claude responds, before any downstream action is taken.',
   'SHA-256 hash computed from canonical input + output. Transmitted to DarkMatter.',
   'The record is now tamper-evident and anchored to the hash chain.',
   'Anyone can verify this record. No DarkMatter account required.'

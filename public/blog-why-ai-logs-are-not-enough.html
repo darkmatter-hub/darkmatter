@@ -316,7 +316,7 @@ h1.article-title {
       <p>When someone challenges what your AI did, this is the record you show them.</p>
     </div>
 
-    <p>The agent signs its decision before the record leaves the agent. The signature is stored outside your system. If anything changes after that, whether the output, the reasoning, or the context, the signature breaks. Anyone can verify this independently, using standard cryptography tools, without trusting DarkMatter to tell them the answer.</p>
+    <p>At L3, the agent signs its decision before the record leaves the agent. At every level, the payload is hashed client-side before transmission. The signature or hash is stored outside your system. If anything changes after that, whether the output, the reasoning, or the context, the chain breaks. Anyone can verify this independently, using standard cryptography tools, without trusting DarkMatter to tell them the answer.</p>
 
     <p>That's not log verification. That's non-repudiation. The record says what it says, and there's no plausible way to claim otherwise.</p>
 
