@@ -1064,7 +1064,23 @@ app.post('/api/commit', apiLimiter, requireApiKey, async (req, res) => {
     // L2: checkpoint anchoring (automatic, applied at checkpoint time)
     // L1: hash chain integrity — default for every commit
     let assuranceLevel = 'L1';
-    if (client_attestation && client_attestation.signature && client_attestation.key_id) {
+    if (client_attestation && client_attestation.key_id &&
+        (client_attestation.signature_b64 || client_attestation.signature)) {
+      const sigResult = await verifyCommitSignature(supabaseService, {
+        agent_id:         req.agent.agent_id,
+        key_id:           client_attestation.key_id,
+        agent_signature:  client_attestation.signature_b64 || client_attestation.signature,
+        accepted_at:      acceptedAt,
+        payload:          resolvedPayload,
+        parent_hash:      parentHash,
+        client_timestamp: clientTimestamp,
+      });
+      if (!sigResult.verified) {
+        return res.status(400).json({
+          error:  'Invalid L3 client_attestation — signature verification failed',
+          reason: sigResult.result,
+        });
+      }
       assuranceLevel = 'L3';
     }
 
