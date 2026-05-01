@@ -2505,17 +2505,21 @@ app.get('/api/workspace/api-keys', wsAuth, async (req, res) => {
       // No workspace membership — fall back to user's own agents
       const { data: agents } = await supabaseService
         .from('agents')
-        .select('agent_id, agent_name, created_at, user_id')
+        .select('agent_id, agent_name, api_key, created_at, user_id')
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
 
-      return res.json({ keys: (agents || []).map(a => ({
-        id:         a.agent_id,
-        name:       a.agent_name,
-        agent_name: a.agent_name,
-        created_at: a.created_at,
-        created_by: req.user.email,
-      }))});
+      return res.json({ keys: (agents || []).map(a => {
+        const k = a.api_key || '';
+        return {
+          id:         a.agent_id,
+          name:       a.agent_name,
+          agent_name: a.agent_name,
+          created_at: a.created_at,
+          created_by: req.user.email,
+          hint:       k ? k.slice(0, 10) + '......' + k.slice(-4) : null,
+        };
+      })});
     }
 
     let agentIds;

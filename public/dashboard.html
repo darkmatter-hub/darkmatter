@@ -3021,7 +3021,7 @@ function renderApiKeys(keys) {
           <tr data-idx="${start + i}" onclick="selectApiKey(${start + i})">
             <td class="td-name">
               <div>${escHtml(k.name || k.agent_name || 'API Key')}</div>
-              <div class="td-sub">${escHtml(k.note || 'DarkMatter workspace')}</div>
+              ${k.hint ? `<div class="td-sub" style="font-family:var(--mono);letter-spacing:.01em;">${escHtml(k.hint)}</div>` : ''}
             </td>
             <td class="td-email">${escHtml(k.created_by || userEmail)}</td>
             <td class="td-date">${k.created_at ? localTimestamp(k.created_at) : '—'}</td>
