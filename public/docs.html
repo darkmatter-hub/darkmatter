@@ -652,9 +652,9 @@ darkmatter keys revoke --key-id my-signing-key   <span class="cm"># revoke a key
 <div class="callout info"><span class="callout-title">Signed assertion, not enforced coverage</span>This is a signed statement by the agent, not a guarantee. DarkMatter records and preserves the claim &#8212; it cannot verify that all steps actually occurred. The value is accountability: if a claim of completeness is made and steps are missing, the signed false assertion surfaces who made it. SDK wrappers set this automatically when they can observe the full call scope.</div>
 
 <h2 id="byok">Payload privacy</h2>
-<p>If your payloads contain sensitive content, encrypt them client-side before calling <code>/api/commit</code>. DarkMatter stores whatever you send &#8212; if you send ciphertext, only you can read it.</p>
+<p>If your payloads contain sensitive content, encrypt them client-side before calling <code>/api/commit</code>. DarkMatter stores whatever you send. If you send ciphertext, only you can read it.</p>
 <p>For end-to-end non-repudiation with client-controlled keys, use <a href="#l3-setup">L3 signing</a>. L3 is the correct place for BYOK: your signing key never leaves your infrastructure, and the signature is verified by DarkMatter on every commit.</p>
-<div class="callout info"><span class="callout-title">Why no server-side BYOK endpoint?</span>Sending an encryption key to the server and asking it to encrypt on your behalf defeats the non-repudiation guarantee &#8212; DarkMatter would briefly hold your key in memory and could in principle alter the payload before encrypting. L3 client-side signing removes that trust requirement entirely.</div>
+<div class="callout info"><span class="callout-title">Why no server-side BYOK endpoint?</span>Sending an encryption key to the server and asking it to encrypt on your behalf defeats the non-repudiation guarantee. DarkMatter would briefly hold your key in memory and could in principle alter the payload before encrypting. L3 client-side signing removes that trust requirement entirely.</div>
 
 <h2 id="api-commit">POST /api/commit</h2>
 <div class="endpoint"><div class="endpoint-title"><span class="badge-post">POST</span> https://darkmatterhub.ai/api/commit</div></div>
