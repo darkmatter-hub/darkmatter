@@ -346,6 +346,45 @@ test('/r/:traceId has no string-interpolated .or() (H-3)', function() {
   assert(!routeSlice.includes(".or(`trace_id.eq.${"), "template-literal .or() found in /r/:traceId");
 });
 
+// 13. Dashboard auth guard (flash-of-unauthenticated-content prevention)
+console.log('\nDashboard auth guard');
+
+test('body starts visibility:hidden', function() {
+  assert(dash.includes('<body style="visibility:hidden">'), 'body must start hidden to prevent flash of unauthenticated content');
+});
+
+test('early auth script before DOMContentLoaded', function() {
+  var scriptIdx = dash.indexOf('window._dmAuthPromise');
+  var dclIdx    = dash.indexOf("addEventListener('DOMContentLoaded'");
+  assert(scriptIdx > 0, 'window._dmAuthPromise not found');
+  assert(scriptIdx < dclIdx, 'auth guard script must appear before DOMContentLoaded listener');
+});
+
+test('auth guard fetches /api/user/me', function() {
+  var guardIdx   = dash.indexOf('window._dmAuthPromise');
+  var guardSlice = dash.slice(guardIdx, guardIdx + 400);
+  assert(guardSlice.includes('/api/user/me'), 'early auth guard must call /api/user/me');
+});
+
+test('auth guard redirects to /login on failure', function() {
+  var guardIdx   = dash.indexOf('window._dmAuthPromise');
+  var guardSlice = dash.slice(guardIdx, guardIdx + 600);
+  assert(guardSlice.includes("location.replace('/login')"), 'auth guard must redirect to /login on 401');
+});
+
+test('body revealed only after auth (visibility reset)', function() {
+  var guardIdx   = dash.indexOf('window._dmAuthPromise');
+  var guardSlice = dash.slice(guardIdx, guardIdx + 600);
+  assert(guardSlice.includes("body.style.visibility = ''"), 'body must only be revealed after successful auth');
+});
+
+test('loadUserProfile reuses _dmAuthPromise, no second /api/user/me fetch', function() {
+  var fnIdx   = dashJS.indexOf('async function loadUserProfile');
+  var fnSlice = dashJS.slice(fnIdx, fnIdx + 600);
+  assert(fnSlice.includes('_dmAuthPromise'), 'loadUserProfile must await _dmAuthPromise, not re-fetch /api/user/me');
+  assert(!fnSlice.includes("'/api/user/me'"), 'loadUserProfile must not make a second /api/user/me call');
+});
+
 // Summary
 console.log('\n' + '-'.repeat(50));
 console.log('Passed: ' + passed + '  Failed: ' + failed + '  Total: ' + (passed+failed));

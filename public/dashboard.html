@@ -1030,8 +1030,23 @@ body { font-family: var(--sans); background:var(--bg); color: var(--t0); display
 
 
 </style>
+<script>
+// ── Early auth guard — runs before any HTML is painted ───────────────────────
+// body starts hidden; only revealed after /api/user/me returns 200.
+// Redirect to /login before revealing anything on 401.
+window._dmAuthPromise = fetch('/api/user/me')
+  .then(function(r) {
+    if (!r.ok) { window.location.replace('/login'); return null; }
+    return r.json().then(function(d) {
+      window._dmUser = d.user;
+      document.body.style.visibility = '';
+      return d.user;
+    });
+  })
+  .catch(function() { window.location.replace('/login'); return null; });
+</script>
 </head>
-<body>
+<body style="visibility:hidden">
 
 <div class="app">
 
@@ -3197,27 +3212,23 @@ document.addEventListener('keydown', (e) => {
 
 // ── User profile loading ─────────────────────────────────────────────────────
 async function loadUserProfile() {
+  // Reuse the early auth promise — avoids a second /api/user/me fetch
+  if (!window._dmUser) await window._dmAuthPromise;
+  const user = window._dmUser;
+  if (!user?.email) return;
+
+  // Try workspace profile for full_name
   try {
-    // Get user identity from server (cookie auth)
-    const meRes = await authFetch('/api/user/me');
-    if (!meRes.ok) return;
-    const { user } = await meRes.json();
-    if (!user?.email) return;
-    window._dmUser = user;
-
-    // Try workspace profile for full_name
-    try {
-      const res = await authFetch('/api/workspace/profile');
-      if (res.ok) {
-        const data = await res.json();
-        const name = data.full_name || _fallbackName(user.email);
-        setUserDisplay(name, user.email, 'Member');
-        return;
-      }
-    } catch(_) {}
-
-    setUserDisplay(_fallbackName(user.email), user.email, 'Member');
+    const res = await authFetch('/api/workspace/profile');
+    if (res.ok) {
+      const data = await res.json();
+      const name = data.full_name || _fallbackName(user.email);
+      setUserDisplay(name, user.email, 'Member');
+      return;
+    }
   } catch(_) {}
+
+  setUserDisplay(_fallbackName(user.email), user.email, 'Member');
 }
 
 function _fallbackName(email) {
