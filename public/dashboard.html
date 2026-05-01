@@ -1088,49 +1088,19 @@ window._dmAuthPromise = fetch('/api/user/me')
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
           <span>Billing</span>
         </a>
-        <a class="nav-link" onclick="showView('settings')" id="nav-settings" title="Settings">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-          <span>Settings</span>
-        </a>
       </div>
     </div>
     <div class="leftnav-bottom">
-      <div class="nav-user" onclick="toggleUserMenu()" id="nav-user-btn">
+      <div class="nav-user" onclick="showView('settings')" id="nav-user-btn" title="Settings">
         <div class="nav-avatar" id="nav-avatar">?</div>
         <div class="nav-user-info">
           <div class="nav-user-name" id="nav-user-name">Account</div>
           <div class="nav-user-role" id="nav-user-role" style="font-family:var(--sans);font-size:11px;color:var(--t3);"></div>
         </div>
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="color:var(--t4);flex-shrink:0;"><polyline points="6 9 12 15 18 9"/></svg>
       </div>
     </div>
   </nav>
 
-  <!-- User dropdown — fixed position outside nav -->
-  <div class="user-menu" id="user-menu" style="display:none;">
-    <div class="user-menu-header">
-      <div class="user-menu-name" id="user-menu-name"></div>
-      <div class="user-menu-email" id="user-menu-email"></div>
-    </div>
-    <div class="user-menu-divider"></div>
-    <a class="user-menu-item" href="/organizations">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-      My organizations
-    </a>
-    <a class="user-menu-item" href="/docs" target="_blank">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-      Docs
-    </a>
-    <a class="user-menu-item" href="https://github.com/darkmatter-hub/darkmatter-feedback" target="_blank">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-      Feedback
-    </a>
-    <div class="user-menu-divider"></div>
-    <a class="user-menu-item user-menu-danger" onclick="signOut()">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-      Log out
-    </a>
-  </div>
 
   <!-- ── MAIN ── -->
   <main class="main">
@@ -1255,6 +1225,10 @@ window._dmAuthPromise = fetch('/api/user/me')
             <div style="display:flex;align-items:center;gap:8px;">
               <div style="font-size:12.5px;color:var(--t2);">Plan:</div>
               <span id="settings-plan-badge" style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 9px;border-radius:10px;background:var(--bg-0);border:1px solid var(--brd);color:var(--t1);">Free</span>
+              <a id="settings-upgrade-link" onclick="openPlanSelectModal()" style="font-size:11px;color:var(--purple);cursor:pointer;text-decoration:underline;margin-left:2px;">Upgrade &#x2192;</a>
+            </div>
+            <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--brd);">
+              <a onclick="signOut()" style="font-size:13px;color:var(--red,#f87171);cursor:pointer;">Log out</a>
             </div>
           </div>
           <div class="panel" style="padding:24px;">
@@ -1282,23 +1256,14 @@ window._dmAuthPromise = fetch('/api/user/me')
 
         <!-- Balance tab -->
         <div class="billing-pane active" id="billing-balance">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:800px;" id="billing-balance-content">
+          <div style="max-width:400px;" id="billing-balance-content">
             <div class="panel" style="padding:24px;">
               <div style="font-size:14px;font-weight:600;color:var(--t0);margin-bottom:4px;">Current plan</div>
               <div style="font-size:13px;color:var(--t3);margin-bottom:16px;">Your active subscription.</div>
               <div id="billing-plan-name" style="font-size:1.6rem;font-weight:700;color:var(--t0);margin-bottom:4px;">—</div>
               <div id="billing-plan-price" style="font-size:13px;color:var(--t3);margin-bottom:16px;"></div>
               <div id="billing-plan-usage" style="font-size:12.5px;color:var(--t2);margin-bottom:16px;"></div>
-              <div id="billing-upgrade-btn"></div>
-            </div>
-            <div class="panel" style="padding:24px;">
-              <div style="font-size:14px;font-weight:600;color:var(--t0);margin-bottom:4px;">Usage this month</div>
-              <div style="font-size:13px;color:var(--t3);margin-bottom:16px;">Commits recorded.</div>
-              <div id="billing-usage-bar-wrap" style="background:var(--bg-0);border:1px solid var(--brd);border-radius:6px;overflow:hidden;height:8px;margin-bottom:8px;">
-                <div id="billing-usage-bar" style="height:100%;background:var(--purple);transition:width .3s;width:0%;"></div>
-              </div>
-              <div id="billing-usage-text" style="font-size:13px;color:var(--t2);">Loading…</div>
-              <div id="billing-renewal" style="font-size:12px;color:var(--t4);margin-top:8px;"></div>
+              <div><button onclick="openStripePortal()" style="padding:8px 16px;background:var(--bg-0);border:1px solid var(--brd);border-radius:7px;font-size:13px;cursor:pointer;color:var(--t1);">Manage subscription &#x2192;</button></div>
             </div>
           </div>
         </div>
@@ -2002,6 +1967,11 @@ function copyShareModalLink() {
 let _billingLoaded = false;
 let _cachedPlan    = 'free';
 
+function updateTeamGate() {
+  const gateEl = document.getElementById('team-plan-gate');
+  if (gateEl) gateEl.style.display = (_cachedPlan === 'free' || _cachedPlan === 'pro') ? '' : 'none';
+}
+
 async function loadBilling() {
   if (_billingLoaded) return;
   _billingLoaded = true; // set early so failed loads don't loop
@@ -2010,11 +1980,7 @@ async function loadBilling() {
     if (!res.ok) {
       // Auth or server error — show safe defaults instead of stuck "Loading…"
       const planEl  = document.getElementById('billing-plan-name');
-      const usageEl = document.getElementById('billing-usage-text');
-      const upgradeEl = document.getElementById('billing-upgrade-btn');
       if (planEl)  planEl.textContent = 'Free';
-      if (usageEl) usageEl.textContent = '— commits this month';
-      if (upgradeEl) upgradeEl.innerHTML = '<button onclick="openPlanSelectModal()" style="padding:8px 18px;background:var(--purple);color:#fff;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;">Upgrade plan \u2192</button>';
       return;
     }
     const data = await res.json();
@@ -2027,47 +1993,8 @@ async function loadBilling() {
 
     // Cache plan for other sections
     _cachedPlan = data.plan || 'free';
-    const gateEl = document.getElementById('team-plan-gate');
-    if (gateEl) gateEl.style.display = (_cachedPlan === 'free' || _cachedPlan === 'pro') ? '' : 'none';
+    updateTeamGate();
 
-    // Usage bar
-    const count  = data.commitCount || 0;
-    const limit  = data.commitLimit;
-    const usageEl = document.getElementById('billing-usage-text');
-    const barEl   = document.getElementById('billing-usage-bar');
-    const renewEl = document.getElementById('billing-renewal');
-
-    if (usageEl) {
-      usageEl.textContent = limit
-        ? `${count.toLocaleString()} of ${limit.toLocaleString()} commits used this month`
-        : `${count.toLocaleString()} commits this month (unlimited)`;
-    }
-    if (barEl && limit) {
-      barEl.style.width = Math.min(100, Math.round(count / limit * 100)) + '%';
-      if (count / limit > 0.9) barEl.style.background = 'var(--red)';
-      else if (count / limit > 0.7) barEl.style.background = '#f59e0b';
-    }
-    if (barEl && !limit) {
-      barEl.style.width = '100%';
-      barEl.style.background = 'var(--grn)';
-    }
-    if (renewEl && data.currentPeriodEnd) {
-      renewEl.textContent = 'Renews ' + localTimestamp(data.currentPeriodEnd);
-    }
-
-    // Plan-specific upgrade button
-    const upgradeEl = document.getElementById('billing-upgrade-btn');
-    if (upgradeEl) {
-      if (data.plan === 'free') {
-        upgradeEl.innerHTML = `<button onclick="openPlanSelectModal()" style="padding:8px 18px;background:var(--purple);color:#fff;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;">Upgrade plan →</button>`;
-      } else if (data.cancelAtPeriodEnd) {
-        upgradeEl.innerHTML = `<div style="font-size:12px;color:var(--red);">Cancels at end of period.</div><button onclick="openStripePortal()" style="margin-top:8px;padding:7px 14px;background:var(--bg-0);border:1px solid var(--brd);border-radius:7px;font-size:12.5px;cursor:pointer;">Reactivate</button>`;
-      } else {
-        upgradeEl.innerHTML = `<button onclick="openStripePortal()" style="padding:8px 16px;background:var(--bg-0);border:1px solid var(--brd);border-radius:7px;font-size:13px;cursor:pointer;color:var(--t1);">Manage subscription →</button>`;
-      }
-    }
-
-    // Payment content
     const payEl = document.getElementById('billing-payment-content');
     if (payEl) {
       payEl.textContent = data.plan === 'free'
@@ -2865,13 +2792,13 @@ function switchTab(section) {
   if (titleEl) titleEl.textContent = SECTION_TITLES[s] || 'API Keys';
 
   document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-  const navMap = { apikeys: 'nav-apikeys', records: 'nav-records', team: 'nav-team', billing: 'nav-billing', settings: 'nav-settings' };
+  const navMap = { apikeys: 'nav-apikeys', records: 'nav-records', team: 'nav-team', billing: 'nav-billing' };
   const navId = navMap[s];
   if (navId) document.getElementById(navId)?.classList.add('active');
 
   if (s === 'records'  && !_recordsLoaded) { loadActivity(); _recordsLoaded = true; }
   if (s === 'apikeys')  loadApiKeys();
-  if (s === 'team')     loadTeamMembers();
+  if (s === 'team')     { updateTeamGate(); loadTeamMembers(); if (!_billingLoaded) loadBilling(); }
   if (s === 'billing')  loadBilling();
   if (s === 'settings') loadSettings();
 
@@ -3106,27 +3033,6 @@ async function deleteApiKey(keyId) {
   } catch(e) { showToast('Error: ' + e.message); }
 }
 
-// User dropdown
-function toggleUserMenu() {
-  const menu = document.getElementById('user-menu');
-  if (!menu) return;
-  const isOpen = menu.style.display !== 'none';
-  menu.style.display = isOpen ? 'none' : 'block';
-  if (!isOpen) {
-    const emailEl = document.getElementById('user-menu-email');
-    if (emailEl && window._dmUser?.email) emailEl.textContent = window._dmUser.email;
-    // Close on outside click
-    setTimeout(() => {
-      document.addEventListener('click', function closeMenu(e) {
-        if (!document.getElementById('user-menu')?.contains(e.target) &&
-            !document.getElementById('nav-user-btn')?.contains(e.target)) {
-          document.getElementById('user-menu').style.display = 'none';
-          document.removeEventListener('click', closeMenu);
-        }
-      });
-    }, 10);
-  }
-}
 
 function copyNewKey(btn) {
   const key = document.getElementById('newkey-value')?.textContent;
@@ -3398,16 +3304,12 @@ function qsCopy(btn, text) {
 }
 
 function setUserDisplay(name, email, role) {
-  const avatarEl   = document.getElementById('nav-avatar');
-  const nameEl     = document.getElementById('nav-user-name');
-  const roleEl     = document.getElementById('nav-user-role');
-  const menuNameEl = document.getElementById('user-menu-name');
-  const emailEl    = document.getElementById('user-menu-email');
-  if (avatarEl)   avatarEl.textContent   = name.slice(0, 2).toUpperCase();
-  if (nameEl)     nameEl.textContent     = name;
-  if (roleEl)     roleEl.textContent     = email;
-  if (menuNameEl) menuNameEl.textContent = name;
-  if (emailEl)    emailEl.textContent    = email;
+  const avatarEl = document.getElementById('nav-avatar');
+  const nameEl   = document.getElementById('nav-user-name');
+  const roleEl   = document.getElementById('nav-user-role');
+  if (avatarEl) avatarEl.textContent = name.slice(0, 2).toUpperCase();
+  if (nameEl)   nameEl.textContent   = name;
+  if (roleEl)   roleEl.textContent   = email;
 }
 
 // ── YOU label with platform hint ─────────────────────────────────────────────
