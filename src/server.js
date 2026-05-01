@@ -6037,6 +6037,11 @@ async function getFlag(key) {
 
 app.get('/api/admin/flags', requireAuth, async (req, res) => {
   try {
+    const adminEmails = [...new Set([
+      ...(process.env.SUPERUSER_EMAIL || '').split(','),
+      ...(process.env.ADMIN_EMAILS    || '').split(','),
+    ].map(e => e.trim()).filter(Boolean))];
+    if (!adminEmails.includes(req.user.email)) return res.status(403).json({ error: 'Admin only' });
     const { data, error } = await supabaseService.from('feature_flags').select('*').order('key');
     if (error) throw error;
     res.json({ flags: data || [] });
@@ -6045,6 +6050,11 @@ app.get('/api/admin/flags', requireAuth, async (req, res) => {
 
 app.post('/api/admin/flags', requireAuth, async (req, res) => {
   try {
+    const adminEmails = [...new Set([
+      ...(process.env.SUPERUSER_EMAIL || '').split(','),
+      ...(process.env.ADMIN_EMAILS    || '').split(','),
+    ].map(e => e.trim()).filter(Boolean))];
+    if (!adminEmails.includes(req.user.email)) return res.status(403).json({ error: 'Admin only' });
     const { key, enabled, updated_by } = req.body;
     if (!key) return res.status(400).json({ error: 'key required' });
     const { data, error } = await supabaseService

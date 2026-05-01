@@ -427,6 +427,185 @@ test('L3 rejection returns 400 on bad signature', function() {
   assert(slice.includes('400') || slice.includes("'Invalid L3"), 'bad signature must reject with 4xx');
 });
 
+// \u2500\u2500 Section 15: Security \u2014 admin route guards \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+console.log('\nAdmin route guards');
+
+test('/api/admin/users has admin email guard', function() {
+  var idx = server.indexOf("app.get('/api/admin/users'");
+  assert(idx > 0, '/api/admin/users route not found');
+  var slice = server.slice(idx, idx + 600);
+  assert(slice.includes('adminEmails.includes'), '/api/admin/users must check adminEmails, not just requireAuth');
+});
+
+test('/api/admin/flags GET has admin email guard', function() {
+  var idx = server.indexOf("app.get('/api/admin/flags'");
+  assert(idx > 0, '/api/admin/flags GET route not found');
+  var slice = server.slice(idx, idx + 600);
+  assert(slice.includes('adminEmails.includes'), '/api/admin/flags GET must check adminEmails, not just requireAuth');
+});
+
+test('/api/admin/flags POST has admin email guard', function() {
+  var idx = server.indexOf("app.post('/api/admin/flags'");
+  assert(idx > 0, '/api/admin/flags POST route not found');
+  var slice = server.slice(idx, idx + 700);
+  assert(slice.includes('adminEmails.includes'), '/api/admin/flags POST must check adminEmails, not just requireAuth');
+});
+
+test('client_attestation verified before assuranceLevel set to L3', function() {
+  var commitIdx = server.indexOf("app.post('/api/commit'");
+  var slice     = server.slice(commitIdx, commitIdx + 16000);
+  var attIdx    = slice.indexOf('client_attestation &&');
+  var l3Idx     = slice.indexOf("assuranceLevel = 'L3'");
+  assert(attIdx > 0, 'client_attestation check not found in commit route');
+  assert(l3Idx  > 0, "assuranceLevel = 'L3' assignment not found in commit route");
+  assert(attIdx < l3Idx, 'client_attestation check must precede assuranceLevel L3 assignment');
+});
+
+test('active POST /api/commit does not reference byokKey', function() {
+  var idx   = server.indexOf("app.post('/api/commit'");
+  var slice = server.slice(idx, idx + 4000);
+  assert(!slice.includes('byokKey'), 'active commit route must not reference byokKey');
+});
+
+// \u2500\u2500 Section 16: Auth and session \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+console.log('\nAuth cookies and session');
+
+test('requireAuth reads dm_access cookie', function() {
+  var idx   = server.indexOf('async function requireAuth');
+  var slice = server.slice(idx, idx + 600);
+  assert(slice.includes('dm_access'), 'requireAuth must read dm_access cookie');
+});
+
+test('GET /api/user/me route exists', function() {
+  assert(server.includes("app.get('/api/user/me'"), '/api/user/me route not found');
+});
+
+test('/auth/logout calls clearAuthCookies', function() {
+  var idx   = server.indexOf("app.post('/auth/logout'");
+  assert(idx > 0, '/auth/logout route not found');
+  var slice = server.slice(idx, idx + 400);
+  assert(slice.includes('clearAuthCookies'), '/auth/logout must call clearAuthCookies to clear session');
+});
+
+// \u2500\u2500 Section 17: Pricing and plan limits \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+console.log('\nPlan limits');
+
+test('PLAN_META free commitLimit is 10000', function() {
+  var idx   = server.indexOf('const PLAN_META');
+  var slice = server.slice(idx, idx + 400);
+  assert(slice.includes('commitLimit: 10000'), 'free plan commitLimit must be 10000');
+});
+
+test('PLAN_META pro commitLimit is 50000', function() {
+  var idx   = server.indexOf('const PLAN_META');
+  var slice = server.slice(idx, idx + 400);
+  assert(slice.includes('commitLimit: 50000'), 'pro plan commitLimit must be 50000');
+});
+
+test('PLAN_META teams commitLimit is 250000', function() {
+  var idx   = server.indexOf('const PLAN_META');
+  var slice = server.slice(idx, idx + 400);
+  assert(slice.includes('commitLimit: 250000'), 'teams plan commitLimit must be 250000');
+});
+
+test('commit gate reads from commit_usage (O(1) cache)', function() {
+  var gateIdx   = server.indexOf('Plan limit enforcement');
+  var gateSlice = server.slice(gateIdx, gateIdx + 2500);
+  assert(gateSlice.includes("from('commit_usage')"), 'gate must read commit_usage, not do a live COUNT scan');
+});
+
+test('429 limit response includes upgrade_url', function() {
+  var idx   = server.indexOf('Monthly commit limit reached');
+  assert(idx > 0, 'commit limit 429 message not found');
+  var slice = server.slice(Math.max(0, idx - 50), idx + 250);
+  assert(slice.includes('upgrade_url'), '429 commit-limit response must include upgrade_url');
+});
+
+// \u2500\u2500 Section 18: Python SDK integrations \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+console.log('\nPython SDK integrations');
+
+var SDK_PY = path.join(ROOT, '../darkmatter-sdk-python/darkmatter');
+
+test('Python SDK has crewai integration', function() {
+  assert(fs.existsSync(path.join(SDK_PY, 'integrations/crewai.py')), 'crewai.py not found in SDK integrations');
+});
+
+test('Python SDK has bedrock integration', function() {
+  assert(fs.existsSync(path.join(SDK_PY, 'integrations/bedrock.py')), 'bedrock.py not found in SDK integrations');
+});
+
+test('Python SDK has google_adk integration', function() {
+  assert(fs.existsSync(path.join(SDK_PY, 'integrations/google_adk.py')), 'google_adk.py not found in SDK integrations');
+});
+
+test('Python SDK commit() defaults to_agent_id to None', function() {
+  var clientPy = fs.readFileSync(path.join(SDK_PY, 'client.py'), 'utf8');
+  var fnIdx    = clientPy.indexOf('def commit(');
+  assert(fnIdx > 0, 'commit() function not found in client.py');
+  var fnSlice  = clientPy.slice(fnIdx, fnIdx + 400);
+  assert(fnSlice.includes('to_agent_id') && fnSlice.includes('= None'),
+    'commit() to_agent_id parameter must default to None');
+});
+
+// \u2500\u2500 Section 19: Dashboard API key security \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+console.log('\nDashboard API key security');
+
+test('GET /api/workspace/api-keys response does not return raw api_key field', function() {
+  var idx   = server.indexOf("app.get('/api/workspace/api-keys'");
+  var slice = server.slice(idx, idx + 2500);
+  assert(!slice.includes('api_key: a.api_key'), 'raw api_key must not be returned in list response');
+  assert(!slice.includes("api_key: rawKey"),     'raw api_key must not be returned in list response');
+});
+
+test('GET /api/workspace/my-key does not exist (show-once principle)', function() {
+  assert(!server.includes("app.get('/api/workspace/my-key'"),
+    '/api/workspace/my-key must not exist \u2014 full key retrieval violates show-once principle');
+});
+
+test('billing subscription endpoint reads from commit_usage', function() {
+  var idx   = server.indexOf("app.get('/api/billing/subscription'");
+  var slice = server.slice(idx, idx + 3500);
+  assert(slice.includes("from('commit_usage')"),
+    'billing subscription must read commit_usage for O(1) count, not do a COUNT scan');
+});
+
+// \u2500\u2500 Section 20: Public pages \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+console.log('\nPublic pages');
+
+var PUBLIC_12 = ['index','pricing','integrity','security','docs',
+                 'organizations','demo','blog','enterprise','privacy','tos','why'];
+
+test('No em-dash or HTML entity dash in <title> tags of key public pages', function() {
+  ['index','pricing','integrity','security','docs'].forEach(function(name) {
+    var html  = fs.readFileSync(path.join(ROOT, 'public/' + name + '.html'), 'utf8');
+    var match = html.match(/<title>([\s\S]*?)<\/title>/);
+    if (!match) return;
+    var title = match[1];
+    assert(!title.includes('\u2014'),  name + '.html <title> contains em-dash (\u2014)');
+    assert(!title.includes('&#8212;'), name + '.html <title> contains &#8212;');
+    assert(!title.includes(' \u2013 '), name + '.html <title> contains en-dash ( \u2013 )');
+  });
+});
+
+test('No Bitcoin reference in any of the 12 public pages', function() {
+  PUBLIC_12.forEach(function(name) {
+    var html = fs.readFileSync(path.join(ROOT, 'public/' + name + '.html'), 'utf8');
+    assert(!html.toLowerCase().includes('bitcoin'), name + '.html contains Bitcoin reference');
+  });
+});
+
+test('organizations.html references JetBrains Mono', function() {
+  var orgs = fs.readFileSync(path.join(ROOT, 'public/organizations.html'), 'utf8');
+  assert(orgs.includes('JetBrains'), 'organizations.html must load JetBrains Mono font');
+});
+
+test('All 12 public pages have dm-ham hamburger nav', function() {
+  PUBLIC_12.forEach(function(name) {
+    var html = fs.readFileSync(path.join(ROOT, 'public/' + name + '.html'), 'utf8');
+    assert(html.includes('dm-ham'), name + '.html is missing dm-ham hamburger nav element');
+  });
+});
+
 // Summary
 console.log('\n' + '-'.repeat(50));
 console.log('Passed: ' + passed + '  Failed: ' + failed + '  Total: ' + (passed+failed));
