@@ -234,11 +234,11 @@ footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;gri
   <div class="docs-sb-group">
     <span class="docs-sb-label">Getting started</span>
     <a class="docs-sb-link active" href="#overview">Overview</a>
+    <a class="docs-sb-link" href="#concepts">Core concepts</a>
     <a class="docs-sb-link" href="#quickstart">Quickstart &#8212; Python</a>
     <a class="docs-sb-link" href="#jupyter-quickstart">Quickstart &#8212; Jupyter</a>
     <a class="docs-sb-link" href="#typescript-sdk">TypeScript / Node.js</a>
     <a class="docs-sb-link" href="#authentication">Authentication</a>
-    <a class="docs-sb-link" href="#concepts">Core concepts</a>
   </div>
   <div class="docs-sb-group">
     <span class="docs-sb-label">SDK wrappers</span>
@@ -289,6 +289,8 @@ footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;gri
 
 <h1>DarkMatter Documentation</h1>
 <p class="lead">DarkMatter records every AI agent action as a verifiable, independently auditable record. Every commit is hashed client-side, optionally signed with your own key, and stored outside your infrastructure. Works with any language, any model, any framework.</p>
+<p style="font-size:13px;border-left:2px solid hsl(var(--signal));padding:.625rem 1rem;background:hsl(var(--void-elevated));margin-bottom:1.5rem;line-height:1.7"><strong>Commit:</strong> A sealed, timestamped record of one AI agent action — stored outside your system and independently verifiable. <strong>Agent:</strong> A named entity you register in DarkMatter, with its own ID (<code>dm_agent_...</code>) and API key — every commit is attributed to it.</p>
+<div class="callout info" style="margin-bottom:2.5rem"><span class="callout-title">Where to start</span><strong>New to DarkMatter?</strong> Follow the <a href="#quickstart">Python quickstart</a> — 2 minutes to your first record.<br><strong>Integrating an existing agent?</strong> Jump to <a href="#integrations">SDK wrappers</a> for Anthropic, OpenAI, LangGraph, and more.<br><strong>Need non-repudiation?</strong> Go directly to <a href="#l3-setup">L3 setup</a> to configure customer signing keys.</div>
 
 <h2 id="overview">Overview</h2>
 <p>DarkMatter is the independent verification and audit layer for AI agent decisions. Every agent action becomes a <strong>commit</strong> &#8212; an immutable node chained to its parent via SHA-256 hash linkage. The chain is independently verifiable and can be replayed, forked, or exported as a proof bundle.</p>
@@ -305,7 +307,7 @@ footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;gri
 <div class="callout info"><span class="callout-title">Base URL</span>All API calls go to <code>https://darkmatterhub.ai</code>. Get your API key at <a href="/signup">darkmatterhub.ai/signup</a>.</div>
 
 <h2 id="quickstart">Quickstart &#8212; Python</h2>
-<p>Install and make your first commit in under 2 minutes:</p>
+<p>Install and make your first commit in under 2 minutes. Unfamiliar with terms like <em>commit</em>, <em>trace ID</em>, or <em>fork</em>? See <a href="#concepts">Core concepts</a> first.</p>
 <pre><code>pip install darkmatter-sdk<div class="lang-label">bash</div></code></pre>
 <pre><code><span class="cm"># Set your keys (from dashboard or darkmatter init)</span>
 <span class="cm"># export DARKMATTER_API_KEY=dm_sk_...</span>
