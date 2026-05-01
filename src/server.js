@@ -52,11 +52,12 @@ const STRIPE_PRICES = {
 };
 
 // Plan metadata map — single source of truth
+// Stripe products must match: Pro=$29/mo, Teams=$99/mo, Enterprise=$499/mo (contact)
 const PLAN_META = {
-  free:       { commitLimit: 500,   retentionDays: 30,  price: null },
-  pro:        { commitLimit: 2000,  retentionDays: 90,  price: 19   },
-  teams:      { commitLimit: 10000, retentionDays: null, price: 49  },
-  enterprise: { commitLimit: null,  retentionDays: null, price: 199 },
+  free:       { commitLimit: 10000,  retentionDays: 30,  price: null },
+  pro:        { commitLimit: 50000,  retentionDays: 365, price: 29   }, // Stripe: STRIPE_PRICE_PRO = $29/mo
+  teams:      { commitLimit: 250000, retentionDays: null, price: 99  }, // Stripe: STRIPE_PRICE_TEAMS = $99/mo
+  enterprise: { commitLimit: null,   retentionDays: null, price: 499 }, // display only — contact sales
 };
 
 function priceIdToPlan(priceId) {
