@@ -1086,6 +1086,8 @@ app.post('/api/commit', apiLimiter, requireApiKey, async (req, res) => {
     }
 
     // ── Plan limit enforcement ────────────────────────
+    // TODO: replace live COUNT with cached usage_counters table at scale
+    //       (one index lookup instead of a full COUNT scan per commit)
     {
       const userId = req.agent.user_id;
       if (userId) {
