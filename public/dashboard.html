@@ -1299,15 +1299,6 @@ window._dmAuthPromise = fetch('/api/user/me')
             </div>
           </div>
 
-          <!-- API key panel -->
-          <div class="panel" style="padding:24px;">
-            <div style="font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--t3);margin-bottom:10px;">Active API key</div>
-            <code id="settings-key-hint" style="font-size:12.5px;color:var(--t1);font-family:var(--mono);background:var(--bg-0);border:1px solid var(--brd);border-radius:5px;padding:5px 10px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">—</code>
-            <div style="margin-top:10px;font-size:13px;">
-              <a onclick="showView('apikeys')" style="color:var(--purple);cursor:pointer;text-decoration:underline;">Manage API keys →</a>
-            </div>
-          </div>
-
           <!-- Commit usage panel -->
           <div class="panel" style="padding:24px;">
             <div style="font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--t3);margin-bottom:14px;">Commit usage this period</div>
@@ -2191,19 +2182,6 @@ async function loadSettings() {
       if (nameEl) nameEl.value = metaName || _fallbackName(user.email);
     }
   }
-
-  // Load API key hint from the keys list (hint only — full key never returned)
-  try {
-    const kr = await authFetch('/api/workspace/api-keys');
-    const hintEl = document.getElementById('settings-key-hint');
-    if (kr.ok) {
-      const kd = await kr.json();
-      const firstKey = (kd.keys || [])[0];
-      if (hintEl) hintEl.textContent = firstKey?.hint || 'No key — create one in API Keys';
-    } else {
-      if (hintEl) hintEl.textContent = 'No key found';
-    }
-  } catch(_) {}
 
   // Usage bar — fetch billing subscription (same endpoint as loadBilling)
   try {
