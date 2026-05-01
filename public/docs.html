@@ -250,7 +250,6 @@ footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;gri
     <a class="docs-sb-link" href="#langgraph">LangGraph</a>
     <a class="docs-sb-link" href="#langchain">LangChain</a>
     <a class="docs-sb-link" href="#crewai">CrewAI</a>
-    <a class="docs-sb-link" href="#local-models">Local models</a>
     <a class="docs-sb-link" href="#aws-bedrock">AWS Bedrock</a>
     <a class="docs-sb-link" href="#google-adk">Google ADK</a>
     <a class="docs-sb-link" href="#otel">OpenTelemetry</a>
@@ -810,6 +809,41 @@ document.addEventListener('DOMContentLoaded',function(){
       document.body.style.overflow='';
     });
   });
+
+  // Sidebar active state — click
+  var sbLinks = document.querySelectorAll('.docs-sb-link');
+  sbLinks.forEach(function(link){
+    link.addEventListener('click',function(){
+      sbLinks.forEach(function(l){ l.classList.remove('active'); });
+      this.classList.add('active');
+    });
+  });
+
+  // Sidebar active state — scroll via IntersectionObserver
+  // Build a map from section id -> sidebar link
+  var idToLink = {};
+  sbLinks.forEach(function(link){
+    var href = link.getAttribute('href');
+    if(href && href.startsWith('#')) idToLink[href.slice(1)] = link;
+  });
+
+  var headings = document.querySelectorAll('h2[id], h3[id]');
+  if('IntersectionObserver' in window){
+    var observer = new IntersectionObserver(function(entries){
+      entries.forEach(function(entry){
+        if(entry.isIntersecting){
+          var link = idToLink[entry.target.id];
+          if(link){
+            sbLinks.forEach(function(l){ l.classList.remove('active'); });
+            link.classList.add('active');
+            // Scroll the sidebar so the active link stays visible
+            link.scrollIntoView({block:'nearest'});
+          }
+        }
+      });
+    },{rootMargin:'-10% 0px -82% 0px'});
+    headings.forEach(function(h){ observer.observe(h); });
+  }
 });
 </script>
 </body>
