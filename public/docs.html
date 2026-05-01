@@ -235,8 +235,8 @@ footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;gri
     <span class="docs-sb-label">Getting started</span>
     <a class="docs-sb-link active" href="#overview">Overview</a>
     <a class="docs-sb-link" href="#concepts">Core concepts</a>
-    <a class="docs-sb-link" href="#quickstart">Quickstart &#8212; Python</a>
-    <a class="docs-sb-link" href="#jupyter-quickstart">Quickstart &#8212; Jupyter</a>
+    <a class="docs-sb-link" href="#quickstart">Quickstart: Python</a>
+    <a class="docs-sb-link" href="#jupyter-quickstart">Quickstart: Jupyter</a>
     <a class="docs-sb-link" href="#typescript-sdk">TypeScript / Node.js</a>
     <a class="docs-sb-link" href="#authentication">Authentication</a>
   </div>
@@ -290,13 +290,13 @@ footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;gri
 <h1>DarkMatter Documentation</h1>
 <p class="lead">DarkMatter records every AI agent action as a verifiable, independently auditable record. Every commit is hashed client-side, optionally signed with your own key, and stored outside your infrastructure. Works with any language, any model, any framework.</p>
 <div style="border-left:2px solid hsl(var(--signal));background:hsl(var(--void-elevated));padding:.75rem 1rem;margin-bottom:1.5rem;display:flex;flex-direction:column;gap:.5rem">
-  <div style="font-size:13px;line-height:1.6"><strong style="font-family:'JetBrains Mono',monospace;font-size:12px">Commit</strong> &nbsp;A sealed, timestamped record of one AI agent action — stored outside your system and independently verifiable.</div>
-  <div style="font-size:13px;line-height:1.6"><strong style="font-family:'JetBrains Mono',monospace;font-size:12px">Agent &nbsp;</strong> A named entity you register in DarkMatter, with its own ID (<code>dm_agent_...</code>) and API key — every commit is attributed to it.</div>
+  <div style="font-size:13px;line-height:1.6"><strong style="font-family:'JetBrains Mono',monospace;font-size:12px">Commit</strong> &nbsp;A sealed, timestamped record of one AI agent action, stored outside your system and independently verifiable.</div>
+  <div style="font-size:13px;line-height:1.6"><strong style="font-family:'JetBrains Mono',monospace;font-size:12px">Agent &nbsp;</strong> A named entity you register in DarkMatter, with its own ID (<code>dm_agent_...</code>) and API key. Every commit is attributed to it.</div>
 </div>
-<div class="callout info" style="margin-bottom:2.5rem"><span class="callout-title">Where to start</span><strong>New to DarkMatter?</strong> Follow the <a href="#quickstart">Python quickstart</a> — 2 minutes to your first record.<br><strong>Integrating an existing agent?</strong> Jump to <a href="#integrations">SDK wrappers</a> for Anthropic, OpenAI, LangGraph, and more.<br><strong>Need non-repudiation?</strong> Go directly to <a href="#l3-setup">L3 setup</a> to configure customer signing keys.</div>
+<div class="callout info" style="margin-bottom:2.5rem"><span class="callout-title">Where to start</span><strong>New to DarkMatter?</strong> Follow the <a href="#quickstart">Python quickstart</a>. 2 minutes to your first record.<br><strong>Integrating an existing agent?</strong> Jump to <a href="#integrations">SDK wrappers</a> for Anthropic, OpenAI, LangGraph, and more.<br><strong>Need non-repudiation?</strong> Go directly to <a href="#l3-setup">L3 setup</a> to configure customer signing keys.</div>
 
 <h2 id="overview">Overview</h2>
-<p>DarkMatter is the independent verification and audit layer for AI agent decisions. Every agent action becomes a <strong>commit</strong> &#8212; an immutable node chained to its parent via SHA-256 hash linkage. The chain is independently verifiable and can be replayed, forked, or exported as a proof bundle.</p>
+<p>DarkMatter is the independent verification and audit layer for AI agent decisions. Every agent action becomes a <strong>commit</strong>: an immutable node chained to its parent via SHA-256 hash linkage. The chain is independently verifiable and can be replayed, forked, or exported as a proof bundle.</p>
 <table>
   <thead><tr><th>Operation</th><th>What it does</th><th>Endpoint</th></tr></thead>
   <tbody>
@@ -309,7 +309,7 @@ footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;gri
 </table>
 <div class="callout info"><span class="callout-title">Base URL</span>All API calls go to <code>https://darkmatterhub.ai</code>. Get your API key at <a href="/signup">darkmatterhub.ai/signup</a>.</div>
 
-<h2 id="quickstart">Quickstart &#8212; Python</h2>
+<h2 id="quickstart">Quickstart: Python</h2>
 <p>Install and make your first commit in under 2 minutes. Unfamiliar with terms like <em>commit</em>, <em>trace ID</em>, or <em>fork</em>? See <a href="#concepts">Core concepts</a> first.</p>
 <pre><code>pip install darkmatter-sdk<div class="lang-label">bash</div></code></pre>
 <pre><code><span class="cm"># Set your keys (from dashboard or darkmatter init)</span>
@@ -325,13 +325,13 @@ ctx = dm.commit(payload={
 print(ctx[<span class="cv">"verify_url"</span>])  <span class="cm"># share with anyone &#8212; no login required</span><div class="lang-label">python</div></code></pre>
 
 <div class="steps">
-  <div class="step"><div class="step-num">1</div><div><div class="step-title">Install</div><div class="step-desc"><code>pip install darkmatter-sdk</code> &#8212; installs the SDK and CLI.</div></div></div>
+  <div class="step"><div class="step-num">1</div><div><div class="step-title">Install</div><div class="step-desc"><code>pip install darkmatter-sdk</code>, which installs the SDK and CLI.</div></div></div>
   <div class="step"><div class="step-num">2</div><div><div class="step-title">Get your keys</div><div class="step-desc">Sign up at <a href="/signup">darkmatterhub.ai/signup</a> or run <code>darkmatter init</code> (interactive, no browser required). Both set <code>DARKMATTER_API_KEY</code> and <code>DARKMATTER_AGENT_ID</code> in your <code>.env</code>. Your Agent ID appears on your dashboard after signup. It looks like <code>dm_agent_abc123...</code></div></div></div>
   <div class="step"><div class="step-num">3</div><div><div class="step-title">Commit</div><div class="step-desc">Call <code>dm.commit()</code> after each agent action. Pass <code>parent_id</code> to chain commits into a lineage.</div></div></div>
-  <div class="step"><div class="step-num">4</div><div><div class="step-title">Replay and verify</div><div class="step-desc"><code>dm.replay(ctx_id)</code> walks the chain root&#8594;tip. <code>dm.verify(ctx_id)</code> proves integrity. Share the verify URL &#8212; no account needed to view it.</div></div></div>
+  <div class="step"><div class="step-num">4</div><div><div class="step-title">Replay and verify</div><div class="step-desc"><code>dm.replay(ctx_id)</code> walks the chain root&#8594;tip. <code>dm.verify(ctx_id)</code> proves integrity. Share the verify URL. No account needed to view it.</div></div></div>
 </div>
 
-<div class="callout info"><span class="callout-title">What is an Agent ID?</span>In DarkMatter, an <strong>agent</strong> is a named entity with its own ID and API key — every commit is attributed to it. Your first agent is created automatically when you sign up or run <code>darkmatter init</code>. <code>darkmatter init</code> prints <code>Agent ID: dm_agent_abc123...</code> and writes it to <code>.env</code>. You can also find it on your dashboard under Settings.</div>
+<div class="callout info"><span class="callout-title">What is an Agent ID?</span>In DarkMatter, an <strong>agent</strong> is a named entity with its own ID and API key. Every commit is attributed to it. Your first agent is created automatically when you sign up or run <code>darkmatter init</code>. <code>darkmatter init</code> prints <code>Agent ID: dm_agent_abc123...</code> and writes it to <code>.env</code>. You can also find it on your dashboard under Settings.</div>
 
 <h3>Chain multiple commits</h3>
 <pre><code>parent_id = None
@@ -352,7 +352,7 @@ for s in replay[<span class="cv">"replay"</span>]:
 <pre><code>curl -X POST https://darkmatterhub.ai/api/commit   -H <span class="cv">"Authorization: Bearer dm_sk_..."</span>   -H <span class="cv">"Content-Type: application/json"</span>   -d '{"toAgentId": "dm_agent_...", "payload": {"input": "Approve refund?", "output": "Approved"}}'
 <span class="cm"># Returns: {"id": "ctx_...", "verify_url": "https://darkmatterhub.ai/r/ctx_...", ...}</span><div class="lang-label">bash</div></code></pre>
 
-<h2 id="jupyter-quickstart">Quickstart &#8212; Jupyter</h2>
+<h2 id="jupyter-quickstart">Quickstart: Jupyter</h2>
 <p>Works in JupyterLab, Jupyter Notebook, Google Colab, and VS Code notebooks.</p>
 <pre><code><span class="cm"># Cell 1 &#8212; install</span>
 %pip install darkmatter-sdk -q<div class="lang-label">python</div></code></pre>
@@ -386,7 +386,7 @@ const { commit, verify, replay, fork } = require(<span class="cv">'darkmatter-js
 const ctx   = await commit(<span class="cv">"dm_agent_..."</span>, { task: <span class="cv">"summarise"</span>, output: result });
 const chain = await replay(ctx.id);
 const proof = await verify(ctx.id);<div class="lang-label">javascript</div></code></pre>
-<div class="callout info"><span class="callout-title">Same primitives as Python</span><code>commit</code>, <code>verify</code>, <code>export</code>, <code>replay</code>, <code>fork</code> &#8212; identical to the Python SDK. Source on <a href="https://github.com/darkmatter-hub/darkmatter" target="_blank" rel="noopener">GitHub</a>.</div>
+<div class="callout info"><span class="callout-title">Same primitives as Python</span><code>commit</code>, <code>verify</code>, <code>export</code>, <code>replay</code>, <code>fork</code>: identical to the Python SDK. Source on <a href="https://github.com/darkmatter-hub/darkmatter" target="_blank" rel="noopener">GitHub</a>.</div>
 
 <h2 id="authentication">Authentication</h2>
 <p>All API requests require a Bearer token.</p>
@@ -401,7 +401,13 @@ const proof = await verify(ctx.id);<div class="lang-label">javascript</div></cod
   </tbody>
 </table>
 
-<h2 id="concepts">Core Concepts</h2>
+<h2 id="concepts">Core concepts</h2>
+<p>DarkMatter uses assurance levels (L1, L2, L3) to describe how strongly a record can be verified. Higher levels add stronger cryptographic guarantees and are additive. L3 includes all L2 and L1 guarantees.</p>
+<ul style="margin:.75rem 0 1.5rem 1.25rem;font-size:14px;line-height:1.8;color:hsl(var(--foreground))">
+  <li><strong>L1.</strong> Hash chain integrity. The record was not altered after it was committed.</li>
+  <li><strong>L2.</strong> OpenTimestamps anchor. The record's existence is anchored via OpenTimestamps, an open standard for timestamp proofs that operates independently of DarkMatter's infrastructure.</li>
+  <li><strong>L3.</strong> Customer signing key. Signed by a key only you hold, before reaching DarkMatter's servers. DarkMatter cannot forge or alter it.</li>
+</ul>
 <h3>Commit</h3>
 <p>An immutable node containing a structured payload, agent attribution, a parent reference, and an integrity hash. Once stored, it cannot be modified. Every commit gets a globally unique <code>ctx_</code> ID and a <code>verify_url</code> that anyone can open.</p>
 <h3>Parent linkage</h3>
@@ -411,8 +417,8 @@ const proof = await verify(ctx.id);<div class="lang-label">javascript</div></cod
 <h3>Fork</h3>
 <p>Creates a new branch from any existing checkpoint without modifying the original chain. The fork node carries <code>fork_of</code>, <code>fork_point</code>, and <code>lineage_root</code>. Continue by committing with <code>parent_id</code> set to the fork ID.</p>
 
-<h2 id="integrations">SDK wrappers &#8212; Anthropic &amp; OpenAI</h2>
-<p>Drop-in wrappers for the Anthropic and OpenAI Python SDKs. One import change instruments every API call automatically &#8212; no per-call code changes required.</p>
+<h2 id="integrations">SDK wrappers: Anthropic and OpenAI</h2>
+<p>Drop-in wrappers for the Anthropic and OpenAI Python SDKs. One import change instruments every API call automatically, with no per-call code changes required.</p>
 <div class="callout info"><span class="callout-title">What gets committed automatically</span>Input messages, output text, model, latency, token usage, stop reason, tool calls (as separate child records), and a scoped coverage assertion per observed API call.</div>
 
 <h3>Anthropic SDK wrapper</h3>
@@ -470,7 +476,7 @@ client = Anthropic(
   <thead><tr><th>Option</th><th>Default</th><th>Description</th></tr></thead>
   <tbody>
     <tr><td><code>dm_api_key</code></td><td><code>DARKMATTER_API_KEY</code></td><td>DarkMatter API key</td></tr>
-    <tr><td><code>dm_agent_id</code></td><td><code>DARKMATTER_AGENT_ID</code></td><td>Agent ID &#8212; optional</td></tr>
+    <tr><td><code>dm_agent_id</code></td><td><code>DARKMATTER_AGENT_ID</code></td><td>Agent ID, optional</td></tr>
     <tr><td><code>dm_signing</code></td><td><code>None</code></td><td>Reserved for L3 signing config (configure via <code>dm.configure(customer_key_path=...)</code>)</td></tr>
     <tr><td><code>dm_auto_commit</code></td><td><code>True</code></td><td>Set False to disable instrumentation</td></tr>
     <tr><td><code>dm_commit_tools</code></td><td><code>True</code></td><td>Set False to skip tool call child commits</td></tr>
@@ -538,7 +544,7 @@ class DarkMatterCallbackHandler(BaseCallbackHandler):
         self.last_ctx_id = ctx[<span class="cv">"id"</span>]<div class="lang-label">python</div></code></pre>
 
 <h2 id="crewai">Integration: CrewAI</h2>
-<p>Add <code>DarkMatterObserver</code> once before <code>crew.kickoff()</code>. Every task commits automatically — no changes to your agents, tasks, or crew definition.</p>
+<p>Add <code>DarkMatterObserver</code> once before <code>crew.kickoff()</code>. Every task commits automatically, with no changes to your agents, tasks, or crew definition.</p>
 <h3>One-line setup</h3>
 <pre><code>from darkmatter.integrations.crewai import observe_crew
 import darkmatter as dm
@@ -569,7 +575,7 @@ result = bedrock.invoke_model(
     prompt=<span class="cv">"Analyze this contract for risk clauses"</span>,
 )
 print(bedrock.last_ctx_id)  <span class="cm"># ctx_...</span><div class="lang-label">python</div></code></pre>
-<h3>Bedrock Agents</h3>
+<h3>Bedrock agents</h3>
 <pre><code>output = bedrock.invoke_agent(
     agent_id=<span class="cv">"ABCDEF1234"</span>, agent_alias=<span class="cv">"TSTALIASID"</span>,
     session_id=<span class="cv">"session_001"</span>, prompt=<span class="cv">"Summarize the Q1 report"</span>,
@@ -631,11 +637,11 @@ class DarkMatterSpanExporter(SpanExporter):
                 dm.commit(payload={<span class="ck">"input"</span>: inp, <span class="ck">"output"</span>: output}, event_type=span.name)
         return SpanExportResult.SUCCESS<div class="lang-label">python</div></code></pre>
 
-<h2 id="l3-setup">L3 setup — customer signing keys</h2>
-<p>L3 means every commit is signed with a key only you hold, before it reaches DarkMatter's servers. DarkMatter cannot forge a record — verification requires only your public key.</p>
-<div class="callout info"><span class="callout-title">One-time setup — dm.commit() is unchanged</span>Configure signing once. After that, every commit is automatically L3. No per-commit code changes required.</div>
+<h2 id="l3-setup">L3 setup: customer signing keys</h2>
+<p>L3 means every commit is signed with a key only you hold, before it reaches DarkMatter's servers. DarkMatter cannot forge a record. Verification requires only your public key.</p>
+<div class="callout info"><span class="callout-title">One-time setup: dm.commit() is unchanged</span>Configure signing once. After that, every commit is automatically L3. No per-commit code changes required.</div>
 
-<h3>Step 1 — Generate a keypair</h3>
+<h3>Step 1: generate a keypair</h3>
 <pre><code>import darkmatter as dm
 
 keys = dm.generate_customer_keypair(<span class="cv">'my-signing-key'</span>)
@@ -643,11 +649,11 @@ keys = dm.generate_customer_keypair(<span class="cv">'my-signing-key'</span>)
 <span class="cm"># and my-signing-key.customer.public.pem (safe to share)</span>
 <span class="cm"># Prints the key_id: ck_...</span><div class="lang-label">python</div></code></pre>
 
-<h3>Step 2 — Register the public key</h3>
+<h3>Step 2: register the public key</h3>
 <pre><code>curl -X POST https://darkmatterhub.ai/api/agents/keys   -H <span class="cv">"Authorization: Bearer dm_sk_..."</span>   -H <span class="cv">"Content-Type: application/json"</span>   -d "{\"keyId\": \"ck_...\", \"publicKey\": \"$(cat my-signing-key.customer.public.pem)\"}"
 <span class="cm"># Or register from the dashboard under Settings > Signing Keys</span><div class="lang-label">bash</div></code></pre>
 
-<h3>Step 3 — Configure signing</h3>
+<h3>Step 3: configure signing</h3>
 <pre><code><span class="cm"># Option A: env vars (.env file)</span>
 DARKMATTER_CUSTOMER_KEY_PATH=./my-signing-key.customer.private.pem
 DARKMATTER_CUSTOMER_KEY_ID=ck_...<div class="lang-label">bash</div></code></pre>
@@ -658,7 +664,7 @@ dm.configure(
     customer_key_id   = <span class="cv">"ck_..."</span>,
 )<div class="lang-label">python</div></code></pre>
 
-<h3>Step 4 — Commit (unchanged)</h3>
+<h3>Step 4: commit (unchanged)</h3>
 <pre><code>ctx = dm.commit(payload={<span class="ck">"input"</span>: <span class="cv">"approve refund?"</span>, <span class="ck">"output"</span>: <span class="cv">"approved"</span>})
 print(ctx[<span class="cv">"assurance_level"</span>])   <span class="cm"># "L3"</span>
 print(ctx[<span class="cv">"verify_url"</span>])        <span class="cm"># shows L3 NON-REPUDIATION badge on /r/ page</span><div class="lang-label">python</div></code></pre>
@@ -669,20 +675,20 @@ curl https://darkmatterhub.ai/api/agents/keys -H <span class="cv">"Authorization
 
 <span class="cm"># Revoke a key</span>
 curl -X POST https://darkmatterhub.ai/api/agents/keys/revoke   -H <span class="cv">"Authorization: Bearer dm_sk_..."</span>   -H <span class="cv">"Content-Type: application/json"</span>   -d '{"keyId": "ck_..."}'<div class="lang-label">bash</div></code></pre>
-<div class="callout info"><span class="callout-title">Key rotation</span>Generate a new keypair with a new key-id, register it, update your config. Old L3 records keep their original signature — rotation never breaks existing verification.</div>
+<div class="callout info"><span class="callout-title">Key rotation</span>Generate a new keypair with a new key-id, register it, update your config. Old L3 records keep their original signature. Rotation never breaks existing verification.</div>
 
 <h3>What L3 proves</h3>
-<p>The canonical sentence: <strong>DarkMatter received this record already signed. It cannot forge your signature &#8212; verification requires only your public key.</strong></p>
+<p>The canonical sentence: <strong>DarkMatter received this record already signed. It cannot forge your signature. Verification requires only your public key.</strong></p>
 <p>For full protocol details see <a href="/ENVELOPE_SPEC_V1.md">ENVELOPE_SPEC_V1.md</a> and the <a href="/integrity">integrity model</a>. Example repo with offline verifier: <a href="https://github.com/darkmatter-hub/darkmatter-l3-example" target="_blank" rel="noopener">github.com/darkmatter-hub/darkmatter-l3-example</a>.</p>
 
 <h2 id="completeness-claim">Coverage assertion (<code>completeness_claim</code>)</h2>
-<p>Set <code>completeness_claim=True</code> on a commit to assert that no steps were omitted. This claim is included in the signed envelope &#8212; it cannot be added, removed, or altered after signing.</p>
+<p>Set <code>completeness_claim=True</code> on a commit to assert that no steps were omitted. This claim is included in the signed envelope: it cannot be added, removed, or altered after signing.</p>
 <pre><code>ctx = dm.commit(
     payload            = {...},
     completeness_claim = True   <span class="cm"># agent asserts nothing was omitted</span>
 )<div class="lang-label">python</div></code></pre>
 <p>The claim appears in the commit drawer and on the <code>/r/:traceId</code> verify page as: <em>&#8220;Agent asserted this record is complete (nothing omitted).&#8221;</em></p>
-<div class="callout info"><span class="callout-title">Signed assertion, not enforced coverage</span>This is a signed statement by the agent, not a guarantee. DarkMatter records and preserves the claim &#8212; it cannot verify that all steps actually occurred. The value is accountability: if a claim of completeness is made and steps are missing, the signed false assertion surfaces who made it. SDK wrappers set this automatically when they can observe the full call scope.</div>
+<div class="callout info"><span class="callout-title">Signed assertion, not enforced coverage</span>This is a signed statement by the agent, not a guarantee. DarkMatter records and preserves the claim, but cannot verify that all steps actually occurred. The value is accountability: if a claim of completeness is made and steps are missing, the signed false assertion surfaces who made it. SDK wrappers set this automatically when they can observe the full call scope.</div>
 
 <h2 id="byok">Payload privacy</h2>
 <p>If your payloads contain sensitive content, encrypt them client-side before calling <code>/api/commit</code>. DarkMatter stores whatever you send. If you send ciphertext, only you can read it.</p>
@@ -697,9 +703,9 @@ curl -X POST https://darkmatterhub.ai/api/agents/keys/revoke   -H <span class="c
     <tr><td><code>toAgentId</code></td><td>string</td><td><span class="badge-req">required</span></td><td>Recipient agent ID (<code>dm_agent_...</code>). Defaults to <code>DARKMATTER_AGENT_ID</code> env var if set.</td></tr>
     <tr><td><code>payload.input</code></td><td>string/object</td><td><span class="badge-opt">optional</span></td><td>What the agent received</td></tr>
     <tr><td><code>payload.output</code></td><td>string/object</td><td><span class="badge-opt">optional</span></td><td>What the agent produced</td></tr>
-    <tr><td><code>parentId</code></td><td>string</td><td><span class="badge-opt">optional</span></td><td>Parent ctx ID &#8212; chains commits into lineage</td></tr>
+    <tr><td><code>parentId</code></td><td>string</td><td><span class="badge-opt">optional</span></td><td>Parent ctx ID: chains commits into lineage</td></tr>
     <tr><td><code>traceId</code></td><td>string</td><td><span class="badge-opt">optional</span></td><td>Groups commits into a run</td></tr>
-    <tr><td><code>completeness_claim</code></td><td>boolean</td><td><span class="badge-opt">optional</span></td><td>Signed coverage assertion — available on any commit</td></tr>
+    <tr><td><code>completeness_claim</code></td><td>boolean</td><td><span class="badge-opt">optional</span></td><td>Signed coverage assertion, available on any commit</td></tr>
     <tr><td><code>client_attestation</code></td><td>object</td><td><span class="badge-opt">optional</span></td><td>Ed25519 envelope for L3 signing</td></tr>
     <tr><td><code>eventType</code></td><td>string</td><td><span class="badge-opt">optional</span></td><td>Defaults to <code>commit</code></td></tr>
     <tr><td><code>agent.role</code></td><td>string</td><td><span class="badge-opt">optional</span></td><td>researcher, writer, reviewer, etc.</td></tr>
@@ -725,7 +731,7 @@ curl -X POST https://darkmatterhub.ai/api/agents/keys/revoke   -H <span class="c
 <table>
   <thead><tr><th>Field</th><th>Description</th></tr></thead>
   <tbody>
-    <tr><td><code>chain_intact</code></td><td>Boolean &#8212; true if all hashes verify</td></tr>
+    <tr><td><code>chain_intact</code></td><td>Boolean, true if all hashes verify</td></tr>
     <tr><td><code>assurance_level</code></td><td>L1, L2, or L3</td></tr>
     <tr><td><code>length</code></td><td>Number of commits in chain</td></tr>
     <tr><td><code>broken_at</code></td><td>ctx ID where chain first breaks, or null</td></tr>
@@ -753,7 +759,7 @@ curl -X POST https://darkmatterhub.ai/api/agents/keys/revoke   -H <span class="c
 <span class="cm"># Returns: { agentId, agentName, apiKey, spawnedBy, createdAt }</span><div class="lang-label">bash</div></code></pre>
 
 <h2 id="context-passport"><a href="https://contextpassport.com/" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;border-bottom:1px solid currentColor;">Context Passport</a> schema</h2>
-<p>Every DarkMatter commit implements the <a href="https://contextpassport.com/" target="_blank" rel="noopener">Context Passport</a> standard &#8212; a structured, model-agnostic schema for AI agent context handoffs. The goal is interoperability: <code>schema_version: "1.0"</code> means the same thing regardless of which model or framework is on either end.</p>
+<p>Every DarkMatter commit implements the <a href="https://contextpassport.com/" target="_blank" rel="noopener">Context Passport</a> standard: a structured, model-agnostic schema for AI agent context handoffs. The goal is interoperability: <code>schema_version: "1.0"</code> means the same thing regardless of which model or framework is on either end.</p>
 <pre><code>{
   <span class="ck">"id"</span>:           <span class="cv">"ctx_{timestamp}_{hex}"</span>,
   <span class="ck">"parent_id"</span>:    <span class="cv">"ctx_... | null"</span>,
@@ -781,12 +787,12 @@ curl -X POST https://darkmatterhub.ai/api/agents/keys/revoke   -H <span class="c
 }<div class="lang-label">json</div></code></pre>
 
 <h2 id="integrity">Integrity model</h2>
-<p>Every commit starts at L1. L2 is automatic (Bitcoin anchoring runs on checkpoints). L3 requires a customer-held signing key.</p>
+<p>Every commit starts at L1. L2 is applied automatically via OpenTimestamps anchoring on checkpoints. L3 requires a customer-held signing key.</p>
 <table>
   <thead><tr><th>Level</th><th>Name</th><th>What it proves</th><th>How</th></tr></thead>
   <tbody>
     <tr><td><code>L1</code></td><td>Verifiable record</td><td>Payload wasn&#8217;t altered after commit</td><td>SHA-256 hash chain. Default with every commit.</td></tr>
-    <tr><td><code>L2</code></td><td>Independent verification</td><td>Record predates any dispute</td><td>OpenTimestamps anchor to Bitcoin blockchain. Automatic.</td></tr>
+    <tr><td><code>L2</code></td><td>Independent verification</td><td>Record predates any dispute</td><td>OpenTimestamps anchor. Automatic.</td></tr>
     <tr><td><code>L3</code></td><td>Non-repudiation</td><td>DarkMatter cannot forge this record</td><td>Customer Ed25519 key signs envelope before transmission.</td></tr>
   </tbody>
 </table>

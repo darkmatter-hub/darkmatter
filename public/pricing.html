@@ -166,7 +166,7 @@ footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;gri
   <a href="/signup" class="cta-link">Try it free</a>
 </div>
 <main>
-<section class="section" style="position:relative;overflow:hidden"><div class="noise grid-noise" style="position:absolute;inset:0;opacity:.35"></div><div class="wrap section-pad" style="position:relative"><div class="eyebrow" style="margin-bottom:1.5rem"><span class="rule"></span><span>Pricing</span></div><h1 class="balance" style="font-size:34px;line-height:1.05;letter-spacing:-.022em;font-weight:500;max-width:42rem">Instrument. Verify. Trust.</h1><p style="margin-top:1.5rem;max-width:34rem;font-size:15px;line-height:1.6;color:hsl(var(--trace))">Start free. Scale when it matters. No feature gating &#8212; every tier gets every capability.</p><div style="margin-top:2rem;display:flex;flex-wrap:wrap;gap:.75rem"><a href="/signup" class="btn-primary">Start free &#8594;</a><a href="#" onclick="openContact();return false;">Talk to us</a></div></div></section>
+<section class="section" style="position:relative;overflow:hidden"><div class="noise grid-noise" style="position:absolute;inset:0;opacity:.35"></div><div class="wrap section-pad" style="position:relative"><div class="eyebrow" style="margin-bottom:1.5rem"><span class="rule"></span><span>Pricing</span></div><h1 class="balance" style="font-size:34px;line-height:1.05;letter-spacing:-.022em;font-weight:500;max-width:42rem">Instrument. Verify. Trust.</h1><p style="margin-top:1.5rem;max-width:34rem;font-size:15px;line-height:1.6;color:hsl(var(--trace))">Start free. Scale when it matters. No feature gating. Every tier gets every capability.</p><div style="margin-top:2rem;display:flex;flex-wrap:wrap;gap:.75rem"><a href="/signup" class="btn-primary">Start free &#8594;</a><a href="#" onclick="openContact();return false;">Talk to us</a></div></div></section>
 <div class="wrap">
   <div class="plans">
     <div class="plan">
@@ -179,7 +179,7 @@ footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;gri
         <li>30-day retention <span style="font-size:11px;color:hsl(var(--trace-dim))">Records deleted after 30 days</span></li>
         <li style="font-size:12px;color:hsl(var(--trace-dim));list-style:none;margin-left:-1.25rem;padding-left:1.25rem">Commits over limit return 429 until reset</li>
         <li>Unlimited agents</li>
-        <li>L1 &#183; L2 &#183; L3 verification</li>
+        <li>L1 &#183; L2 &#183; L3 verification <span style="font-size:11px;color:hsl(var(--trace-dim))">(L3: customer signing key, non-repudiation)</span></li>
         <li>Anthropic &#43; OpenAI SDK wrappers</li>
         <li>Proof bundle export</li>
         <li>Share page (/r/:id)</li>
@@ -196,7 +196,7 @@ footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;gri
         <li>50,000 commits / month</li>
         <li>1-year retention</li>
         <li>Unlimited agents</li>
-        <li>L1 &#183; L2 &#183; L3 verification</li>
+        <li>L1 &#183; L2 &#183; L3 verification <span style="font-size:11px;color:hsl(var(--trace-dim))">(L3: customer signing key, non-repudiation)</span></li>
         <li>Anthropic &#43; OpenAI SDK wrappers</li>
         <li>Proof bundle export</li>
         <li>Share page (/r/:id)</li>
@@ -216,7 +216,7 @@ footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;gri
         <li>250,000 commits / month</li>
         <li>Unlimited retention</li>
         <li>Unlimited agents</li>
-        <li>L1 &#183; L2 &#183; L3 verification</li>
+        <li>L1 &#183; L2 &#183; L3 verification <span style="font-size:11px;color:hsl(var(--trace-dim))">(L3: customer signing key, non-repudiation)</span></li>
         <li>Anthropic &#43; OpenAI SDK wrappers</li>
         <li>Proof bundle export</li>
         <li>Share page (/r/:id)</li>
@@ -233,7 +233,7 @@ footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;gri
         <li>Unlimited commits</li>
         <li>Custom retention policy</li>
         <li>Unlimited agents</li>
-        <li>L1 &#183; L2 &#183; L3 verification</li>
+        <li>L1 &#183; L2 &#183; L3 verification <span style="font-size:11px;color:hsl(var(--trace-dim))">(L3: customer signing key, non-repudiation)</span></li>
         <li>Anthropic &#43; OpenAI SDK wrappers</li>
         <li>Proof bundle export</li>
         <li>Share page (/r/:id)</li>
@@ -252,19 +252,19 @@ footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;gri
     <div style="max-width:56rem">
       <div class="faq-item">
         <div class="faq-q">What counts as a commit?</div>
-        <div class="faq-a">One call to <code class="cmd">dm.commit()</code> &#8212; one record sealed. Tool calls committed separately each count as one commit.</div>
+        <div class="faq-a">One call to <code class="cmd">dm.commit()</code>. One record sealed. Tool calls committed separately each count as one commit.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q">Is L3 signing available on the free plan?</div>
-        <div class="faq-a">Yes. L3 non-repudiation with customer-held keys is available on every plan including free. Generate a keypair with <code class="cmd">dm.generate_customer_keypair()</code> in Python and register the public key via <code class="cmd">POST /api/agents/keys</code> &#8212; no plan upgrade required. See <a href="/docs#l3-setup">L3 setup</a>.</div>
+        <div class="faq-a">Yes. L3 non-repudiation with customer-held keys is available on every plan including free. Generate a keypair with <code class="cmd">dm.generate_customer_keypair()</code> in Python and register the public key via <code class="cmd">POST /api/agents/keys</code>. No plan upgrade required. See <a href="/docs#l3-setup">L3 setup</a>.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q">Can DarkMatter read my commit payloads?</div>
-        <div class="faq-a">Yes &#8212; payloads are stored in plaintext by default, same as any cloud service. BYOK encryption (Enterprise) lets you encrypt before committing so only you can read the content. The hash chain and signature verification work on the encrypted payload.</div>
+        <div class="faq-a">Yes. Payloads are stored in plaintext by default, same as any cloud service. BYOK encryption (Enterprise) lets you encrypt before committing so only you can read the content. The hash chain and signature verification work on the encrypted payload.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q">What happens if DarkMatter goes down?</div>
-        <div class="faq-a">Records already committed are exported as proof bundles that verify offline &#8212; no DarkMatter dependency. The offline verifier is open-source and ships with the SDK.</div>
+        <div class="faq-a">Records already committed are exported as proof bundles that verify offline, with no DarkMatter dependency. The offline verifier is open-source and ships with the SDK.</div>
       </div>
     </div>
   </div>
