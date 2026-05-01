@@ -612,6 +612,73 @@ test('All 12 public pages have dm-ham hamburger nav', function() {
   });
 });
 
+// ── Section 21: Auth page JS syntax and copy ─────────────────────────────────
+console.log('\nAuth pages (signup / login)');
+
+(function checkAuthPageJS(name) {
+  var filePath = path.join(ROOT, 'public/' + name + '.html');
+  var html     = fs.readFileSync(filePath, 'utf8');
+
+  // Extract inline script blocks (no src=)
+  var js = '';
+  var re = /<script[^>]*>([\s\S]*?)<\/script>/gi;
+  var m;
+  while ((m = re.exec(html)) !== null) {
+    if (!m[0].includes('src=')) js += m[1] + '\n';
+  }
+
+  test(name + '.html inline JS passes node --check', function() {
+    var tmp = path.join(os.tmpdir(), 'dm_' + name + '_check.js');
+    fs.writeFileSync(tmp, js);
+    try {
+      execSync('node --check "' + tmp + '"', {stdio:'pipe'});
+    } finally {
+      fs.unlinkSync(tmp);
+    }
+  });
+
+  // Guard against the specific class of bug that broke signup:
+  // a single-quoted JS string containing 'JetBrains Mono' terminates the string early.
+  test(name + ".html has no unescaped single-quotes inside single-quoted JS strings (font-family bug)", function() {
+    // Look for the pattern: JS single-quoted string containing 'JetBrains Mono'
+    // This regex finds innerHTML='...'JetBrains Mono'...' patterns
+    assert(
+      !(/innerHTML\s*=\s*'[^']*'JetBrains/.test(js)),
+      name + '.html has unescaped single-quotes inside a single-quoted JS string (breaks all JS on page)'
+    );
+  });
+})('signup');
+
+(function checkAuthPageJS(name) {
+  var filePath = path.join(ROOT, 'public/' + name + '.html');
+  var html     = fs.readFileSync(filePath, 'utf8');
+  var js = '';
+  var re = /<script[^>]*>([\s\S]*?)<\/script>/gi;
+  var m;
+  while ((m = re.exec(html)) !== null) {
+    if (!m[0].includes('src=')) js += m[1] + '\n';
+  }
+  test(name + '.html inline JS passes node --check', function() {
+    var tmp = path.join(os.tmpdir(), 'dm_' + name + '_check.js');
+    fs.writeFileSync(tmp, js);
+    try {
+      execSync('node --check "' + tmp + '"', {stdio:'pipe'});
+    } finally {
+      fs.unlinkSync(tmp);
+    }
+  });
+})('login');
+
+test('signup.html does not claim full access without qualification', function() {
+  var html = fs.readFileSync(path.join(ROOT, 'public/signup.html'), 'utf8');
+  assert(!html.includes('Full access from day one'), 'signup.html must not claim unqualified full access');
+});
+
+test('signup.html does not expose raw /r/:id URL to users without explanation', function() {
+  var html = fs.readFileSync(path.join(ROOT, 'public/signup.html'), 'utf8');
+  assert(!html.includes('/r/:id'), 'signup.html must not show raw /r/:id route to users — use plain language instead');
+});
+
 // Summary
 console.log('\n' + '-'.repeat(50));
 console.log('Passed: ' + passed + '  Failed: ' + failed + '  Total: ' + (passed+failed));
