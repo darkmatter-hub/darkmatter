@@ -2687,11 +2687,11 @@ app.get('/api/billing/subscription', wsAuth, async (req, res) => {
     res.json({
       plan: 'free', status: 'active',
       planInfo: { name: 'Free', price: null },
-      commitCount, commitLimit: 500, retention_days: 30,
+      commitCount, commitLimit: PLAN_META.free.commitLimit, retention_days: PLAN_META.free.retentionDays,
     });
   } catch (err) {
     console.error('[billing/subscription]', err.message);
-    res.json({ plan: 'free', status: 'active', planInfo: { name: 'Free', price: null }, commitCount: 0, commitLimit: 500 });
+    res.json({ plan: 'free', status: 'active', planInfo: { name: 'Free', price: null }, commitCount: 0, commitLimit: PLAN_META.free.commitLimit });
   }
 });
 app.post('/api/billing/checkout', wsAuth, async (req, res) => {
