@@ -237,8 +237,8 @@ footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;gri
         <li>Proof bundle export</li>
         <li>Share page (/r/:id)</li>
         <li>Ed25519 signing (BYOK keys)</li>
-        <li>BYOK payload encryption</li>
         <li>Audit-ready export formats</li>
+        <li>Priority support + SLA</li>
       </ul>
       <a href="/signup" class="plan-cta">Upgrade to Enterprise</a>
     </div>
@@ -255,7 +255,7 @@ footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;gri
       </div>
       <div class="faq-item">
         <div class="faq-q">Is L3 signing available on the free plan?</div>
-        <div class="faq-a">Yes. L3 non-repudiation with customer-held keys is available on every plan. Generate a key with <code class="cmd">darkmatter keys generate</code> and register the public key &#8212; no plan upgrade required.</div>
+        <div class="faq-a">Yes. L3 non-repudiation with customer-held keys is available on every plan including free. Generate a keypair with <code class="cmd">dm.generate_customer_keypair()</code> in Python and register the public key via <code class="cmd">POST /api/agents/keys</code> &#8212; no plan upgrade required. See <a href="/docs#l3-setup">L3 setup</a>.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q">Can DarkMatter read my commit payloads?</div>

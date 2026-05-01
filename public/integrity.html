@@ -157,14 +157,14 @@ footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;gri
   <a href="/signup" class="cta-link">Try it free</a>
 </div>
 <main>
-<section class="section" style="position:relative;overflow:hidden"><div class="noise grid-noise" style="position:absolute;inset:0;opacity:.35"></div><div class="wrap section-pad" style="position:relative"><div class="eyebrow" style="margin-bottom:1.5rem"><span class="rule"></span><span>Integrity model</span></div><h1 class="balance" style="font-size:34px;line-height:1.05;letter-spacing:-.022em;font-weight:500;max-width:42rem">Verifiable by anyone. Trusted by no one.</h1><p style="margin-top:1.5rem;max-width:34rem;font-size:15px;line-height:1.6;color:hsl(var(--trace))">DarkMatter&#8217;s guarantees are mathematical, not contractual. Here is exactly what we claim &#8212; and how to verify it yourself.</p><div style="margin-top:2rem;display:flex;flex-wrap:wrap;gap:.75rem"><a href="https://github.com/darkmatter-hub/darkmatter-l3-example" target="_blank" rel="noopener" class="btn-primary">Run the verifier &#8594;</a><a href="/docs" class="btn-ghost">Read ENVELOPE_SPEC_V1</a></div></div></section>
+<section class="section" style="position:relative;overflow:hidden"><div class="noise grid-noise" style="position:absolute;inset:0;opacity:.35"></div><div class="wrap section-pad" style="position:relative"><div class="eyebrow" style="margin-bottom:1.5rem"><span class="rule"></span><span>Integrity model</span></div><h1 class="balance" style="font-size:34px;line-height:1.05;letter-spacing:-.022em;font-weight:500;max-width:42rem">Verifiable by anyone. Trusted by no one.</h1><p style="margin-top:1.5rem;max-width:34rem;font-size:15px;line-height:1.6;color:hsl(var(--trace))">DarkMatter&#8217;s guarantees are mathematical, not contractual. Here is exactly what we claim &#8212; and how to verify it yourself.</p><div style="margin-top:2rem;display:flex;flex-wrap:wrap;gap:.75rem"><a href="https://github.com/darkmatter-hub/darkmatter-l3-example" target="_blank" rel="noopener" class="btn-primary">Run the verifier &#8594;</a><a href="/ENVELOPE_SPEC_V1.md" class="btn-ghost">Read ENVELOPE_SPEC_V1</a></div></div></section>
 <section class="section">
   <div class="wrap section-pad">
     <div class="eyebrow" style="margin-bottom:3rem"><span class="rule"></span><span>Three properties &#183; non-negotiable</span></div>
     <div class="props-grid">
-      <div class="prop" style="border-top:2px solid hsl(var(--signal)/.25)"><div class="top"><span class="tag">L1</span><span class="idx">01 / 03</span></div><h3>Recorded outside the system</h3><p>The record does not live inside your agent runtime, or inside the model provider. It lives in an independent layer neither party controls.</p></div>
-      <div class="prop" style="border-top:2px solid hsl(var(--signal)/.55)"><div class="top"><span class="tag">L2</span><span class="idx">02 / 03</span></div><h3>Sealed at the moment it happens</h3><p>Each event is cryptographically chained and signed client-side before transmission. Modification after the fact is mathematically detectable by anyone.</p></div>
-      <div class="prop" style="border-top:2px solid hsl(var(--signal))"><div class="top"><span class="tag">L3</span><span class="idx">03 / 03</span></div><h3>Non-repudiation</h3><p>Signed with keys only you hold. DarkMatter cannot forge a record on your behalf &#8212; non-repudiation by construction, not by policy.</p></div>
+      <div class="prop" style="border-top:2px solid hsl(var(--signal)/.25)"><div class="top"><span class="tag">L1</span><span class="idx">01 / 03</span></div><h3>Tamper-evident hash chain</h3><p>Every commit is SHA-256 hashed client-side and linked to its parent. Modifying any record breaks every downstream hash — detectable by anyone, offline, with no DarkMatter dependency.</p></div>
+      <div class="prop" style="border-top:2px solid hsl(var(--signal)/.55)"><div class="top"><span class="tag">L2</span><span class="idx">02 / 03</span></div><h3>Independent timestamp anchor</h3><p>Checkpoint bundles are anchored to the Bitcoin blockchain via OpenTimestamps. The timestamp proof lives entirely outside DarkMatter&#8217;s infrastructure and is independently verifiable.</p></div>
+      <div class="prop" style="border-top:2px solid hsl(var(--signal))"><div class="top"><span class="tag">L3</span><span class="idx">03 / 03</span></div><h3>Non-repudiation</h3><p>Commits are signed with a key only you hold before they reach our servers. DarkMatter cannot forge a record on your behalf &#8212; non-repudiation by construction, not by policy.</p></div>
     </div>
   </div>
 </section>
@@ -189,7 +189,7 @@ footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;gri
         <div class="level-c-tag"><span class="tag">L3</span><span class="level-num">03</span></div>
         <div class="level-c-name"><div class="level-name">Non-repudiation</div></div>
         <div class="level-c-means level-means">Customer-held signing keys. Even DarkMatter cannot forge a record &#8212; only your key can sign a valid commit.</div>
-        <div class="level-c-how level-how">Available now. Generate a key with <code class="cmd">darkmatter keys generate</code>.</div>
+        <div class="level-c-how level-how">Available now. Generate a key with <code class="cmd">dm.generate_customer_keypair()</code> in Python. See <a href="/docs#l3-setup" style="color:hsl(var(--signal))">L3 setup</a>.</div>
       </div>
     </div>
   </div>
@@ -202,7 +202,7 @@ footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;gri
       <div class="int-cell"><div class="label">We claim</div><h3>Payload wasn&#8217;t altered after commit</h3><p>The SHA-256 hash is computed client-side before transmission. Any modification breaks the hash. Verifiable offline.</p></div>
       <div class="int-cell"><div class="label">We claim</div><h3>Record predates any dispute</h3><p>OpenTimestamps anchors checkpoint bundles to the Bitcoin blockchain. The timestamp proof is external and independently verifiable.</p></div>
       <div class="int-cell"><div class="label">We claim &#40;L3&#41;</div><h3>DarkMatter cannot forge a record</h3><p>Customer-held Ed25519 keys sign the envelope before it reaches our servers. We never see the private key. We cannot produce a valid signature.</p></div>
-      <div class="int-cell"><div class="label">We do not claim</div><h3>Payload confidentiality</h3><p>Payloads are stored in plaintext by default. DarkMatter personnel with database access can read them. BYOK encryption addresses this for Enterprise customers.</p></div>
+      <div class="int-cell"><div class="label">We do not claim</div><h3>Payload confidentiality</h3><p>Payloads are stored in plaintext by default. DarkMatter personnel with database access can read them. To keep payloads private, encrypt client-side before calling <code class="cmd">dm.commit()</code> — this works on any plan. DarkMatter stores whatever you send.</p></div>
     </div>
   </div>
 </section>
