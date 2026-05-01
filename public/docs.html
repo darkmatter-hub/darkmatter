@@ -1,11 +1,9 @@
 <!doctype html>
 <html lang="en">
 <head>
-<html lang="en">
-<head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>DarkMatter — Documentation</title>
+<title>DarkMatter: Documentation</title>
 <meta name="description" content="DarkMatter SDK reference. Commit, verify, replay, fork, and export AI agent records. Python, TypeScript, Anthropic, OpenAI, LangGraph, and more."/>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
 <style>
@@ -258,7 +256,7 @@ footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;gri
     <span class="docs-sb-label">L3 non-repudiation</span>
     <a class="docs-sb-link" href="#l3-setup">L3 setup</a>
     <a class="docs-sb-link" href="#completeness-claim">Coverage assertion</a>
-    <a class="docs-sb-link" href="#byok">BYOK encryption</a>
+    <a class="docs-sb-link" href="#byok">Payload privacy</a>
   </div>
   <div class="docs-sb-group">
     <span class="docs-sb-label">API reference</span>
@@ -312,6 +310,8 @@ footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;gri
 <h2 id="quickstart">Quickstart: Python</h2>
 <p>Install and make your first commit in under 2 minutes. Unfamiliar with terms like <em>commit</em>, <em>trace ID</em>, or <em>fork</em>? See <a href="#concepts">Core concepts</a> first.</p>
 <pre><code>pip install darkmatter-sdk<div class="lang-label">bash</div></code></pre>
+<pre><code>export DARKMATTER_API_KEY=dm_sk_...
+export DARKMATTER_AGENT_ID=dm_agent_...<div class="lang-label">bash</div></code></pre>
 <pre><code><span class="cm"># Set your keys (from dashboard or darkmatter init)</span>
 <span class="cm"># export DARKMATTER_API_KEY=dm_sk_...</span>
 <span class="cm"># export DARKMATTER_AGENT_ID=dm_agent_...</span>
@@ -360,6 +360,9 @@ for s in replay[<span class="cv">"replay"</span>]:
 import darkmatter as dm
 import os
 
+prompt = <span class="cv">"Approve refund?"</span>
+result = <span class="cv">"Approved."</span>
+
 ctx = dm.commit(
     payload = {
         <span class="ck">"prompt"</span>:      prompt,
@@ -371,6 +374,8 @@ ctx = dm.commit(
 print(f<span class="cv">"Committed: {ctx[&#8217;id&#8217;]}"</span>)
 print(f<span class="cv">"Verify: {ctx[&#8217;verify_url&#8217;]}"</span>)<div class="lang-label">python</div></code></pre>
 <pre><code><span class="cm"># Cell 3 &#8212; fork and compare two runs</span>
+result_b = <span class="cv">"Rejected."</span>
+
 fork  = dm.fork(ctx[<span class="cv">"id"</span>])
 ctx_b = dm.commit(parent_id=fork[<span class="cv">"id"</span>], payload={<span class="cv">"output"</span>: result_b, <span class="cv">"temperature"</span>: 1.0})
 diff  = dm.diff(ctx[<span class="cv">"id"</span>], ctx_b[<span class="cv">"id"</span>])<div class="lang-label">python</div></code></pre>
@@ -379,17 +384,17 @@ diff  = dm.diff(ctx[<span class="cv">"id"</span>], ctx_b[<span class="cv">"id"</
 <h2 id="typescript-sdk">TypeScript / Node.js SDK</h2>
 <p>Full TypeScript SDK with type definitions. Requires Node.js 18+ (uses native <code>fetch</code>).</p>
 <pre><code>npm install darkmatter-js<div class="lang-label">bash</div></code></pre>
-<pre><code><span class="cm">// CommonJS</span>
+<pre><code><span class="cm">// ES module (Node 18+ or wrap in async function)</span>
 const { commit, verify, replay, fork } = require(<span class="cv">'darkmatter-js'</span>);
 
 <span class="cm">// DARKMATTER_API_KEY and DARKMATTER_AGENT_ID read from process.env automatically</span>
-const ctx   = await commit(<span class="cv">"dm_agent_..."</span>, { task: <span class="cv">"summarise"</span>, output: result });
+const ctx   = await commit(<span class="cv">"dm_agent_..."</span>, { input: <span class="cv">"Summarise this"</span>, output: result });
 const chain = await replay(ctx.id);
 const proof = await verify(ctx.id);<div class="lang-label">javascript</div></code></pre>
 <div class="callout info"><span class="callout-title">Same primitives as Python</span><code>commit</code>, <code>verify</code>, <code>export</code>, <code>replay</code>, <code>fork</code>: identical to the Python SDK. Source on <a href="https://github.com/darkmatter-hub/darkmatter" target="_blank" rel="noopener">GitHub</a>.</div>
 
 <h2 id="authentication">Authentication</h2>
-<p>All API requests require a Bearer token.</p>
+<p>All API requests require a Bearer token. In the Python SDK, call <code>dm.configure(api_key="dm_sk_...")</code> to set credentials in code instead of environment variables.</p>
 <pre><code>Authorization: Bearer dm_sk_your_api_key_here<div class="lang-label">http</div></code></pre>
 <table>
   <thead><tr><th>Property</th><th>Detail</th></tr></thead>
@@ -542,6 +547,9 @@ class DarkMatterCallbackHandler(BaseCallbackHandler):
             trace_id  = self.trace_id,
         )
         self.last_ctx_id = ctx[<span class="cv">"id"</span>]<div class="lang-label">python</div></code></pre>
+<pre><code>handler = DarkMatterCallbackHandler(trace_id=<span class="cv">"trc_001"</span>)
+llm = ChatOpenAI(callbacks=[handler])
+result = llm.invoke(<span class="cv">"Approve refund?"</span>)<div class="lang-label">python</div></code></pre>
 
 <h2 id="crewai">Integration: CrewAI</h2>
 <p>Add <code>DarkMatterObserver</code> once before <code>crew.kickoff()</code>. Every task commits automatically, with no changes to your agents, tasks, or crew definition.</p>
@@ -624,6 +632,7 @@ async for event in dm_runner.run_async(user_id=<span class="cv">"u1"</span>, ses
 <div class="callout"><strong>Requires:</strong> <code>pip install google-adk darkmatter-sdk</code>. Requires google-adk >= 0.4.0.</div>
 
 <h2 id="otel">Integration: OpenTelemetry</h2>
+<p>Use the DarkMatter span exporter to record any OpenTelemetry-instrumented LLM call, including spans generated by third-party libraries.</p>
 <pre><code>from opentelemetry.sdk.trace.export import SpanExporter, SpanExportResult
 import darkmatter as dm
 
@@ -668,6 +677,7 @@ dm.configure(
 <pre><code>ctx = dm.commit(payload={<span class="ck">"input"</span>: <span class="cv">"approve refund?"</span>, <span class="ck">"output"</span>: <span class="cv">"approved"</span>})
 print(ctx[<span class="cv">"assurance_level"</span>])   <span class="cm"># "L3"</span>
 print(ctx[<span class="cv">"verify_url"</span>])        <span class="cm"># shows L3 NON-REPUDIATION badge on /r/ page</span><div class="lang-label">python</div></code></pre>
+<div class="callout"><span class="callout-title">Seeing L1 instead of L3?</span>Check that <code>DARKMATTER_CUSTOMER_KEY_PATH</code> points to a valid <code>.pem</code> file and that the key ID returned by <code>dm.generate_customer_keypair()</code> is registered via <code>/api/agents/keys</code>. Both must be set before the first commit.</div>
 
 <h3>Key management</h3>
 <pre><code><span class="cm"># List registered keys</span>
@@ -801,6 +811,7 @@ curl -X POST https://darkmatterhub.ai/api/agents/keys/revoke   -H <span class="c
 <h2 id="policies">Hooks and policies</h2>
 <p>Policies are rules that evaluate incoming commits before they are stored. Register them via API to enforce commit structure, flag patterns, or trigger webhooks.</p>
 <pre><code>curl -X POST https://darkmatterhub.ai/api/policies   -H <span class="cv">"Authorization: Bearer YOUR_API_KEY"</span>   -d '{"name": "require-model", "condition": "!payload.model", "action": "reject"}'<div class="lang-label">bash</div></code></pre>
+<p>The <code>condition</code> field is a JavaScript-style expression evaluated against the incoming commit. Use dot notation to access fields: <code>payload.model</code>, <code>payload.input</code>, <code>agent.role</code>. A truthy result triggers the action.</p>
 
 </article>
 </div>
