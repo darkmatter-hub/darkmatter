@@ -983,6 +983,44 @@ async function fireEventHooks(agentId, eventType, data) {
   } catch (_) {}
 }
 
+// ── commit_usage helpers ──────────────────────────────────────────────────────
+// Returns the calendar-month key used as commit_usage.month ('YYYY-MM').
+// Using calendar month for all tiers keeps gate checks and increments
+// consistent across all commit paths (commit, fork, rich, proxy).
+function currentMonthKey() {
+  const d  = new Date();
+  const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
+  return `${d.getUTCFullYear()}-${mm}`;
+}
+
+// Increments commit_usage by 1 for (userId, monthKey). Fire-and-forget —
+// never throws; a missed increment is self-healing on the next bootstrap.
+async function incrementCommitUsage(userId, monthKey) {
+  if (!userId || !monthKey) return;
+  try {
+    const now = new Date().toISOString();
+    const { data: row } = await supabaseService
+      .from('commit_usage')
+      .select('commit_count')
+      .eq('user_id', userId)
+      .eq('month', monthKey)
+      .maybeSingle();
+    if (row) {
+      await supabaseService.from('commit_usage')
+        .update({ commit_count: (row.commit_count || 0) + 1, updated_at: now })
+        .eq('user_id', userId)
+        .eq('month', monthKey);
+    } else {
+      await supabaseService.from('commit_usage')
+        .insert({ user_id: userId, month: monthKey, commit_count: 1, updated_at: now })
+        .catch(() => {}); // swallow concurrent-insert race
+    }
+  } catch (e) {
+    console.error('[commit_usage]', e.message);
+  }
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 app.post('/api/commit', apiLimiter, requireApiKey, async (req, res) => {
   try {
     const {
@@ -1086,8 +1124,9 @@ app.post('/api/commit', apiLimiter, requireApiKey, async (req, res) => {
     }
 
     // ── Plan limit enforcement ────────────────────────
-    // TODO: replace live COUNT with cached usage_counters table at scale
-    //       (one index lookup instead of a full COUNT scan per commit)
+    // O(1): read from commit_usage cache instead of a full COUNT scan.
+    // On first commit of a period the cache row won't exist yet; we fall
+    // back to COUNT once, seed the row, and stay fast from then on.
     {
       const userId = req.agent.user_id;
       if (userId) {
@@ -1104,28 +1143,44 @@ app.post('/api/commit', apiLimiter, requireApiKey, async (req, res) => {
         const planMeta     = PLAN_META[currentPlan] || PLAN_META.free;
         const planLimit    = sub?.commit_limit ?? planMeta.commitLimit;
 
-        // Determine period start: subscription period, or start of current calendar month
-        let periodStart;
-        if (sub?.current_period_start) {
-          const ps = new Date(sub.current_period_start);
-          // If period is >30 days old, reset to 30 days ago (safety guard)
-          const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000);
-          periodStart = ps > thirtyDaysAgo ? ps : thirtyDaysAgo;
-        } else {
-          periodStart = new Date(); periodStart.setDate(1); periodStart.setHours(0, 0, 0, 0);
-        }
+        // O(1) cache lookup
+        const monthKey = currentMonthKey();
+        const { data: usageRow } = await supabaseService
+          .from('commit_usage')
+          .select('commit_count')
+          .eq('user_id', userId)
+          .eq('month', monthKey)
+          .maybeSingle();
 
-        // Count commits in the current period
-        const { data: agentRows } = await supabaseService
-          .from('agents').select('agent_id').eq('user_id', userId);
-        const agentIds = (agentRows || []).map(a => a.agent_id);
         let commitCount = 0;
-        if (agentIds.length) {
-          const { count } = await supabaseService
-            .from('commits').select('id', { count: 'exact', head: true })
-            .in('from_agent', agentIds)
-            .gte('timestamp', periodStart.toISOString());
-          commitCount = count || 0;
+        if (usageRow) {
+          commitCount = usageRow.commit_count || 0;
+        } else {
+          // Bootstrap: no cached row yet — fall back to COUNT then seed cache
+          let periodStart;
+          if (sub?.current_period_start) {
+            const ps = new Date(sub.current_period_start);
+            const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000);
+            periodStart = ps > thirtyDaysAgo ? ps : thirtyDaysAgo;
+          } else {
+            periodStart = new Date(); periodStart.setDate(1); periodStart.setHours(0, 0, 0, 0);
+          }
+          const { data: agentRows } = await supabaseService
+            .from('agents').select('agent_id').eq('user_id', userId);
+          const agentIds = (agentRows || []).map(a => a.agent_id);
+          if (agentIds.length) {
+            const { count } = await supabaseService
+              .from('commits').select('id', { count: 'exact', head: true })
+              .in('from_agent', agentIds)
+              .gte('timestamp', periodStart.toISOString());
+            commitCount = count || 0;
+          }
+          // Seed the cache row so subsequent checks are O(1)
+          if (commitCount > 0) {
+            supabaseService.from('commit_usage')
+              .insert({ user_id: userId, month: monthKey, commit_count: commitCount, updated_at: new Date().toISOString() })
+              .catch(() => {});
+          }
         }
 
         if (planLimit !== null && commitCount >= planLimit) {
@@ -1220,6 +1275,9 @@ app.post('/api/commit', apiLimiter, requireApiKey, async (req, res) => {
       });
 
     if (error) throw error;
+
+    // Increment commit_usage counter (fire-and-forget)
+    if (req.agent.user_id) incrementCommitUsage(req.agent.user_id, currentMonthKey()).catch(() => {});
 
     // Update last_active
     await supabaseService
@@ -1607,6 +1665,9 @@ app.post('/api/fork/:ctxId', apiLimiter, requireApiKey, async (req, res) => {
     });
 
     if (error) throw error;
+
+    // Increment commit_usage counter (fire-and-forget)
+    if (req.agent.user_id) incrementCommitUsage(req.agent.user_id, currentMonthKey()).catch(() => {});
 
     res.json({
       id:                  forkId,
@@ -2662,19 +2723,14 @@ app.get('/api/billing/subscription', wsAuth, async (req, res) => {
       });
     }
 
-    // Count commits this month
-    const { data: agents } = await supabaseService
-      .from('agents').select('agent_id').eq('user_id', userId);
-    const agentIds = (agents || []).map(a => a.agent_id);
-    let commitCount = 0;
-    if (agentIds.length) {
-      const startOfMonth = new Date(); startOfMonth.setDate(1); startOfMonth.setHours(0,0,0,0);
-      const { count } = await supabaseService
-        .from('commits').select('id', { count: 'exact', head: true })
-        .in('from_agent', agentIds)
-        .gte('timestamp', startOfMonth.toISOString());
-      commitCount = count || 0;
-    }
+    // O(1) commit count from commit_usage cache
+    const { data: usageRow } = await supabaseService
+      .from('commit_usage')
+      .select('commit_count')
+      .eq('user_id', userId)
+      .eq('month', currentMonthKey())
+      .maybeSingle();
+    let commitCount = usageRow?.commit_count || 0;
 
     // 1. Check DB subscriptions table first (fast, no Stripe API call)
     const { data: dbSub } = await supabaseService
@@ -3814,6 +3870,9 @@ app.post('/api/commit/rich', apiLimiter, requireApiKey, async (req, res) => {
 
     if (commitError) throw commitError;
 
+    // Increment commit_usage counter (fire-and-forget)
+    if (agentRecord.user_id) incrementCommitUsage(agentRecord.user_id, currentMonthKey()).catch(() => {});
+
     // ── Store rich content separately ─────────────────────────────────────────
     await supabaseService.from('commit_content').insert({
       id:           ctxId,
@@ -4795,6 +4854,9 @@ async function recordClaudeInteraction({ upstreamPath, requestBody, responseText
       capture_mode: captureMode || 'proxy_forwarded',
     });
 
+    // Increment commit_usage counter (fire-and-forget)
+    if (userId) incrementCommitUsage(userId, currentMonthKey()).catch(() => {});
+
   } catch(e) {
     console.error('[DarkMatter/claude] Record error:', e.message);
   }
@@ -5697,17 +5759,14 @@ app.get('/api/workspace/stats/usage', requireAuth, async (req, res) => {
     const periodStart   = userSub?.current_period_start
       ? new Date(userSub.current_period_start).toISOString()
       : (() => { const d = new Date(); d.setDate(1); d.setHours(0,0,0,0); return d.toISOString(); })();
-    const { data: userAgents } = await supabaseService
-      .from('agents').select('agent_id').eq('user_id', userId);
-    const userAgentIds = (userAgents || []).map(a => a.agent_id);
-    let userCommitCount = 0;
-    if (userAgentIds.length) {
-      const { count: uc } = await supabaseService
-        .from('commits').select('id', { count: 'exact', head: true })
-        .in('from_agent', userAgentIds)
-        .gte('timestamp', periodStart);
-      userCommitCount = uc || 0;
-    }
+    // O(1) commit count from commit_usage cache
+    const { data: userUsageRow } = await supabaseService
+      .from('commit_usage')
+      .select('commit_count')
+      .eq('user_id', userId)
+      .eq('month', currentMonthKey())
+      .maybeSingle();
+    const userCommitCount = userUsageRow?.commit_count || 0;
 
     res.json({
       total_commits: totalCommits || 0,
