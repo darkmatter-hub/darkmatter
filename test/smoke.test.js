@@ -1,7 +1,7 @@
 /**
  * DarkMatter Smoke Tests
  * Run: node test/smoke.test.js
- * Tests: syntax, route presence, critical logic, dashboard JS
+ * Tests: syntax, route presence, critical logic, dashboard JS, security fixes
  * No network calls — runs in CI without env vars.
  */
 'use strict';
@@ -57,7 +57,6 @@ const ROUTES = [
   ['GET /api/export/:ctxId',        "app.get('/api/export/:ctxId'"],
   ['POST /api/auth/refresh',        "app.post('/api/auth/refresh'"],
   ['GET /admin/stats',              "app.get('/admin/stats'"],
-  ['GET /ext/callback',             "app.get('/ext/callback'"],
   ['POST /auth/login',              "app.post('/auth/login'"],
   // L3 + features
   ['GET /api/workspace/api-keys',   "app.get('/api/workspace/api-keys'"],
