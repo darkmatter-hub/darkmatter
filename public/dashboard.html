@@ -1265,25 +1265,72 @@ window._dmAuthPromise = fetch('/api/user/me')
           <div class="section-page-title">Settings</div>
         </div>
         <div style="max-width:560px;display:flex;flex-direction:column;gap:16px;">
+
+          <!-- Account panel -->
           <div class="panel" style="padding:24px;">
-            <div style="font-size:14px;font-weight:600;color:var(--t0);margin-bottom:2px;" id="settings-user-name">—</div>
-            <div style="font-size:13px;color:var(--t3);margin-bottom:14px;" id="settings-user-email">—</div>
-            <div style="display:flex;align-items:center;gap:8px;">
-              <div style="font-size:12.5px;color:var(--t2);">Plan:</div>
+            <div style="font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--t3);margin-bottom:14px;">Account</div>
+            <!-- Display name row -->
+            <div style="margin-bottom:14px;">
+              <div style="font-size:12px;color:var(--t3);margin-bottom:6px;">Display name</div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <input id="settings-user-name" type="text" placeholder="Your name" value="—"
+                  style="flex:1;background:var(--bg-0);border:1px solid var(--brd);border-radius:6px;padding:7px 10px;font-size:13px;color:var(--t0);font-family:var(--sans);outline:none;transition:border-color .15s;"
+                  onfocus="this.style.borderColor='var(--purple)'" onblur="this.style.borderColor='var(--brd)'"
+                  onkeydown="if(event.key==='Enter')saveDisplayName()"/>
+                <button onclick="saveDisplayName()" id="settings-name-save-btn"
+                  style="padding:7px 14px;background:var(--purple);color:#fff;border:none;border-radius:6px;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap;transition:opacity .15s;"
+                  onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">Save</button>
+              </div>
+              <div id="settings-name-msg" style="font-size:11.5px;margin-top:5px;min-height:16px;"></div>
+            </div>
+            <!-- Email row -->
+            <div style="margin-bottom:14px;">
+              <div style="font-size:12px;color:var(--t3);margin-bottom:4px;">Email</div>
+              <div style="font-size:13px;color:var(--t1);font-family:var(--mono);" id="settings-user-email">—</div>
+            </div>
+            <!-- Plan row -->
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
+              <div style="font-size:12px;color:var(--t3);">Plan</div>
               <span id="settings-plan-badge" style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 9px;border-radius:10px;background:var(--bg-0);border:1px solid var(--brd);color:var(--t1);">Free</span>
               <a id="settings-upgrade-link" onclick="openPlanSelectModal()" style="font-size:11px;color:var(--purple);cursor:pointer;text-decoration:underline;margin-left:2px;">Upgrade &#x2192;</a>
             </div>
-            <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--brd);">
+            <div style="padding-top:14px;border-top:1px solid var(--brd);">
               <a onclick="signOut()" style="font-size:13px;color:var(--red,#f87171);cursor:pointer;">Log out</a>
             </div>
           </div>
+
+          <!-- API key panel -->
           <div class="panel" style="padding:24px;">
-            <div style="font-size:14px;font-weight:600;color:var(--t0);margin-bottom:4px;">Commit usage this period</div>
-            <div style="background:var(--bg-0);border:1px solid var(--brd);border-radius:6px;overflow:hidden;height:8px;margin:10px 0 8px;">
+            <div style="font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--t3);margin-bottom:14px;">API key</div>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <code id="settings-key-hint" style="font-size:12.5px;color:var(--t1);font-family:var(--mono);background:var(--bg-0);border:1px solid var(--brd);border-radius:5px;padding:5px 10px;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Loading…</code>
+              <button id="settings-key-copy-btn" onclick="copySettingsApiKey()"
+                style="padding:6px 13px;background:var(--bg-0);border:1px solid var(--brd);border-radius:6px;font-size:12px;cursor:pointer;color:var(--t1);white-space:nowrap;flex-shrink:0;">Copy</button>
+            </div>
+            <div style="margin-top:8px;font-size:11.5px;color:var(--t3);">Go to <a onclick="showView('apikeys')" style="color:var(--purple);cursor:pointer;text-decoration:underline;">API Keys</a> to create or rotate keys.</div>
+          </div>
+
+          <!-- Commit usage panel -->
+          <div class="panel" style="padding:24px;">
+            <div style="font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--t3);margin-bottom:14px;">Commit usage this period</div>
+            <div style="background:var(--bg-0);border:1px solid var(--brd);border-radius:6px;overflow:hidden;height:8px;margin:0 0 8px;">
               <div id="settings-usage-bar" style="height:100%;background:#22c55e;transition:width .4s;width:0%;"></div>
             </div>
             <div id="settings-usage-text" style="font-size:13px;color:var(--t2);">Loading…</div>
           </div>
+
+          <!-- Help & feedback panel -->
+          <div class="panel" style="padding:20px 24px;">
+            <a onclick="openFeedbackModal()" style="display:flex;align-items:center;gap:10px;padding:8px 0;font-size:13.5px;color:var(--t1);cursor:pointer;text-decoration:none;border-bottom:1px solid var(--brd);">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" style="color:var(--t3);flex-shrink:0;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              Send feedback
+            </a>
+            <a href="https://github.com/darkmatter-hub/darkmatter-feedback/issues/new" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:10px;padding:8px 0;font-size:13.5px;color:var(--t1);cursor:pointer;text-decoration:none;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" style="color:var(--t3);flex-shrink:0;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              Report a bug &#x2197;
+            </a>
+          </div>
+
         </div>
       </div>
 
@@ -1405,6 +1452,30 @@ window._dmAuthPromise = fetch('/api/user/me')
 </div><!-- /.app -->
 
 <!-- ── PLAN SELECT MODAL ── -->
+<!-- ── FEEDBACK MODAL ── -->
+<div class="modal-overlay" id="modal-feedback" onclick="if(event.target===this)closeModal('modal-feedback')">
+  <div class="modal" style="max-width:420px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+      <div class="modal-title" style="margin-bottom:0;" id="feedback-modal-title">Send feedback</div>
+      <button onclick="closeModal('modal-feedback')" style="background:none;border:none;cursor:pointer;color:var(--t3);font-size:20px;padding:2px 6px;border-radius:4px;">&#xd7;</button>
+    </div>
+    <div id="feedback-success" style="display:none;padding:10px 14px;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);border-radius:6px;font-size:13px;color:#22c55e;margin-bottom:14px;">Sent. Thanks for the feedback.</div>
+    <div id="feedback-error" style="display:none;padding:10px 14px;background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.3);border-radius:6px;font-size:13px;color:#f87171;margin-bottom:14px;"></div>
+    <form id="feedback-form" onsubmit="submitFeedback(event)">
+      <input type="hidden" id="feedback-subject" value="Feedback"/>
+      <div style="margin-bottom:12px;">
+        <div style="font-size:11.5px;color:var(--t3);margin-bottom:5px;">Message</div>
+        <textarea id="feedback-message" rows="5" placeholder="What's on your mind?" required
+          style="width:100%;background:var(--bg-0);border:1px solid var(--brd);border-radius:6px;padding:8px 10px;font-size:13px;color:var(--t0);font-family:var(--sans);resize:vertical;outline:none;transition:border-color .15s;"
+          onfocus="this.style.borderColor='var(--purple)'" onblur="this.style.borderColor='var(--brd)'"></textarea>
+      </div>
+      <button type="submit" id="feedback-submit-btn"
+        style="width:100%;padding:9px;background:var(--purple);color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;transition:opacity .15s;"
+        onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">Send</button>
+    </form>
+  </div>
+</div>
+
 <div class="modal-overlay" id="modal-plan-select" onclick="if(event.target===this)closeModal('modal-plan-select')">
   <div class="modal" style="max-width:680px;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
@@ -2106,10 +2177,37 @@ async function loadSettings() {
   const badgeEl = document.getElementById('settings-plan-badge');
   if (user?.email) {
     if (emailEl) emailEl.textContent = user.email;
-    // Resolve display name: OAuth metadata → fallback from email
-    const metaName = user.user_metadata?.full_name || user.user_metadata?.name;
-    if (nameEl) nameEl.textContent = metaName || _fallbackName(user.email);
+    // Resolve display name: saved display_name in workspace_members → OAuth metadata → fallback
+    try {
+      const pr = await authFetch('/api/workspace/profile');
+      if (pr.ok) {
+        const pd = await pr.json();
+        const name = pd.display_name || user.user_metadata?.full_name || user.user_metadata?.name || _fallbackName(user.email);
+        if (nameEl) nameEl.value = name;
+      } else {
+        const metaName = user.user_metadata?.full_name || user.user_metadata?.name;
+        if (nameEl) nameEl.value = metaName || _fallbackName(user.email);
+      }
+    } catch(_) {
+      const metaName = user.user_metadata?.full_name || user.user_metadata?.name;
+      if (nameEl) nameEl.value = metaName || _fallbackName(user.email);
+    }
   }
+
+  // Load API key hint
+  try {
+    const kr = await authFetch('/api/workspace/my-key');
+    const hintEl = document.getElementById('settings-key-hint');
+    const copyBtn = document.getElementById('settings-key-copy-btn');
+    if (kr.ok) {
+      const kd = await kr.json();
+      if (hintEl) hintEl.textContent = kd.hint || 'No key found';
+      if (copyBtn) copyBtn.disabled = !kd.key;
+      if (kd.key) copyBtn._fullKey = kd.key;
+    } else {
+      if (hintEl) hintEl.textContent = 'No key found';
+    }
+  } catch(_) {}
 
   // Usage bar — fetch billing subscription (same endpoint as loadBilling)
   try {
@@ -3072,6 +3170,108 @@ async function deleteApiKey(keyId) {
   } catch(e) { showToast('Error: ' + e.message); }
 }
 
+
+// ── Settings: save display name ───────────────────────────────────────────────
+async function saveDisplayName() {
+  const input  = document.getElementById('settings-user-name');
+  const msgEl  = document.getElementById('settings-name-msg');
+  const btn    = document.getElementById('settings-name-save-btn');
+  const name   = input?.value?.trim();
+  if (!name) { if (msgEl) { msgEl.textContent = 'Name cannot be empty.'; msgEl.style.color = '#f87171'; } return; }
+  if (btn) { btn.textContent = 'Saving…'; btn.disabled = true; }
+  try {
+    const res = await authFetch('/api/workspace/profile', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ display_name: name }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Save failed');
+    // Update sidebar nav immediately
+    setUserDisplay(name, window._dmUser?.email || '', '');
+    if (msgEl) { msgEl.textContent = 'Saved.'; msgEl.style.color = '#22c55e'; setTimeout(() => { msgEl.textContent = ''; }, 2000); }
+  } catch(e) {
+    if (msgEl) { msgEl.textContent = e.message; msgEl.style.color = '#f87171'; }
+  } finally {
+    if (btn) { btn.textContent = 'Save'; btn.disabled = false; }
+  }
+}
+
+// ── Settings: copy API key ────────────────────────────────────────────────────
+async function copySettingsApiKey() {
+  const btn    = document.getElementById('settings-key-copy-btn');
+  const hintEl = document.getElementById('settings-key-hint');
+  // Use cached key if already loaded
+  if (btn?._fullKey) {
+    navigator.clipboard.writeText(btn._fullKey).then(() => {
+      const orig = btn.textContent;
+      btn.textContent = 'Copied ✓';
+      btn.style.color = '#22c55e';
+      setTimeout(() => { btn.textContent = orig; btn.style.color = ''; }, 2000);
+    });
+    return;
+  }
+  // Fetch if not yet loaded
+  if (btn) btn.textContent = 'Fetching…';
+  try {
+    const res = await authFetch('/api/workspace/my-key');
+    const data = await res.json();
+    if (!res.ok || !data.key) { showToast('No API key found.'); if (btn) btn.textContent = 'Copy'; return; }
+    btn._fullKey = data.key;
+    if (hintEl) hintEl.textContent = data.hint;
+    navigator.clipboard.writeText(data.key).then(() => {
+      btn.textContent = 'Copied ✓';
+      btn.style.color = '#22c55e';
+      setTimeout(() => { btn.textContent = 'Copy'; btn.style.color = ''; }, 2000);
+    });
+  } catch(e) {
+    showToast('Could not copy key.');
+    if (btn) btn.textContent = 'Copy';
+  }
+}
+
+// ── Settings: feedback modal ──────────────────────────────────────────────────
+function openFeedbackModal() {
+  const msgEl = document.getElementById('feedback-message');
+  const errEl = document.getElementById('feedback-error');
+  const sucEl = document.getElementById('feedback-success');
+  const form  = document.getElementById('feedback-form');
+  const btn   = document.getElementById('feedback-submit-btn');
+  if (msgEl)  msgEl.value     = '';
+  if (errEl)  errEl.style.display = 'none';
+  if (sucEl)  sucEl.style.display = 'none';
+  if (form)   form.style.display  = '';
+  if (btn)    { btn.textContent = 'Send'; btn.disabled = false; }
+  openModal('modal-feedback');
+}
+
+async function submitFeedback(e) {
+  e.preventDefault();
+  const user    = window._dmUser;
+  const message = document.getElementById('feedback-message')?.value?.trim();
+  const subject = document.getElementById('feedback-subject')?.value || 'Feedback';
+  const btn     = document.getElementById('feedback-submit-btn');
+  const errEl   = document.getElementById('feedback-error');
+  const sucEl   = document.getElementById('feedback-success');
+  const form    = document.getElementById('feedback-form');
+  if (!message) return;
+  if (btn) { btn.textContent = 'Sending…'; btn.disabled = true; }
+  if (errEl) errEl.style.display = 'none';
+  try {
+    const res = await fetch('/api/contact', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: '', email: user?.email || '', message, subject }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to send');
+    if (form)   form.style.display  = 'none';
+    if (sucEl)  sucEl.style.display = '';
+  } catch(err) {
+    if (errEl) { errEl.textContent = err.message; errEl.style.display = ''; }
+    if (btn)   { btn.textContent = 'Send'; btn.disabled = false; }
+  }
+}
 
 function copyNewKey(btn) {
   const key = document.getElementById('newkey-value')?.textContent;
