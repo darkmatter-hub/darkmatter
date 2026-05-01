@@ -233,7 +233,7 @@ async function handleSignup(){
       window.location.href='/dashboard';
     } else {
       // Email confirmation required
-      document.querySelector('.auth-card').innerHTML='<div style="text-align:center;padding:2rem 0"><div style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:hsl(var(--signal));margin-bottom:1rem">Check your email</div><p style="font-size:14px;color:hsl(var(--trace));line-height:1.6">We sent a confirmation link to <strong style="color:hsl(var(--foreground))">'+email+'</strong>.<br>Click it to activate your account.</p><a href="/login" style="display:inline-block;margin-top:1.5rem;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:hsl(var(--signal))">Back to sign in</a></div>';
+      document.querySelector('.auth-card').innerHTML=`<div style="text-align:center;padding:2rem 0"><div style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:hsl(var(--signal));margin-bottom:1rem">Check your email</div><p style="font-size:14px;color:hsl(var(--trace));line-height:1.6">We sent a confirmation link to <strong style="color:hsl(var(--foreground))">${email}</strong>.<br>Click it to activate your account.</p><a href="/login" style="display:inline-block;margin-top:1.5rem;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:hsl(var(--signal))">Back to sign in</a></div>`;
     }
   }catch(e){showError('Something went wrong. Please try again.');btn.disabled=false;btn.textContent='Create free account →';}
 }
