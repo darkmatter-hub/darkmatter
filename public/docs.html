@@ -321,10 +321,12 @@ print(ctx[<span class="cv">"verify_url"</span>])  <span class="cm"># share with 
 
 <div class="steps">
   <div class="step"><div class="step-num">1</div><div><div class="step-title">Install</div><div class="step-desc"><code>pip install darkmatter-sdk</code> &#8212; installs the SDK and CLI.</div></div></div>
-  <div class="step"><div class="step-num">2</div><div><div class="step-title">Get your keys</div><div class="step-desc">Sign up at <a href="/signup">darkmatterhub.ai/signup</a> or run <code>darkmatter init</code>. Sets <code>DARKMATTER_API_KEY</code> and <code>DARKMATTER_AGENT_ID</code> in your <code>.env</code>.</div></div></div>
+  <div class="step"><div class="step-num">2</div><div><div class="step-title">Get your keys</div><div class="step-desc">Sign up at <a href="/signup">darkmatterhub.ai/signup</a> or run <code>darkmatter init</code> (interactive, no browser required). Both set <code>DARKMATTER_API_KEY</code> and <code>DARKMATTER_AGENT_ID</code> in your <code>.env</code>. Your Agent ID appears on your dashboard after signup. It looks like <code>dm_agent_abc123...</code></div></div></div>
   <div class="step"><div class="step-num">3</div><div><div class="step-title">Commit</div><div class="step-desc">Call <code>dm.commit()</code> after each agent action. Pass <code>parent_id</code> to chain commits into a lineage.</div></div></div>
   <div class="step"><div class="step-num">4</div><div><div class="step-title">Replay and verify</div><div class="step-desc"><code>dm.replay(ctx_id)</code> walks the chain root&#8594;tip. <code>dm.verify(ctx_id)</code> proves integrity. Share the verify URL &#8212; no account needed to view it.</div></div></div>
 </div>
+
+<div class="callout info"><span class="callout-title">What is an Agent ID?</span>In DarkMatter, an <strong>agent</strong> is a named entity with its own ID and API key — every commit is attributed to it. Your first agent is created automatically when you sign up or run <code>darkmatter init</code>. <code>darkmatter init</code> prints <code>Agent ID: dm_agent_abc123...</code> and writes it to <code>.env</code>. You can also find it on your dashboard under Settings.</div>
 
 <h3>Chain multiple commits</h3>
 <pre><code>parent_id = None
@@ -572,7 +574,11 @@ print(bedrock.last_ctx_id)  <span class="cm"># ctx_...</span><div class="lang-la
 <h2 id="google-adk">Integration: Google ADK</h2>
 <p>Subclass <code>DarkMatterADKAgent</code> instead of <code>LlmAgent</code>. Every final response auto-commits. Use <code>DarkMatterADKRunner</code> for multi-turn session lineage.</p>
 <h3>Single agent</h3>
-<pre><code>from darkmatter.integrations.google_adk import DarkMatterADKAgent
+<pre><code>import asyncio
+from darkmatter.integrations.google_adk import DarkMatterADKAgent
+from google.adk import Runner
+from google.adk.sessions import InMemorySessionService
+from google.genai import types
 import darkmatter as dm
 
 dm.configure(api_key=<span class="cv">"dm_sk_..."</span>, agent_id=<span class="cv">"dm_agent_..."</span>)
@@ -581,7 +587,19 @@ agent = DarkMatterADKAgent(
     instruction=<span class="cv">"You are a research assistant."</span>,
     to_agent_id=<span class="cv">"dm_agent_..."</span>, trace_id=<span class="cv">"trc_adk_001"</span>,
 )
-print(agent.last_ctx_id)  <span class="cm"># ctx_...</span><div class="lang-label">python</div></code></pre>
+
+session_svc = InMemorySessionService()
+runner = Runner(agent=agent, app_name=<span class="cv">"my_app"</span>, session_service=session_svc)
+
+async def main():
+    session = await session_svc.create_session(app_name=<span class="cv">"my_app"</span>, user_id=<span class="cv">"u1"</span>)
+    msg = types.Content(role=<span class="cv">"user"</span>, parts=[types.Part(text=<span class="cv">"Summarize AI trends"</span>)])
+    async for event in runner.run_async(user_id=<span class="cv">"u1"</span>, session_id=session.id, new_message=msg):
+        if getattr(event, <span class="cv">"is_final_response"</span>, False):
+            print(event.content.parts[0].text)
+    print(agent.last_ctx_id)  <span class="cm"># ctx_... (populated after the run completes)</span>
+
+asyncio.run(main())<div class="lang-label">python</div></code></pre>
 <h3>Multi-turn sessions</h3>
 <pre><code>from darkmatter.integrations.google_adk import DarkMatterADKRunner
 from google.adk import Runner
@@ -671,6 +689,7 @@ curl -X POST https://darkmatterhub.ai/api/agents/keys/revoke   -H <span class="c
 <table>
   <thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
   <tbody>
+    <tr><td><code>toAgentId</code></td><td>string</td><td><span class="badge-req">required</span></td><td>Recipient agent ID (<code>dm_agent_...</code>). Defaults to <code>DARKMATTER_AGENT_ID</code> env var if set.</td></tr>
     <tr><td><code>payload.input</code></td><td>string/object</td><td><span class="badge-opt">optional</span></td><td>What the agent received</td></tr>
     <tr><td><code>payload.output</code></td><td>string/object</td><td><span class="badge-opt">optional</span></td><td>What the agent produced</td></tr>
     <tr><td><code>parentId</code></td><td>string</td><td><span class="badge-opt">optional</span></td><td>Parent ctx ID &#8212; chains commits into lineage</td></tr>
