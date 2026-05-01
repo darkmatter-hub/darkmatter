@@ -125,9 +125,9 @@ test('init calls showView',    function() { assert(dashJS.includes("showView('re
 test('no onclick quote bug',   function() { assert(!dashJS.includes("switchView('proof'")); });
 test('UTC pill data attrs',    function() { assert(dashJS.includes('data-utc=')); });
 test('stale request guard',    function() { assert(dashJS.includes('_fetchSeq')); });
-test('sends refresh token',    function() { assert(dashJS.includes("'X-Refresh-Token'")); });
-test('picks up rotated token', function() { assert(dashJS.includes('X-New-Access-Token')); });
-test('YOU label',              function() { assert(dashJS.includes("YOU'+platHint")); });
+test('cookie auth — no manual Authorization header', function() { assert(!dashJS.includes("'Authorization'") && !dashJS.includes('"Authorization"'), 'dashboard must not manually set Authorization header after M-8 cookie migration'); });
+test('authFetch refreshes via /api/auth/refresh',    function() { assert(dashJS.includes('/api/auth/refresh')); });
+test('YOU label',              function() { assert(dashJS.includes("'YOU'")); });
 test('refreshWorkspaceStats',  function() { assert(dashJS.includes('function refreshWorkspaceStats')); });
 test('auto-poll active',       function() { assert(dashJS.includes('startPoll()')); });
 test('admin check by email',   function() { assert(dashJS.includes('hello@darkmatterhub.ai')); });
@@ -177,6 +177,7 @@ console.log('\nDashboard ↔ Server endpoint cross-check');
   var KNOWN_GAPS = [
     '/api/workspace','/api/agents','/api/commits','/api/share',
     '/api/recording','/api/bundle','/api/hooks','/api/debug','/api/billing',
+    '/api/user', // actual route is /api/user/me — regex strips /me
   ];
   endpoints.forEach(function(ep) {
     var skip = KNOWN_GAPS.some(function(p) { return ep.startsWith(p); });

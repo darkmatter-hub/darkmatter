@@ -1,6 +1,7 @@
 require('dotenv').config();
-const express   = require('express');
-const path      = require('path');
+const express      = require('express');
+const cookieParser = require('cookie-parser');
+const path         = require('path');
 const crypto    = require('crypto');
 const helmet    = require('helmet');
 const rateLimit = require('express-rate-limit');
@@ -162,8 +163,26 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(express.json({ limit: '10mb' })); // increased for rich content from extension
+app.use(cookieParser());
+app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname, '../public')));
+
+// ── Cookie auth helpers ───────────────────────────────
+const COOKIE_BASE = {
+  httpOnly: true,
+  secure:   (process.env.APP_URL || '').startsWith('https'),
+  sameSite: 'strict',
+  path:     '/',
+};
+function setAuthCookies(res, session) {
+  const accessAge = (session.expires_in || 3600) * 1000;
+  res.cookie('dm_access',  session.access_token,  { ...COOKIE_BASE, maxAge: accessAge });
+  res.cookie('dm_refresh', session.refresh_token, { ...COOKIE_BASE, maxAge: 90 * 24 * 60 * 60 * 1000 });
+}
+function clearAuthCookies(res) {
+  res.clearCookie('dm_access',  { path: '/' });
+  res.clearCookie('dm_refresh', { path: '/' });
+}
 
 // ── Input sanitization helpers ───────────────────────
 function sanitizeText(str, maxLen = 200) {
@@ -278,18 +297,16 @@ async function requireApiKey(req, res, next) {
 // ── Middleware: validate Supabase JWT (dashboard calls) ──
 async function requireAuth(req, res, next) {
   try {
-    const auth = req.headers['authorization'];
-    if (!auth || !auth.startsWith('Bearer ')) {
-      return res.status(401).json({ error: 'Not authenticated' });
-    }
-    const token = auth.replace('Bearer ', '').trim();
+    // Prefer httpOnly cookie; fall back to Bearer header for API clients
+    const token = req.cookies?.dm_access ||
+      (req.headers['authorization'] || '').replace('Bearer ', '').trim();
+    if (!token) return res.status(401).json({ error: 'Not authenticated' });
 
-    // Use service client — reliable regardless of anon key config
     const { data: { user }, error } = await supabaseService.auth.getUser(token);
     if (!error && user) { req.user = user; return next(); }
 
-    // Token expired — try refresh
-    const rt = req.headers['x-refresh-token'];
+    // Token expired — try refresh cookie then header
+    const rt = req.cookies?.dm_refresh || req.headers['x-refresh-token'];
     if (rt) {
       try {
         const { data: rd } = await supabaseService.auth.refreshSession({ refresh_token: rt });
@@ -297,9 +314,7 @@ async function requireAuth(req, res, next) {
           const { data: { user: ru } } = await supabaseService.auth.getUser(rd.session.access_token);
           if (ru) {
             req.user = ru;
-            res.setHeader('X-New-Access-Token', rd.session.access_token);
-            res.setHeader('X-New-Refresh-Token', rd.session.refresh_token || '');
-            res.setHeader('X-New-Expires-At', String(rd.session.expires_at || ''));
+            setAuthCookies(res, rd.session);
             return next();
           }
         }
@@ -313,47 +328,40 @@ async function requireAuth(req, res, next) {
   }
 }
 
-// ── flexAuth — accepts Supabase JWT (dashboard) OR dm_sk_ API key (SDK/CLI) ──
+// ── flexAuth — accepts Supabase JWT (cookie/dashboard) OR dm_sk_ API key (SDK/CLI) ──
 async function flexAuth(req, res, next) {
-  const auth = (req.headers.authorization || '').replace('Bearer ', '').trim();
-  if (!auth) return res.status(401).json({ error: 'Authorization required' });
+  const headerAuth = (req.headers.authorization || '').replace('Bearer ', '').trim();
 
-  // Supabase JWT path (dashboard users)
-  if (!auth.startsWith('dm_sk_') && !auth.startsWith('dmp_')) {
+  // API key path always uses Authorization header
+  if (headerAuth.startsWith('dm_sk_') || headerAuth.startsWith('dmp_')) {
     try {
-      const { data: { user }, error } = await supabaseService.auth.getUser(auth);
-      if (!error && user) {
-        req.user = user;
-        req.authType = 'supabase';
-        return next();
-      }
-      // Try server-side refresh
-      const rt = req.headers['x-refresh-token'];
-      if (rt) {
-        const { data: rd } = await supabaseService.auth.refreshSession({ refresh_token: rt });
-        if (rd && rd.session) {
-          const { data: { user: ru } } = await supabaseService.auth.getUser(rd.session.access_token);
-          if (ru) {
-            req.user = ru;
-            req.authType = 'supabase';
-            res.setHeader('X-New-Access-Token', rd.session.access_token);
-            res.setHeader('X-New-Refresh-Token', rd.session.refresh_token || '');
-            return next();
-          }
-        }
-      }
+      const keyHash = crypto.createHash('sha256').update(headerAuth).digest('hex');
+      const { data: agent } = await supabaseService.from('agents')
+        .select('agent_id, agent_name, user_id').eq('api_key_hash', keyHash).single();
+      if (agent) { req.agent = agent; req.authType = 'apikey'; return next(); }
     } catch(e) {}
+    return res.status(401).json({ error: 'Invalid API key or session' });
   }
 
-  // API key path (SDK, CLI, agents)
+  // User JWT path — prefer cookie, fall back to header
+  const token = req.cookies?.dm_access || headerAuth;
+  if (!token) return res.status(401).json({ error: 'Authorization required' });
+
   try {
-    const keyHash = require('crypto').createHash('sha256').update(auth).digest('hex');
-    const { data: agent } = await supabaseService.from('agents')
-      .select('agent_id, agent_name, user_id').eq('api_key_hash', keyHash).single();
-    if (agent) {
-      req.agent = agent;
-      req.authType = 'apikey';
-      return next();
+    const { data: { user }, error } = await supabaseService.auth.getUser(token);
+    if (!error && user) { req.user = user; req.authType = 'supabase'; return next(); }
+
+    const rt = req.cookies?.dm_refresh || req.headers['x-refresh-token'];
+    if (rt) {
+      const { data: rd } = await supabaseService.auth.refreshSession({ refresh_token: rt });
+      if (rd && rd.session) {
+        const { data: { user: ru } } = await supabaseService.auth.getUser(rd.session.access_token);
+        if (ru) {
+          req.user = ru; req.authType = 'supabase';
+          setAuthCookies(res, rd.session);
+          return next();
+        }
+      }
     }
   } catch(e) {}
 
@@ -543,7 +551,8 @@ app.post('/auth/signup', authLimiter, async (req, res) => {
     });
     if (error) return res.status(400).json({ error: error.message });
 
-    res.json({ user: data.user, session: data.session });
+    if (data.session) setAuthCookies(res, data.session);
+    res.json({ user: data.user });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -558,7 +567,8 @@ app.post('/auth/login', authLimiter, async (req, res) => {
     const { data, error } = await supabaseAnon.auth.signInWithPassword({ email, password });
     if (error) return res.status(400).json({ error: error.message });
 
-    res.json({ user: data.user, session: data.session });
+    setAuthCookies(res, data.session);
+    res.json({ user: data.user });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -622,16 +632,13 @@ app.post('/auth/reset-password', async (req, res) => {
 
 // ── POST /auth/logout ────────────────────────────────
 app.post('/auth/logout', async (req, res) => {
+  const token = req.cookies?.dm_access ||
+    (req.headers['authorization'] || '').replace('Bearer ', '').trim();
   try {
-    const auth = req.headers['authorization'];
-    if (auth) {
-      const token = auth.replace('Bearer ', '');
-      await supabaseService.auth.admin.signOut(token);
-    }
-    res.json({ success: true });
-  } catch (err) {
-    res.json({ success: true }); // always succeed
-  }
+    if (token) await supabaseService.auth.admin.signOut(token);
+  } catch(_) {}
+  clearAuthCookies(res);
+  res.json({ success: true });
 });
 
 // ═══════════════════════════════════════════════════
@@ -2624,7 +2631,6 @@ app.get('/api/billing/subscription', wsAuth, async (req, res) => {
     const adminEmails = [
       ...(process.env.SUPERUSER_EMAIL || '').split(','),
       ...(process.env.ADMIN_EMAILS    || '').split(','),
-      'hello@darkmatterhub.ai',
     ].map(e => e.trim()).filter(Boolean);
     if (adminEmails.includes(email)) {
       return res.json({
@@ -4841,15 +4847,14 @@ const http  = require('http');
 // ── Auth middleware for workspace routes ──────────────────────────────
 async function wsAuth(req, res, next) {
   try {
-    const token = (req.headers.authorization || '').replace('Bearer ', '').trim();
+    const token = req.cookies?.dm_access ||
+      (req.headers.authorization || '').replace('Bearer ', '').trim();
     if (!token) return res.status(401).json({ error: 'No token' });
 
-    // Try the token directly first
     const { data: { user }, error } = await supabaseService.auth.getUser(token);
     if (!error && user) { req.user = user; return next(); }
 
-    // Token expired — attempt server-side refresh using X-Refresh-Token header
-    const rt = req.headers['x-refresh-token'];
+    const rt = req.cookies?.dm_refresh || req.headers['x-refresh-token'];
     if (rt) {
       try {
         const { data: rd } = await supabaseService.auth.refreshSession({ refresh_token: rt });
@@ -4857,9 +4862,7 @@ async function wsAuth(req, res, next) {
           const { data: { user: ru } } = await supabaseService.auth.getUser(rd.session.access_token);
           if (ru) {
             req.user = ru;
-            res.setHeader('X-New-Access-Token', rd.session.access_token);
-            res.setHeader('X-New-Refresh-Token', rd.session.refresh_token || '');
-            res.setHeader('X-New-Expires-At', String(rd.session.expires_at || ''));
+            setAuthCookies(res, rd.session);
             return next();
           }
         }
@@ -5506,21 +5509,26 @@ app.get('/join', (req, res) => {
 // ── GET /dashboard/commits ────────────────────────────────────────────
 ;
 
-// ── GET /api/auth/refresh ──────────────────────────────────────────────
+// ── POST /api/auth/refresh ──────────────────────────────────────────────
 app.post('/api/auth/refresh', async (req, res) => {
   try {
-    const { refresh_token } = req.body;
-    if (!refresh_token) return res.status(400).json({ error: 'refresh_token required' });
+    const refresh_token = req.cookies?.dm_refresh || req.body?.refresh_token;
+    if (!refresh_token) return res.status(400).json({ error: 'No refresh token' });
     const { data, error } = await supabaseService.auth.refreshSession({ refresh_token });
-    if (error) return res.status(401).json({ error: error.message });
-    res.json({
-      access_token:  data.session.access_token,
-      refresh_token: data.session.refresh_token,
-      expires_at:    data.session.expires_at,
-    });
+    if (error) {
+      clearAuthCookies(res);
+      return res.status(401).json({ error: error.message });
+    }
+    setAuthCookies(res, data.session);
+    res.json({ ok: true, user: data.user });
   } catch(err) {
     res.status(500).json({ error: err.message });
   }
+});
+
+// ── GET /api/user/me ─────────────────────────────────────────────────────────
+app.get('/api/user/me', requireAuth, (req, res) => {
+  res.json({ user: req.user });
 });
 
 // ── Static file serving ──────────────────────────────────────────────── v2
@@ -5540,8 +5548,6 @@ app.get('/admin/stats', requireAuth, async (req, res) => {
     const adminEmails = [...new Set([
       ...superuser.split(','),
       ...adminList.split(','),
-      'hello@darkmatterhub.ai',
-      
     ].map(e => e.trim()).filter(Boolean))];
     const userEmail = req.user.email || '';
     console.log('[admin/stats] auth attempt:', userEmail, '| admin list:', adminEmails.join(','));
@@ -5583,8 +5589,6 @@ app.get('/api/workspace/stats/usage', requireAuth, async (req, res) => {
     const adminEmails = [...new Set([
       ...superuser.split(','),
       ...adminList.split(','),
-      'hello@darkmatterhub.ai',
-      
     ].map(e => e.trim()).filter(Boolean))];
     if (!adminEmails.includes(req.user.email)) {
       return res.status(403).json({ error: 'Admin only' });
@@ -5684,7 +5688,6 @@ app.get('/api/admin/users', requireAuth, async (req, res) => {
     const adminList   = process.env.ADMIN_EMAILS    || '';
     const adminEmails = [...new Set([
       ...superuser.split(','), ...adminList.split(','),
-      'hello@darkmatterhub.ai',
     ].map(e => e.trim()).filter(Boolean))];
     if (!adminEmails.includes(req.user.email)) {
       return res.status(403).json({ error: 'Admin only' });
@@ -5750,7 +5753,6 @@ app.get('/api/admin/ping', requireAuth, async (req, res) => {
   const adminList   = process.env.ADMIN_EMAILS    || '';
   const adminEmails = [...new Set([
     ...superuser.split(','), ...adminList.split(','),
-    'hello@darkmatterhub.ai',
   ].map(e => e.trim()).filter(Boolean))];
   if (!adminEmails.includes(req.user.email)) {
     return res.status(403).json({ error: 'Admin only' });
@@ -5977,7 +5979,6 @@ app.get('/api/admin/audit-log', requireAuth, async (req, res) => {
   const adminList   = process.env.ADMIN_EMAILS    || '';
   const adminEmails = [...new Set([
     ...superuser.split(','), ...adminList.split(','),
-    'hello@darkmatterhub.ai',
   ].map(e => e.trim()).filter(Boolean))];
   if (!adminEmails.includes(req.user.email)) {
     return res.status(403).json({ error: 'Admin only' });
