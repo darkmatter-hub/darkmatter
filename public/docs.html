@@ -447,13 +447,16 @@ response = client.chat.completions.create(
 <pre><code>import darkmatter as dm
 from darkmatter.integrations.anthropic import Anthropic
 
+<span class="cm"># Configure customer signing key once (see L3 setup)</span>
+dm.configure(
+    customer_key_path = <span class="cv">"./my-signing-key.customer.private.pem"</span>,
+    customer_key_id   = <span class="cv">"ck_..."</span>,
+)
+
 client = Anthropic(
-    dm_api_key = <span class="cv">"dm_sk_..."</span>,
-    api_key    = <span class="cv">"sk-ant-..."</span>,
-    dm_signing = dm.SigningConfig(
-        key_id           = <span class="cv">"my-signing-key"</span>,
-        private_key_path = <span class="cv">"./my-signing-key.pem"</span>,
-    ),
+    dm_api_key  = <span class="cv">"dm_sk_..."</span>,
+    api_key     = <span class="cv">"sk-ant-..."</span>,
+    dm_agent_id = <span class="cv">"dm_agent_..."</span>,
 )<div class="lang-label">python</div></code></pre>
 
 <h3>Wrapper options</h3>
@@ -462,7 +465,7 @@ client = Anthropic(
   <tbody>
     <tr><td><code>dm_api_key</code></td><td><code>DARKMATTER_API_KEY</code></td><td>DarkMatter API key</td></tr>
     <tr><td><code>dm_agent_id</code></td><td><code>DARKMATTER_AGENT_ID</code></td><td>Agent ID &#8212; optional</td></tr>
-    <tr><td><code>dm_signing</code></td><td><code>None</code></td><td>SigningConfig for L3 non-repudiation</td></tr>
+    <tr><td><code>dm_signing</code></td><td><code>None</code></td><td>Reserved for L3 signing config (configure via <code>dm.configure(customer_key_path=...)</code>)</td></tr>
     <tr><td><code>dm_auto_commit</code></td><td><code>True</code></td><td>Set False to disable instrumentation</td></tr>
     <tr><td><code>dm_commit_tools</code></td><td><code>True</code></td><td>Set False to skip tool call child commits</td></tr>
     <tr><td><code>dm_async</code></td><td><code>True</code></td><td>Commits sent in background thread (zero latency)</td></tr>
@@ -606,38 +609,45 @@ class DarkMatterSpanExporter(SpanExporter):
                 dm.commit(payload={<span class="ck">"input"</span>: inp, <span class="ck">"output"</span>: output}, event_type=span.name)
         return SpanExportResult.SUCCESS<div class="lang-label">python</div></code></pre>
 
-<h2 id="l3-setup">L3 setup &#8212; customer signing keys</h2>
-<p>L3 means every commit is signed with a key only you hold, before it reaches DarkMatter&#8217;s servers. DarkMatter cannot forge a record &#8212; verification requires only your public key.</p>
-<div class="callout info"><span class="callout-title">One-time setup &#8212; dm.commit() is unchanged</span>Configure signing once. After that, every commit is automatically L3. No per-commit code changes required.</div>
+<h2 id="l3-setup">L3 setup — customer signing keys</h2>
+<p>L3 means every commit is signed with a key only you hold, before it reaches DarkMatter's servers. DarkMatter cannot forge a record — verification requires only your public key.</p>
+<div class="callout info"><span class="callout-title">One-time setup — dm.commit() is unchanged</span>Configure signing once. After that, every commit is automatically L3. No per-commit code changes required.</div>
 
-<h3>Step 1 &#8212; Generate a keypair</h3>
-<pre><code>darkmatter keys generate --name my-signing-key
-<span class="cm"># Creates my-signing-key.pem (private, chmod 600, never share) and my-signing-key.pub.pem (safe to share)</span><div class="lang-label">bash</div></code></pre>
-
-<h3>Step 2 &#8212; Register the public key</h3>
-<pre><code>darkmatter keys register --key-id my-signing-key --public-key my-signing-key.pub.pem<div class="lang-label">bash</div></code></pre>
-
-<h3>Step 3 &#8212; Configure signing</h3>
-<pre><code>DARKMATTER_SIGNING_MODE=customer
-DARKMATTER_SIGNING_KEY_ID=my-signing-key
-DARKMATTER_SIGNING_KEY_PATH=./my-signing-key.pem<div class="lang-label">bash</div></code></pre>
-
-<h3>Step 4 &#8212; Commit (unchanged)</h3>
+<h3>Step 1 — Generate a keypair</h3>
 <pre><code>import darkmatter as dm
 
-dm.configure(
-    api_key = <span class="cv">"dm_sk_..."</span>,
-    signing = dm.SigningConfig.from_env(),  <span class="cm"># reads DARKMATTER_SIGNING_* vars</span>
-)
+keys = dm.generate_customer_keypair(<span class="cv">'my-signing-key'</span>)
+<span class="cm"># Creates my-signing-key.customer.private.pem (chmod 600, never share)</span>
+<span class="cm"># and my-signing-key.customer.public.pem (safe to share)</span>
+<span class="cm"># Prints the key_id: ck_...</span><div class="lang-label">python</div></code></pre>
 
-ctx = dm.commit(payload={<span class="ck">"input"</span>: <span class="cv">"approve refund?"</span>, <span class="ck">"output"</span>: <span class="cv">"approved"</span>})
+<h3>Step 2 — Register the public key</h3>
+<pre><code>curl -X POST https://darkmatterhub.ai/api/agents/keys   -H <span class="cv">"Authorization: Bearer dm_sk_..."</span>   -H <span class="cv">"Content-Type: application/json"</span>   -d "{\"keyId\": \"ck_...\", \"publicKey\": \"$(cat my-signing-key.customer.public.pem)\"}"
+<span class="cm"># Or register from the dashboard under Settings > Signing Keys</span><div class="lang-label">bash</div></code></pre>
+
+<h3>Step 3 — Configure signing</h3>
+<pre><code><span class="cm"># Option A: env vars (.env file)</span>
+DARKMATTER_CUSTOMER_KEY_PATH=./my-signing-key.customer.private.pem
+DARKMATTER_CUSTOMER_KEY_ID=ck_...<div class="lang-label">bash</div></code></pre>
+<pre><code><span class="cm"># Option B: inline in code</span>
+dm.configure(
+    api_key           = <span class="cv">"dm_sk_..."</span>,
+    customer_key_path = <span class="cv">"./my-signing-key.customer.private.pem"</span>,
+    customer_key_id   = <span class="cv">"ck_..."</span>,
+)<div class="lang-label">python</div></code></pre>
+
+<h3>Step 4 — Commit (unchanged)</h3>
+<pre><code>ctx = dm.commit(payload={<span class="ck">"input"</span>: <span class="cv">"approve refund?"</span>, <span class="ck">"output"</span>: <span class="cv">"approved"</span>})
 print(ctx[<span class="cv">"assurance_level"</span>])   <span class="cm"># "L3"</span>
 print(ctx[<span class="cv">"verify_url"</span>])        <span class="cm"># shows L3 NON-REPUDIATION badge on /r/ page</span><div class="lang-label">python</div></code></pre>
 
 <h3>Key management</h3>
-<pre><code>darkmatter keys list                              <span class="cm"># list registered keys</span>
-darkmatter keys revoke --key-id my-signing-key   <span class="cm"># revoke a key</span><div class="lang-label">bash</div></code></pre>
-<div class="callout info"><span class="callout-title">Key rotation</span>Generate a new keypair with a new key-id, register it, update your .env. Old L3 records keep their original signature &#8212; rotation never breaks existing verification.</div>
+<pre><code><span class="cm"># List registered keys</span>
+curl https://darkmatterhub.ai/api/agents/keys -H <span class="cv">"Authorization: Bearer dm_sk_..."</span>
+
+<span class="cm"># Revoke a key</span>
+curl -X POST https://darkmatterhub.ai/api/agents/keys/revoke   -H <span class="cv">"Authorization: Bearer dm_sk_..."</span>   -H <span class="cv">"Content-Type: application/json"</span>   -d '{"keyId": "ck_..."}'<div class="lang-label">bash</div></code></pre>
+<div class="callout info"><span class="callout-title">Key rotation</span>Generate a new keypair with a new key-id, register it, update your config. Old L3 records keep their original signature — rotation never breaks existing verification.</div>
 
 <h3>What L3 proves</h3>
 <p>The canonical sentence: <strong>DarkMatter received this record already signed. It cannot forge your signature &#8212; verification requires only your public key.</strong></p>
