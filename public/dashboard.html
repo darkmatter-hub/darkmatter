@@ -2106,16 +2106,9 @@ async function loadSettings() {
   const badgeEl = document.getElementById('settings-plan-badge');
   if (user?.email) {
     if (emailEl) emailEl.textContent = user.email;
-    // Resolve display name from workspace profile or fallback
-    try {
-      const pr = await authFetch('/api/workspace/profile');
-      if (pr.ok) {
-        const pd = await pr.json();
-        if (nameEl) nameEl.textContent = pd.full_name || _fallbackName(user.email);
-      } else {
-        if (nameEl) nameEl.textContent = _fallbackName(user.email);
-      }
-    } catch(_) { if (nameEl) nameEl.textContent = _fallbackName(user.email); }
+    // Resolve display name: OAuth metadata → fallback from email
+    const metaName = user.user_metadata?.full_name || user.user_metadata?.name;
+    if (nameEl) nameEl.textContent = metaName || _fallbackName(user.email);
   }
 
   // Usage bar — fetch billing subscription (same endpoint as loadBilling)
@@ -3314,16 +3307,12 @@ async function loadUserProfile() {
   const user = window._dmUser;
   if (!user?.email) return;
 
-  // Try workspace profile for full_name
-  try {
-    const res = await authFetch('/api/workspace/profile');
-    if (res.ok) {
-      const data = await res.json();
-      const name = data.full_name || _fallbackName(user.email);
-      setUserDisplay(name, user.email, 'Member');
-      return;
-    }
-  } catch(_) {}
+  // OAuth providers (Google, GitHub) store real name in user_metadata
+  const metaName = user.user_metadata?.full_name || user.user_metadata?.name;
+  if (metaName) {
+    setUserDisplay(metaName, user.email, 'Member');
+    return;
+  }
 
   setUserDisplay(_fallbackName(user.email), user.email, 'Member');
 }
