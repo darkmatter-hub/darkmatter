@@ -413,8 +413,9 @@ test('L3 assurance requires verified signature (no unguarded L3 grant)', functio
 });
 
 test('L3 rejection returns 400 on bad signature', function() {
-  var idx = server.indexOf('verifyCommitSignature');
-  assert(idx >= 0, 'verifyCommitSignature not called');
+  // Find the actual call site (not the import)
+  var idx = server.indexOf('await verifyCommitSignature');
+  assert(idx >= 0, 'await verifyCommitSignature call not found');
   var slice = server.slice(idx, idx + 600);
   assert(slice.includes('400') || slice.includes("'Invalid L3"), 'bad signature must reject with 4xx');
 });
