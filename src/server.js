@@ -2534,7 +2534,7 @@ app.get('/api/workspace/api-keys', wsAuth, async (req, res) => {
 
     const { data: agents } = await supabaseService
       .from('agents')
-      .select('agent_id, agent_name, created_at, user_id')
+      .select('agent_id, agent_name, api_key, created_at, user_id')
       .in('agent_id', agentIds)
       .order('created_at', { ascending: false });
 
@@ -2547,14 +2547,18 @@ app.get('/api/workspace/api-keys', wsAuth, async (req, res) => {
     const memberByAgent = {};
     (allMembers || []).forEach(m => { if (m.agent_id) memberByAgent[m.agent_id] = m; });
 
-    const keys = (agents || []).map(a => ({
-      id:         a.agent_id,
-      name:       a.agent_name,
-      agent_name: a.agent_name,
-      created_at: a.created_at,
-      created_by: memberByAgent[a.agent_id]?.email || req.user.email,
-      note:       'DarkMatter workspace',
-    }));
+    const keys = (agents || []).map(a => {
+      const k = a.api_key || '';
+      return {
+        id:         a.agent_id,
+        name:       a.agent_name,
+        agent_name: a.agent_name,
+        created_at: a.created_at,
+        created_by: memberByAgent[a.agent_id]?.email || req.user.email,
+        note:       'DarkMatter workspace',
+        hint:       k ? k.slice(0, 10) + '...' + k.slice(-4) : null,
+      };
+    });
 
     res.json({ keys });
   } catch (err) {
@@ -2593,26 +2597,6 @@ app.patch('/api/workspace/profile', wsAuth, async (req, res) => {
     res.json({ display_name: safeName });
   } catch (err) {
     console.error('[workspace/profile PATCH]', err.message);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// ── GET /api/workspace/my-key — first active API key for the authenticated user ─
-app.get('/api/workspace/my-key', wsAuth, async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const { data: agent } = await supabaseService
-      .from('agents')
-      .select('agent_id, agent_name, api_key, created_at')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    if (!agent?.api_key) return res.json({ key: null, hint: null });
-    const k = agent.api_key;
-    res.json({ key: k, hint: k.slice(0, 10) + '...' + k.slice(-4), name: agent.agent_name });
-  } catch (err) {
-    console.error('[workspace/my-key]', err.message);
     res.status(500).json({ error: err.message });
   }
 });

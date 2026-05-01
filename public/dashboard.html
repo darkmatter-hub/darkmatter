@@ -1301,13 +1301,11 @@ window._dmAuthPromise = fetch('/api/user/me')
 
           <!-- API key panel -->
           <div class="panel" style="padding:24px;">
-            <div style="font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--t3);margin-bottom:14px;">API key</div>
-            <div style="display:flex;align-items:center;gap:10px;">
-              <code id="settings-key-hint" style="font-size:12.5px;color:var(--t1);font-family:var(--mono);background:var(--bg-0);border:1px solid var(--brd);border-radius:5px;padding:5px 10px;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Loading…</code>
-              <button id="settings-key-copy-btn" onclick="copySettingsApiKey()"
-                style="padding:6px 13px;background:var(--bg-0);border:1px solid var(--brd);border-radius:6px;font-size:12px;cursor:pointer;color:var(--t1);white-space:nowrap;flex-shrink:0;">Copy</button>
+            <div style="font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--t3);margin-bottom:10px;">Active API key</div>
+            <code id="settings-key-hint" style="font-size:12.5px;color:var(--t1);font-family:var(--mono);background:var(--bg-0);border:1px solid var(--brd);border-radius:5px;padding:5px 10px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">—</code>
+            <div style="margin-top:10px;font-size:13px;">
+              <a onclick="showView('apikeys')" style="color:var(--purple);cursor:pointer;text-decoration:underline;">Manage API keys →</a>
             </div>
-            <div style="margin-top:8px;font-size:11.5px;color:var(--t3);">Go to <a onclick="showView('apikeys')" style="color:var(--purple);cursor:pointer;text-decoration:underline;">API Keys</a> to create or rotate keys.</div>
           </div>
 
           <!-- Commit usage panel -->
@@ -2194,16 +2192,14 @@ async function loadSettings() {
     }
   }
 
-  // Load API key hint
+  // Load API key hint from the keys list (hint only — full key never returned)
   try {
-    const kr = await authFetch('/api/workspace/my-key');
+    const kr = await authFetch('/api/workspace/api-keys');
     const hintEl = document.getElementById('settings-key-hint');
-    const copyBtn = document.getElementById('settings-key-copy-btn');
     if (kr.ok) {
       const kd = await kr.json();
-      if (hintEl) hintEl.textContent = kd.hint || 'No key found';
-      if (copyBtn) copyBtn.disabled = !kd.key;
-      if (kd.key) copyBtn._fullKey = kd.key;
+      const firstKey = (kd.keys || [])[0];
+      if (hintEl) hintEl.textContent = firstKey?.hint || 'No key — create one in API Keys';
     } else {
       if (hintEl) hintEl.textContent = 'No key found';
     }
@@ -3197,38 +3193,6 @@ async function saveDisplayName() {
   }
 }
 
-// ── Settings: copy API key ────────────────────────────────────────────────────
-async function copySettingsApiKey() {
-  const btn    = document.getElementById('settings-key-copy-btn');
-  const hintEl = document.getElementById('settings-key-hint');
-  // Use cached key if already loaded
-  if (btn?._fullKey) {
-    navigator.clipboard.writeText(btn._fullKey).then(() => {
-      const orig = btn.textContent;
-      btn.textContent = 'Copied ✓';
-      btn.style.color = '#22c55e';
-      setTimeout(() => { btn.textContent = orig; btn.style.color = ''; }, 2000);
-    });
-    return;
-  }
-  // Fetch if not yet loaded
-  if (btn) btn.textContent = 'Fetching…';
-  try {
-    const res = await authFetch('/api/workspace/my-key');
-    const data = await res.json();
-    if (!res.ok || !data.key) { showToast('No API key found.'); if (btn) btn.textContent = 'Copy'; return; }
-    btn._fullKey = data.key;
-    if (hintEl) hintEl.textContent = data.hint;
-    navigator.clipboard.writeText(data.key).then(() => {
-      btn.textContent = 'Copied ✓';
-      btn.style.color = '#22c55e';
-      setTimeout(() => { btn.textContent = 'Copy'; btn.style.color = ''; }, 2000);
-    });
-  } catch(e) {
-    showToast('Could not copy key.');
-    if (btn) btn.textContent = 'Copy';
-  }
-}
 
 // ── Settings: feedback modal ──────────────────────────────────────────────────
 function openFeedbackModal() {
