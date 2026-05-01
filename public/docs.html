@@ -308,8 +308,9 @@ footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;gri
 <h2 id="quickstart">Quickstart &#8212; Python</h2>
 <p>Install and make your first commit in under 2 minutes:</p>
 <pre><code>pip install darkmatter-sdk<div class="lang-label">bash</div></code></pre>
-<pre><code><span class="cm"># Set your API key (from dashboard or darkmatter init)</span>
+<pre><code><span class="cm"># Set your keys (from dashboard or darkmatter init)</span>
 <span class="cm"># export DARKMATTER_API_KEY=dm_sk_...</span>
+<span class="cm"># export DARKMATTER_AGENT_ID=dm_agent_...</span>
 
 import darkmatter as dm
 
@@ -321,7 +322,7 @@ print(ctx[<span class="cv">"verify_url"</span>])  <span class="cm"># share with 
 
 <div class="steps">
   <div class="step"><div class="step-num">1</div><div><div class="step-title">Install</div><div class="step-desc"><code>pip install darkmatter-sdk</code> &#8212; installs the SDK and CLI.</div></div></div>
-  <div class="step"><div class="step-num">2</div><div><div class="step-title">Get an API key</div><div class="step-desc">Sign up at <a href="/signup">darkmatterhub.ai/signup</a> or run <code>darkmatter init</code> in your terminal. Sets <code>DARKMATTER_API_KEY</code> in your <code>.env</code>.</div></div></div>
+  <div class="step"><div class="step-num">2</div><div><div class="step-title">Get your keys</div><div class="step-desc">Sign up at <a href="/signup">darkmatterhub.ai/signup</a> or run <code>darkmatter init</code>. Sets <code>DARKMATTER_API_KEY</code> and <code>DARKMATTER_AGENT_ID</code> in your <code>.env</code>.</div></div></div>
   <div class="step"><div class="step-num">3</div><div><div class="step-title">Commit</div><div class="step-desc">Call <code>dm.commit()</code> after each agent action. Pass <code>parent_id</code> to chain commits into a lineage.</div></div></div>
   <div class="step"><div class="step-num">4</div><div><div class="step-title">Replay and verify</div><div class="step-desc"><code>dm.replay(ctx_id)</code> walks the chain root&#8594;tip. <code>dm.verify(ctx_id)</code> proves integrity. Share the verify URL &#8212; no account needed to view it.</div></div></div>
 </div>
@@ -342,7 +343,7 @@ for s in replay[<span class="cv">"replay"</span>]:
     print(s[<span class="cv">"step"</span>], s[<span class="cv">"payload"</span>][<span class="cv">"output"</span>])<div class="lang-label">python</div></code></pre>
 
 <h3>curl (no SDK)</h3>
-<pre><code>curl -X POST https://darkmatterhub.ai/api/commit   -H <span class="cv">"Authorization: Bearer dm_sk_..."</span>   -H <span class="cv">"Content-Type: application/json"</span>   -d '{"payload": {"input": "Approve refund?", "output": "Approved"}}'
+<pre><code>curl -X POST https://darkmatterhub.ai/api/commit   -H <span class="cv">"Authorization: Bearer dm_sk_..."</span>   -H <span class="cv">"Content-Type: application/json"</span>   -d '{"toAgentId": "dm_agent_...", "payload": {"input": "Approve refund?", "output": "Approved"}}'
 <span class="cm"># Returns: {"id": "ctx_...", "verify_url": "https://darkmatterhub.ai/r/ctx_...", ...}</span><div class="lang-label">bash</div></code></pre>
 
 <h2 id="jupyter-quickstart">Quickstart &#8212; Jupyter</h2>
@@ -372,13 +373,13 @@ diff  = dm.diff(ctx[<span class="cv">"id"</span>], ctx_b[<span class="cv">"id"</
 <h2 id="typescript-sdk">TypeScript / Node.js SDK</h2>
 <p>Full TypeScript SDK with type definitions. Requires Node.js 18+ (uses native <code>fetch</code>).</p>
 <pre><code>npm install darkmatter-js<div class="lang-label">bash</div></code></pre>
-<pre><code><span class="cm">// ES module / TypeScript</span>
-import { commit, verify, replay, fork } from <span class="cv">&#8217;darkmatter-js&#8217;</span>;
+<pre><code><span class="cm">// CommonJS</span>
+const { commit, verify, replay, fork } = require(<span class="cv">'darkmatter-js'</span>);
 
-<span class="cm">// DARKMATTER_API_KEY read from process.env automatically</span>
-const ctx   = await commit({ payload: { task: <span class="cv">"summarise"</span>, output: result } });
+<span class="cm">// DARKMATTER_API_KEY and DARKMATTER_AGENT_ID read from process.env automatically</span>
+const ctx   = await commit(<span class="cv">"dm_agent_..."</span>, { task: <span class="cv">"summarise"</span>, output: result });
 const chain = await replay(ctx.id);
-const proof = await verify(ctx.id);<div class="lang-label">typescript</div></code></pre>
+const proof = await verify(ctx.id);<div class="lang-label">javascript</div></code></pre>
 <div class="callout info"><span class="callout-title">Same primitives as Python</span><code>commit</code>, <code>verify</code>, <code>export</code>, <code>replay</code>, <code>fork</code> &#8212; identical to the Python SDK. Source on <a href="https://github.com/darkmatter-hub/darkmatter" target="_blank" rel="noopener">GitHub</a>.</div>
 
 <h2 id="authentication">Authentication</h2>
