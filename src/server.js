@@ -2556,7 +2556,7 @@ app.get('/api/workspace/api-keys', wsAuth, async (req, res) => {
         created_at: a.created_at,
         created_by: memberByAgent[a.agent_id]?.email || req.user.email,
         note:       'DarkMatter workspace',
-        hint:       k ? k.slice(0, 10) + '...' + k.slice(-4) : null,
+        hint:       k ? k.slice(0, 10) + '......' + k.slice(-4) : null,
       };
     });
 
