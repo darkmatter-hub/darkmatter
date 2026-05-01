@@ -2107,122 +2107,23 @@ async function verifyFromDrawer() {
 </script>
 
 <script>
-// ── Session helpers ──────────────────────────────────────────────────────
-function getSession() {
-  try { return JSON.parse(localStorage.getItem('dm_session') || 'null'); } catch { return null; }
-}
-function saveSession(s) {
-  localStorage.setItem('dm_session', JSON.stringify(s));
-}
-function getAuthHeaders() {
-  const s = getSession();
-  if (!s?.access_token) return {};
-  const h = { 'Authorization': 'Bearer ' + s.access_token };
-  if (s.refresh_token) h['X-Refresh-Token'] = s.refresh_token;
-  return h;
-}
-function handleNewTokens(res) {
-  const t = res.headers.get('X-New-Access-Token');
-  if (t) {
-    const s = getSession() || {};
-    s.access_token = t;
-    const r = res.headers.get('X-New-Refresh-Token');
-    if (r) s.refresh_token = r;
-    saveSession(s);
-  }
-}
-
-// ── Token refresh ────────────────────────────────────────────────────────
-// If the access_token is expired, try to refresh using the refresh_token
-// before any authenticated call. This prevents the 401 loop.
-let _refreshPromise = null;
-async function ensureValidSession() {
-  const s = getSession();
-  if (!s?.access_token) {
-    window.location.href = '/login';
-    throw new Error('No session');
-  }
-
-  // Check if JWT is expired by decoding payload
-  try {
-    const payload = JSON.parse(atob(s.access_token.split('.')[1]));
-    const expiresAt = payload.exp * 1000;
-    const now = Date.now();
-    // If token expires in less than 60 seconds, refresh proactively
-    if (now < expiresAt - 60000) return s; // still valid
-  } catch(e) {
-    // Can't decode — try using it anyway
-    return s;
-  }
-
-  // Token expired or about to expire — refresh
-  if (!s.refresh_token) {
-    window.location.href = '/login';
-    throw new Error('No refresh token');
-  }
-
-  // Deduplicate concurrent refresh attempts
-  if (_refreshPromise) return _refreshPromise;
-
-  _refreshPromise = (async () => {
-    try {
-      const res = await fetch('/api/auth/refresh', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refresh_token: s.refresh_token }),
-      });
-      if (!res.ok) {
-        // Refresh failed — session truly expired, redirect to login
-        localStorage.removeItem('dm_session');
-        window.location.href = '/login';
-        throw new Error('Session expired');
-      }
-      const data = await res.json();
-      const updated = {
-        ...s,
-        access_token: data.access_token || data.session?.access_token,
-        refresh_token: data.refresh_token || data.session?.refresh_token || s.refresh_token,
-      };
-      if (data.user) updated.user = data.user;
-      saveSession(updated);
-      return updated;
-    } finally {
-      _refreshPromise = null;
-    }
-  })();
-
-  return _refreshPromise;
-}
-
-// ── authFetch — drop-in fetch wrapper with automatic 401 retry ──────────
-// Use this for ALL authenticated API calls instead of raw fetch()
+// ── Auth via httpOnly cookies — no localStorage token storage ────────────
+// Cookies are sent automatically on same-origin requests.
+// On 401: call /api/auth/refresh (refresh cookie sent automatically) then retry once.
+let _refreshInFlight = null;
 async function authFetch(url, opts = {}) {
-  await ensureValidSession();
-  opts.headers = { ...getAuthHeaders(), ...(opts.headers || {}) };
-
   let res = await fetch(url, opts);
-  handleNewTokens(res);
-
-  // If 401, try one refresh + retry
   if (res.status === 401) {
-    const s = getSession();
-    if (s?.refresh_token) {
-      _refreshPromise = null; // force fresh refresh
-      try {
-        await ensureValidSession();
-        opts.headers = { ...getAuthHeaders(), ...(opts.headers || {}) };
-        res = await fetch(url, opts);
-        handleNewTokens(res);
-      } catch(e) {
-        // ensureValidSession will redirect to login if refresh fails
-        throw e;
-      }
-    } else {
+    if (!_refreshInFlight) {
+      _refreshInFlight = fetch('/api/auth/refresh', { method: 'POST' }).finally(() => { _refreshInFlight = null; });
+    }
+    const refreshRes = await _refreshInFlight;
+    if (!refreshRes.ok) {
       window.location.href = '/login';
       throw new Error('Session expired');
     }
+    res = await fetch(url, opts);
   }
-
   return res;
 }
 
@@ -2900,8 +2801,7 @@ function renderApiKeys(keys) {
   const end       = Math.min(start + PAGE_SIZE, total);
   const pageKeys  = keys.slice(start, end);
 
-  const session   = getSession();
-  const userEmail = session?.user?.email || '—';
+  const userEmail = window._dmUser?.email || '—';
 
   container.innerHTML = `
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
@@ -2944,8 +2844,7 @@ function selectApiKey(idx) {
   });
   _selectedKeyIdx = idx;
 
-  const session   = getSession();
-  const userEmail = session?.user?.email || key.created_by || '—';
+  const userEmail = window._dmUser?.email || key.created_by || '—';
 
   document.getElementById('kd-title').textContent   = key.name || key.agent_name || key.id;
   document.getElementById('kd-id').textContent      = key.id;
@@ -3054,9 +2953,8 @@ function toggleUserMenu() {
   const isOpen = menu.style.display !== 'none';
   menu.style.display = isOpen ? 'none' : 'block';
   if (!isOpen) {
-    const s = getSession();
     const emailEl = document.getElementById('user-menu-email');
-    if (emailEl && s?.user?.email) emailEl.textContent = s.user.email;
+    if (emailEl && window._dmUser?.email) emailEl.textContent = window._dmUser.email;
     // Close on outside click
     setTimeout(() => {
       document.addEventListener('click', function closeMenu(e) {
@@ -3079,8 +2977,8 @@ function copyNewKey(btn) {
   });
 }
 
-function signOut() {
-  localStorage.removeItem('dm_session');
+async function signOut() {
+  try { await fetch('/auth/logout', { method: 'POST' }); } catch(_) {}
   window.location.href = '/login';
 }
 
@@ -3299,23 +3197,27 @@ document.addEventListener('keydown', (e) => {
 
 // ── User profile loading ─────────────────────────────────────────────────────
 async function loadUserProfile() {
-  const session = getSession();
-  if (!session?.user?.email) return;
-  const email = session.user.email;
-
-  // Try server first — has full_name from user_metadata
   try {
-    const res = await authFetch('/api/workspace/profile');
-    if (res.ok) {
-      const data = await res.json();
-      const name = data.full_name || _fallbackName(email);
-      setUserDisplay(name, email, 'Member');
-      return;
-    }
-  } catch(_) {}
+    // Get user identity from server (cookie auth)
+    const meRes = await authFetch('/api/user/me');
+    if (!meRes.ok) return;
+    const { user } = await meRes.json();
+    if (!user?.email) return;
+    window._dmUser = user;
 
-  // Fallback: derive from email
-  setUserDisplay(_fallbackName(email), email, 'Member');
+    // Try workspace profile for full_name
+    try {
+      const res = await authFetch('/api/workspace/profile');
+      if (res.ok) {
+        const data = await res.json();
+        const name = data.full_name || _fallbackName(user.email);
+        setUserDisplay(name, user.email, 'Member');
+        return;
+      }
+    } catch(_) {}
+
+    setUserDisplay(_fallbackName(user.email), user.email, 'Member');
+  } catch(_) {}
 }
 
 function _fallbackName(email) {
@@ -3354,9 +3256,7 @@ function setUserDisplay(name, email, role) {
 
 // ── YOU label with platform hint ─────────────────────────────────────────────
 function getYouLabel() {
-  const session = getSession();
-  const platHint = '';
-  return 'YOU'+platHint || (session?.user?.email || 'You').split('@')[0];
+  return 'YOU';
 }
 
 // ── Admin check ───────────────────────────────────────────────────────────────
@@ -3401,8 +3301,7 @@ async function loadActivityGuarded() {
 }
 
 function getYouLabel() {
-  const session = getSession();
-  return (session?.user?.email || 'You').split('@')[0];
+  return (window._dmUser?.email || 'You').split('@')[0];
 }
 </script>
 

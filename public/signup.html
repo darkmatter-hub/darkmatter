@@ -211,11 +211,8 @@ body{display:flex;flex-direction:column;min-height:100vh}
 </div>
 
 <script>
-(function(){
-  var raw=localStorage.getItem('dm_session');
-  if(!raw)return;
-  var s;try{s=JSON.parse(raw);}catch(e){return;}
-  if(s&&s.access_token)window.location.href='/dashboard';
+(async function(){
+  try{var r=await fetch('/api/user/me');if(r.ok)window.location.href='/dashboard';}catch(e){}
 })();
 
 async function handleSignup(){
@@ -231,8 +228,8 @@ async function handleSignup(){
     var res=await fetch('/auth/signup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,email,password})});
     var data=await res.json();
     if(data.error){showError(data.error);btn.disabled=false;btn.textContent='Create free account →';return;}
-    if(data.session){
-      localStorage.setItem('dm_session',JSON.stringify(data.session));
+    if(data.user?.confirmed_at||data.user?.email_confirmed_at){
+      // Session cookie set server-side — redirect immediately
       window.location.href='/dashboard';
     } else {
       // Email confirmation required
