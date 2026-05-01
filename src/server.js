@@ -138,25 +138,22 @@ const feedbackLimiter = rateLimit({
 });
 
 // ── CORS ─────────────────────────────────────────────
-// Allow browser extension and API clients to call from any origin.
-// Auth is enforced via Bearer token — CORS is safe to open.
+// Explicit origin allowlist — no wildcard.
+// Server-side SDK/CLI calls (no Origin header) pass through unaffected by CORS.
+const ALLOWED_ORIGINS = [
+  'https://darkmatterhub.ai',
+  'https://www.darkmatterhub.ai',
+  // local dev only:
+  'http://localhost:3000',
+  'http://localhost:5173',
+];
 app.use((req, res, next) => {
-  const allowed = [
-    'https://darkmatterhub.ai',
-    'https://claude.ai',
-    'https://chatgpt.com',
-    'https://chat.openai.com',
-    'https://grok.com',
-    'https://gemini.google.com',
-    'https://www.perplexity.ai',
-  ];
   const origin = req.headers.origin;
-  if (origin && allowed.includes(origin)) {
+  if (origin && ALLOWED_ORIGINS.includes(origin)) {
     res.setHeader('Access-Control-Allow-Origin', origin);
-  } else if (!origin) {
-    // Non-browser clients (SDK, CLI, Postman) — allow
-    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Vary', 'Origin');
   }
+  // No Origin header = server-side client (Node SDK, Python SDK, curl) — no CORS header needed
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,User-Agent');
   res.setHeader('Access-Control-Expose-Headers', 'X-New-Access-Token,X-New-Refresh-Token,X-New-Expires-At');
