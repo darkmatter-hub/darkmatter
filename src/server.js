@@ -1085,6 +1085,58 @@ app.post('/api/commit', apiLimiter, requireApiKey, async (req, res) => {
       assuranceLevel = 'L3';
     }
 
+    // ── Plan limit enforcement ────────────────────────
+    {
+      const userId = req.agent.user_id;
+      if (userId) {
+        // Look up subscription (DB first, then free fallback)
+        const { data: sub } = await supabaseService
+          .from('subscriptions')
+          .select('plan, commit_limit, current_period_start')
+          .eq('user_id', userId)
+          .eq('status', 'active')
+          .single()
+          .catch(() => ({ data: null }));
+
+        const currentPlan  = sub?.plan || 'free';
+        const planMeta     = PLAN_META[currentPlan] || PLAN_META.free;
+        const planLimit    = sub?.commit_limit ?? planMeta.commitLimit;
+
+        // Determine period start: subscription period, or start of current calendar month
+        let periodStart;
+        if (sub?.current_period_start) {
+          const ps = new Date(sub.current_period_start);
+          // If period is >30 days old, reset to 30 days ago (safety guard)
+          const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000);
+          periodStart = ps > thirtyDaysAgo ? ps : thirtyDaysAgo;
+        } else {
+          periodStart = new Date(); periodStart.setDate(1); periodStart.setHours(0, 0, 0, 0);
+        }
+
+        // Count commits in the current period
+        const { data: agentRows } = await supabaseService
+          .from('agents').select('agent_id').eq('user_id', userId);
+        const agentIds = (agentRows || []).map(a => a.agent_id);
+        let commitCount = 0;
+        if (agentIds.length) {
+          const { count } = await supabaseService
+            .from('commits').select('id', { count: 'exact', head: true })
+            .in('from_agent', agentIds)
+            .gte('timestamp', periodStart.toISOString());
+          commitCount = count || 0;
+        }
+
+        if (planLimit !== null && commitCount >= planLimit) {
+          return res.status(429).json({
+            error: 'Monthly commit limit reached',
+            limit: planLimit,
+            plan:  currentPlan,
+            upgrade_url: 'https://darkmatterhub.ai/pricing',
+          });
+        }
+      }
+    }
+
     // ── Agent info ────────────────────────────────────
     const agentInfo = {
       id:       req.agent.agent_id,
@@ -5569,6 +5621,33 @@ app.get('/api/workspace/stats/usage', requireAuth, async (req, res) => {
     const { data: lastRow } = await supabaseService.from('commits')
       .select('timestamp').order('timestamp', { ascending: false }).limit(1).single();
 
+    // Per-user commit count / limit / period_start (for the requesting user)
+    const userId = req.user.id;
+    const { data: userSub } = await supabaseService
+      .from('subscriptions')
+      .select('plan, commit_limit, current_period_start')
+      .eq('user_id', userId)
+      .eq('status', 'active')
+      .single()
+      .catch(() => ({ data: null }));
+    const userPlan      = userSub?.plan || 'free';
+    const userPlanMeta  = PLAN_META[userPlan] || PLAN_META.free;
+    const userLimit     = userSub?.commit_limit ?? userPlanMeta.commitLimit;
+    const periodStart   = userSub?.current_period_start
+      ? new Date(userSub.current_period_start).toISOString()
+      : (() => { const d = new Date(); d.setDate(1); d.setHours(0,0,0,0); return d.toISOString(); })();
+    const { data: userAgents } = await supabaseService
+      .from('agents').select('agent_id').eq('user_id', userId);
+    const userAgentIds = (userAgents || []).map(a => a.agent_id);
+    let userCommitCount = 0;
+    if (userAgentIds.length) {
+      const { count: uc } = await supabaseService
+        .from('commits').select('id', { count: 'exact', head: true })
+        .in('from_agent', userAgentIds)
+        .gte('timestamp', periodStart);
+      userCommitCount = uc || 0;
+    }
+
     res.json({
       total_commits: totalCommits || 0,
       unique_agents: uniqueAgents,
@@ -5588,6 +5667,9 @@ app.get('/api/workspace/stats/usage', requireAuth, async (req, res) => {
         first_commit_at:  firstRow?.timestamp || null,
         last_commit_at:   lastRow?.timestamp  || null,
       },
+      commit_count:  userCommitCount,
+      commit_limit:  userLimit,
+      period_start:  periodStart,
     });
   } catch (err) {
     console.error('[stats/usage]', err.message);

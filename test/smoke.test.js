@@ -146,10 +146,17 @@ test('--bg defined as white', function() { assert(style.includes('--bg:#ffffff')
 test('view-records flex',     function() { assert(style.includes('#view-records{display:flex')); });
 test('tpanel scroll CSS',     function() { assert(style.includes('.tpanel{display:none')); });
 
-// 8. L3 + assurance_level in commit route
+// 8. Commit limit enforcement
+console.log('\nCommit limit enforcement');
+test('commit route enforces plan limit with 429', () => {
+  const srv = fs.readFileSync(path.join(__dirname, '../src/server.js'), 'utf8');
+  assert(srv.includes('Monthly commit limit reached'), 'commit limit 429 enforcement missing');
+});
+
+// 9. L3 + assurance_level in commit route
 console.log('\nL3 non-repudiation');
 var commitIdx = server.indexOf("app.post('/api/commit'");
-var commitSlice = server.slice(commitIdx, commitIdx + 8000);
+var commitSlice = server.slice(commitIdx, commitIdx + 16000);
 test('completeness_claim destructured', function() { assert(commitSlice.includes('completeness_claim')); });
 test('client_attestation accepted',     function() { assert(commitSlice.includes('client_attestation')); });
 test('assurance_level computed',        function() { assert(commitSlice.includes('assuranceLevel')); });

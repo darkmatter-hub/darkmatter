@@ -66,7 +66,8 @@ body { font-family: var(--sans); background:var(--bg); color: var(--t0); display
 .leftnav.collapsed .logo-name { display: none; }
 .leftnav.collapsed .nav-user-info,
 .leftnav.collapsed .nav-user svg:last-child,
-.leftnav.collapsed .nav-section-label { display: none; }
+.leftnav.collapsed .nav-section-label,
+.leftnav.collapsed .leftnav-collapsed-hide { display: none; }
 .leftnav.collapsed .leftnav-top { padding: 12px 6px 10px; }
 .leftnav.collapsed .leftnav-bottom { padding: 10px 6px; }
 .leftnav.collapsed .nav-links { gap: 4px; }
@@ -1087,6 +1088,17 @@ window._dmAuthPromise = fetch('/api/user/me')
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
           <span>Billing</span>
         </a>
+      </div>
+      <!-- Commit usage bar (sidebar) -->
+      <div id="sidebar-usage-wrap" class="leftnav-collapsed-hide" style="margin:10px 12px 4px;display:block;">
+        <div style="font-size:10.5px;color:var(--t4);font-weight:600;letter-spacing:.04em;text-transform:uppercase;margin-bottom:5px;">Commits this month</div>
+        <div style="background:var(--bg-0);border:1px solid var(--brd);border-radius:4px;overflow:hidden;height:6px;margin-bottom:5px;">
+          <div id="sidebar-usage-bar" style="height:100%;background:#22c55e;transition:width .4s;width:0%;"></div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:4px;">
+          <div id="sidebar-usage-text" style="font-size:11px;color:var(--t3);">—</div>
+          <a id="sidebar-usage-upgrade" href="/pricing" style="display:none;font-size:11px;color:var(--purple);text-decoration:none;white-space:nowrap;">Upgrade →</a>
+        </div>
       </div>
     </div>
     <div class="leftnav-bottom">
@@ -2481,6 +2493,7 @@ async function loadConnectedServices() {
 // Init on load
 document.addEventListener('DOMContentLoaded', () => {
   loadUserProfile();
+  loadSidebarUsage();
   startAutoPoll();
   startPoll();
   // Load immediately — session is guaranteed after login redirect
@@ -3313,6 +3326,65 @@ async function loadActivityGuarded() {
 
 function getYouLabel() {
   return (window._dmUser?.email || 'You').split('@')[0];
+}
+
+// ── Sidebar commit usage bar ─────────────────────────────────────────────────
+async function loadSidebarUsage() {
+  try {
+    const res = await authFetch('/api/billing/subscription');
+    if (!res.ok) return;
+    const data = await res.json();
+    const count      = data.commitCount || 0;
+    const limit      = data.commitLimit || null;
+    const periodEnd  = data.currentPeriodEnd || null;
+    const barEl      = document.getElementById('sidebar-usage-bar');
+    const textEl     = document.getElementById('sidebar-usage-text');
+    const upgradeEl  = document.getElementById('sidebar-usage-upgrade');
+
+    // Derive a period_start from currentPeriodEnd minus 30 days (approximation)
+    // The billing endpoint doesn't expose period_start directly, so we use
+    // currentPeriodEnd minus ~30 days as the reset marker stored in localStorage.
+    const periodStart = periodEnd
+      ? new Date(new Date(periodEnd).getTime() - 30 * 86400000).toISOString().slice(0, 10)
+      : new Date(new Date().setDate(1)).toISOString().slice(0, 10);
+
+    // Check for period reset and show banner if needed
+    const storedPeriod = localStorage.getItem('dm_last_period_start');
+    if (storedPeriod && storedPeriod !== periodStart) {
+      showUsageResetBanner(periodStart);
+    }
+    localStorage.setItem('dm_last_period_start', periodStart);
+
+    if (!barEl || !textEl) return;
+    if (limit) {
+      const pct = Math.min(100, Math.round(count / limit * 100));
+      barEl.style.width = pct + '%';
+      if (pct >= 100)      barEl.style.background = '#ef4444';
+      else if (pct >= 90)  barEl.style.background = '#f97316';
+      else if (pct >= 75)  barEl.style.background = '#f59e0b';
+      else                 barEl.style.background = '#22c55e';
+      textEl.textContent = count.toLocaleString() + ' / ' + limit.toLocaleString();
+      if (upgradeEl) upgradeEl.style.display = pct >= 75 ? '' : 'none';
+    } else {
+      barEl.style.width = '100%';
+      barEl.style.background = '#22c55e';
+      textEl.textContent = count.toLocaleString() + ' (unlimited)';
+      if (upgradeEl) upgradeEl.style.display = 'none';
+    }
+  } catch (_) {}
+}
+
+function showUsageResetBanner(periodStart) {
+  if (document.getElementById('usage-reset-banner')) return;
+  var d = new Date(periodStart);
+  var label = d.toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' });
+  var banner = document.createElement('div');
+  banner.id = 'usage-reset-banner';
+  banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:#7c3aed;color:#fff;font-size:13px;padding:10px 16px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 8px rgba(0,0,0,.18);';
+  banner.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="flex-shrink:0"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>'
+    + '<span>Usage reset — your commit count restarted on ' + label + '</span>'
+    + '<button onclick="document.getElementById(\'usage-reset-banner\').remove()" style="margin-left:auto;background:rgba(255,255,255,.2);border:none;color:#fff;cursor:pointer;border-radius:5px;padding:3px 10px;font-size:12px;">Dismiss</button>';
+  document.body.prepend(banner);
 }
 </script>
 
