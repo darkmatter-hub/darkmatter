@@ -1575,7 +1575,7 @@ window._dmAuthPromise = fetch('/api/user/me')
     </div>
     <div class="key-detail-cell">
       <div class="key-detail-label">API Key</div>
-      <div class="key-detail-value" id="kd-apikey" style="font-style:italic;color:var(--t3);font-size:13px;line-height:1.6;"></div>
+      <div class="key-detail-value" id="kd-apikey" style="font-family:var(--mono);font-size:13px;color:var(--t1);letter-spacing:.01em;"></div>
     </div>
     <div class="key-detail-cell">
       <div class="key-detail-label">Name</div>
@@ -3046,7 +3046,7 @@ function selectApiKey(idx) {
 
   document.getElementById('kd-title').textContent   = key.name || key.agent_name || key.id;
   document.getElementById('kd-id').textContent      = key.id;
-  document.getElementById('kd-apikey').textContent  = 'Redacted. If you have lost this key, create a new one instead.';
+  document.getElementById('kd-apikey').textContent  = key.hint || '—';
   document.getElementById('kd-name').textContent    = key.name || key.agent_name || '—';
   document.getElementById('kd-email').textContent   = userEmail;
   document.getElementById('kd-created').textContent = key.created_at ? localTimestamp(key.created_at) : '—';
