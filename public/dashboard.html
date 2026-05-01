@@ -425,10 +425,23 @@ body { font-family: var(--sans); background:var(--bg); color: var(--t0); display
   padding: 12px 14px 10px;
 }
 .user-menu-name {
+  display: flex;
+  align-items: center;
+  gap: 7px;
   font-size: 13px;
   font-weight: 600;
   color: rgba(255,255,255,0.9);
-  margin-bottom: 2px;
+  margin-bottom: 4px;
+}
+.user-menu-plan {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  padding: 1px 7px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.6);
 }
 .user-menu-email {
   font-family: var(--mono);
@@ -1091,16 +1104,49 @@ window._dmAuthPromise = fetch('/api/user/me')
       </div>
     </div>
     <div class="leftnav-bottom">
-      <div class="nav-user" onclick="showView('settings')" id="nav-user-btn" title="Settings">
+      <div class="nav-user" onclick="toggleUserMenu()" id="nav-user-btn">
         <div class="nav-avatar" id="nav-avatar">?</div>
         <div class="nav-user-info">
           <div class="nav-user-name" id="nav-user-name">Account</div>
           <div class="nav-user-role" id="nav-user-role" style="font-family:var(--sans);font-size:11px;color:var(--t3);"></div>
         </div>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="color:var(--t4);flex-shrink:0;"><polyline points="6 9 12 15 18 9"/></svg>
       </div>
     </div>
   </nav>
 
+  <!-- User dropdown — fixed position outside nav -->
+  <div class="user-menu" id="user-menu" style="display:none;">
+    <div class="user-menu-header">
+      <div class="user-menu-name" id="user-menu-name">
+        <span id="user-menu-name-text">Account</span>
+        <span class="user-menu-plan" id="user-menu-plan"></span>
+      </div>
+      <div class="user-menu-email" id="user-menu-email"></div>
+    </div>
+    <div class="user-menu-divider"></div>
+    <a class="user-menu-item" href="/organizations">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      My organizations
+    </a>
+    <a class="user-menu-item" onclick="closeUserMenu();showView('settings')">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      Settings
+    </a>
+    <a class="user-menu-item" href="/docs" target="_blank">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      Docs
+    </a>
+    <a class="user-menu-item" href="https://github.com/darkmatter-hub/darkmatter-feedback" target="_blank">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      Feedback
+    </a>
+    <div class="user-menu-divider"></div>
+    <a class="user-menu-item user-menu-danger" onclick="signOut()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      Log out
+    </a>
+  </div>
 
   <!-- ── MAIN ── -->
   <main class="main">
@@ -3304,12 +3350,41 @@ function qsCopy(btn, text) {
 }
 
 function setUserDisplay(name, email, role) {
-  const avatarEl = document.getElementById('nav-avatar');
-  const nameEl   = document.getElementById('nav-user-name');
-  const roleEl   = document.getElementById('nav-user-role');
-  if (avatarEl) avatarEl.textContent = name.slice(0, 2).toUpperCase();
-  if (nameEl)   nameEl.textContent   = name;
-  if (roleEl)   roleEl.textContent   = email;
+  const avatarEl   = document.getElementById('nav-avatar');
+  const nameEl     = document.getElementById('nav-user-name');
+  const roleEl     = document.getElementById('nav-user-role');
+  const menuNameEl = document.getElementById('user-menu-name-text');
+  const emailEl    = document.getElementById('user-menu-email');
+  if (avatarEl)   avatarEl.textContent = name.slice(0, 2).toUpperCase();
+  if (nameEl)     nameEl.textContent   = name;
+  if (roleEl)     roleEl.textContent   = email;
+  if (menuNameEl) menuNameEl.textContent = name;
+  if (emailEl)    emailEl.textContent    = email;
+}
+
+function toggleUserMenu() {
+  const menu = document.getElementById('user-menu');
+  if (!menu) return;
+  const isOpen = menu.style.display !== 'none';
+  if (isOpen) { menu.style.display = 'none'; return; }
+  // Populate plan badge on open
+  const planEl = menu.querySelector('.user-menu-plan');
+  if (planEl) planEl.textContent = _cachedPlan.charAt(0).toUpperCase() + _cachedPlan.slice(1);
+  menu.style.display = 'block';
+  setTimeout(() => {
+    document.addEventListener('click', function closeOnOutside(e) {
+      if (!document.getElementById('user-menu')?.contains(e.target) &&
+          !document.getElementById('nav-user-btn')?.contains(e.target)) {
+        document.getElementById('user-menu').style.display = 'none';
+        document.removeEventListener('click', closeOnOutside);
+      }
+    });
+  }, 10);
+}
+
+function closeUserMenu() {
+  const menu = document.getElementById('user-menu');
+  if (menu) menu.style.display = 'none';
 }
 
 // ── YOU label with platform hint ─────────────────────────────────────────────
