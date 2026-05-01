@@ -2202,125 +2202,22 @@ app.post('/enterprise/register', requireAuth, async (req, res) => {
   }
 });
 
-// ── POST /enterprise/commit ── encrypted commit ──
-// Agent commits with BYOK encryption — payload encrypted before storage
-app.post('/enterprise/commit', apiLimiter, requireApiKey, async (req, res) => {
-  try {
-    const { toAgentId, payload, parentId, traceId, branchKey, agent, byokKey } = req.body;
-
-    if (!toAgentId || !payload) {
-      return res.status(400).json({ error: 'toAgentId and payload required' });
-    }
-    if (!byokKey || byokKey.length !== 64) {
-      return res.status(400).json({ error: 'byokKey required (64 hex chars, AES-256). DarkMatter never stores your key.' });
-    }
-
-    const commitId  = 'ctx_' + Date.now() + '_' + crypto.randomBytes(6).toString('hex');
-    const timestamp = new Date().toISOString();
-
-    // Encrypt payload with client's key
-    const { encrypted, iv, authTag } = encryptPayload(payload, byokKey);
-
-    // Hash the plaintext payload for chain integrity (before encryption)
-    const normalizedPayload = JSON.stringify(payload, Object.keys(payload).sort());
-    const payloadHash       = crypto.createHash('sha256').update(normalizedPayload).digest('hex');
-
-    // Fetch parent hash for chaining
-    let parentHash = null;
-    if (parentId) {
-      const { data: parentCommit } = await supabaseService
-        .from('commits').select('integrity_hash').eq('id', parentId).single();
-      if (parentCommit?.integrity_hash) parentHash = parentCommit.integrity_hash;
-    }
-
-    const chainInput    = payloadHash + (parentHash || 'root');
-    const integrityHash = crypto.createHash('sha256').update(chainInput).digest('hex');
-
-    const agentInfo = {
-      id: req.agent.agent_id, name: req.agent.agent_name,
-      role: agent?.role || null, provider: agent?.provider || null, model: agent?.model || null,
-    };
-
-    // Verify recipient
-    const { data: toAgent } = await supabaseService
-      .from('agents').select('agent_id').eq('agent_id', toAgentId).single();
-    if (!toAgent) return res.status(404).json({ error: `Agent ${toAgentId} not found` });
-
-    const { error } = await supabaseService.from('commits').insert({
-      id:                  commitId,
-      schema_version:      '1.0',
-      from_agent:          req.agent.agent_id,
-      to_agent:            toAgentId,
-      context:             { _encrypted: true, _keyHint: byokKey.slice(-4) },
-      payload:             null,              // plaintext not stored
-      encrypted_payload:   encrypted,
-      iv,
-      auth_tag:            authTag,
-      key_id:              'byok_' + byokKey.slice(-4),
-      event_type:          'commit',
-      parent_id:           parentId  || null,
-      trace_id:            traceId   || null,
-      branch_key:          branchKey || 'main',
-      agent_info:          agentInfo,
-      integrity_hash:      integrityHash,
-      parent_hash:         parentHash,
-      verified:            true,
-      verification_reason: 'BYOK encrypted commit',
-      capture_mode: 'client_signed',
-      timestamp,
-    });
-
-    if (error) throw error;
-
-    res.json({
-      id:             commitId,
-      schema_version: '1.0',
-      encrypted:      true,
-      key_hint:       byokKey.slice(-4),
-      integrity: {
-        payload_hash:        'sha256:' + integrityHash,
-        parent_hash:         parentHash ? 'sha256:' + parentHash : null,
-        verification_status: 'valid',
-      },
-      created_at: timestamp,
-      message: 'Payload encrypted with your key. DarkMatter stored ciphertext only.',
-    });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+// ── POST /enterprise/commit ── RETIRED ──
+app.post('/enterprise/commit', (req, res) => {
+  res.status(410).json({
+    error: 'This endpoint has been retired.',
+    reason: 'Server-side key handling contradicts the non-repudiation guarantee. Use L3 client-side signing instead.',
+    docs: 'https://darkmatterhub.ai/docs#l3-setup',
+  });
 });
 
-// ── POST /enterprise/decrypt ── decrypt a context ─
-// Client provides their key to decrypt a specific commit
-app.post('/enterprise/decrypt/:ctxId', requireApiKey, async (req, res) => {
-  try {
-    const { ctxId } = req.params;
-    const { byokKey } = req.body;
-
-    if (!byokKey || byokKey.length !== 64) {
-      return res.status(400).json({ error: 'byokKey required (64 hex chars)' });
-    }
-
-    const { data: commit } = await supabaseService
-      .from('commits')
-      .select('id, encrypted_payload, iv, auth_tag, integrity_hash, parent_hash, timestamp, from_agent, agent_info')
-      .eq('id', ctxId)
-      .single();
-
-    if (!commit) return res.status(404).json({ error: 'Context not found' });
-    if (!commit.encrypted_payload) return res.status(400).json({ error: 'This context is not encrypted' });
-
-    let payload;
-    try {
-      payload = decryptPayload(commit.encrypted_payload, commit.iv, commit.auth_tag, byokKey);
-    } catch {
-      return res.status(403).json({ error: 'Decryption failed — wrong key or tampered ciphertext' });
-    }
-
-    res.json(buildContext({ ...commit, payload }, {}));
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+// ── POST /enterprise/decrypt ── RETIRED ──
+app.post('/enterprise/decrypt/:ctxId', (req, res) => {
+  res.status(410).json({
+    error: 'This endpoint has been retired.',
+    reason: 'Server-side key handling contradicts the non-repudiation guarantee. Use L3 client-side signing instead.',
+    docs: 'https://darkmatterhub.ai/docs#l3-setup',
+  });
 });
 
 // ── POST /enterprise/did/register ── register W3C DID for agent

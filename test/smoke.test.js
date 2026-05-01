@@ -385,6 +385,40 @@ test('loadUserProfile reuses _dmAuthPromise, no second /api/user/me fetch', func
   assert(!fnSlice.includes("'/api/user/me'"), 'loadUserProfile must not make a second /api/user/me call');
 });
 
+// \u2500\u2500 Section 14: H-5 BYOK \u2014 retired server-side key routes \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+console.log('\nH-5 BYOK security fixes');
+
+test('/enterprise/commit returns 410 (no handler body)', function() {
+  var idx = server.indexOf("app.post('/enterprise/commit'");
+  assert(idx >= 0, 'route not found');
+  var slice = server.slice(idx, idx + 300);
+  assert(slice.includes('410'), '/enterprise/commit must respond 410');
+  assert(!slice.includes('byokKey'), '/enterprise/commit must not reference byokKey (route retired)');
+});
+
+test('/enterprise/decrypt returns 410 (no handler body)', function() {
+  var idx = server.indexOf("app.post('/enterprise/decrypt/");
+  assert(idx >= 0, 'route not found');
+  var slice = server.slice(idx, idx + 300);
+  assert(slice.includes('410'), '/enterprise/decrypt must respond 410');
+  assert(!slice.includes('decryptPayload'), '/enterprise/decrypt must not call decryptPayload (route retired)');
+});
+
+test('L3 assurance requires verified signature (no unguarded L3 grant)', function() {
+  var idx = server.indexOf("assuranceLevel = 'L3'");
+  assert(idx >= 0, "assuranceLevel = 'L3' assignment not found");
+  // There must be a verifyCommitSignature call before the L3 assignment
+  var preceding = server.slice(Math.max(0, idx - 800), idx);
+  assert(preceding.includes('verifyCommitSignature'), 'L3 must only be granted after verifyCommitSignature passes');
+});
+
+test('L3 rejection returns 400 on bad signature', function() {
+  var idx = server.indexOf('verifyCommitSignature');
+  assert(idx >= 0, 'verifyCommitSignature not called');
+  var slice = server.slice(idx, idx + 600);
+  assert(slice.includes('400') || slice.includes("'Invalid L3"), 'bad signature must reject with 4xx');
+});
+
 // Summary
 console.log('\n' + '-'.repeat(50));
 console.log('Passed: ' + passed + '  Failed: ' + failed + '  Total: ' + (passed+failed));
