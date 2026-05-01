@@ -2502,6 +2502,60 @@ app.get('/api/workspace/api-keys', wsAuth, async (req, res) => {
   }
 });
 
+// ── GET /api/workspace/profile — read display name for authenticated user ─────
+app.get('/api/workspace/profile', wsAuth, async (req, res) => {
+  try {
+    const { data: member } = await supabaseService
+      .from('workspace_members')
+      .select('display_name, email, role')
+      .eq('user_id', req.user.id)
+      .maybeSingle();
+    res.json({ display_name: member?.display_name || null, email: member?.email || req.user.email });
+  } catch (err) {
+    console.error('[workspace/profile GET]', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── PATCH /api/workspace/profile — update display name ───────────────────────
+app.patch('/api/workspace/profile', wsAuth, async (req, res) => {
+  try {
+    const { display_name } = req.body || {};
+    if (!display_name || !display_name.trim()) return res.status(400).json({ error: 'display_name required' });
+    const safeName = sanitizeText(display_name.trim(), 100);
+    const userId   = req.user.id;
+    const { error } = await supabaseService
+      .from('workspace_members')
+      .update({ display_name: safeName })
+      .eq('user_id', userId);
+    if (error) throw error;
+    res.json({ display_name: safeName });
+  } catch (err) {
+    console.error('[workspace/profile PATCH]', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── GET /api/workspace/my-key — first active API key for the authenticated user ─
+app.get('/api/workspace/my-key', wsAuth, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { data: agent } = await supabaseService
+      .from('agents')
+      .select('agent_id, agent_name, api_key, created_at')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (!agent?.api_key) return res.json({ key: null, hint: null });
+    const k = agent.api_key;
+    res.json({ key: k, hint: k.slice(0, 10) + '...' + k.slice(-4), name: agent.agent_name });
+  } catch (err) {
+    console.error('[workspace/my-key]', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ── POST /api/workspace/api-keys — create a new agent/key ─────────────────────
 app.post('/api/workspace/api-keys', wsAuth, async (req, res) => {
   try {
@@ -2755,11 +2809,15 @@ app.post('/api/billing/portal', wsAuth, async (req, res) => {
 // ── POST /api/contact — footer contact modal ─────────────────────────────────
 app.post('/api/contact', feedbackLimiter, async (req, res) => {
   try {
-    const { name, email, message } = req.body || {};
+    const { name, email, message, subject: subjectParam } = req.body || {};
     if (!email || !message) return res.status(400).json({ error: 'Email and message are required.' });
-    const safeName    = sanitizeText(name,    200);
-    const safeEmail   = sanitizeText(email,   200);
-    const safeMessage = sanitizeText(message, 2000);
+    const safeName    = sanitizeText(name,         200);
+    const safeEmail   = sanitizeText(email,        200);
+    const safeMessage = sanitizeText(message,      2000);
+    const safeSubject = sanitizeText(subjectParam, 200);
+    const emailSubject = safeSubject
+      ? `[DarkMatter ${safeSubject}] ${escapeHtml(safeEmail)}`
+      : `[DarkMatter Contact] ${escapeHtml(safeEmail)}`;
     if (process.env.RESEND_API_KEY && process.env.FEEDBACK_EMAIL) {
       fetch('https://api.resend.com/emails', {
         method:  'POST',
@@ -2767,7 +2825,7 @@ app.post('/api/contact', feedbackLimiter, async (req, res) => {
         body: JSON.stringify({
           from:    'DarkMatter <hello@darkmatterhub.ai>',
           to:      [process.env.FEEDBACK_EMAIL],
-          subject: `[DarkMatter Contact] ${escapeHtml(safeEmail)}`,
+          subject: emailSubject,
           html:    `<p><b>Name:</b> ${escapeHtml(safeName) || '(not provided)'}</p>
                     <p><b>Email:</b> ${escapeHtml(safeEmail)}</p>
                     <p><b>Message:</b></p>
