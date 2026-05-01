@@ -522,30 +522,36 @@ test('429 limit response includes upgrade_url', function() {
 });
 
 // \u2500\u2500 Section 18: Python SDK integrations \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+// Skipped in CI when sibling repo is not checked out alongside this one.
 console.log('\nPython SDK integrations');
 
-var SDK_PY = path.join(ROOT, '../darkmatter-sdk-python/darkmatter');
+var SDK_PY     = path.join(ROOT, '../darkmatter-sdk-python/darkmatter');
+var SDK_EXISTS = fs.existsSync(SDK_PY);
 
-test('Python SDK has crewai integration', function() {
-  assert(fs.existsSync(path.join(SDK_PY, 'integrations/crewai.py')), 'crewai.py not found in SDK integrations');
-});
+if (!SDK_EXISTS) {
+  console.log('  (skipped \u2014 darkmatter-sdk-python not present in this environment)');
+} else {
+  test('Python SDK has crewai integration', function() {
+    assert(fs.existsSync(path.join(SDK_PY, 'integrations/crewai.py')), 'crewai.py not found in SDK integrations');
+  });
 
-test('Python SDK has bedrock integration', function() {
-  assert(fs.existsSync(path.join(SDK_PY, 'integrations/bedrock.py')), 'bedrock.py not found in SDK integrations');
-});
+  test('Python SDK has bedrock integration', function() {
+    assert(fs.existsSync(path.join(SDK_PY, 'integrations/bedrock.py')), 'bedrock.py not found in SDK integrations');
+  });
 
-test('Python SDK has google_adk integration', function() {
-  assert(fs.existsSync(path.join(SDK_PY, 'integrations/google_adk.py')), 'google_adk.py not found in SDK integrations');
-});
+  test('Python SDK has google_adk integration', function() {
+    assert(fs.existsSync(path.join(SDK_PY, 'integrations/google_adk.py')), 'google_adk.py not found in SDK integrations');
+  });
 
-test('Python SDK commit() defaults to_agent_id to None', function() {
-  var clientPy = fs.readFileSync(path.join(SDK_PY, 'client.py'), 'utf8');
-  var fnIdx    = clientPy.indexOf('def commit(');
-  assert(fnIdx > 0, 'commit() function not found in client.py');
-  var fnSlice  = clientPy.slice(fnIdx, fnIdx + 400);
-  assert(fnSlice.includes('to_agent_id') && fnSlice.includes('= None'),
-    'commit() to_agent_id parameter must default to None');
-});
+  test('Python SDK commit() defaults to_agent_id to None', function() {
+    var clientPy = fs.readFileSync(path.join(SDK_PY, 'client.py'), 'utf8');
+    var fnIdx    = clientPy.indexOf('def commit(');
+    assert(fnIdx > 0, 'commit() function not found in client.py');
+    var fnSlice  = clientPy.slice(fnIdx, fnIdx + 400);
+    assert(fnSlice.includes('to_agent_id') && fnSlice.includes('= None'),
+      'commit() to_agent_id parameter must default to None');
+  });
+}
 
 // \u2500\u2500 Section 19: Dashboard API key security \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 console.log('\nDashboard API key security');
