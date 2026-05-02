@@ -124,7 +124,7 @@ test('copy link button',      function() { assert(rb.includes('copyLink()')); })
 // 7. Dashboard JS
 console.log('\nDashboard JS');
 test('showView explicit flex', function() { assert(dashJS.includes("var dm={records:'flex'")); });
-test('init calls showView',    function() { assert(dashJS.includes("showView('records')")); });
+test('init calls showView',    function() { assert(dashJS.includes("showView('apikeys')"), 'dashboard must land on apikeys view on load'); });
 test('no onclick quote bug',   function() { assert(!dashJS.includes("switchView('proof'")); });
 test('UTC pill data attrs',    function() { assert(dashJS.includes('data-utc=')); });
 test('stale request guard',    function() { assert(dashJS.includes('_fetchSeq')); });

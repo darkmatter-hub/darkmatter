@@ -1085,11 +1085,11 @@ window._dmAuthPromise = fetch('/api/user/me')
         </button>
       </div>
       <div class="nav-links">
-        <a class="nav-link" id="nav-apikeys" onclick="showView('apikeys')" title="API Keys">
+        <a class="nav-link active" id="nav-apikeys" onclick="showView('apikeys')" title="API Keys">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
           <span>API Keys</span>
         </a>
-        <a class="nav-link active" id="nav-records" onclick="showView('records')" title="Commits">
+        <a class="nav-link" id="nav-records" onclick="showView('records')" title="Commits">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
           <span>Commits</span>
         </a>
@@ -1157,7 +1157,7 @@ window._dmAuthPromise = fetch('/api/user/me')
     <div class="page-content" id="page-content">
 
       <!-- ── SECTION: API KEYS (default landing) ── -->
-      <div class="dm-section" id="section-apikeys">
+      <div class="dm-section active" id="section-apikeys">
         <div class="section-page-header">
           <div>
             <div class="section-page-title">Your API keys</div>
@@ -1215,7 +1215,7 @@ window._dmAuthPromise = fetch('/api/user/me')
       </div>
 
       <!-- ── SECTION: RECORDS ── -->
-      <div class="dm-section active" id="section-records">
+      <div class="dm-section" id="section-records">
         <div class="section-page-header">
           <div>
             <div class="section-page-title">Commits</div>
@@ -1345,7 +1345,7 @@ window._dmAuthPromise = fetch('/api/user/me')
               <div id="billing-plan-name" style="font-size:1.6rem;font-weight:700;color:var(--t0);margin-bottom:4px;">—</div>
               <div id="billing-plan-price" style="font-size:13px;color:var(--t3);margin-bottom:16px;"></div>
               <div id="billing-plan-usage" style="font-size:12.5px;color:var(--t2);margin-bottom:16px;"></div>
-              <div><button onclick="openStripePortal()" style="padding:8px 16px;background:var(--bg-0);border:1px solid var(--brd);border-radius:7px;font-size:13px;cursor:pointer;color:var(--t1);">Manage subscription &#x2192;</button></div>
+              <div id="billing-manage-btn-wrap"><button id="billing-manage-btn" onclick="openStripePortal()" style="padding:8px 16px;background:var(--bg-0);border:1px solid var(--brd);border-radius:7px;font-size:13px;cursor:pointer;color:var(--t1);">Manage subscription &#x2192;</button></div>
             </div>
           </div>
         </div>
@@ -1356,7 +1356,7 @@ window._dmAuthPromise = fetch('/api/user/me')
             <div class="panel" style="padding:24px;margin-bottom:16px;">
               <div style="font-size:13.5px;color:var(--t3);" id="billing-payment-content">Loading…</div>
             </div>
-            <button style="padding:8px 18px;background:var(--bg-0);border:1px solid var(--brd);border-radius:7px;font-size:13px;cursor:pointer;color:var(--t1);" onclick="openStripePortal()">Manage payment methods →</button>
+            <div id="billing-payment-btn-wrap"><button id="billing-payment-btn" style="padding:8px 18px;background:var(--bg-0);border:1px solid var(--brd);border-radius:7px;font-size:13px;cursor:pointer;color:var(--t1);" onclick="openStripePortal()">Manage payment methods →</button></div>
           </div>
         </div>
 
@@ -1365,7 +1365,7 @@ window._dmAuthPromise = fetch('/api/user/me')
           <div style="max-width:600px;">
             <div class="panel" style="padding:24px;">
               <div style="font-size:13.5px;color:var(--t3);">
-                <button onclick="openStripePortal()" style="background:none;border:none;cursor:pointer;color:var(--purple);font-size:13.5px;padding:0;text-decoration:underline;">View invoices and billing history →</button>
+                <span id="billing-history-btn-wrap"><button id="billing-history-btn" onclick="openStripePortal()" style="background:none;border:none;cursor:pointer;color:var(--purple);font-size:13.5px;padding:0;text-decoration:underline;">View invoices and billing history →</button></span>
               </div>
             </div>
           </div>
@@ -2109,6 +2109,17 @@ async function loadBilling() {
         : 'Manage your payment methods in the Stripe portal.';
     }
 
+    // Gate Stripe portal buttons — free users have no billing account in Stripe.
+    // Showing portal buttons to them produces "No billing account found" errors.
+    if (data.plan === 'free') {
+      const manageWrap = document.getElementById('billing-manage-btn-wrap');
+      if (manageWrap) manageWrap.innerHTML = '<button onclick="openPlanSelectModal()" style="padding:8px 16px;background:var(--purple);border:none;border-radius:7px;font-size:13px;cursor:pointer;color:#fff;font-weight:500;">Upgrade plan &#x2192;</button>';
+      const payWrap = document.getElementById('billing-payment-btn-wrap');
+      if (payWrap) payWrap.style.display = 'none';
+      const histWrap = document.getElementById('billing-history-btn-wrap');
+      if (histWrap) histWrap.innerHTML = '<span style="font-size:13.5px;color:var(--t3);">No billing history on the free plan.</span>';
+    }
+
   } catch(e) {
     console.warn('[billing] load failed:', e.message);
   }
@@ -2667,7 +2678,7 @@ document.addEventListener('DOMContentLoaded', () => {
   startAutoPoll();
   startPoll();
   // Load immediately — session is guaranteed after login redirect
-  showView('records');
+  showView('apikeys');
   // If URL is /dashboard/keys/:id, auto-open that key's drawer after keys load
   const m = location.pathname.match(/\/dashboard\/keys\/(.+)/);
   if (m) {
@@ -3028,7 +3039,16 @@ function renderApiKeys(keys) {
             <td class="td-date">${k.created_at ? localTimestamp(k.created_at) : '—'}</td>
           </tr>`).join('')}
       </tbody>
-    </table>`;
+    </table>
+    <div style="margin-top:32px;border-top:1px solid var(--brd);padding-top:24px;">
+      <div style="font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--t3);margin-bottom:16px;">Quick start — use your key</div>
+      <div style="display:flex;flex-direction:column;gap:14px;max-width:520px;">
+        <div class="qs-step"><div class="qs-num">1</div><div class="qs-body"><div class="qs-title">Install the SDK</div><code class="qs-code">pip install darkmatter-sdk</code></div></div>
+        <div class="qs-step"><div class="qs-num">2</div><div class="qs-body"><div class="qs-title">Configure with your key</div><code class="qs-code">import darkmatter as dm<br>dm.configure(api_key="dm_sk_…")</code></div></div>
+        <div class="qs-step"><div class="qs-num">3</div><div class="qs-body"><div class="qs-title">Commit your first decision</div><code class="qs-code">ctx = dm.commit(payload={"input": "…", "output": "…"})<br>print(ctx["verify_url"])</code></div></div>
+      </div>
+      <div style="margin-top:16px;"><a href="/docs#quickstart" target="_blank" style="font-family:var(--mono);font-size:11px;color:var(--purple);text-decoration:none;">→ Full quickstart guide</a></div>
+    </div>`;
 }
 
 function apiPagePrev() { if (_apiPage > 0) { _apiPage--; renderApiKeys(_apiKeys); } }

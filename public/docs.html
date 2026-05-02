@@ -326,12 +326,12 @@ print(ctx[<span class="cv">"verify_url"</span>])  <span class="cm"># share with 
 
 <div class="steps">
   <div class="step"><div class="step-num">1</div><div><div class="step-title">Install</div><div class="step-desc"><code>pip install darkmatter-sdk</code>, which installs the SDK and CLI.</div></div></div>
-  <div class="step"><div class="step-num">2</div><div><div class="step-title">Get your keys</div><div class="step-desc">Sign up at <a href="/signup">darkmatterhub.ai/signup</a> or run <code>darkmatter init</code> (interactive, no browser required). Both set <code>DARKMATTER_API_KEY</code> and <code>DARKMATTER_AGENT_ID</code> in your <code>.env</code>. Your Agent ID appears on your dashboard after signup. It looks like <code>dm_agent_abc123...</code></div></div></div>
+  <div class="step"><div class="step-num">2</div><div><div class="step-title">Get your API key</div><div class="step-desc">Sign up at <a href="/signup">darkmatterhub.ai/signup</a>, then create an API key from the dashboard under API Keys. Copy the key and your Agent ID. Both are shown at key creation and look like <code>dm_sk_...</code> and <code>dm_agent_abc123...</code></div></div></div>
   <div class="step"><div class="step-num">3</div><div><div class="step-title">Commit</div><div class="step-desc">Call <code>dm.commit()</code> after each agent action. Pass <code>parent_id</code> to chain commits into a lineage.</div></div></div>
   <div class="step"><div class="step-num">4</div><div><div class="step-title">Replay and verify</div><div class="step-desc"><code>dm.replay(ctx_id)</code> walks the chain root&#8594;tip. <code>dm.verify(ctx_id)</code> proves integrity. Share the verify URL. No account needed to view it.</div></div></div>
 </div>
 
-<div class="callout info"><span class="callout-title">What is an Agent ID?</span>In DarkMatter, an <strong>agent</strong> is a named entity with its own ID and API key. Every commit is attributed to it. Your first agent is created automatically when you sign up or run <code>darkmatter init</code>. <code>darkmatter init</code> prints <code>Agent ID: dm_agent_abc123...</code> and writes it to <code>.env</code>. You can also find it on your dashboard under Settings.</div>
+<div class="callout info"><span class="callout-title">What is an Agent ID?</span>In DarkMatter, an <strong>agent</strong> is a named entity with its own ID and API key. Every commit is attributed to it. Create your first API key from the dashboard under API Keys. Your Agent ID (<code>dm_agent_abc123...</code>) is shown when the key is created and is always visible on your dashboard under API Keys.</div>
 
 <h3>Chain multiple commits</h3>
 <pre><code>parent_id = None
