@@ -1078,26 +1078,28 @@ function currentMonthKey() {
   return `${d.getUTCFullYear()}-${mm}`;
 }
 
-// Increments commit_usage by 1 for (userId, monthKey). Fire-and-forget —
-// never throws; a missed increment is self-healing on the next bootstrap.
-async function incrementCommitUsage(userId, monthKey) {
+// Increments commit_usage by 1 (and bytes_used by payloadBytes) for (userId, monthKey).
+// Fire-and-forget — never throws; a missed increment is self-healing on the next bootstrap.
+// bytes_used requires the bytes_used column: ALTER TABLE commit_usage ADD COLUMN IF NOT EXISTS bytes_used bigint DEFAULT 0;
+async function incrementCommitUsage(userId, monthKey, payloadBytes) {
   if (!userId || !monthKey) return;
+  const bytes = payloadBytes || 0;
   try {
     const now = new Date().toISOString();
     const { data: row } = await supabaseService
       .from('commit_usage')
-      .select('commit_count')
+      .select('commit_count, bytes_used')
       .eq('user_id', userId)
       .eq('month', monthKey)
       .maybeSingle();
     if (row) {
       await supabaseService.from('commit_usage')
-        .update({ commit_count: (row.commit_count || 0) + 1, updated_at: now })
+        .update({ commit_count: (row.commit_count || 0) + 1, bytes_used: (row.bytes_used || 0) + bytes, updated_at: now })
         .eq('user_id', userId)
         .eq('month', monthKey);
     } else {
       await supabaseService.from('commit_usage')
-        .insert({ user_id: userId, month: monthKey, commit_count: 1, updated_at: now })
+        .insert({ user_id: userId, month: monthKey, commit_count: 1, bytes_used: bytes, updated_at: now })
         .catch(() => {}); // swallow concurrent-insert race
     }
   } catch (e) {
@@ -1125,6 +1127,16 @@ app.post('/api/commit', apiLimiter, requireApiKey, async (req, res) => {
     const resolvedPayload = payload || (context ? { output: context } : null);
     if (!toAgentId || !resolvedPayload) {
       return res.status(400).json({ error: 'toAgentId and payload (or context) required' });
+    }
+
+    // Hard abuse floor: 10 MB per commit. No legitimate agent decision exceeds this.
+    const payloadBytes = Buffer.byteLength(JSON.stringify(resolvedPayload), 'utf8');
+    if (payloadBytes > 10 * 1024 * 1024) {
+      return res.status(413).json({
+        error: 'Payload too large. Maximum 10 MB per commit.',
+        actual_kb: Math.round(payloadBytes / 1024),
+        docs: 'https://darkmatterhub.ai/docs#api-commit',
+      });
     }
 
     // Validate eventType
@@ -1362,7 +1374,7 @@ app.post('/api/commit', apiLimiter, requireApiKey, async (req, res) => {
     if (error) throw error;
 
     // Increment commit_usage counter (fire-and-forget)
-    if (req.agent.user_id) incrementCommitUsage(req.agent.user_id, currentMonthKey()).catch(() => {});
+    if (req.agent.user_id) incrementCommitUsage(req.agent.user_id, currentMonthKey(), payloadBytes).catch(() => {});
 
     // Update last_active
     await supabaseService
@@ -1752,7 +1764,8 @@ app.post('/api/fork/:ctxId', apiLimiter, requireApiKey, async (req, res) => {
     if (error) throw error;
 
     // Increment commit_usage counter (fire-and-forget)
-    if (req.agent.user_id) incrementCommitUsage(req.agent.user_id, currentMonthKey()).catch(() => {});
+    const forkPayloadBytes = Buffer.byteLength(JSON.stringify(forkPayload), 'utf8');
+    if (req.agent.user_id) incrementCommitUsage(req.agent.user_id, currentMonthKey(), forkPayloadBytes).catch(() => {});
 
     res.json({
       id:                  forkId,
@@ -2796,14 +2809,15 @@ app.get('/api/billing/subscription', wsAuth, async (req, res) => {
       });
     }
 
-    // O(1) commit count from commit_usage cache
+    // O(1) commit count and bytes from commit_usage cache
     const { data: usageRow } = await supabaseService
       .from('commit_usage')
-      .select('commit_count')
+      .select('commit_count, bytes_used')
       .eq('user_id', userId)
       .eq('month', currentMonthKey())
       .maybeSingle();
     let commitCount = usageRow?.commit_count || 0;
+    const bytesUsed = usageRow?.bytes_used   || 0;
 
     // 1. Check DB subscriptions table first (fast, no Stripe API call)
     const { data: dbSub } = await supabaseService
@@ -2822,6 +2836,7 @@ app.get('/api/billing/subscription', wsAuth, async (req, res) => {
         planInfo:          { name: dbSub.plan.charAt(0).toUpperCase() + dbSub.plan.slice(1), price: meta.price },
         commitCount,
         commitLimit:       dbSub.commit_limit ?? meta.commitLimit,
+        bytesUsed,
         retention_days:    dbSub.retention_days ?? meta.retentionDays,
         currentPeriodEnd:  dbSub.current_period_end,
         cancelAtPeriodEnd: dbSub.cancel_at_period_end,
@@ -2853,6 +2868,7 @@ app.get('/api/billing/subscription', wsAuth, async (req, res) => {
               planInfo:          { name: plan.charAt(0).toUpperCase() + plan.slice(1), price: meta.price },
               commitCount,
               commitLimit:       meta.commitLimit,
+              bytesUsed,
               retention_days:    meta.retentionDays,
               currentPeriodEnd:  new Date(sub.current_period_end * 1000).toISOString(),
               cancelAtPeriodEnd: sub.cancel_at_period_end,
@@ -2870,7 +2886,8 @@ app.get('/api/billing/subscription', wsAuth, async (req, res) => {
     res.json({
       plan: 'free', status: 'active',
       planInfo: { name: 'Free', price: null },
-      commitCount, commitLimit: PLAN_META.free.commitLimit, retention_days: PLAN_META.free.retentionDays,
+      commitCount, commitLimit: PLAN_META.free.commitLimit, bytesUsed,
+      retention_days: PLAN_META.free.retentionDays,
     });
   } catch (err) {
     console.error('[billing/subscription]', err.message);
@@ -3944,7 +3961,8 @@ app.post('/api/commit/rich', apiLimiter, requireApiKey, async (req, res) => {
     if (commitError) throw commitError;
 
     // Increment commit_usage counter (fire-and-forget)
-    if (agentRecord.user_id) incrementCommitUsage(agentRecord.user_id, currentMonthKey()).catch(() => {});
+    const richPayloadBytes = Buffer.byteLength(JSON.stringify(payload), 'utf8');
+    if (agentRecord.user_id) incrementCommitUsage(agentRecord.user_id, currentMonthKey(), richPayloadBytes).catch(() => {});
 
     // ── Store rich content separately ─────────────────────────────────────────
     await supabaseService.from('commit_content').insert({
@@ -4928,7 +4946,8 @@ async function recordClaudeInteraction({ upstreamPath, requestBody, responseText
     });
 
     // Increment commit_usage counter (fire-and-forget)
-    if (userId) incrementCommitUsage(userId, currentMonthKey()).catch(() => {});
+    const proxyPayloadBytes = Buffer.byteLength(JSON.stringify(payload), 'utf8');
+    if (userId) incrementCommitUsage(userId, currentMonthKey(), proxyPayloadBytes).catch(() => {});
 
   } catch(e) {
     console.error('[DarkMatter/claude] Record error:', e.message);
