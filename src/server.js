@@ -4312,9 +4312,10 @@ app.get('/r/:traceId', async (req, res) => {
           integrity_hash: c.integrity_hash,
           parent_hash: c.parent_hash,
           verified: c.verified,
-          payload: { role: c.payload && c.payload.role, text: c.payload && c.payload.text,
-            output: c.payload && c.payload.output, summary: c.payload && c.payload.summary,
-            prompt: c.payload && c.payload.prompt, convTitle: c.payload && c.payload.convTitle,
+          payload: { input: c.payload && c.payload.input, role: c.payload && c.payload.role,
+            text: c.payload && c.payload.text, output: c.payload && c.payload.output,
+            summary: c.payload && c.payload.summary, prompt: c.payload && c.payload.prompt,
+            convTitle: c.payload && c.payload.convTitle,
             platform: c.payload && c.payload.platform, _source: c.payload && c.payload._source },
         }; }),
         verify_url: (process.env.APP_URL || 'https://darkmatterhub.ai') + '/r/' + traceId,
@@ -4513,13 +4514,15 @@ app.get('/r/:traceId', async (req, res) => {
       + commits.map(function(c, i) {
           var p = c.payload || {};
           var role = p.role || (i % 2 === 0 ? 'user' : 'assistant');
-          var text = (p.text || p.output || p.summary || p.prompt || '').slice(0, 280);
+          var input3 = (p.input  || '').slice(0, 140);
+          var text   = (p.text || p.output || p.summary || p.prompt || '').slice(0, 280);
           var ts3 = c.client_timestamp || c.timestamp || '';
           var tsStr3 = ts3 ? new Date(ts3).toLocaleString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit',timeZone:'UTC',hour12:false})+' UTC' : '';
           var isUser3 = role === 'user';
           var actor = isUser3 ? 'You' : (p.agentName || p.agent_name || 'Agent');
           return '<div class="tl-step"><div class="tl-line"><div class="tl-dot' + (isUser3?' user':'') + '"></div><div class="tl-conn"></div></div>'
             + '<div class="tl-info"><div class="tl-head"><span class="tl-step-n">Step ' + (i+1) + '</span><span class="tl-actor">' + escH(actor) + '</span><span class="tl-time">' + tsStr3 + '</span></div>'
+            + (input3 ? '<div class="tl-text" style="font-size:11px;opacity:.55;margin-bottom:3px;">IN: ' + escH(input3) + (p.input && p.input.length > 140 ? '\u2026' : '') + '</div>' : '')
             + '<div class="tl-text">' + escH(text) + (text.length >= 280 ? '\u2026' : '') + '</div>'
             + (c.integrity_hash ? '<div class="tl-hash">' + c.integrity_hash.slice(0,16) + '\u2026</div>' : '')
             + '</div></div>';
@@ -7128,6 +7131,7 @@ app.get('/api/workspace/conversation/:traceId', requireAuth, async (req, res) =>
       return {
         id:        c.id,
         role:      p.role || 'assistant',
+        input:     p.input || null,
         content:   p.output || p.text || p.prompt || JSON.stringify(p).slice(0, 500),
         timestamp: c.timestamp,
         model:     c.agent_info?.model || p._model || null,
