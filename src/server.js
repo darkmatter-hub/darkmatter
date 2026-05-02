@@ -1364,7 +1364,7 @@ app.post('/api/commit', apiLimiter, requireApiKey, async (req, res) => {
           if (commitCount > 0) {
             supabaseService.from('commit_usage')
               .insert({ user_id: userId, month: monthKey, commit_count: commitCount, updated_at: new Date().toISOString() })
-              .catch(() => {});
+              .then(() => {}).catch(() => {});
           }
         }
 
