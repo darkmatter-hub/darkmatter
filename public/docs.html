@@ -324,6 +324,26 @@ ctx = dm.commit(payload={
 print(ctx[<span class="cv">"verify_url"</span>])<div class="lang-label">python</div></code></pre>
 <p style="margin-top:1rem;color:var(--ink3);font-size:0.9rem;line-height:1.7;">The payload is a free-form object. Add any fields that matter to your use case &mdash; model name, agent version, confidence score, order ID, or any domain-specific context. All fields are stored, verifiable, and included in the proof bundle.</p>
 
+<h3>Chain multiple commits</h3>
+<p>Use <code>parent_id</code> and <code>trace_id</code> to chain commits into a verifiable sequence. The Timeline tab on any proof page shows the full chain.</p>
+<pre><code><span class="cm"># First commit</span>
+ctx1 = dm.commit(payload={
+    <span class="ck">"input"</span>:  <span class="cv">"Approve refund #84721?"</span>,
+    <span class="ck">"output"</span>: <span class="cv">"Approved."</span>
+})
+
+<span class="cm"># Chain a second commit to the first</span>
+ctx2 = dm.commit(
+    parent_id=ctx1[<span class="cv">"id"</span>],
+    trace_id=ctx1[<span class="cv">"trace_id"</span>],
+    payload={
+        <span class="ck">"input"</span>:  <span class="cv">"Send confirmation email?"</span>,
+        <span class="ck">"output"</span>: <span class="cv">"Email sent to customer."</span>
+    }
+)
+
+print(ctx2[<span class="cv">"verify_url"</span>])<div class="lang-label">python</div></code></pre>
+
 <div class="steps">
   <div class="step"><div class="step-num">1</div><div><div class="step-title">Install</div><div class="step-desc"><code>pip install darkmatter-sdk</code>, which installs the SDK and CLI.</div></div></div>
   <div class="step"><div class="step-num">2</div><div><div class="step-title">Get your API key</div><div class="step-desc">Sign up at <a href="/signup">darkmatterhub.ai/signup</a>, then create an API key from the dashboard under API Keys. The key is shown once at creation and looks like <code>dm_sk_...</code></div></div></div>
