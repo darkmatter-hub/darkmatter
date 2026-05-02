@@ -703,6 +703,67 @@ test('GET /api/workspace/activity falls back to user own agents when no workspac
     'workspace/activity must fall back to querying agents by user_id for users without workspace membership');
 });
 
+// ── Abuse prevention controls ────────────────────────────────────────────────
+console.log('\nAbuse prevention');
+
+test('DATA_LIMIT_BYTES defined with correct free cap (500 MB)', function() {
+  assert(server.includes('DATA_LIMIT_BYTES'), 'DATA_LIMIT_BYTES not found in server.js');
+  // accept either compact or padded form
+  assert(/free:\s*500\s*\*\s*1024\s*\*\s*1024/.test(server), 'free data cap must be 500 MB');
+});
+
+test('DATA_LIMIT_BYTES has correct teams cap (25 GB)', function() {
+  assert(/teams:\s*25\s*\*\s*1024\s*\*\s*1024\s*\*\s*1024/.test(server), 'teams data cap must be 25 GB');
+});
+
+test('DATA_LIMIT_BYTES enterprise is unlimited (-1)', function() {
+  assert(server.includes('enterprise: -1'), 'enterprise data cap must be -1 (unlimited)');
+});
+
+test('gate middleware checks bytes_used from commit_usage for data cap', function() {
+  var gateIdx   = server.indexOf('Plan limit enforcement');
+  var gateSlice = server.slice(gateIdx, gateIdx + 3500);
+  assert(gateSlice.includes('bytes_used'),      'gate must read bytes_used from commit_usage');
+  assert(gateSlice.includes('DATA_LIMIT_BYTES'), 'gate must reference DATA_LIMIT_BYTES');
+});
+
+test('data cap 429 includes limit_gb and upgrade_url', function() {
+  var idx   = server.indexOf('Monthly data limit reached');
+  assert(idx > 0, '"Monthly data limit reached" message not found');
+  var slice = server.slice(idx, idx + 300);
+  assert(slice.includes('limit_gb'),    '429 data-limit response must include limit_gb');
+  assert(slice.includes('upgrade_url'), '429 data-limit response must include upgrade_url');
+});
+
+test('velocity check defined with 100 MB limit', function() {
+  assert(server.includes('VELOCITY_LIMIT_BYTES'), 'VELOCITY_LIMIT_BYTES not found');
+  assert(server.includes('checkVelocity'),         'checkVelocity function not found');
+  assert(/100\s*\*\s*1024\s*\*\s*1024/.test(server), 'VELOCITY_LIMIT_BYTES must be 100 MB');
+});
+
+test('velocity 429 sets Retry-After: 3600', function() {
+  var idx = server.indexOf("'Retry-After'");
+  assert(idx > 0, "Retry-After header not set");
+  var slice = server.slice(idx, idx + 100);
+  assert(slice.includes('3600'), 'Retry-After must be 3600 seconds');
+});
+
+test('maybeAlertUsage sends to hello@darkmatterhub.ai', function() {
+  var idx = server.indexOf('async function maybeAlertUsage');
+  assert(idx > 0, 'maybeAlertUsage function not found');
+  var fnSlice = server.slice(idx, idx + 1200);
+  assert(fnSlice.includes('hello@darkmatterhub.ai'), 'alert email must go to hello@darkmatterhub.ai');
+  assert(fnSlice.includes('50% data cap'),            'alert subject must mention 50% data cap');
+});
+
+test('pricing.html lists data caps for all four plans', function() {
+  var pricing = fs.readFileSync(path.join(ROOT, 'public/pricing.html'), 'utf8');
+  assert(pricing.includes('500 MB data per month'), 'free plan missing 500 MB data cap');
+  assert(pricing.includes('5 GB data per month'),   'pro plan missing 5 GB data cap');
+  assert(pricing.includes('25 GB data per month'),  'teams plan missing 25 GB data cap');
+  assert(pricing.includes('Unlimited data'),         'enterprise plan missing Unlimited data');
+});
+
 console.log('\nAuth pages (signup / login)');
 
 (function checkAuthPageJS(name) {

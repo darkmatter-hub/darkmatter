@@ -60,6 +60,26 @@ const PLAN_META = {
   enterprise: { commitLimit: null,   retentionDays: null, price: 499 }, // display only — contact sales
 };
 
+// ── Monthly data caps (abuse prevention) ─────────────────────────────────────
+const DATA_LIMIT_BYTES = {
+  free:       500  * 1024 * 1024,        //  500 MB / month
+  pro:        5    * 1024 * 1024 * 1024, //    5 GB / month
+  teams:      25   * 1024 * 1024 * 1024, //   25 GB / month
+  enterprise: -1,                         // unlimited
+};
+
+// ── In-memory velocity tracker ────────────────────────────────────────────────
+// Per API key: max 100 MB in any rolling 60-minute window.
+// Never persisted — resets on server restart, which is acceptable.
+const _velocityMap        = new Map(); // agentId → { windowStart: ms, bytes: number }
+const VELOCITY_WINDOW_MS  = 60 * 60 * 1000; //  60 minutes
+const VELOCITY_LIMIT_BYTES = 100 * 1024 * 1024; // 100 MB
+
+// ── In-memory daily alert tracker ─────────────────────────────────────────────
+// Prevents duplicate usage alerts within the same UTC day.
+const _alertSentToday = new Map(); // `${userId}:YYYY-MM-DD` → true
+const _dailyBytesMap  = new Map(); // `${userId}:YYYY-MM-DD` → bytes committed today
+
 function priceIdToPlan(priceId) {
   if (!priceId) return 'free';
   if (priceId === process.env.STRIPE_PRICE_PRO)   return 'pro';
@@ -1081,7 +1101,8 @@ function currentMonthKey() {
 // Increments commit_usage by 1 (and bytes_used by payloadBytes) for (userId, monthKey).
 // Fire-and-forget — never throws; a missed increment is self-healing on the next bootstrap.
 // bytes_used requires the bytes_used column: ALTER TABLE commit_usage ADD COLUMN IF NOT EXISTS bytes_used bigint DEFAULT 0;
-async function incrementCommitUsage(userId, monthKey, payloadBytes) {
+// plan is optional — when provided, triggers anomalous-usage alert if daily threshold crossed.
+async function incrementCommitUsage(userId, monthKey, payloadBytes, plan) {
   if (!userId || !monthKey) return;
   const bytes = payloadBytes || 0;
   try {
@@ -1102,9 +1123,58 @@ async function incrementCommitUsage(userId, monthKey, payloadBytes) {
         .insert({ user_id: userId, month: monthKey, commit_count: 1, bytes_used: bytes, updated_at: now })
         .catch(() => {}); // swallow concurrent-insert race
     }
+    // Track daily bytes and fire alert if user crosses 50% of monthly cap in one day
+    if (plan && bytes) {
+      const today       = now.slice(0, 10);
+      const dailyKey    = `${userId}:${today}`;
+      const todayBytes  = (_dailyBytesMap.get(dailyKey) || 0) + bytes;
+      _dailyBytesMap.set(dailyKey, todayBytes);
+      const monthTotal  = (row?.bytes_used || 0) + bytes;
+      maybeAlertUsage(userId, plan, todayBytes, monthTotal).catch(() => {});
+    }
   } catch (e) {
     console.error('[commit_usage]', e.message);
   }
+}
+
+// Sends a one-per-day email alert when a user's daily payload crosses 50% of their monthly cap.
+async function maybeAlertUsage(userId, plan, dailyBytes, monthlyBytes) {
+  const limit = DATA_LIMIT_BYTES[plan];
+  if (limit === -1 || !process.env.RESEND_API_KEY) return;
+  if (dailyBytes < limit * 0.5) return;
+
+  const today    = new Date().toISOString().slice(0, 10);
+  const alertKey = `${userId}:${today}`;
+  if (_alertSentToday.get(alertKey)) return;
+  _alertSentToday.set(alertKey, true);
+
+  const usedMB  = Math.round(dailyBytes / (1024 * 1024));
+  const dayOfMonth = new Date().getUTCDate() || 1;
+  const projGB  = ((monthlyBytes / dayOfMonth) * 30 / (1024 * 1024 * 1024)).toFixed(1);
+  const limitGB = (limit / (1024 * 1024 * 1024)).toFixed(0);
+
+  await fetch('https://api.resend.com/emails', {
+    method:  'POST',
+    headers: { 'Authorization': `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      from:    'DarkMatter Alerts <hello@darkmatterhub.ai>',
+      to:      ['hello@darkmatterhub.ai'],
+      subject: `Usage alert — ${userId} at 50% data cap`,
+      text:    `User ${userId} on ${plan} plan has used ${usedMB} MB today.\nProjected monthly: ${projGB} GB against ${limitGB} GB limit.`,
+    }),
+  }).catch(e => console.error('[usage-alert]', e.message));
+}
+
+// Returns true if the agent has exceeded 100 MB in the rolling 60-minute window.
+function checkVelocity(agentId, payloadBytes) {
+  const now   = Date.now();
+  const entry = _velocityMap.get(agentId);
+  if (!entry || (now - entry.windowStart) >= VELOCITY_WINDOW_MS) {
+    _velocityMap.set(agentId, { windowStart: now, bytes: payloadBytes });
+    return false;
+  }
+  entry.bytes += payloadBytes;
+  return entry.bytes > VELOCITY_LIMIT_BYTES;
 }
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -1136,6 +1206,16 @@ app.post('/api/commit', apiLimiter, requireApiKey, async (req, res) => {
         error: 'Payload too large. Maximum 10 MB per commit.',
         actual_kb: Math.round(payloadBytes / 1024),
         docs: 'https://darkmatterhub.ai/docs#api-commit',
+      });
+    }
+
+    // Velocity check: max 100 MB per API key in any rolling 60-minute window.
+    if (checkVelocity(req.agent.agent_id, payloadBytes)) {
+      res.set('Retry-After', '3600');
+      return res.status(429).json({
+        error: 'Commit data rate limit exceeded. Maximum 100 MB per 60 minutes per API key.',
+        retry_after: 3600,
+        upgrade_url: 'https://darkmatterhub.ai/pricing',
       });
     }
 
@@ -1224,6 +1304,7 @@ app.post('/api/commit', apiLimiter, requireApiKey, async (req, res) => {
     // O(1): read from commit_usage cache instead of a full COUNT scan.
     // On first commit of a period the cache row won't exist yet; we fall
     // back to COUNT once, seed the row, and stay fast from then on.
+    let _commitPlan = 'free'; // exposed outside block for incrementCommitUsage call
     {
       const userId = req.agent.user_id;
       if (userId) {
@@ -1237,6 +1318,7 @@ app.post('/api/commit', apiLimiter, requireApiKey, async (req, res) => {
           .catch(() => ({ data: null }));
 
         const currentPlan  = sub?.plan || 'free';
+        _commitPlan        = currentPlan;
         const planMeta     = PLAN_META[currentPlan] || PLAN_META.free;
         const planLimit    = sub?.commit_limit ?? planMeta.commitLimit;
 
@@ -1244,7 +1326,7 @@ app.post('/api/commit', apiLimiter, requireApiKey, async (req, res) => {
         const monthKey = currentMonthKey();
         const { data: usageRow } = await supabaseService
           .from('commit_usage')
-          .select('commit_count')
+          .select('commit_count, bytes_used')
           .eq('user_id', userId)
           .eq('month', monthKey)
           .maybeSingle();
@@ -1284,6 +1366,17 @@ app.post('/api/commit', apiLimiter, requireApiKey, async (req, res) => {
           return res.status(429).json({
             error: 'Monthly commit limit reached',
             limit: planLimit,
+            plan:  currentPlan,
+            upgrade_url: 'https://darkmatterhub.ai/pricing',
+          });
+        }
+
+        // Data cap enforcement
+        const bytesUsedThisMonth = usageRow?.bytes_used || 0;
+        if (DATA_LIMIT_BYTES[currentPlan] !== -1 && bytesUsedThisMonth >= DATA_LIMIT_BYTES[currentPlan]) {
+          return res.status(429).json({
+            error: 'Monthly data limit reached',
+            limit_gb: DATA_LIMIT_BYTES[currentPlan] / (1024 * 1024 * 1024),
             plan:  currentPlan,
             upgrade_url: 'https://darkmatterhub.ai/pricing',
           });
@@ -1374,7 +1467,7 @@ app.post('/api/commit', apiLimiter, requireApiKey, async (req, res) => {
     if (error) throw error;
 
     // Increment commit_usage counter (fire-and-forget)
-    if (req.agent.user_id) incrementCommitUsage(req.agent.user_id, currentMonthKey(), payloadBytes).catch(() => {});
+    if (req.agent.user_id) incrementCommitUsage(req.agent.user_id, currentMonthKey(), payloadBytes, _commitPlan).catch(() => {});
 
     // Update last_active
     await supabaseService
