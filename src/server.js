@@ -230,16 +230,23 @@ function isValidWebhookUrl(url) {
 }
 
 // ── Supabase clients ─────────────────────────────────
-// Service role for server-side operations (bypasses RLS)
+// Service role for server-side operations (bypasses RLS).
+// CRITICAL: persistSession:false prevents refreshSession() from overwriting the
+// service-role JWT with a user JWT. Without this, token refreshes in requireAuth /
+// wsAuth corrupt the shared singleton and subsequent DB calls hit RLS instead of
+// bypassing it — causing "row-level security policy" errors and empty query results.
 const supabaseService = createClient(
   process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY   // service_role key — never expose to client
+  process.env.SUPABASE_SERVICE_KEY,  // service_role key — never expose to client
+  { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } }
 );
 
-// Anon key for auth operations
+// Anon key for auth operations (signup, login, OAuth, code exchange).
+// Also stateless — no session stored on the server-side singleton.
 const supabaseAnon = createClient(
   process.env.SUPABASE_URL,
-  process.env.SUPABASE_KEY
+  process.env.SUPABASE_KEY,
+  { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } }
 );
 
 // ── Helper: generate API key ─────────────────────────
@@ -547,7 +554,11 @@ app.post('/auth/signup', authLimiter, async (req, res) => {
       email,
       password,
       options: {
-        emailRedirectTo: `${process.env.BASE_URL || 'https://darkmatterhub.ai'}/dashboard`,
+        // Redirect to /auth/callback so the confirmation tokens can be exchanged
+        // for server-side cookies before the user reaches the dashboard.
+        // Pointing at /dashboard directly causes a login-redirect loop because
+        // the server never sees the #fragment tokens Supabase appends.
+        emailRedirectTo: `${process.env.BASE_URL || 'https://darkmatterhub.ai'}/auth/callback`,
       },
     });
     if (error) return res.status(400).json({ error: error.message });
@@ -584,6 +595,80 @@ app.get('/auth/github', async (req, res) => {
     });
     if (error) return res.status(400).json({ error: error.message });
     res.redirect(data.url);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── GET /auth/callback ── email-confirmation and OAuth landing page ──────────
+// Supabase redirects here after email confirmation or OAuth with either:
+//   Implicit flow: #access_token=...&refresh_token=...&type=signup  (URL fragment)
+//   PKCE flow:     ?code=...                                         (query string)
+// The page reads whichever is present, exchanges tokens for server-set cookies,
+// then forwards to /dashboard — so the user lands directly in the app.
+app.get('/auth/callback', (req, res) => {
+  const code     = req.query.code  ? String(req.query.code)  : null;
+  const errParam = req.query.error ? String(req.query.error_description || req.query.error) : null;
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.send(`<!doctype html><html lang="en"><head><meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Confirming...</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#0a0a09;display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:'JetBrains Mono',monospace;color:#888;font-size:13px;letter-spacing:.05em}.dot{width:8px;height:8px;border-radius:50%;background:#28a062;animation:p 1.2s ease-in-out infinite;display:inline-block}@keyframes p{0%,100%{opacity:1}50%{opacity:.25}}.msg{text-align:center;display:flex;flex-direction:column;gap:1.25rem;align-items:center}</style>
+</head><body><div class="msg"><div class="dot"></div><div>Confirming account...</div></div>
+<script>
+(async function(){
+  var code=${JSON.stringify(code)};
+  var errMsg=${JSON.stringify(errParam)};
+  if(errMsg){window.location.href='/login?error='+encodeURIComponent(errMsg);return;}
+  try{
+    if(code){
+      // PKCE flow: exchange authorization code for session cookies server-side
+      var r=await fetch('/auth/exchange',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:code})});
+      if(r.ok){window.location.href='/dashboard';return;}
+      var d=await r.json().catch(function(){return{};});
+      window.location.href='/login?error='+encodeURIComponent(d.error||'Confirmation failed');
+      return;
+    }
+    // Implicit flow: tokens are in the URL fragment (never sent to server)
+    var hash=window.location.hash.slice(1);
+    var p=Object.fromEntries(new URLSearchParams(hash));
+    if(p.access_token&&p.refresh_token){
+      var r2=await fetch('/auth/session',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({access_token:p.access_token,refresh_token:p.refresh_token})});
+      if(r2.ok){window.location.href='/dashboard';return;}
+    }
+    window.location.href='/login?error=confirmation_failed';
+  }catch(e){window.location.href='/login?error=confirmation_failed';}
+})();
+</script></body></html>`);
+});
+
+// ── POST /auth/session ── set cookies from fragment tokens ───────────────────
+// Called by /auth/callback when Supabase uses the implicit (fragment) flow.
+// Validates the access token then writes httpOnly cookies so the dashboard can
+// authenticate without the user ever seeing a login form.
+app.post('/auth/session', authLimiter, async (req, res) => {
+  try {
+    const { access_token, refresh_token } = req.body || {};
+    if (!access_token || !refresh_token) return res.status(400).json({ error: 'Missing tokens' });
+    const { data: { user }, error } = await supabaseService.auth.getUser(access_token);
+    if (error || !user) return res.status(401).json({ error: 'Invalid or expired token' });
+    setAuthCookies(res, { access_token, refresh_token, expires_in: 3600 });
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── POST /auth/exchange ── exchange PKCE code for session cookies ─────────────
+// Called by /auth/callback when Supabase uses the PKCE (code) flow.
+app.post('/auth/exchange', authLimiter, async (req, res) => {
+  try {
+    const { code } = req.body || {};
+    if (!code) return res.status(400).json({ error: 'Missing code' });
+    const { data, error } = await supabaseAnon.auth.exchangeCodeForSession(code);
+    if (error || !data?.session) return res.status(400).json({ error: error?.message || 'Code exchange failed' });
+    setAuthCookies(res, data.session);
+    res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

@@ -64,6 +64,9 @@ const ROUTES = [
   ['POST /api/workspace/keys',      "app.post('/api/workspace/keys'"],
   ['POST /api/contact',             "app.post('/api/contact'"],
   ['GET /api/billing/subscription', "app.get('/api/billing/subscription'"],
+  ['GET /auth/callback',            "app.get('/auth/callback'"],
+  ['POST /auth/session',            "app.post('/auth/session'"],
+  ['POST /auth/exchange',           "app.post('/auth/exchange'"],
   ['GET /about',                    "app.get('/about'"],
   ['GET /api/workspace/stats/usage', "app.get('/api/workspace/stats/usage'"],
   ['GET /api/admin/users',            "app.get('/api/admin/users'"],
@@ -266,6 +269,9 @@ var catchallPos = server.indexOf("app.get('*',");
   ["app.get('/api/admin/users'",      '/api/admin/users'],
   ["app.get('/api/billing/subscription'", '/api/billing/subscription'],
   ["app.post('/api/contact'",         '/api/contact'],
+  ["app.get('/auth/callback'",        '/auth/callback'],
+  ["app.post('/auth/session'",        '/auth/session'],
+  ["app.post('/auth/exchange'",       '/auth/exchange'],
 ].forEach(function(pair) {
   var routePos = server.indexOf(pair[0]);
   test(pair[1] + ' before catch-all', function() {
@@ -612,7 +618,91 @@ test('All 12 public pages have dm-ham hamburger nav', function() {
   });
 });
 
-// ── Section 21: Auth page JS syntax and copy ─────────────────────────────────
+// ── Section 21: Reported bugs — must not regress ─────────────────────────────
+// Each test here was added after a confirmed production bug.
+console.log('\nReported-bug regression guards');
+
+// Bug: supabaseService.auth.refreshSession() mutates the shared singleton,
+// replacing the service-role JWT with a user JWT. All subsequent DB calls then
+// run under the user identity and hit RLS, causing INSERT failures (api-keys
+// creation) and empty SELECT results (no commits / keys visible).
+// Fix: persistSession:false keeps the singleton stateless.
+test('supabaseService created with persistSession:false (prevents RLS pollution)', function() {
+  var idx   = server.indexOf('const supabaseService = createClient');
+  var slice = server.slice(idx, idx + 400);
+  assert(slice.includes('persistSession') && slice.includes('false'),
+    'supabaseService must use persistSession:false — token refresh overwrites service-role JWT without it');
+});
+
+test('supabaseAnon created with persistSession:false (server-side singleton must be stateless)', function() {
+  var idx   = server.indexOf('const supabaseAnon = createClient');
+  var slice = server.slice(idx, idx + 400);
+  assert(slice.includes('persistSession') && slice.includes('false'),
+    'supabaseAnon must use persistSession:false — shared singleton must not store session state');
+});
+
+// Bug: emailRedirectTo pointed at /dashboard. Supabase puts session tokens in
+// the URL fragment (#access_token=...) which the server never sees. The dashboard
+// auth guard found no cookies and redirected to /login on every confirmation click.
+// Fix: redirect to /auth/callback which reads the fragment and sets cookies.
+test('emailRedirectTo points to /auth/callback, not /dashboard', function() {
+  var idx   = server.indexOf('emailRedirectTo');
+  assert(idx > 0, 'emailRedirectTo not found in signup route');
+  var slice = server.slice(idx, idx + 120);
+  assert(slice.includes('/auth/callback'),
+    'emailRedirectTo must point to /auth/callback — pointing at /dashboard causes a login redirect loop');
+  assert(!slice.includes('/dashboard'),
+    'emailRedirectTo must not point to /dashboard (tokens in URL fragment are invisible to the server)');
+});
+
+test('/auth/callback serves a page that handles both implicit and PKCE token flows', function() {
+  var idx   = server.indexOf("app.get('/auth/callback'");
+  assert(idx > 0, '/auth/callback route not found');
+  var slice = server.slice(idx, idx + 2000);
+  assert(slice.includes('access_token'),  '/auth/callback must handle implicit-flow fragment tokens');
+  assert(slice.includes('/auth/exchange'), '/auth/callback must call /auth/exchange for PKCE code flow');
+  assert(slice.includes('/auth/session'), '/auth/callback must call /auth/session for implicit token flow');
+  assert(slice.includes('/dashboard'),    '/auth/callback must redirect to /dashboard on success');
+});
+
+test('/auth/session validates token before setting cookies', function() {
+  var idx   = server.indexOf("app.post('/auth/session'");
+  assert(idx > 0, '/auth/session route not found');
+  var slice = server.slice(idx, idx + 600);
+  assert(slice.includes('supabaseService.auth.getUser'), '/auth/session must validate access_token before setting cookies');
+  assert(slice.includes('setAuthCookies'),               '/auth/session must call setAuthCookies on success');
+});
+
+test('/auth/exchange calls exchangeCodeForSession', function() {
+  var idx   = server.indexOf("app.post('/auth/exchange'");
+  assert(idx > 0, '/auth/exchange route not found');
+  var slice = server.slice(idx, idx + 500);
+  assert(slice.includes('exchangeCodeForSession'), '/auth/exchange must call exchangeCodeForSession');
+  assert(slice.includes('setAuthCookies'),         '/auth/exchange must call setAuthCookies on success');
+});
+
+// Bug: existing user saw no commits or API keys in their dashboard.
+// Root cause: same session-pollution bug — after token refresh, supabaseService
+// ran under user JWT, and RLS filtered or blocked the workspace/activity and
+// workspace/api-keys queries. Covered by the persistSession tests above.
+// Additional guard: the api-keys route must use supabaseService (not supabaseAnon).
+test('POST /api/workspace/api-keys uses supabaseService for agents insert (not anon)', function() {
+  var idx   = server.indexOf("app.post('/api/workspace/api-keys'");
+  assert(idx > 0, '/api/workspace/api-keys POST route not found');
+  var slice = server.slice(idx, idx + 2000);
+  assert(slice.includes("supabaseService.from('agents').insert"),
+    'api-keys route must insert into agents using supabaseService (service role), not supabaseAnon');
+});
+
+test('GET /api/workspace/activity falls back to user own agents when no workspace membership', function() {
+  var idx   = server.indexOf("app.get('/api/workspace/activity'");
+  assert(idx > 0, '/api/workspace/activity route not found');
+  var slice = server.slice(idx, idx + 3000);
+  // Must query agents by user_id as a fallback path so solo users see their commits
+  assert(slice.includes('.eq(\'user_id\', req.user.id)'),
+    'workspace/activity must fall back to querying agents by user_id for users without workspace membership');
+});
+
 console.log('\nAuth pages (signup / login)');
 
 (function checkAuthPageJS(name) {
