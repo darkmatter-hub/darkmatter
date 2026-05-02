@@ -1201,11 +1201,12 @@ window._dmAuthPromise = fetch('/api/user/me')
                     <div class="qs-num">3</div>
                     <div class="qs-body">
                       <div class="qs-title">Commit your first decision</div>
-                      <div class="qs-code-wrap"><code class="qs-code">ctx = dm.commit(payload={<br>&nbsp;&nbsp;"input":  "Approve refund for order #84721?",<br>&nbsp;&nbsp;"output": "Approved. Reason: within 30-day window"<br>})<br>print(ctx["verify_url"])</code><button type="button" class="qs-copy-btn" onclick="qsCopy(this,'ctx = dm.commit(payload={\n  &quot;input&quot;:  &quot;Approve refund for order #84721?&quot;,\n  &quot;output&quot;: &quot;Approved. Reason: within 30-day window&quot;\n})\nprint(ctx[&quot;verify_url&quot;])')" title="Copy"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div>
+                      <div class="qs-code-wrap"><code class="qs-code">ctx = dm.commit(payload={<br>&nbsp;&nbsp;"input":  "Approve refund #84721? $284.00, 18 days since purchase.",<br>&nbsp;&nbsp;"output": "Approved. Customer within 30-day window."<br>})<br>print(ctx["verify_url"])</code><button type="button" class="qs-copy-btn" onclick="qsCopy(this,'ctx = dm.commit(payload={\n  &quot;input&quot;:  &quot;Approve refund #84721? $284.00, 18 days since purchase.&quot;,\n  &quot;output&quot;: &quot;Approved. Customer within 30-day window.&quot;\n})\nprint(ctx[&quot;verify_url&quot;])')" title="Copy"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div>
                     </div>
                   </div>
                 </div>
-                <div style="margin-top:16px;">
+                <div style="margin-top:12px;font-size:12px;color:var(--t3);line-height:1.6;">The payload is a free-form object. Add any fields that matter to your use case &mdash; model name, agent version, confidence score, order ID, or any domain-specific context. All fields are stored, verifiable, and included in the proof bundle.</div>
+                <div style="margin-top:12px;">
                   <a href="/docs#quickstart" target="_blank" style="font-family:var(--mono);font-size:11px;color:var(--purple);text-decoration:none;">→ Full quickstart guide</a>
                 </div>
               </div>
@@ -2462,13 +2463,14 @@ function renderActivity(data) {
       <div style="font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--t4);margin-bottom:6px;">Step 2 — paste and run</div>
       <code style="color:var(--t0);white-space:pre;" id="first-commit-code">import darkmatter as dm
 
-ctx = dm.commit(
-    api_key = "dm_sk_...",
-    payload = {
-        "input":  "Approve refund for order #84721?",
-        "output": "Approved. Reason: within 30-day window.",
-    }
+dm.configure(
+    api_key="dm_sk_..."
 )
+
+ctx = dm.commit(payload={
+    "input":  "Approve refund #84721? $284.00, 18 days since purchase.",
+    "output": "Approved. Customer within 30-day window."
+})
 print(ctx["verify_url"])  # share this link</code>
       <button onclick="copyFirstCommit()" style="position:absolute;top:10px;right:10px;font-family:var(--mono);font-size:10px;border:1px solid var(--brd);background:var(--bg-0);padding:3px 8px;cursor:pointer;color:var(--t2);">Copy</button>
     </div>
@@ -3025,9 +3027,10 @@ function renderApiKeys(keys) {
             <div style="display:flex;flex-direction:column;gap:14px;">
               <div class="qs-step"><div class="qs-num">1</div><div class="qs-body"><div class="qs-title">Install the SDK</div><code class="qs-code">pip install darkmatter-sdk</code></div></div>
               <div class="qs-step"><div class="qs-num">2</div><div class="qs-body"><div class="qs-title">Configure with your key</div><code class="qs-code">import darkmatter as dm<br>dm.configure(api_key="dm_sk_…")</code></div></div>
-              <div class="qs-step"><div class="qs-num">3</div><div class="qs-body"><div class="qs-title">Commit your first decision</div><code class="qs-code">ctx = dm.commit(payload={"input": "…", "output": "…"})<br>print(ctx["verify_url"])</code></div></div>
+              <div class="qs-step"><div class="qs-num">3</div><div class="qs-body"><div class="qs-title">Commit your first decision</div><code class="qs-code">ctx = dm.commit(payload={<br>&nbsp;&nbsp;"input":  "Approve refund #84721? $284.00, 18 days since purchase.",<br>&nbsp;&nbsp;"output": "Approved. Customer within 30-day window."<br>})<br>print(ctx["verify_url"])</code></div></div>
             </div>
-            <div style="margin-top:16px;"><a href="/docs#quickstart" target="_blank" style="font-family:var(--mono);font-size:11px;color:var(--purple);text-decoration:none;">→ Full quickstart guide</a></div>
+            <div style="margin-top:12px;font-size:12px;color:var(--t3);line-height:1.6;">The payload is a free-form object. Add any fields that matter to your use case &mdash; model name, agent version, confidence score, order ID, or any domain-specific context. All fields are stored, verifiable, and included in the proof bundle.</div>
+            <div style="margin-top:12px;"><a href="/docs#quickstart" target="_blank" style="font-family:var(--mono);font-size:11px;color:var(--purple);text-decoration:none;">→ Full quickstart guide</a></div>
           </div>
         </div>
       </div>`;
@@ -3075,9 +3078,10 @@ function renderApiKeys(keys) {
       <div style="display:flex;flex-direction:column;gap:14px;max-width:520px;">
         <div class="qs-step"><div class="qs-num">1</div><div class="qs-body"><div class="qs-title">Install the SDK</div><code class="qs-code">pip install darkmatter-sdk</code></div></div>
         <div class="qs-step"><div class="qs-num">2</div><div class="qs-body"><div class="qs-title">Configure with your key</div><code class="qs-code">import darkmatter as dm<br>dm.configure(api_key="dm_sk_…")</code></div></div>
-        <div class="qs-step"><div class="qs-num">3</div><div class="qs-body"><div class="qs-title">Commit your first decision</div><code class="qs-code">ctx = dm.commit(payload={"input": "…", "output": "…"})<br>print(ctx["verify_url"])</code></div></div>
+        <div class="qs-step"><div class="qs-num">3</div><div class="qs-body"><div class="qs-title">Commit your first decision</div><code class="qs-code">ctx = dm.commit(payload={<br>&nbsp;&nbsp;"input":  "Approve refund #84721? $284.00, 18 days since purchase.",<br>&nbsp;&nbsp;"output": "Approved. Customer within 30-day window."<br>})<br>print(ctx["verify_url"])</code></div></div>
       </div>
-      <div style="margin-top:16px;"><a href="/docs#quickstart" target="_blank" style="font-family:var(--mono);font-size:11px;color:var(--purple);text-decoration:none;">→ Full quickstart guide</a></div>
+      <div style="margin-top:12px;font-size:12px;color:var(--t3);line-height:1.6;max-width:520px;">The payload is a free-form object. Add any fields that matter to your use case &mdash; model name, agent version, confidence score, order ID, or any domain-specific context. All fields are stored, verifiable, and included in the proof bundle.</div>
+      <div style="margin-top:12px;"><a href="/docs#quickstart" target="_blank" style="font-family:var(--mono);font-size:11px;color:var(--purple);text-decoration:none;">→ Full quickstart guide</a></div>
     </div>`;
 }
 
