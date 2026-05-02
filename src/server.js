@@ -330,16 +330,16 @@ async function requireAuth(req, res, next) {
       (req.headers['authorization'] || '').replace('Bearer ', '').trim();
     if (!token) return res.status(401).json({ error: 'Not authenticated' });
 
-    const { data: { user }, error } = await supabaseService.auth.getUser(token);
+    const { data: { user }, error } = await supabaseAnon.auth.getUser(token);
     if (!error && user) { req.user = user; return next(); }
 
     // Token expired — try refresh cookie then header
     const rt = req.cookies?.dm_refresh || req.headers['x-refresh-token'];
     if (rt) {
       try {
-        const { data: rd } = await supabaseService.auth.refreshSession({ refresh_token: rt });
+        const { data: rd } = await supabaseAnon.auth.refreshSession({ refresh_token: rt });
         if (rd && rd.session && rd.session.access_token) {
-          const { data: { user: ru } } = await supabaseService.auth.getUser(rd.session.access_token);
+          const { data: { user: ru } } = await supabaseAnon.auth.getUser(rd.session.access_token);
           if (ru) {
             req.user = ru;
             setAuthCookies(res, rd.session);
@@ -376,14 +376,14 @@ async function flexAuth(req, res, next) {
   if (!token) return res.status(401).json({ error: 'Authorization required' });
 
   try {
-    const { data: { user }, error } = await supabaseService.auth.getUser(token);
+    const { data: { user }, error } = await supabaseAnon.auth.getUser(token);
     if (!error && user) { req.user = user; req.authType = 'supabase'; return next(); }
 
     const rt = req.cookies?.dm_refresh || req.headers['x-refresh-token'];
     if (rt) {
-      const { data: rd } = await supabaseService.auth.refreshSession({ refresh_token: rt });
+      const { data: rd } = await supabaseAnon.auth.refreshSession({ refresh_token: rt });
       if (rd && rd.session) {
-        const { data: { user: ru } } = await supabaseService.auth.getUser(rd.session.access_token);
+        const { data: { user: ru } } = await supabaseAnon.auth.getUser(rd.session.access_token);
         if (ru) {
           req.user = ru; req.authType = 'supabase';
           setAuthCookies(res, rd.session);
@@ -4773,7 +4773,7 @@ async function claudeProxyAuth(req, res, next) {
       // Try refresh
       const rt = req.headers['x-refresh-token'];
       if (rt) {
-        const { data: rd } = await supabaseService.auth.refreshSession({ refresh_token: rt });
+        const { data: rd } = await supabaseAnon.auth.refreshSession({ refresh_token: rt });
         if (rd?.user) {
           req.userId   = rd.user.id;
           req.authMode = 'user_token';
@@ -5125,15 +5125,15 @@ async function wsAuth(req, res, next) {
       (req.headers.authorization || '').replace('Bearer ', '').trim();
     if (!token) return res.status(401).json({ error: 'No token' });
 
-    const { data: { user }, error } = await supabaseService.auth.getUser(token);
+    const { data: { user }, error } = await supabaseAnon.auth.getUser(token);
     if (!error && user) { req.user = user; return next(); }
 
     const rt = req.cookies?.dm_refresh || req.headers['x-refresh-token'];
     if (rt) {
       try {
-        const { data: rd } = await supabaseService.auth.refreshSession({ refresh_token: rt });
+        const { data: rd } = await supabaseAnon.auth.refreshSession({ refresh_token: rt });
         if (rd && rd.session && rd.session.access_token) {
-          const { data: { user: ru } } = await supabaseService.auth.getUser(rd.session.access_token);
+          const { data: { user: ru } } = await supabaseAnon.auth.getUser(rd.session.access_token);
           if (ru) {
             req.user = ru;
             setAuthCookies(res, rd.session);
@@ -5788,7 +5788,7 @@ app.post('/api/auth/refresh', async (req, res) => {
   try {
     const refresh_token = req.cookies?.dm_refresh || req.body?.refresh_token;
     if (!refresh_token) return res.status(400).json({ error: 'No refresh token' });
-    const { data, error } = await supabaseService.auth.refreshSession({ refresh_token });
+    const { data, error } = await supabaseAnon.auth.refreshSession({ refresh_token });
     if (error) {
       clearAuthCookies(res);
       return res.status(401).json({ error: error.message });

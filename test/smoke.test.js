@@ -830,6 +830,45 @@ test('signup.html does not expose raw /r/:id URL to users without explanation', 
   assert(!html.includes('/r/:id'), 'signup.html must not show raw /r/:id route to users — use plain language instead');
 });
 
+// Bug: supabaseService.auth.refreshSession() is called in requireAuth, flexAuth,
+// and wsAuth. Even with persistSession:false, refreshSession() overwrites the
+// in-memory auth state on the client object, replacing the service-role JWT with
+// the user's JWT. Subsequent DB calls then run under the user identity and hit RLS,
+// causing INSERT failures (api-key creation returns RLS error) and empty SELECT
+// results. Fix: all auth.refreshSession() and auth.getUser() calls in middleware
+// must use supabaseAnon, not supabaseService.
+console.log('\nRLS pollution prevention (auth middleware client isolation)');
+
+test('requireAuth uses supabaseAnon.auth.refreshSession (not supabaseService)', function() {
+  var idx   = server.indexOf('async function requireAuth');
+  var slice = server.slice(idx, idx + 800);
+  assert(!slice.includes('supabaseService.auth.refreshSession'),
+    'requireAuth must not call supabaseService.auth.refreshSession — use supabaseAnon to avoid RLS pollution');
+  assert(slice.includes('supabaseAnon.auth.refreshSession'),
+    'requireAuth must call supabaseAnon.auth.refreshSession for token refresh');
+});
+
+test('flexAuth uses supabaseAnon.auth.refreshSession (not supabaseService)', function() {
+  var idx   = server.indexOf('async function flexAuth');
+  var slice = server.slice(idx, idx + 800);
+  assert(!slice.includes('supabaseService.auth.refreshSession'),
+    'flexAuth must not call supabaseService.auth.refreshSession — use supabaseAnon to avoid RLS pollution');
+});
+
+test('wsAuth uses supabaseAnon.auth.refreshSession (not supabaseService)', function() {
+  var idx   = server.indexOf('async function wsAuth');
+  var slice = server.slice(idx, idx + 800);
+  assert(!slice.includes('supabaseService.auth.refreshSession'),
+    'wsAuth must not call supabaseService.auth.refreshSession — use supabaseAnon to avoid RLS pollution');
+  assert(slice.includes('supabaseAnon.auth.refreshSession'),
+    'wsAuth must call supabaseAnon.auth.refreshSession for token refresh');
+});
+
+test('no supabaseService.auth.refreshSession anywhere in codebase', function() {
+  assert(!server.includes('supabaseService.auth.refreshSession'),
+    'supabaseService.auth.refreshSession found in server.js — this corrupts the service-role JWT and causes RLS errors');
+});
+
 // Summary
 console.log('\n' + '-'.repeat(50));
 console.log('Passed: ' + passed + '  Failed: ' + failed + '  Total: ' + (passed+failed));
