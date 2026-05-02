@@ -1312,13 +1312,16 @@ app.post('/api/commit', apiLimiter, requireApiKey, async (req, res) => {
       const userId = req.agent.user_id;
       if (userId) {
         // Look up subscription (DB first, then free fallback)
-        const { data: sub } = await supabaseService
-          .from('subscriptions')
-          .select('plan, commit_limit, current_period_start')
-          .eq('user_id', userId)
-          .eq('status', 'active')
-          .single()
-          .catch(() => ({ data: null }));
+        let sub = null;
+        try {
+          const { data, error } = await supabaseService
+            .from('subscriptions')
+            .select('plan, commit_limit, current_period_start')
+            .eq('user_id', userId)
+            .eq('status', 'active')
+            .single();
+          if (!error) sub = data;
+        } catch (_) {}
 
         const currentPlan  = sub?.plan || 'free';
         _commitPlan        = currentPlan;
@@ -2916,13 +2919,16 @@ app.get('/api/billing/subscription', wsAuth, async (req, res) => {
     const bytesUsed = usageRow?.bytes_used   || 0;
 
     // 1. Check DB subscriptions table first (fast, no Stripe API call)
-    const { data: dbSub } = await supabaseService
-      .from('subscriptions')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('status', 'active')
-      .single()
-      .catch(() => ({ data: null }));
+    let dbSub = null;
+    try {
+      const { data, error } = await supabaseService
+        .from('subscriptions')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('status', 'active')
+        .single();
+      if (!error) dbSub = data;
+    } catch (_) {}
 
     if (dbSub && dbSub.plan && dbSub.plan !== 'free') {
       const meta = PLAN_META[dbSub.plan] || PLAN_META.free;
@@ -5934,13 +5940,16 @@ app.get('/api/workspace/stats/usage', requireAuth, async (req, res) => {
 
     // Per-user commit count / limit / period_start (for the requesting user)
     const userId = req.user.id;
-    const { data: userSub } = await supabaseService
-      .from('subscriptions')
-      .select('plan, commit_limit, current_period_start')
-      .eq('user_id', userId)
-      .eq('status', 'active')
-      .single()
-      .catch(() => ({ data: null }));
+    let userSub = null;
+    try {
+      const { data, error } = await supabaseService
+        .from('subscriptions')
+        .select('plan, commit_limit, current_period_start')
+        .eq('user_id', userId)
+        .eq('status', 'active')
+        .single();
+      if (!error) userSub = data;
+    } catch (_) {}
     const userPlan      = userSub?.plan || 'free';
     const userPlanMeta  = PLAN_META[userPlan] || PLAN_META.free;
     const userLimit     = userSub?.commit_limit ?? userPlanMeta.commitLimit;
@@ -6228,8 +6237,12 @@ const _flagCache = {}; // in-memory cache — refreshed on GET
 
 async function getFlag(key) {
   if (key in _flagCache) return _flagCache[key];
-  const { data } = await supabaseService
-    .from('feature_flags').select('enabled').eq('key', key).single().catch(() => ({ data: null }));
+  let data = null;
+  try {
+    const result = await supabaseService
+      .from('feature_flags').select('enabled').eq('key', key).single();
+    if (!result.error) data = result.data;
+  } catch (_) {}
   const val = data?.enabled !== undefined ? data.enabled : true; // default on
   _flagCache[key] = val;
   return val;
