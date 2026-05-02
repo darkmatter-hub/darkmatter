@@ -1195,8 +1195,11 @@ app.post('/api/commit', apiLimiter, requireApiKey, async (req, res) => {
 
     // Accept either payload (v1) or context (legacy)
     const resolvedPayload = payload || (context ? { output: context } : null);
-    if (!toAgentId || !resolvedPayload) {
-      return res.status(400).json({ error: 'toAgentId and payload (or context) required' });
+    // toAgentId defaults to the authenticated agent's own ID — so dm.configure(api_key=...)
+    // alone works without needing agent_id in the request body.
+    const resolvedAgentId = toAgentId || req.agent.agent_id;
+    if (!resolvedAgentId || !resolvedPayload) {
+      return res.status(400).json({ error: 'payload (or context) required' });
     }
 
     // Hard abuse floor: 10 MB per commit. No legitimate agent decision exceeds this.
@@ -1397,7 +1400,7 @@ app.post('/api/commit', apiLimiter, requireApiKey, async (req, res) => {
     const { data: toAgent } = await supabaseService
       .from('agents')
       .select('agent_id')
-      .eq('agent_id', toAgentId)
+      .eq('agent_id', resolvedAgentId)
       .single();
 
     if (!toAgent) {
@@ -1425,14 +1428,14 @@ app.post('/api/commit', apiLimiter, requireApiKey, async (req, res) => {
           accepted_at:         acceptedAt,
           spec_version:        '1.0',
           verified:            false,
-          verification_reason: `Recipient agent ${toAgentId} not found`,
+          verification_reason: `Recipient agent ${resolvedAgentId} not found`,
           timestamp,
         });
 
       return res.status(404).json({
         id:        commitId,
         verified:  false,
-        reason:    `Agent ${toAgentId} not found`,
+        reason:    `Agent ${resolvedAgentId} not found`,
         timestamp,
       });
     }
@@ -1443,7 +1446,7 @@ app.post('/api/commit', apiLimiter, requireApiKey, async (req, res) => {
         id:                  commitId,
         schema_version:      schemaVersion,
         from_agent:          req.agent.agent_id,
-        to_agent:            toAgentId,
+        to_agent:            resolvedAgentId,
         context:             { ...resolvedPayload, _eventType: resolvedType },
         payload:             resolvedPayload,
         event_type:          resolvedType,
@@ -1479,19 +1482,19 @@ app.post('/api/commit', apiLimiter, requireApiKey, async (req, res) => {
     const { data: recipientAgent } = await supabaseService
       .from('agents')
       .select('agent_id, agent_name, webhook_url, webhook_secret')
-      .eq('agent_id', toAgentId)
+      .eq('agent_id', resolvedAgentId)
       .single();
 
     // Fire event hooks (post-commit)
     fireEventHooks(req.agent.agent_id, 'commit', {
-      ctxId: commitId, toAgentId, traceId, eventType: resolvedType,
+      ctxId: commitId, toAgentId: resolvedAgentId, traceId, eventType: resolvedType,
     }).catch(() => {});
 
     if (recipientAgent?.webhook_url) {
       deliverWebhook(recipientAgent, {
         id:         commitId,
         from_agent: req.agent.agent_id,
-        to_agent:   toAgentId,
+        to_agent:   resolvedAgentId,
         context:    resolvedPayload,
         verified:   true,
         timestamp,
@@ -1502,7 +1505,7 @@ app.post('/api/commit', apiLimiter, requireApiKey, async (req, res) => {
       id:                  commitId,
       schema_version:      schemaVersion,
       from_agent:          req.agent.agent_id,
-      to_agent:            toAgentId,
+      to_agent:            resolvedAgentId,
       payload:             resolvedPayload,
       event_type:          resolvedType,
       parent_id:           parentId  || null,
@@ -1518,7 +1521,7 @@ app.post('/api/commit', apiLimiter, requireApiKey, async (req, res) => {
       assurance_level:     assuranceLevel,
       completeness_claim:  completeness_claim !== undefined ? completeness_claim : null,
       timestamp,
-    }, { [req.agent.agent_id]: req.agent.agent_name, [toAgentId]: recipientAgent?.agent_name || toAgentId });
+    }, { [req.agent.agent_id]: req.agent.agent_name, [resolvedAgentId]: recipientAgent?.agent_name || resolvedAgentId });
     receipt.assurance_level    = assuranceLevel;
     receipt.completeness_claim = completeness_claim !== undefined ? completeness_claim : null;
     receipt.verify_url         = (process.env.APP_URL || 'https://darkmatterhub.ai') + '/r/' + commitId;
