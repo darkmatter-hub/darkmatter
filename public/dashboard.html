@@ -1978,37 +1978,28 @@ async function openDrawer(record) {
       if (res.ok) {
         const data = await res.json();
         if (data.transcript?.length) {
-          const firstAssistant = data.transcript.find(t => t.role === 'assistant');
-          if (firstAssistant?.content) {
+          const firstWithContent = data.transcript.find(t => t.content || t.input);
+          if (firstWithContent?.content) {
             document.getElementById('drawer-preview').textContent =
-              firstAssistant.content.slice(0, 300) + (firstAssistant.content.length > 300 ? '…' : '');
+              firstWithContent.content.slice(0, 300) + (firstWithContent.content.length > 300 ? '…' : '');
           }
-          tc.innerHTML = data.transcript.map(t => `
-            <div class="dt-turn" style="margin-bottom:14px;">
-              <div style="font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--t3);margin-bottom:4px;">${t.role === 'assistant' ? modelLabel : 'Agent'}</div>
-              <div style="font-size:13.5px;color:var(--t1);line-height:1.6;background:var(--bg-0);border:1px solid var(--brd);border-radius:8px;padding:10px 12px;">${escHtml(t.content).replace(/\n/g,'<br>')}</div>
-            </div>`).join('');
+          const fieldSt = 'background:var(--bg-0);border:1px solid var(--brd);border-radius:8px;padding:10px 12px;font-size:13px;color:var(--t1);line-height:1.6;white-space:pre-wrap;word-break:break-word;';
+          const lblSt   = 'font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--t3);margin-bottom:4px;';
+          tc.innerHTML = data.transcript.map(t => {
+            let html = '<div class="dt-turn" style="margin-bottom:18px;">';
+            if (t.input) {
+              const s = typeof t.input === 'string' ? t.input : JSON.stringify(t.input, null, 2);
+              html += `<div style="margin-bottom:10px;"><div style="${lblSt}">Input</div><div style="${fieldSt}">${escHtml(s).replace(/\n/g,'<br>')}</div></div>`;
+            }
+            if (t.content) {
+              const lbl = t.input ? 'Output' : (t.role === 'assistant' ? (modelLabel || 'Output') : 'Agent');
+              html += `<div><div style="${lblSt}">${escHtml(lbl)}</div><div style="${fieldSt}">${escHtml(t.content).replace(/\n/g,'<br>')}</div></div>`;
+            }
+            html += '</div>';
+            return html;
+          }).join('');
         } else {
-          // Show input/output cards if present, else raw payload JSON
-          const payload = data.payload || data;
-          const hasIn  = payload.input  !== undefined && payload.input  !== null && payload.input  !== '';
-          const hasOut = payload.output !== undefined && payload.output !== null && payload.output !== '';
-          if (hasIn || hasOut) {
-            const fieldSt = 'background:var(--bg-0);border:1px solid var(--brd);border-radius:8px;padding:10px 12px;font-size:13px;color:var(--t1);line-height:1.6;white-space:pre-wrap;word-break:break-word;';
-            const lblSt   = 'font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--t3);margin-bottom:4px;';
-            let html = '';
-            if (hasIn) {
-              const s = typeof payload.input === 'string' ? payload.input : JSON.stringify(payload.input, null, 2);
-              html += `<div style="margin-bottom:14px;"><div style="${lblSt}">Input</div><div style="${fieldSt}">${escHtml(s)}</div></div>`;
-            }
-            if (hasOut) {
-              const s = typeof payload.output === 'string' ? payload.output : JSON.stringify(payload.output, null, 2);
-              html += `<div style="margin-bottom:14px;"><div style="${lblSt}">Output</div><div style="${fieldSt}">${escHtml(s)}</div></div>`;
-            }
-            tc.innerHTML = html;
-          } else {
-            tc.innerHTML = `<pre style="font-family:var(--mono);font-size:11px;color:var(--t1);background:var(--bg-0);border:1px solid var(--brd);border-radius:8px;padding:14px;overflow-x:auto;white-space:pre-wrap;word-break:break-all;">${escHtml(JSON.stringify(payload, null, 2))}</pre>`;
-          }
+          tc.innerHTML = '<div style="padding:20px;text-align:center;color:var(--t3);font-size:13px;">No payload available.</div>';
         }
       } else {
         tc.innerHTML = '<div style="padding:20px;text-align:center;color:var(--t3);font-size:13px;">No payload available.</div>';
