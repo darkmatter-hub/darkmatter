@@ -1306,6 +1306,13 @@ window._dmAuthPromise = fetch('/api/user/me')
               <div id="settings-usage-bar" style="height:100%;background:#22c55e;transition:width .4s;width:0%;"></div>
             </div>
             <div id="settings-usage-text" style="font-size:13px;color:var(--t2);">Loading…</div>
+            <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--brd);">
+              <div style="font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--t3);margin-bottom:10px;">Data this month</div>
+              <div style="background:var(--bg-0);border:1px solid var(--brd);border-radius:6px;overflow:hidden;height:8px;margin:0 0 8px;">
+                <div id="settings-data-bar" style="height:100%;background:#6366f1;transition:width .4s;width:0%;"></div>
+              </div>
+              <div id="settings-data-text" style="font-size:13px;color:var(--t2);">Loading…</div>
+            </div>
           </div>
 
           <!-- Help & feedback panel -->
@@ -2234,6 +2241,21 @@ async function loadSettings() {
       if (barEl)  { barEl.style.width = '100%'; barEl.style.background = '#22c55e'; }
       if (textEl) textEl.textContent = count.toLocaleString() + ' commits this period (unlimited)';
     }
+
+    // Data usage row
+    const dataBarEl  = document.getElementById('settings-data-bar');
+    const dataTextEl = document.getElementById('settings-data-text');
+    const bytes      = data.bytesUsed || 0;
+    function fmtBytes(b) {
+      if (b >= 1024 * 1024 * 1024) return (b / (1024 * 1024 * 1024)).toFixed(2) + ' GB';
+      return (b / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+    // Show bar as fraction of 10 MB hard limit per-commit * commits (visual reference only)
+    // Use 1 GB as the 100% mark so early users see a sensible bar
+    const dataRefGB = 1024 * 1024 * 1024;
+    const dataPct   = Math.min(100, Math.round(bytes / dataRefGB * 100));
+    if (dataBarEl) { dataBarEl.style.width = dataPct + '%'; }
+    if (dataTextEl) dataTextEl.textContent = bytes > 0 ? fmtBytes(bytes) + ' payload data this month' : '0 MB payload data this month';
   } catch (_) {}
 }
 
