@@ -4356,13 +4356,31 @@ app.get('/r/:traceId', async (req, res) => {
     var messagesHTML = '';
     commits.forEach(function(c, i) {
       var p = c.payload || {};
-      var role = p.role || (i % 2 === 0 ? 'user' : 'assistant');
-      var text = p.text || p.output || p.summary || p.prompt || '';
-      if (!text.trim()) return;
       var ts2 = c.client_timestamp || c.timestamp || '';
       var tsStr = ts2 ? new Date(ts2).toLocaleString('en-GB', { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit', timeZone:'UTC', hour12:false }) + ' UTC' : '';
-      var isUser = role === 'user';
       var platHint = p.platform ? '<span style="font-weight:400;opacity:.5;margin-left:5px;">' + escH(p.platform) + '</span>' : '';
+
+      var hasInput  = p.input  !== undefined && p.input  !== null && p.input  !== '';
+      var hasOutput = p.output !== undefined && p.output !== null && p.output !== '';
+
+      if (hasInput || hasOutput) {
+        // Standard agent record: input bubble left, output bubble right
+        if (hasInput) {
+          var inputStr = typeof p.input === 'string' ? p.input : JSON.stringify(p.input, null, 2);
+          messagesHTML += '<div class="msg-grp"><div class="role-label agent">AGENT INPUT' + platHint + '</div><div class="bubble agent">' + escH(inputStr) + '</div><div class="msg-time agent">' + tsStr + '</div></div>';
+        }
+        if (hasOutput) {
+          var outputStr = typeof p.output === 'string' ? p.output : JSON.stringify(p.output, null, 2);
+          messagesHTML += '<div class="msg-grp"><div class="role-label user">AGENT OUTPUT' + platHint + '</div><div class="bubble user">' + escH(outputStr) + '</div><div class="msg-time user">' + tsStr + '</div></div>';
+        }
+        return;
+      }
+
+      // Legacy / conversation-style records (role-based)
+      var role = p.role || (i % 2 === 0 ? 'user' : 'assistant');
+      var text = p.text || p.summary || p.prompt || '';
+      if (!text.trim()) return;
+      var isUser = role === 'user';
       var agentLabel = p.agentName || p.agent_name || 'AGENT';
       if (isUser) {
         messagesHTML += '<div class="msg-grp"><div class="role-label user">YOU' + platHint + '</div><div class="bubble user">' + escH(text) + '</div><div class="msg-time user">' + tsStr + '</div></div>';

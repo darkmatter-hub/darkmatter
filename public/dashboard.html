@@ -1989,9 +1989,26 @@ async function openDrawer(record) {
               <div style="font-size:13.5px;color:var(--t1);line-height:1.6;background:var(--bg-0);border:1px solid var(--brd);border-radius:8px;padding:10px 12px;">${escHtml(t.content).replace(/\n/g,'<br>')}</div>
             </div>`).join('');
         } else {
-          // Show raw payload if no transcript
+          // Show input/output cards if present, else raw payload JSON
           const payload = data.payload || data;
-          tc.innerHTML = `<pre style="font-family:var(--mono);font-size:11px;color:var(--t1);background:var(--bg-0);border:1px solid var(--brd);border-radius:8px;padding:14px;overflow-x:auto;white-space:pre-wrap;word-break:break-all;">${escHtml(JSON.stringify(payload, null, 2))}</pre>`;
+          const hasIn  = payload.input  !== undefined && payload.input  !== null && payload.input  !== '';
+          const hasOut = payload.output !== undefined && payload.output !== null && payload.output !== '';
+          if (hasIn || hasOut) {
+            const fieldSt = 'background:var(--bg-0);border:1px solid var(--brd);border-radius:8px;padding:10px 12px;font-size:13px;color:var(--t1);line-height:1.6;white-space:pre-wrap;word-break:break-word;';
+            const lblSt   = 'font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--t3);margin-bottom:4px;';
+            let html = '';
+            if (hasIn) {
+              const s = typeof payload.input === 'string' ? payload.input : JSON.stringify(payload.input, null, 2);
+              html += `<div style="margin-bottom:14px;"><div style="${lblSt}">Input</div><div style="${fieldSt}">${escHtml(s)}</div></div>`;
+            }
+            if (hasOut) {
+              const s = typeof payload.output === 'string' ? payload.output : JSON.stringify(payload.output, null, 2);
+              html += `<div style="margin-bottom:14px;"><div style="${lblSt}">Output</div><div style="${fieldSt}">${escHtml(s)}</div></div>`;
+            }
+            tc.innerHTML = html;
+          } else {
+            tc.innerHTML = `<pre style="font-family:var(--mono);font-size:11px;color:var(--t1);background:var(--bg-0);border:1px solid var(--brd);border-radius:8px;padding:14px;overflow-x:auto;white-space:pre-wrap;word-break:break-all;">${escHtml(JSON.stringify(payload, null, 2))}</pre>`;
+          }
         }
       } else {
         tc.innerHTML = '<div style="padding:20px;text-align:center;color:var(--t3);font-size:13px;">No payload available.</div>';
