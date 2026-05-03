@@ -4265,7 +4265,7 @@ app.get('/r/:traceId', async (req, res) => {
     const { traceId } = req.params;
     if (!traceId || traceId.length > 120 || !/^[a-zA-Z0-9_-]+$/.test(traceId)) return res.status(400).json({ error: 'Invalid ID' });
 
-    const rSel = 'id, trace_id, from_agent, agent_id, agent_info, payload, timestamp, client_timestamp, event_type, integrity_hash, payload_hash, parent_hash, verified, assurance_level, completeness_claim';
+    const rSel = 'id, trace_id, parent_id, from_agent, agent_id, agent_info, payload, timestamp, client_timestamp, event_type, integrity_hash, payload_hash, parent_hash, verified, assurance_level, completeness_claim';
     const [{ data: rById }, { data: rByTrace, error }] = await Promise.all([
       supabaseService.from('commits').select(rSel).eq('id', traceId).order('timestamp', { ascending: true }),
       supabaseService.from('commits').select(rSel).eq('trace_id', traceId).order('timestamp', { ascending: true }),
@@ -4274,6 +4274,27 @@ app.get('/r/:traceId', async (req, res) => {
     const commits = [...(rById || []), ...(rByTrace || [])]
       .filter(c => !rSeen.has(c.id) && rSeen.add(c.id))
       .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+    // Walk parent_id chain upward to collect ancestors not yet in the set
+    const allIds = new Set(commits.map(c => c.id));
+    let toFetchUp = commits.map(c => c.parent_id).filter(pid => pid && !allIds.has(pid));
+    while (toFetchUp.length > 0) {
+      const { data: ancestors } = await supabaseService.from('commits').select(rSel).in('id', toFetchUp);
+      if (!ancestors || ancestors.length === 0) break;
+      ancestors.forEach(a => { allIds.add(a.id); commits.push(a); });
+      toFetchUp = ancestors.map(a => a.parent_id).filter(pid => pid && !allIds.has(pid));
+    }
+    // Walk forward: iteratively collect children whose parent_id is in the current set
+    let toFetchFwd = [...allIds];
+    while (toFetchFwd.length > 0) {
+      const { data: children } = await supabaseService.from('commits').select(rSel).in('parent_id', toFetchFwd).limit(200);
+      if (!children || children.length === 0) break;
+      const fresh = children.filter(c => !allIds.has(c.id));
+      if (fresh.length === 0) break;
+      fresh.forEach(c => { allIds.add(c.id); commits.push(c); });
+      toFetchFwd = fresh.map(c => c.id);
+    }
+    commits.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
     if (error || !commits || !commits.length) {
       if (req.query.format === 'json') return res.status(404).json({ error: 'Record not found.' });
