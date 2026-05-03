@@ -322,6 +322,28 @@ async function requireApiKey(req, res, next) {
   }
 }
 
+// ── Local JWT verification — eliminates Supabase network call + disk IO per request ──
+// Set SUPABASE_JWT_SECRET in Railway env (Supabase dashboard → Settings → API → JWT Secret).
+// If the env var is absent the middleware falls back to the remote supabaseAnon.auth.getUser()
+// path so the app works even before the secret is configured.
+const _JWT_SECRET = process.env.SUPABASE_JWT_SECRET || null;
+function _verifyJwt(token) {
+  if (!_JWT_SECRET) return null; // secret not set — caller must use remote path
+  const parts = token.split('.');
+  if (parts.length !== 3) { const e = new Error('malformed'); e.name = 'JwtError'; throw e; }
+  const [hdr, payload, sig] = parts;
+  const expected = crypto.createHmac('sha256', _JWT_SECRET).update(`${hdr}.${payload}`).digest('base64url');
+  if (expected !== sig) { const e = new Error('invalid_signature'); e.name = 'JwtError'; throw e; }
+  const claims = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'));
+  const now = Math.floor(Date.now() / 1000);
+  if (claims.exp && claims.exp < now) { const e = new Error('expired'); e.name = 'TokenExpiredError'; throw e; }
+  return claims;
+}
+function _claimsToUser(c) {
+  return { id: c.sub, email: c.email, role: c.role,
+    app_metadata: c.app_metadata || {}, user_metadata: c.user_metadata || {} };
+}
+
 // ── Middleware: validate Supabase JWT (dashboard calls) ──
 async function requireAuth(req, res, next) {
   try {
@@ -330,8 +352,20 @@ async function requireAuth(req, res, next) {
       (req.headers['authorization'] || '').replace('Bearer ', '').trim();
     if (!token) return res.status(401).json({ error: 'Not authenticated' });
 
-    const { data: { user }, error } = await supabaseAnon.auth.getUser(token);
-    if (!error && user) { req.user = user; return next(); }
+    // Fast path: verify locally — no network call, no Supabase disk IO
+    if (_JWT_SECRET) {
+      try {
+        req.user = _claimsToUser(_verifyJwt(token));
+        return next();
+      } catch (e) {
+        if (e.name !== 'TokenExpiredError') return res.status(401).json({ error: 'Not authenticated' });
+        // expired — fall through to refresh
+      }
+    } else {
+      // No local secret — use Supabase API
+      const { data: { user }, error } = await supabaseAnon.auth.getUser(token);
+      if (!error && user) { req.user = user; return next(); }
+    }
 
     // Token expired — try refresh cookie then header
     const rt = req.cookies?.dm_refresh || req.headers['x-refresh-token'];
@@ -339,12 +373,14 @@ async function requireAuth(req, res, next) {
       try {
         const { data: rd } = await supabaseAnon.auth.refreshSession({ refresh_token: rt });
         if (rd && rd.session && rd.session.access_token) {
-          const { data: { user: ru } } = await supabaseAnon.auth.getUser(rd.session.access_token);
-          if (ru) {
+          try { req.user = _claimsToUser(_verifyJwt(rd.session.access_token)); }
+          catch(_) {
+            const { data: { user: ru } } = await supabaseAnon.auth.getUser(rd.session.access_token);
+            if (!ru) return res.status(401).json({ error: 'Session expired. Please sign in again.' });
             req.user = ru;
-            setAuthCookies(res, rd.session);
-            return next();
           }
+          setAuthCookies(res, rd.session);
+          return next();
         }
       } catch(_) {}
     }
@@ -376,19 +412,33 @@ async function flexAuth(req, res, next) {
   if (!token) return res.status(401).json({ error: 'Authorization required' });
 
   try {
-    const { data: { user }, error } = await supabaseAnon.auth.getUser(token);
-    if (!error && user) { req.user = user; req.authType = 'supabase'; return next(); }
+    // Fast path: local JWT verify
+    if (_JWT_SECRET) {
+      try {
+        req.user = _claimsToUser(_verifyJwt(token));
+        req.authType = 'supabase';
+        return next();
+      } catch (e) {
+        if (e.name !== 'TokenExpiredError') return res.status(401).json({ error: 'Invalid API key or session' });
+      }
+    } else {
+      const { data: { user }, error } = await supabaseAnon.auth.getUser(token);
+      if (!error && user) { req.user = user; req.authType = 'supabase'; return next(); }
+    }
 
     const rt = req.cookies?.dm_refresh || req.headers['x-refresh-token'];
     if (rt) {
       const { data: rd } = await supabaseAnon.auth.refreshSession({ refresh_token: rt });
       if (rd && rd.session) {
-        const { data: { user: ru } } = await supabaseAnon.auth.getUser(rd.session.access_token);
-        if (ru) {
-          req.user = ru; req.authType = 'supabase';
-          setAuthCookies(res, rd.session);
-          return next();
+        try { req.user = _claimsToUser(_verifyJwt(rd.session.access_token)); }
+        catch(_) {
+          const { data: { user: ru } } = await supabaseAnon.auth.getUser(rd.session.access_token);
+          if (!ru) return res.status(401).json({ error: 'Invalid API key or session' });
+          req.user = ru;
         }
+        req.authType = 'supabase';
+        setAuthCookies(res, rd.session);
+        return next();
       }
     }
   } catch(e) {}
@@ -5214,20 +5264,32 @@ async function wsAuth(req, res, next) {
       (req.headers.authorization || '').replace('Bearer ', '').trim();
     if (!token) return res.status(401).json({ error: 'No token' });
 
-    const { data: { user }, error } = await supabaseAnon.auth.getUser(token);
-    if (!error && user) { req.user = user; return next(); }
+    // Fast path: local JWT verify
+    if (_JWT_SECRET) {
+      try {
+        req.user = _claimsToUser(_verifyJwt(token));
+        return next();
+      } catch (e) {
+        if (e.name !== 'TokenExpiredError') return res.status(401).json({ error: 'Session expired. Please sign in again.' });
+      }
+    } else {
+      const { data: { user }, error } = await supabaseAnon.auth.getUser(token);
+      if (!error && user) { req.user = user; return next(); }
+    }
 
     const rt = req.cookies?.dm_refresh || req.headers['x-refresh-token'];
     if (rt) {
       try {
         const { data: rd } = await supabaseAnon.auth.refreshSession({ refresh_token: rt });
         if (rd && rd.session && rd.session.access_token) {
-          const { data: { user: ru } } = await supabaseAnon.auth.getUser(rd.session.access_token);
-          if (ru) {
+          try { req.user = _claimsToUser(_verifyJwt(rd.session.access_token)); }
+          catch(_) {
+            const { data: { user: ru } } = await supabaseAnon.auth.getUser(rd.session.access_token);
+            if (!ru) return res.status(401).json({ error: 'Session expired. Please sign in again.' });
             req.user = ru;
-            setAuthCookies(res, rd.session);
-            return next();
           }
+          setAuthCookies(res, rd.session);
+          return next();
         }
       } catch (re) { /* refresh failed */ }
     }

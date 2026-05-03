@@ -841,7 +841,7 @@ console.log('\nRLS pollution prevention (auth middleware client isolation)');
 
 test('requireAuth uses supabaseAnon.auth.refreshSession (not supabaseService)', function() {
   var idx   = server.indexOf('async function requireAuth');
-  var slice = server.slice(idx, idx + 800);
+  var slice = server.slice(idx, idx + 1500);
   assert(!slice.includes('supabaseService.auth.refreshSession'),
     'requireAuth must not call supabaseService.auth.refreshSession — use supabaseAnon to avoid RLS pollution');
   assert(slice.includes('supabaseAnon.auth.refreshSession'),
@@ -850,14 +850,14 @@ test('requireAuth uses supabaseAnon.auth.refreshSession (not supabaseService)', 
 
 test('flexAuth uses supabaseAnon.auth.refreshSession (not supabaseService)', function() {
   var idx   = server.indexOf('async function flexAuth');
-  var slice = server.slice(idx, idx + 800);
+  var slice = server.slice(idx, idx + 1500);
   assert(!slice.includes('supabaseService.auth.refreshSession'),
     'flexAuth must not call supabaseService.auth.refreshSession — use supabaseAnon to avoid RLS pollution');
 });
 
 test('wsAuth uses supabaseAnon.auth.refreshSession (not supabaseService)', function() {
   var idx   = server.indexOf('async function wsAuth');
-  var slice = server.slice(idx, idx + 800);
+  var slice = server.slice(idx, idx + 1500);
   assert(!slice.includes('supabaseService.auth.refreshSession'),
     'wsAuth must not call supabaseService.auth.refreshSession — use supabaseAnon to avoid RLS pollution');
   assert(slice.includes('supabaseAnon.auth.refreshSession'),
