@@ -4334,6 +4334,7 @@ app.get('/r/:traceId', async (req, res) => {
           payload: { input: c.payload && c.payload.input, role: c.payload && c.payload.role,
             text: c.payload && c.payload.text, output: c.payload && c.payload.output,
             summary: c.payload && c.payload.summary, prompt: c.payload && c.payload.prompt,
+            model: c.payload && c.payload.model, agent: c.payload && c.payload.agent,
             convTitle: c.payload && c.payload.convTitle,
             platform: c.payload && c.payload.platform, _source: c.payload && c.payload._source },
         }; }),
@@ -4563,7 +4564,7 @@ app.get('/r/:traceId', async (req, res) => {
       + '<div class="proof-banner-body">' + (chainIntact ? 'The ' + stepCount + ' steps shown are exactly what was captured. The hash chain has been verified \u2014 nothing has been added, removed, or altered.' : 'The record does not match its original hash. This may indicate tampering or a recording error.') + '</div>'
       + '</div>\n'
       + '<div class="proof-grid">\n'
-      + '<div class="pcard ' + (chainIntact?'ok':'') + '"><div class="pcard-top"><span class="pcard-ic ' + (chainIntact?'ok':'skip') + '">' + (chainIntact?'\u2713':'\u2014') + '</span><span class="pcard-title">Hash chain</span></div><div class="pcard-body">' + (chainIntact ? stepCount + ' steps verified' : 'Verification failed') + '</div></div>\n'
+      + '<div class="pcard ' + (chainIntact?'ok':'') + '"><div class="pcard-top"><span class="pcard-ic ' + (chainIntact?'ok':'skip') + '">' + (chainIntact?'\u2713':'\u2014') + '</span><span class="pcard-title">Hash chain</span></div><div class="pcard-body">' + (chainIntact ? stepCount + ' steps verified<details style="margin-top:5px;"><summary style="cursor:pointer;font-size:11px;color:var(--ink4);list-style:none;">\u24d8 What was checked?</summary><div style="font-size:11px;color:var(--ink3);margin-top:4px;line-height:1.7;">Each step verifies: payload hash matches stored hash &middot; integrity hash computed from payload + parent &middot; parent hash links to previous commit &middot; timestamp recorded &middot; agent identity set &middot; assurance level recorded.</div></details>' : 'Verification failed') + '</div></div>\n'
       + '</div>\n'
       + '<div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:16px 18px;">'
       + '<div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:4px;">Verify independently</div>'

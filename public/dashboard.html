@@ -1698,10 +1698,6 @@ window._dmAuthPromise = fetch('/api/user/me')
       <span class="drawer-meta-value" id="drawer-user"></span>
     </div>
     <div class="drawer-meta-item">
-      <span class="drawer-meta-label">Model</span>
-      <span class="drawer-meta-value" id="drawer-model"></span>
-    </div>
-    <div class="drawer-meta-item">
       <span class="drawer-meta-label">Committed</span>
       <span class="drawer-meta-value" id="drawer-time"></span>
     </div>
@@ -1731,7 +1727,7 @@ window._dmAuthPromise = fetch('/api/user/me')
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
       Share
     </button>
-    <button type="button" class="drawer-btn-secondary" onclick="verifyFromDrawer()">Verify →</button>
+    <button type="button" class="drawer-btn-secondary" onclick="verifyFromDrawer()">View proof →</button>
   </div>
 </div>
 
@@ -1941,7 +1937,6 @@ async function openDrawer(record) {
   // Populate fields
   document.getElementById('drawer-title').textContent     = record.title || ('Commit · ' + (record.user || 'unknown agent'));
   document.getElementById('drawer-user').textContent      = record.user  || '—';
-  document.getElementById('drawer-model').textContent     = modelLabel;
   document.getElementById('drawer-time').textContent      = record.time  || '—';
   document.getElementById('drawer-preview').textContent   = record.preview || '';
   document.getElementById('drawer-record-id').textContent = record.record || record.traceId || '—';
