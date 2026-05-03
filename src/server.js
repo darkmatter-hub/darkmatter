@@ -3933,15 +3933,13 @@ app.get('/api/og/:shareId', async (req, res) => {
   <rect width="1200" height="4" fill="url(#brand)"/>
 
   <!-- Logo area -->
-  <circle cx="72" cy="72" r="18" fill="none" stroke="#e5e7eb" stroke-width="1"/>
-  <circle cx="72" cy="58" r="4" fill="#7C3AED" opacity="0.9"/>
-  <circle cx="84" cy="80" r="3.5" fill="#2563EB" opacity="0.9"/>
-  <circle cx="60" cy="80" r="3" fill="#0891b2" opacity="0.9"/>
-  <line x1="72" y1="62" x2="82" y2="77" stroke="#7C3AED" stroke-width="0.8" opacity="0.5"/>
-  <line x1="72" y1="62" x2="62" y2="77" stroke="#7C3AED" stroke-width="0.8" opacity="0.4"/>
-  <line x1="82" y1="78" x2="62" y2="78" stroke="#0891b2" stroke-width="0.8" opacity="0.4"/>
+  <!-- Logo sigil — matches nav/footer sigil style -->
+  <circle cx="72" cy="72" r="18" fill="none" stroke="#0a0e1a" stroke-opacity="0.45" stroke-width="1.4"/>
+  <circle cx="72" cy="54" r="3.8" fill="hsl(152,64%,34%)"/>
+  <circle cx="87.6" cy="81" r="2.7" fill="#0a0e1a"/>
+  <circle cx="56.4" cy="81" r="2.7" fill="#0a0e1a" fill-opacity="0.85"/>
 
-  <text x="102" y="66" font-family="'Space Grotesk',system-ui,sans-serif" font-weight="700" font-size="22" fill="#111827" letter-spacing="-0.5">Dark</text>
+  <text x="102" y="66" font-family="'Space Grotesk',system-ui,sans-serif" font-weight="700" font-size="22" fill="#0a0e1a" letter-spacing="-0.5">Dark</text>
   <text x="144" y="66" font-family="'Space Grotesk',system-ui,sans-serif" font-weight="700" font-size="22" fill="url(#brand)" letter-spacing="-0.5">Matter</text>
 
   <!-- Chain visual -->
@@ -3952,7 +3950,7 @@ app.get('/api/og/:shareId', async (req, res) => {
   <text x="600" y="96" font-family="monospace" font-size="9" fill="#9ca3af" text-anchor="middle" letter-spacing="2" text-transform="uppercase">CHAIN</text>
 
   <!-- Main content -->
-  <text x="80" y="230" font-family="'Space Grotesk',system-ui,sans-serif" font-weight="700" font-size="42" fill="#111827" letter-spacing="-1">${chainLabel.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</text>
+  <text x="80" y="230" font-family="'Space Grotesk',system-ui,sans-serif" font-weight="700" font-size="42" fill="#0a0e1a" letter-spacing="-1">${chainLabel.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</text>
 
   <!-- Meta row -->
   <text x="80" y="290" font-family="'IBM Plex Mono',monospace" font-size="18" fill="${intactColor}">${intactLabel}${forkStr}</text>
@@ -4393,7 +4391,14 @@ app.get('/r/:traceId', async (req, res) => {
         }
         if (hasOutput) {
           var outputStr = typeof p.output === 'string' ? p.output : JSON.stringify(p.output, null, 2);
-          messagesHTML += '<div class="msg-grp"><div class="role-label user">AGENT OUTPUT' + platHint + '</div><div class="bubble user">' + escH(outputStr) + '</div><div class="msg-time user">' + tsStr + '</div></div>';
+          var modelMeta = (c.agent_info && c.agent_info.model) ? c.agent_info.model : (p.model || p._model || null);
+          var agentMeta = p.agent ? (typeof p.agent === 'string' ? p.agent : JSON.stringify(p.agent)).slice(0, 60) : null;
+          var metaLine = (modelMeta || agentMeta)
+            ? '<div style="font-size:10px;font-family:var(--mono);color:var(--ink4);margin-top:3px;text-align:right;">'
+              + (modelMeta ? escH(modelMeta) : '') + (modelMeta && agentMeta ? ' · ' : '') + (agentMeta ? escH(agentMeta) : '')
+              + '</div>'
+            : '';
+          messagesHTML += '<div class="msg-grp"><div class="role-label user">AGENT OUTPUT' + platHint + '</div><div class="bubble user">' + escH(outputStr) + '</div>' + metaLine + '<div class="msg-time user">' + tsStr + '</div></div>';
         }
         return;
       }
@@ -4559,9 +4564,6 @@ app.get('/r/:traceId', async (req, res) => {
       + '</div>\n'
       + '<div class="proof-grid">\n'
       + '<div class="pcard ' + (chainIntact?'ok':'') + '"><div class="pcard-top"><span class="pcard-ic ' + (chainIntact?'ok':'skip') + '">' + (chainIntact?'\u2713':'\u2014') + '</span><span class="pcard-title">Hash chain</span></div><div class="pcard-body">' + (chainIntact ? stepCount + ' steps verified' : 'Verification failed') + '</div></div>\n'
-      + '<div class="pcard skip"><div class="pcard-top"><span class="pcard-ic skip">\u2014</span><span class="pcard-title">Log inclusion</span></div><div class="pcard-body">Included at next checkpoint. Download proof file to verify.</div></div>\n'
-      + '<div class="pcard skip"><div class="pcard-top"><span class="pcard-ic skip">\u2014</span><span class="pcard-title">Checkpoint signed</span></div><div class="pcard-body">Available in downloaded proof file.</div></div>\n'
-      + '<div class="pcard skip"><div class="pcard-top"><span class="pcard-ic skip">\u2014</span><span class="pcard-title">Independent witness</span></div><div class="pcard-body">Check witness signatures in the proof file.</div></div>\n'
       + '</div>\n'
       + '<div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:16px 18px;">'
       + '<div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:4px;">Verify independently</div>'
@@ -7152,14 +7154,21 @@ app.get('/api/workspace/conversation/:traceId', requireAuth, async (req, res) =>
     // Build transcript
     const transcript = commits.map(c => {
       const p = c.payload || {};
+      const skip = new Set(['input','output','role','text','prompt','summary','_model','_provider','model','agent']);
+      const extra = {};
+      for (const [k,v] of Object.entries(p)) {
+        if (!skip.has(k) && v !== null && v !== undefined) extra[k] = v;
+      }
       return {
         id:        c.id,
         role:      p.role || 'assistant',
         input:     p.input || null,
         content:   p.output || p.text || p.prompt || JSON.stringify(p).slice(0, 500),
         timestamp: c.timestamp,
-        model:     c.agent_info?.model || p._model || null,
+        model:     c.agent_info?.model || p._model || p.model || null,
         provider:  c.agent_info?.provider || p._provider || null,
+        agent:     p.agent || null,
+        meta:      Object.keys(extra).length ? extra : null,
         verified:  c.verified || false,
         integrityHash: c.integrity_hash,
       };
