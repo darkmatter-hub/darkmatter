@@ -193,16 +193,11 @@ footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;gri
       <div class="plan-price">$29<span> / month</span></div>
       <div class="plan-desc">For developers running production agents.</div>
       <div class="plan-divider"></div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:hsl(var(--background)/.6);margin-bottom:.625rem">Everything in Free, plus:</div>
       <ul class="plan-features">
         <li>50,000 commits / month</li>
         <li>Up to 5 GB data per month</li>
         <li>1-year retention</li>
-        <li>Unlimited agents</li>
-        <li>L1 &#183; L2 &#183; L3 verification <span style="font-size:11px;color:hsl(var(--trace-dim))">(L3: customer signing key, non-repudiation)</span></li>
-        <li>Anthropic &#43; OpenAI SDK wrappers</li>
-        <li>Proof bundle export</li>
-        <li>Share page (/r/:id)</li>
-        <li>Ed25519 signing (BYOK keys)</li>
       </ul>
       <a href="/signup" class="plan-cta">Start Pro</a>
     </div>
@@ -214,16 +209,11 @@ footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;gri
       <div class="plan-price">$99<span> / month</span></div>
       <div class="plan-desc">For teams running production pipelines.</div>
       <div class="plan-divider"></div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:hsl(var(--trace-dim));margin-bottom:.625rem">Everything in Pro, plus:</div>
       <ul class="plan-features">
         <li>250,000 commits / month</li>
         <li>Up to 25 GB data per month</li>
         <li>Unlimited retention</li>
-        <li>Unlimited agents</li>
-        <li>L1 &#183; L2 &#183; L3 verification <span style="font-size:11px;color:hsl(var(--trace-dim))">(L3: customer signing key, non-repudiation)</span></li>
-        <li>Anthropic &#43; OpenAI SDK wrappers</li>
-        <li>Proof bundle export</li>
-        <li>Share page (/r/:id)</li>
-        <li>Ed25519 signing (BYOK keys)</li>
       </ul>
       <a href="/signup" class="plan-cta">Upgrade to Teams</a>
     </div>
@@ -232,16 +222,11 @@ footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;gri
       <div class="plan-price">$499<span> / month</span></div>
       <div class="plan-desc">For regulated industries and large-scale deployments.</div>
       <div class="plan-divider"></div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:hsl(var(--trace-dim));margin-bottom:.625rem">Everything in Teams, plus:</div>
       <ul class="plan-features">
         <li>Unlimited commits</li>
         <li>Unlimited data</li>
         <li>Custom retention policy</li>
-        <li>Unlimited agents</li>
-        <li>L1 &#183; L2 &#183; L3 verification <span style="font-size:11px;color:hsl(var(--trace-dim))">(L3: customer signing key, non-repudiation)</span></li>
-        <li>Anthropic &#43; OpenAI SDK wrappers</li>
-        <li>Proof bundle export</li>
-        <li>Share page (/r/:id)</li>
-        <li>Ed25519 signing (BYOK keys)</li>
         <li>Audit-ready export formats</li>
         <li>Priority support + SLA</li>
       </ul>
@@ -268,7 +253,7 @@ footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;gri
       </div>
       <div class="faq-item">
         <div class="faq-q">What happens if DarkMatter goes down?</div>
-        <div class="faq-a">Records already committed are exported as proof bundles that verify offline, with no DarkMatter dependency. The offline verifier is open-source and ships with the SDK.</div>
+        <div class="faq-a">Records already committed remain in the database. You can export any record as a proof bundle at any time using the Download button on any proof page or via the API. The proof bundle verifies completely offline with no DarkMatter dependency. The offline verifier is open-source and available at github.com/darkmatter-hub/darkmatter-l3-example.</div>
       </div>
     </div>
   </div>
