@@ -4534,12 +4534,15 @@ app.get('/r/:traceId', async (req, res) => {
       + '<div class="view" id="view-timeline"><div class="timeline">\n'
       + commits.map(function(c, i) {
           var p = c.payload || {};
+          // Commits with input/output are agent decision records — always label "Agent".
+          // Only use the alternating You/Agent pattern for chat-style records (payload.role / payload.text).
+          var hasDecision = !!(p.input || p.output);
           var role = p.role || (i % 2 === 0 ? 'user' : 'assistant');
           var input3 = (p.input  || '').slice(0, 140);
           var text   = (p.text || p.output || p.summary || p.prompt || '').slice(0, 280);
           var ts3 = c.client_timestamp || c.timestamp || '';
           var tsStr3 = ts3 ? new Date(ts3).toLocaleString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit',timeZone:'UTC',hour12:false})+' UTC' : '';
-          var isUser3 = role === 'user';
+          var isUser3 = !hasDecision && role === 'user';
           var actor = isUser3 ? 'You' : (p.agentName || p.agent_name || 'Agent');
           return '<div class="tl-step"><div class="tl-line"><div class="tl-dot' + (isUser3?' user':'') + '"></div><div class="tl-conn"></div></div>'
             + '<div class="tl-info"><div class="tl-head"><span class="tl-step-n">Step ' + (i+1) + '</span><span class="tl-actor">' + escH(actor) + '</span><span class="tl-time">' + tsStr3 + '</span></div>'
