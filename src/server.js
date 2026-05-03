@@ -4346,6 +4346,34 @@ app.get('/r/:traceId', async (req, res) => {
     // Build HTML render
     function escH(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
+    // Format a hex hash with middle-dot groups: sha256:a9c4·e18f·2b7d·…
+    function fmtHash(h) {
+      if (!h) return '<span style="color:var(--ink4);font-family:var(--mono);font-size:11px;">none</span>';
+      var clean = h.replace(/^sha256:/, '');
+      var parts = [];
+      for (var j = 0; j < clean.length && parts.length < 8; j += 4) parts.push(clean.slice(j, j+4));
+      return '<code style="font-family:var(--mono);font-size:11px;color:var(--ink2);">sha256:' + parts.join('·') + '…</code>';
+    }
+
+    // Per-commit hash rows for Proof tab
+    var hashStepsHTML = commits.map(function(c, idx) {
+      var al = c.assurance_level || 'L1';
+      var alColor = al === 'L3' ? '#0f7b4d' : al === 'L2' ? '#1d4ed8' : '#5a6480';
+      var alBg    = al === 'L3' ? 'rgba(15,123,77,.07)' : al === 'L2' ? 'rgba(59,130,246,.06)' : 'rgba(90,100,128,.06)';
+      var parentDisp = c.parent_hash ? fmtHash(c.parent_hash) : '<span style="font-family:var(--mono);font-size:11px;color:var(--ink4);">root (first commit)</span>';
+      return '<div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:14px 18px;margin-bottom:10px;">'
+        + '<div style="font-size:12px;font-weight:600;color:var(--ink2);margin-bottom:10px;display:flex;align-items:center;gap:8px;">'
+        + 'Step ' + (idx+1)
+        + '<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:3px;letter-spacing:.05em;background:' + alBg + ';color:' + alColor + ';border:1px solid ' + alColor + '33;">' + al + '</span>'
+        + '</div>'
+        + '<table style="font-size:11.5px;border-collapse:collapse;width:100%;">'
+        + '<tr style="border-bottom:1px solid var(--border2);"><td style="padding:5px 0;color:var(--ink4);width:120px;font-family:var(--mono);vertical-align:top;">Payload</td><td style="padding:5px 0;">' + fmtHash(c.payload_hash) + '</td></tr>'
+        + '<tr style="border-bottom:1px solid var(--border2);"><td style="padding:5px 0;color:var(--ink4);font-family:var(--mono);vertical-align:top;">Integrity</td><td style="padding:5px 0;">' + fmtHash(c.integrity_hash) + '</td></tr>'
+        + '<tr><td style="padding:5px 0;color:var(--ink4);font-family:var(--mono);vertical-align:top;">Parent</td><td style="padding:5px 0;">' + parentDisp + '</td></tr>'
+        + '</table>'
+        + '</div>';
+    }).join('');
+
     var title = (function() {
       for (var i = 0; i < commits.length; i++) {
         var ct = commits[i].payload && commits[i].payload.convTitle;
@@ -4565,8 +4593,9 @@ app.get('/r/:traceId', async (req, res) => {
       + '<div class="proof-banner-body">' + (chainIntact ? 'The ' + stepCount + ' steps shown are exactly what was captured. The hash chain has been verified \u2014 nothing has been added, removed, or altered.' : 'The record does not match its original hash. This may indicate tampering or a recording error.') + '</div>'
       + '</div>\n'
       + '<div class="proof-grid">\n'
-      + '<div class="pcard ' + (chainIntact?'ok':'') + '"><div class="pcard-top"><span class="pcard-ic ' + (chainIntact?'ok':'skip') + '">' + (chainIntact?'\u2713':'\u2014') + '</span><span class="pcard-title">Hash chain</span></div><div class="pcard-body">' + (chainIntact ? stepCount + ' steps verified<details style="margin-top:5px;"><summary style="cursor:pointer;font-size:11px;color:var(--ink4);list-style:none;">\u24d8 What was checked?</summary><div style="font-size:11px;color:var(--ink3);margin-top:4px;line-height:1.7;">Each step verifies: payload hash matches stored hash &middot; integrity hash computed from payload + parent &middot; parent hash links to previous commit &middot; timestamp recorded &middot; agent identity set &middot; assurance level recorded.</div></details>' : 'Verification failed') + '</div></div>\n'
+      + '<div class="pcard ' + (chainIntact?'ok':'') + '"><div class="pcard-top"><span class="pcard-ic ' + (chainIntact?'ok':'skip') + '">' + (chainIntact?'\u2713':'\u2014') + '</span><span class="pcard-title">Hash chain</span></div><div class="pcard-body">' + (chainIntact ? stepCount + ' steps \u2014 payload hash, integrity hash, parent link, assurance level verified per commit' : 'Verification failed') + '</div></div>\n'
       + '</div>\n'
+      + hashStepsHTML
       + '<div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:16px 18px;">'
       + '<div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:4px;">Verify independently</div>'
       + '<div style="font-size:12px;color:var(--ink3);margin-bottom:10px;">No account required. The proof file works completely offline.</div>'

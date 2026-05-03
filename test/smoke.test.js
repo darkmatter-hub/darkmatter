@@ -113,7 +113,7 @@ test('no buildContext wrapping', function() {
 // 6. /r/ public page
 console.log('\n/r/ public record page');
 var ri = server.indexOf("app.get('/r/:traceId'");
-var rb = server.slice(ri, ri + 30000);
+var rb = server.slice(ri, ri + 60000);
 test('first-screen',          function() { assert(rb.includes('first-screen')); });
 test('chain integrity check', function() { assert(rb.includes('chainIntact')); });
 test('only real mismatch',    function() { assert(rb.includes('Missing parent_hash')); });
