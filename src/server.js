@@ -7329,5 +7329,10 @@ process.on('unhandledRejection', (reason, promise) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`DarkMatter server running on port ${PORT}`);
+  if (_JWT_SECRET) {
+    console.log('[auth] JWT fast-path active — local HS256 verification enabled (no Supabase disk IO per request)');
+  } else {
+    console.log('[auth] JWT fast-path inactive — set SUPABASE_JWT_SECRET to enable local verification');
+  }
 });
 
