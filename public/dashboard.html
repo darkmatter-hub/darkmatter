@@ -1996,6 +1996,18 @@ async function openDrawer(record) {
               const lbl = t.input ? 'Output' : (t.role === 'assistant' ? (modelLabel || 'Output') : 'Agent');
               html += `<div><div style="${lblSt}">${escHtml(lbl)}</div><div style="${fieldSt}">${escHtml(t.content).replace(/\n/g,'<br>')}</div></div>`;
             }
+            // Metadata chips: model, agent (from payload), and any extra payload fields
+            const metaItems = [];
+            if (t.model) metaItems.push({ key: 'Model', val: t.model });
+            if (t.agent) metaItems.push({ key: 'Agent (payload)', val: typeof t.agent === 'string' ? t.agent : JSON.stringify(t.agent) });
+            if (t.meta) { for (const [k,v] of Object.entries(t.meta)) metaItems.push({ key: k, val: typeof v === 'string' ? v : JSON.stringify(v) }); }
+            if (metaItems.length) {
+              html += `<div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:5px;">`;
+              for (const item of metaItems) {
+                html += `<div style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;background:var(--bg-1);border:1px solid var(--brd);border-radius:4px;font-size:11px;font-family:var(--mono);"><span style="color:var(--t3);">${escHtml(item.key)}</span><span style="color:var(--t1);margin-left:3px;">${escHtml(String(item.val).slice(0,80))}</span></div>`;
+              }
+              html += `</div>`;
+            }
             html += '</div>';
             return html;
           }).join('');
@@ -2709,8 +2721,10 @@ document.addEventListener('DOMContentLoaded', () => {
   loadUserProfile();
   startAutoPoll();
   startPoll();
-  // Load immediately — session is guaranteed after login redirect
-  showView('apikeys');
+  // Restore active tab from URL hash; default to apikeys
+  const VALID_HASH_TABS = new Set(['records','apikeys','team','billing','settings']);
+  const _initHash = location.hash.slice(1);
+  if (VALID_HASH_TABS.has(_initHash)) { showView(_initHash); } else { showView('apikeys'); }
   // If URL is /dashboard/keys/:id, auto-open that key's drawer after keys load
   const m = location.pathname.match(/\/dashboard\/keys\/(.+)/);
   if (m) {
@@ -2957,6 +2971,7 @@ function switchTab(section) {
   if (s === 'billing')  loadBilling();
   if (s === 'settings') loadSettings();
 
+  history.replaceState(null, '', '#' + s);
   window.scrollTo({ top: 0 });
 }
 
