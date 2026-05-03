@@ -80,17 +80,25 @@ const VELOCITY_LIMIT_BYTES = 100 * 1024 * 1024; // 100 MB
 const _alertSentToday = new Map(); // `${userId}:YYYY-MM-DD` → true
 const _dailyBytesMap  = new Map(); // `${userId}:YYYY-MM-DD` → bytes committed today
 
-function priceIdToPlan(priceId) {
-  if (!priceId) return 'free';
-  if (priceId === process.env.STRIPE_PRICE_PRO)   return 'pro';
-  if (priceId === process.env.STRIPE_PRICE_TEAMS) return 'teams';
-  if (priceId === process.env.STRIPE_PRICE_ENTERPRISE) return 'enterprise';
+function priceIdToPlan(priceId, metadataPlan) {
+  if (priceId) {
+    if (priceId === process.env.STRIPE_PRICE_PRO)        return 'pro';
+    if (priceId === process.env.STRIPE_PRICE_TEAMS)      return 'teams';
+    if (priceId === process.env.STRIPE_PRICE_ENTERPRISE) return 'enterprise';
+  }
+  // Fall back to the plan stored in subscription metadata at checkout time.
+  // This fires when STRIPE_PRICE_* env vars are missing or don't match the
+  // subscription's price ID (e.g. test-mode vs live-mode mismatch).
+  if (metadataPlan && ['pro', 'teams', 'enterprise'].includes(metadataPlan)) {
+    console.warn('[billing] priceIdToPlan: price ID', priceId, 'not matched — using metadata.plan:', metadataPlan);
+    return metadataPlan;
+  }
   return 'free';
 }
 
 async function upsertSubscription(userId, email, sub, customerId) {
   const priceId  = sub.items?.data[0]?.price?.id;
-  const plan     = priceIdToPlan(priceId);
+  const plan     = priceIdToPlan(priceId, sub.metadata?.plan);
   const meta     = PLAN_META[plan] || PLAN_META.free;
   const record   = {
     user_id:                userId,
@@ -3023,7 +3031,7 @@ app.get('/api/billing/subscription', wsAuth, async (req, res) => {
           });
           if (subs.data.length) {
             const sub  = subs.data[0];
-            const plan = priceIdToPlan(sub.items.data[0]?.price?.id);
+            const plan = priceIdToPlan(sub.items.data[0]?.price?.id, sub.metadata?.plan);
             const meta = PLAN_META[plan] || PLAN_META.free;
             // Write to DB so next request is fast
             await upsertSubscription(userId, email, sub, customer.id);

@@ -128,7 +128,6 @@ footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;gri
 .plan-label{font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:hsl(var(--trace));margin-bottom:2rem;min-height:1.5rem;display:flex;align-items:center}
 .plan-price{font-size:42px;font-weight:500;letter-spacing:-.03em;line-height:1;margin-bottom:.5rem}
 .plan-price span{font-size:14px;font-weight:400;color:hsl(var(--trace))}
-.plan-desc{font-size:13px;line-height:1.6;color:hsl(var(--trace));margin-bottom:2rem;min-height:4.5rem}
 .plan-divider{height:1px;background:hsl(var(--void-line));margin-bottom:1.5rem}
 .plan-features{list-style:none;display:flex;flex-direction:column;gap:.75rem;margin-bottom:2rem;flex:2}
 .plan-features li{display:flex;align-items:flex-start;gap:.5rem;font-size:13px;line-height:1.4;color:hsl(var(--trace))}
@@ -166,13 +165,12 @@ footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;gri
   <a href="/signup" class="cta-link">Try it free</a>
 </div>
 <main>
-<section class="section" style="position:relative;overflow:hidden"><div class="noise grid-noise" style="position:absolute;inset:0;opacity:.35"></div><div class="wrap section-pad" style="position:relative"><div class="eyebrow" style="margin-bottom:1.5rem"><span class="rule"></span><span>Pricing</span></div><h1 class="balance" style="font-size:34px;line-height:1.05;letter-spacing:-.022em;font-weight:500;max-width:42rem">Instrument. Verify. Trust.</h1><p style="margin-top:1.5rem;max-width:34rem;font-size:15px;line-height:1.6;color:hsl(var(--trace))">Start free. Scale when it matters. No cryptographic feature gating. Scale is the only difference.</p><div style="margin-top:2rem;display:flex;flex-wrap:wrap;gap:.75rem"><a href="/signup" class="btn-primary">Start free &#8594;</a><a href="#" onclick="openContact();return false;">Talk to us</a></div></div></section>
+<section class="section" style="position:relative;overflow:hidden"><div class="noise grid-noise" style="position:absolute;inset:0;opacity:.35"></div><div class="wrap section-pad" style="position:relative"><div class="eyebrow" style="margin-bottom:1.5rem"><span class="rule"></span><span>Pricing</span></div><h1 class="balance" style="font-size:34px;line-height:1.05;letter-spacing:-.022em;font-weight:500;max-width:42rem">Instrument. Verify. Trust.</h1><p style="margin-top:1.5rem;max-width:34rem;font-size:15px;line-height:1.6;color:hsl(var(--trace))">Start free. Scale when it matters. No cryptographic feature gating. Scale is the only difference.</p><div style="margin-top:2rem;display:flex;flex-wrap:wrap;gap:.75rem;align-items:center"><a href="/signup" class="btn-primary">Start free &#8594;</a><a href="#" onclick="openContact();return false;">Talk to us</a></div></div></section>
 <div class="wrap">
   <div class="plans">
     <div class="plan">
       <div class="plan-label">Free</div>
       <div class="plan-price">$0<span> / month</span></div>
-      <div class="plan-desc">For developers getting started. No credit card required.</div>
       <div class="plan-divider"></div>
       <ul class="plan-features">
         <li>10,000 commits / month</li>
@@ -191,7 +189,6 @@ footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;gri
     <div class="plan hl">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2rem"><div class="plan-label" style="margin-bottom:0">Pro</div><span style="font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:hsl(var(--signal));border:1px solid hsl(var(--signal)/.4);padding:2px 6px">Recommended</span></div>
       <div class="plan-price">$29<span> / month</span></div>
-      <div class="plan-desc">For developers running production agents.</div>
       <div class="plan-divider"></div>
       <div style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:hsl(var(--background)/.6);margin-bottom:.625rem">Everything in Free, plus:</div>
       <ul class="plan-features">
@@ -207,7 +204,6 @@ footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;gri
         <span style="font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:hsl(var(--signal));border:1px solid hsl(var(--signal)/.4);padding:2px 6px">Most popular</span>
       </div>
       <div class="plan-price">$99<span> / month</span></div>
-      <div class="plan-desc">For teams running production pipelines.</div>
       <div class="plan-divider"></div>
       <div style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:hsl(var(--trace-dim));margin-bottom:.625rem">Everything in Pro, plus:</div>
       <ul class="plan-features">
@@ -220,15 +216,12 @@ footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;gri
     <div class="plan">
       <div class="plan-label">Enterprise</div>
       <div class="plan-price">$499<span> / month</span></div>
-      <div class="plan-desc">For regulated industries and large-scale deployments.</div>
       <div class="plan-divider"></div>
       <div style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:hsl(var(--trace-dim));margin-bottom:.625rem">Everything in Teams, plus:</div>
       <ul class="plan-features">
         <li>Unlimited commits</li>
         <li>Unlimited data</li>
-        <li>Custom retention policy</li>
-        <li>Audit-ready export formats</li>
-        <li>Priority support + SLA</li>
+        <li>Unlimited retention</li>
       </ul>
       <a href="/signup" class="plan-cta">Upgrade to Enterprise</a>
     </div>

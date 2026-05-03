@@ -1481,7 +1481,7 @@ window._dmAuthPromise = fetch('/api/user/me')
     </div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;">
       <!-- Pro -->
-      <div class="panel" style="padding:20px;">
+      <div class="panel" style="padding:20px;padding-top:32px;">
         <div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--t3);margin-bottom:8px;">Pro</div>
         <div style="font-size:1.5rem;font-weight:700;color:var(--t0);">$29</div>
         <div style="font-size:11px;color:var(--t4);margin-bottom:12px;">/month</div>
@@ -1500,7 +1500,7 @@ window._dmAuthPromise = fetch('/api/user/me')
         <button onclick="upgradePlan('teams')" style="width:100%;padding:8px;background:var(--purple);color:#fff;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;">Choose Teams</button>
       </div>
       <!-- Enterprise -->
-      <div class="panel" style="padding:20px;">
+      <div class="panel" style="padding:20px;padding-top:32px;">
         <div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--t4);margin-bottom:8px;">Enterprise</div>
         <div style="font-size:1.5rem;font-weight:700;color:var(--t0);">$499</div>
         <div style="font-size:11px;color:var(--t4);margin-bottom:12px;">/month</div>
@@ -2872,10 +2872,9 @@ function copyFirstCommit() {
   if (billingStatus === 'success') {
     // Navigate to billing section and reload subscription
     setTimeout(() => {
+      _billingLoaded = false; // force fresh load before navTo triggers showView
       navTo('billing');
-      _billingLoaded = false; // force fresh load
-      loadBilling();
-      showToast('Plan upgraded successfully!');
+      showToast('Plan upgraded — confirming with Stripe…');
     }, 300);
   } else if (billingStatus === 'cancelled') {
     setTimeout(() => {
