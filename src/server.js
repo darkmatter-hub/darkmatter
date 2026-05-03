@@ -358,8 +358,14 @@ async function requireAuth(req, res, next) {
         req.user = _claimsToUser(_verifyJwt(token));
         return next();
       } catch (e) {
-        if (e.name !== 'TokenExpiredError') return res.status(401).json({ error: 'Not authenticated' });
-        // expired — fall through to refresh
+        if (e.name === 'TokenExpiredError') {
+          // expired — fall through to refresh
+        } else {
+          // Signature mismatch or malformed — fall back to Supabase (logs warn to help diagnose secret misconfiguration)
+          console.warn('[auth] JWT fast-path failed (' + e.message + ') — falling back to Supabase');
+          const { data: { user }, error } = await supabaseAnon.auth.getUser(token);
+          if (!error && user) { req.user = user; return next(); }
+        }
       }
     } else {
       // No local secret — use Supabase API
@@ -419,7 +425,14 @@ async function flexAuth(req, res, next) {
         req.authType = 'supabase';
         return next();
       } catch (e) {
-        if (e.name !== 'TokenExpiredError') return res.status(401).json({ error: 'Invalid API key or session' });
+        if (e.name === 'TokenExpiredError') {
+          // expired — fall through to refresh
+        } else {
+          // Signature mismatch or malformed — fall back to Supabase
+          console.warn('[auth] JWT fast-path failed (' + e.message + ') — falling back to Supabase');
+          const { data: { user }, error } = await supabaseAnon.auth.getUser(token);
+          if (!error && user) { req.user = user; req.authType = 'supabase'; return next(); }
+        }
       }
     } else {
       const { data: { user }, error } = await supabaseAnon.auth.getUser(token);
@@ -5270,7 +5283,14 @@ async function wsAuth(req, res, next) {
         req.user = _claimsToUser(_verifyJwt(token));
         return next();
       } catch (e) {
-        if (e.name !== 'TokenExpiredError') return res.status(401).json({ error: 'Session expired. Please sign in again.' });
+        if (e.name === 'TokenExpiredError') {
+          // expired — fall through to refresh
+        } else {
+          // Signature mismatch or malformed — fall back to Supabase
+          console.warn('[auth] JWT fast-path failed (' + e.message + ') — falling back to Supabase');
+          const { data: { user }, error } = await supabaseAnon.auth.getUser(token);
+          if (!error && user) { req.user = user; return next(); }
+        }
       }
     } else {
       const { data: { user }, error } = await supabaseAnon.auth.getUser(token);
