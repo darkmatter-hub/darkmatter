@@ -4539,7 +4539,7 @@ app.get('/r/:traceId', async (req, res) => {
       + '  <div class="fs-meta">\n'
       + '    <span class="fs-status" style="background:' + statusBg + ';color:' + statusColor + ';border-color:' + statusBd + ';">' + statusText + '</span>\n'
       + (highestAssurance === 'L3' ? '    <span class="fs-status" style="background:rgba(15,123,77,.07);color:#0f7b4d;border:1px solid rgba(15,123,77,.2);font-family:monospace;font-size:11px;font-weight:600;padding:3px 10px;border-radius:4px;">L3 NON-REPUDIATION</span>\n' : highestAssurance === 'L2' ? '    <span class="fs-status" style="background:rgba(59,130,246,.06);color:#1d4ed8;border:1px solid rgba(59,130,246,.2);font-family:monospace;font-size:11px;font-weight:600;padding:3px 10px;border-radius:4px;">L2 VERIFIED</span>\n' : '')
-      + (hasCompleteness ? '    <span class="fs-status" style="background:rgba(15,123,77,.05);color:#0f7b4d;border:1px solid rgba(15,123,77,.15);font-family:monospace;font-size:10px;padding:2px 8px;border-radius:4px;">\u2714 Complete</span>\n' : '')
+      + (hasCompleteness && highestAssurance === 'L3' ? '    <span class="fs-status" style="background:rgba(15,123,77,.05);color:#0f7b4d;border:1px solid rgba(15,123,77,.15);font-family:monospace;font-size:10px;padding:2px 8px;border-radius:4px;">\u2714 Complete</span>\n' : '')
       + '    <span class="fs-sep">\u00b7</span>\n'
       + '    <span class="fs-chip">' + stepCount + ' step' + (stepCount !== 1 ? 's' : '') + '</span>\n'
       + '    <span class="fs-sep">\u00b7</span>\n'
@@ -4549,7 +4549,7 @@ app.get('/r/:traceId', async (req, res) => {
       + '  <div class="fs-integrity">'
       + (chainIntact ? 'This record has been cryptographically verified. Nothing has been added, removed, or altered since it was captured.' : 'This record could not be fully verified. Download the proof file for independent investigation.')
       + (highestAssurance === 'L3' ? ' Signed with a customer-controlled Ed25519 key before reaching DarkMatter \u2014 DarkMatter cannot forge this record.' : '')
-      + (hasCompleteness ? '<br><span style=\"font-size:12px;color:#0f7b4d;\">\u2714 Agent asserted this record is complete (nothing omitted).</span>' : '')
+      + (hasCompleteness && highestAssurance === 'L3' ? '<br><span style=\"font-size:12px;color:#0f7b4d;\">\u2714 Agent asserted this record is complete (nothing omitted).</span>' : '')
       + '</div>\n'
       + '  <div class="fs-actions">\n'
       + '    <button class="fs-btn-p" onclick="copyLink()">Copy link</button>\n'
@@ -4596,6 +4596,8 @@ app.get('/r/:traceId', async (req, res) => {
       + '<div class="pcard ' + (chainIntact?'ok':'') + '"><div class="pcard-top"><span class="pcard-ic ' + (chainIntact?'ok':'skip') + '">' + (chainIntact?'\u2713':'\u2014') + '</span><span class="pcard-title">Hash chain</span></div><div class="pcard-body">' + (chainIntact ? stepCount + ' steps \u2014 payload hash, integrity hash, parent link, assurance level verified per commit' : 'Verification failed') + '</div></div>\n'
       + '</div>\n'
       + hashStepsHTML
+      + (highestAssurance === 'L2' || highestAssurance === 'L3' ? '<div style="background:rgba(59,130,246,.04);border:1px solid rgba(59,130,246,.18);border-radius:8px;padding:14px 18px;margin-bottom:10px;font-size:12px;color:var(--ink3);line-height:1.7;"><strong style="color:var(--ink2);">OpenTimestamps (L2)</strong> — The proof bundle contains a <code style="font-family:var(--mono);font-size:11px;">.ots</code> timestamp file anchored to the Bitcoin blockchain. Verify it independently at <a href="https://opentimestamps.org" target="_blank" rel="noopener" style="color:#1d4ed8;">opentimestamps.org</a> using the timestamp file in the proof bundle. No account required.</div>\n' : '')
+      + (hasCompleteness && highestAssurance === 'L3' ? '<div style="background:rgba(15,123,77,.05);border:1px solid rgba(15,123,77,.18);border-radius:8px;padding:14px 18px;margin-bottom:10px;font-size:12px;color:#0f7b4d;line-height:1.7;"><strong>✔ Complete record (L3)</strong> — The agent that signed this chain asserted completeness: no decisions were omitted. This assertion is cryptographically signed with the agent\'s Ed25519 key and cannot be forged by DarkMatter.</div>\n' : '')
       + '<div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:16px 18px;">'
       + '<div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:4px;">Verify independently</div>'
       + '<div style="font-size:12px;color:var(--ink3);margin-bottom:10px;">No account required. The proof file works completely offline.</div>'

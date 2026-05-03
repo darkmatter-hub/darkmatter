@@ -1946,7 +1946,8 @@ async function openDrawer(record) {
   const ccVal = document.getElementById('drawer-completeness');
   if (ccRow && ccVal) {
     const cc = record.completeness_claim;
-    if (cc === true) {
+    const isL3 = record.assurance_level === 'L3';
+    if (cc === true && isL3) {
       ccRow.style.display = '';
       ccVal.innerHTML = '<span class="cc-badge cc-complete">Complete</span> <span style="font-size:11px;color:var(--t3);font-family:var(--mono);">Agent asserted no steps omitted</span>';
     } else if (cc === false) {
