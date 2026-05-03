@@ -107,7 +107,7 @@ async function upsertSubscription(userId, email, sub, customerId) {
     status:                 sub.status,
     stripe_customer_id:     customerId,
     stripe_subscription_id: sub.id,
-    current_period_end:     new Date(sub.current_period_end * 1000).toISOString(),
+    current_period_end:     sub.current_period_end ? new Date(sub.current_period_end * 1000).toISOString() : null,
     cancel_at_period_end:   sub.cancel_at_period_end || false,
     commit_limit:           meta.commitLimit,
     retention_days:         meta.retentionDays,
@@ -193,7 +193,13 @@ app.use((req, res, next) => {
 });
 
 app.use(cookieParser());
-app.use(express.json({ limit: '10mb' }));
+// Skip JSON parsing for the Stripe webhook — it needs the raw Buffer so
+// stripe.webhooks.constructEvent() can verify the HMAC signature.
+// Route-level express.raw() on that route handles the body instead.
+app.use((req, res, next) => {
+  if (req.path === '/api/billing/webhook') return next();
+  return express.json({ limit: '10mb' })(req, res, next);
+});
 app.use(express.static(path.join(__dirname, '../public')));
 
 // ── Cookie auth helpers ───────────────────────────────
@@ -3043,7 +3049,7 @@ app.get('/api/billing/subscription', wsAuth, async (req, res) => {
               commitLimit:       meta.commitLimit,
               bytesUsed,
               retention_days:    meta.retentionDays,
-              currentPeriodEnd:  new Date(sub.current_period_end * 1000).toISOString(),
+              currentPeriodEnd:  sub.current_period_end ? new Date(sub.current_period_end * 1000).toISOString() : null,
               cancelAtPeriodEnd: sub.cancel_at_period_end,
               stripeCustomerId:  customer.id,
               stripeSubId:       sub.id,
