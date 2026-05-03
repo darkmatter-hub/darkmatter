@@ -192,7 +192,7 @@ app.use(express.static(path.join(__dirname, '../public')));
 const COOKIE_BASE = {
   httpOnly: true,
   secure:   (process.env.APP_URL || '').startsWith('https'),
-  sameSite: 'strict',
+  sameSite: 'lax',
   path:     '/',
 };
 function setAuthCookies(res, session) {
