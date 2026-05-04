@@ -6032,15 +6032,16 @@ app.get('/admin/stats', requireAuth, async (req, res) => {
       supabaseService.auth.admin.listUsers({ page: 1, perPage: 1 }),
     ]);
 
-    // Revenue: count active paid subscriptions and compute MRR
+    // Revenue: count active paid subscriptions, excluding admin/internal accounts
     const PLAN_PRICE = { pro: 29, teams: 99, enterprise: 499 };
     const { data: activeSubs } = await supabaseService
       .from('subscriptions')
-      .select('plan, user_id')
+      .select('plan, user_id, email')
       .eq('status', 'active')
       .not('plan', 'eq', 'free');
-    const payingUsers = (activeSubs || []).length;
-    const mrr = (activeSubs || []).reduce((sum, s) => sum + (PLAN_PRICE[s.plan] || 0), 0);
+    const realSubs   = (activeSubs || []).filter(s => !isAdminEmail(s.email));
+    const payingUsers = realSubs.length;
+    const mrr = realSubs.reduce((sum, s) => sum + (PLAN_PRICE[s.plan] || 0), 0);
     const totalUsers = usersRes.data?.total || 0;
     const freeUsers  = Math.max(0, totalUsers - payingUsers);
     const conversionPct = totalUsers > 0 ? Math.round(payingUsers / totalUsers * 100) : 0;
