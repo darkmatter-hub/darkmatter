@@ -85,6 +85,10 @@ body{font-family:var(--sans);background:var(--bg);color:var(--t0);display:flex;f
 .tbl-wrap{border:1px solid var(--brd);overflow:hidden;margin-bottom:20px;}
 .tbl{width:100%;border-collapse:collapse;font-size:12.5px;}
 .tbl th{font-family:var(--mono);font-size:8.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--t3);padding:8px 12px;border-bottom:1px solid var(--brd);text-align:left;background:var(--bg-0);white-space:nowrap;}
+.tbl th.sortable{cursor:pointer;user-select:none;}
+.tbl th.sortable:hover{color:var(--t1);}
+.tbl th.sort-asc::after{content:' ▲';color:var(--signal);}
+.tbl th.sort-desc::after{content:' ▼';color:var(--signal);}
 .tbl td{padding:9px 12px;border-bottom:1px solid var(--bg-1);color:var(--t1);vertical-align:middle;}
 .tbl tr:last-child td{border-bottom:none;}
 .tbl tr:hover td{background:var(--bg-0);}
@@ -340,6 +344,21 @@ body{font-family:var(--sans);background:var(--bg);color:var(--t0);display:flex;f
           </div>
         </div>
       </div>
+
+      <div class="slbl" style="margin-top:28px;">Users</div>
+      <div class="tbl-wrap">
+        <table class="tbl">
+          <thead><tr>
+            <th class="sortable" onclick="sortUsers('email','dash')">Email</th>
+            <th class="sortable" onclick="sortUsers('plan','dash')">Plan</th>
+            <th class="sortable" onclick="sortUsers('charge','dash')">Charges/mo</th>
+            <th class="sortable" onclick="sortUsers('commit_count','dash')">Commits</th>
+            <th class="sortable" onclick="sortUsers('last_sign_in','dash')">Last sign-in</th>
+            <th class="sortable sort-desc" id="dash-th-created_at" onclick="sortUsers('created_at','dash')">Created</th>
+          </tr></thead>
+          <tbody id="dash-users-body"><tr><td colspan="6" style="padding:20px 12px;font-family:var(--mono);font-size:11px;color:var(--t3);">Loading…</td></tr></tbody>
+        </table>
+      </div>
     </div>
 
     <!-- ── LIVE CHAIN ─────────────────────────────────────────────────── -->
@@ -396,7 +415,15 @@ body{font-family:var(--sans);background:var(--bg);color:var(--t0);display:flex;f
       </div>
       <div class="tbl-wrap">
         <table class="tbl">
-          <thead><tr><th>Email</th><th>Plan</th><th>Charges/mo</th><th>Commits</th><th>Quota usage</th><th>Last sign-in</th><th>Created</th></tr></thead>
+          <thead><tr>
+            <th class="sortable" onclick="sortUsers('email','pane')">Email</th>
+            <th class="sortable" onclick="sortUsers('plan','pane')">Plan</th>
+            <th class="sortable" onclick="sortUsers('charge','pane')">Charges/mo</th>
+            <th class="sortable" onclick="sortUsers('commit_count','pane')">Commits</th>
+            <th>Quota usage</th>
+            <th class="sortable" onclick="sortUsers('last_sign_in','pane')">Last sign-in</th>
+            <th class="sortable sort-desc" id="pane-th-created_at" onclick="sortUsers('created_at','pane')">Created</th>
+          </tr></thead>
           <tbody id="users-body"><tr><td colspan="7" style="padding:20px 12px;font-family:var(--mono);font-size:11px;color:var(--t3);">Loading…</td></tr></tbody>
         </table>
       </div>
@@ -665,6 +692,77 @@ function toggleSidebar() {
   document.getElementById('sidebar').classList.toggle('collapsed');
 }
 
+// ── Sort state ────────────────────────────────────────────────────────────────
+// Separate sort state for the dashboard overview table and the Users pane table.
+// dir: 1 = ascending, -1 = descending. Default: created_at desc.
+const _sort = {
+  dash: { field: 'created_at', dir: -1 },
+  pane: { field: 'created_at', dir: -1 },
+};
+
+function sortUsers(field, table) {
+  const s = _sort[table];
+  // Toggle direction if same field; otherwise start descending.
+  s.dir = (s.field === field) ? s.dir * -1 : -1;
+  s.field = field;
+  // Update all sortable headers in this table.
+  const prefix = table === 'dash' ? 'dash' : 'pane';
+  document.querySelectorAll(table === 'dash' ? '#p-dashboard .sortable' : '#p-users .sortable').forEach(th => {
+    th.classList.remove('sort-asc', 'sort-desc');
+  });
+  const activeId = prefix + '-th-' + field;
+  const activeTh = document.getElementById(activeId);
+  if (activeTh) activeTh.classList.add(s.dir === 1 ? 'sort-asc' : 'sort-desc');
+  // Re-render.
+  if (table === 'dash') renderDashUsers();
+  else { filterUsers(document.getElementById('user-search')?.value || ''); }
+}
+
+function applySortToUsers(users, table) {
+  const { field, dir } = _sort[table];
+  return [...users].sort((a, b) => {
+    let va = a[field], vb = b[field];
+    // Dates
+    if (field === 'created_at' || field === 'last_sign_in') {
+      va = va ? new Date(va).getTime() : 0;
+      vb = vb ? new Date(vb).getTime() : 0;
+    }
+    // Numbers
+    if (field === 'commit_count' || field === 'charge') {
+      va = Number(va) || 0; vb = Number(vb) || 0;
+    }
+    // Strings
+    if (typeof va === 'string') va = va.toLowerCase();
+    if (typeof vb === 'string') vb = vb.toLowerCase();
+    if (va < vb) return -1 * dir;
+    if (va > vb) return  1 * dir;
+    return 0;
+  });
+}
+
+function renderDashUsers() {
+  const tbody = document.getElementById('dash-users-body');
+  if (!tbody) return;
+  const planBadge = { free:'gray', pro:'green', teams:'blue', enterprise:'blue', internal:'purple' };
+  const sorted = applySortToUsers(_allUsers, 'dash');
+  if (!sorted.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="padding:20px 12px;font-family:var(--mono);font-size:11px;color:var(--t3);">No users yet</td></tr>';
+    return;
+  }
+  tbody.innerHTML = sorted.map(u => {
+    const plan   = u.plan || 'free';
+    const charge = plan === 'internal' ? 'Internal' : (u.charge ? '$' + u.charge : '—');
+    return `<tr>
+      <td style="max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${u.email||'—'}</td>
+      <td><span class="badge ${planBadge[plan]||'gray'}">${plan}</span></td>
+      <td class="mono">${charge}</td>
+      <td class="mono">${fmt(u.commit_count)}</td>
+      <td class="mono dim" style="font-size:10px;">${validDate(u.last_sign_in)}</td>
+      <td class="mono dim" style="font-size:10px;">${validDate(u.created_at)}</td>
+    </tr>`;
+  }).join('');
+}
+
 // ── Data helpers ──────────────────────────────────────────────────────────────
 function fmt(n) { return n != null ? Number(n).toLocaleString() : '—'; }
 function validDate(ts) {
@@ -833,6 +931,7 @@ async function loadUsers() {
     const sub = document.getElementById('users-sub');
     if (sub) sub.textContent = _allUsers.length + ' accounts';
     renderUsers(_allUsers);
+    renderDashUsers();
   } catch(e) {
     tbody.innerHTML = '<tr><td colspan="6" style="padding:20px 12px;color:var(--red);font-family:var(--mono);font-size:11px;">Error: ' + e.message + '</td></tr>';
   }
@@ -842,7 +941,8 @@ function renderUsers(users) {
   const tbody = document.getElementById('users-body');
   if (!users.length) { tbody.innerHTML = '<tr><td colspan="7" style="padding:20px 12px;font-family:var(--mono);font-size:11px;color:var(--t3);">No users found</td></tr>'; return; }
   const planBadge = { free:'gray', pro:'green', teams:'blue', enterprise:'blue', internal:'purple' };
-  tbody.innerHTML = users.map(u => {
+  const sorted = applySortToUsers(users, 'pane');
+  tbody.innerHTML = sorted.map(u => {
     const plan   = u.plan || 'free';
     const charge = (plan === 'internal') ? 'Internal' : (u.charge != null ? (u.charge === 0 ? '—' : '$' + u.charge) : '—');
     const quotaMap = { free: 10000, pro: 50000, teams: 250000, enterprise: Infinity, internal: Infinity };
