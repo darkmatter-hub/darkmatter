@@ -270,6 +270,19 @@ body{font-family:var(--sans);background:var(--bg);color:var(--t0);display:flex;f
         <button class="btn primary" onclick="loadAll()">↻ Refresh</button>
       </div>
 
+      <div class="slbl">Pricing tiers (live)</div>
+      <div class="tbl-wrap" style="margin-bottom:24px;">
+        <table class="tbl">
+          <thead><tr><th>Plan</th><th>Users</th><th>Commits / mo</th><th>Data / mo</th><th>Retention</th><th>Price</th><th>MRR contribution</th></tr></thead>
+          <tbody>
+            <tr><td><span class="badge gray">Free</span></td><td class="mono" id="dash-pl-free">—</td><td class="mono">10,000</td><td class="mono">500 MB</td><td class="mono">30 days</td><td class="mono">$0</td><td class="mono dim">—</td></tr>
+            <tr><td><span class="badge green">Pro</span></td><td class="mono" id="dash-pl-pro">—</td><td class="mono">50,000</td><td class="mono">5 GB</td><td class="mono">1 year</td><td class="mono">$29</td><td class="mono" id="dash-pl-pro-mrr">—</td></tr>
+            <tr><td><span class="badge blue">Teams</span></td><td class="mono" id="dash-pl-teams">—</td><td class="mono">250,000</td><td class="mono">25 GB</td><td class="mono">Unlimited</td><td class="mono">$99</td><td class="mono" id="dash-pl-teams-mrr">—</td></tr>
+            <tr><td><span class="badge blue">Enterprise</span></td><td class="mono" id="dash-pl-ent">—</td><td class="mono">Unlimited</td><td class="mono">Unlimited</td><td class="mono">Unlimited</td><td class="mono">$499</td><td class="mono" id="dash-pl-ent-mrr">—</td></tr>
+          </tbody>
+        </table>
+      </div>
+
       <div class="slbl">Volume</div>
       <div class="kgrid" style="grid-template-columns:repeat(auto-fill,minmax(155px,1fr));" id="kg-volume">
         <div class="kcard"><div class="klbl">Total commits</div><div class="kval" id="k-total">—</div></div>
@@ -328,19 +341,15 @@ body{font-family:var(--sans);background:var(--bg);color:var(--t0);display:flex;f
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:4px;">
         <div>
-          <div class="slbl">Recent commits</div>
+          <div class="slbl">Recent commits (all users)</div>
           <div class="tbl-wrap" id="dash-recent">
             <div style="padding:16px 12px;font-family:var(--mono);font-size:11px;color:var(--t3);">Loading…</div>
           </div>
         </div>
         <div>
-          <div class="slbl">Decision rules</div>
-          <div style="border:1px solid var(--brd);padding:16px 18px;font-size:12.5px;color:var(--t2);line-height:2.2;">
-            <div><span style="font-family:var(--mono);color:var(--t4);">Manual &gt; 80%</span> → fix docs/onboarding</div>
-            <div><span style="font-family:var(--mono);color:var(--t4);">Anthropic &gt; 50%</span> → double down on Claude</div>
-            <div><span style="font-family:var(--mono);color:var(--t4);">L3 &lt; 10%</span> → simplify key setup</div>
-            <div><span style="font-family:var(--mono);color:var(--t4);">Active 7d &lt; 3</span> → stop building, get users</div>
-            <div><span style="font-family:var(--mono);color:var(--t4);">p50 &lt; 5</span> → curiosity, not real usage</div>
+          <div class="slbl">Platform signals</div>
+          <div id="platform-signals" style="border:1px solid var(--brd);padding:16px 18px;">
+            <div style="padding:8px 0;font-family:var(--mono);font-size:11px;color:var(--t3);">Loading…</div>
           </div>
         </div>
       </div>
@@ -782,8 +791,8 @@ async function loadAll() {
   document.getElementById('dash-updated').textContent = 'Loading…';
   try {
     const [stats, activity] = await Promise.all([
-      fetch('/admin/stats',                    { headers: authH() }).then(r => r.ok ? r.json() : {}).catch(() => ({})),
-      fetch('/api/workspace/activity?limit=50',{ headers: authH() }).then(r => r.ok ? r.json() : {}).catch(() => ({})),
+      fetch('/admin/stats',                  { headers: authH() }).then(r => r.ok ? r.json() : {}).catch(() => ({})),
+      fetch('/api/admin/commits?limit=50',   { headers: authH() }).then(r => r.ok ? r.json() : {}).catch(() => ({})),
     ]);
     renderDashStats(stats);
     _activity = activity?.activity || activity?.commits || [];
@@ -829,14 +838,55 @@ function renderDashStats(d) {
 
 function renderUsageKPIs(d) {
   if (!d) return;
-  if (d.total_commits != null) document.getElementById('k-total').textContent = fmt(d.total_commits);
-  if (d.unique_agents  != null) document.getElementById('k-agents').textContent = fmt(d.unique_agents);
+  // k-total is set from the global /admin/stats count — do NOT overwrite it
+  // with the workspace-scoped total_commits from the usage endpoint.
+  if (d.unique_agents != null) document.getElementById('k-agents').textContent = fmt(d.unique_agents);
   document.getElementById('k-a7').textContent   = fmt(d.active_agents?.last_7d);
   document.getElementById('k-new7').textContent = fmt(d.momentum?.new_agents_7d);
   document.getElementById('k-l3p').textContent  = (d.l3_usage?.percent || 0) + '%';
   document.getElementById('k-l3n').textContent  = fmt(d.l3_usage?.count) + ' commits';
   document.getElementById('k-p50').textContent  = fmt(d.commits_per_agent?.p50);
   document.getElementById('k-l37').textContent  = fmt(d.l3_usage?.last_7d);
+  renderPlatformSignals(d);
+}
+
+function renderPlatformSignals(d) {
+  const el = document.getElementById('platform-signals');
+  if (!el) return;
+  if (!d || !Object.keys(d).length) {
+    el.innerHTML = '<div style="padding:8px 0;font-family:var(--mono);font-size:11px;color:var(--t3);">No usage data yet.</div>';
+    return;
+  }
+  const agents      = d.unique_agents || 0;
+  const active7     = d.active_agents?.last_7d || 0;
+  const newAgents7  = d.momentum?.new_agents_7d || 0;
+  const l3pct       = d.l3_usage?.percent || 0;
+  const l3count     = d.l3_usage?.count || 0;
+  const p50         = d.commits_per_agent?.p50 || 0;
+  const wu          = d.wrapper_usage || {};
+  const wuTotal     = (wu.anthropic||0) + (wu.openai||0) + (wu.manual||0) || 1;
+  const topSDK      = wu.anthropic >= wu.openai ? 'Anthropic' : 'OpenAI';
+  const topSDKPct   = Math.round(Math.max(wu.anthropic||0, wu.openai||0) / wuTotal * 100);
+  const activeRatio = agents ? Math.round(active7 / agents * 100) : 0;
+
+  function sig(icon, label, value, note, highlight) {
+    const valColor = highlight ? 'var(--signal)' : 'var(--t0)';
+    return `<div style="display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid var(--bg-1);">
+      <span style="font-size:14px;line-height:1.4;flex-shrink:0;">${icon}</span>
+      <div style="flex:1;">
+        <div style="font-family:var(--mono);font-size:10px;color:var(--t3);margin-bottom:2px;">${label}</div>
+        <div style="font-family:var(--mono);font-size:13px;font-weight:600;color:${valColor};">${value}</div>
+        ${note ? `<div style="font-size:10px;color:var(--t4);margin-top:1px;">${note}</div>` : ''}
+      </div>
+    </div>`;
+  }
+
+  el.innerHTML =
+    sig('📡', 'Active ratio (7d)', activeRatio + '%', active7 + ' of ' + agents + ' agents active', activeRatio >= 30) +
+    sig('🔐', 'L3 adoption', l3pct + '%', fmt(l3count) + ' signed commits total', l3pct > 0) +
+    sig('🆕', 'New agents (7d)', fmt(newAgents7), 'signups this week') +
+    sig('📊', 'Commits / agent p50', fmt(p50), 'median across all agents') +
+    sig('🛠️', 'Top SDK', topSDK, topSDKPct + '% of wrapper usage');
 }
 
 function renderDashRecent(items) {
@@ -855,7 +905,7 @@ async function loadChain() {
   const body = document.getElementById('chain-body');
   body.innerHTML = '<div style="padding:16px 12px;font-family:var(--mono);font-size:11px;color:var(--t3);">Loading…</div>';
   try {
-    const d = await fetch('/api/workspace/activity?limit=100', { headers: authH() }).then(r => r.json());
+    const d = await fetch('/api/admin/commits?limit=200', { headers: authH() }).then(r => r.json());
     _allCommits = d?.activity || d?.commits || [];
     renderChain();
   } catch(e) {
@@ -980,7 +1030,7 @@ function filterUsers(val) {
 async function loadCommits() {
   const tbody = document.getElementById('commits-body');
   try {
-    const d = await fetch('/api/workspace/activity?limit=100', { headers: authH() }).then(r => r.json());
+    const d = await fetch('/api/admin/commits?limit=200', { headers: authH() }).then(r => r.json());
     _allCommits = d?.activity || d?.commits || [];
     filterCommits('');
   } catch { tbody.innerHTML = '<tr><td colspan="6" style="padding:20px 12px;color:var(--red);font-family:var(--mono);font-size:11px;">Error</td></tr>'; }
@@ -1188,6 +1238,14 @@ function updateTierKpis(users) {
   setM('k-mrr-pro', mrrPro);
   setM('k-mrr-teams', mrrTeams);
   setM('k-mrr-ent', mrrEnt);
+  // Also populate the dashboard pricing table (separate IDs, same data)
+  set('dash-pl-free', c.free);
+  set('dash-pl-pro', c.pro);
+  set('dash-pl-teams', c.teams);
+  set('dash-pl-ent', c.enterprise);
+  setM('dash-pl-pro-mrr', mrrPro);
+  setM('dash-pl-teams-mrr', mrrTeams);
+  setM('dash-pl-ent-mrr', mrrEnt);
   // Override MRR card with computed total if backend didn't supply
   const mrrEl = document.getElementById('k-mrr');
   if (mrrEl && (mrrEl.textContent === '—' || mrrEl.textContent === '$—')) mrrEl.textContent = '$' + fmt(total);
