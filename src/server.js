@@ -3094,6 +3094,14 @@ app.post('/api/billing/checkout', wsAuth, async (req, res) => {
       customerId = customer.id;
     }
 
+    // Cancel any existing active subscriptions before creating a new one
+    // to prevent duplicate subscription accumulation during upgrades/downgrades.
+    const activeSubs = await stripe.subscriptions.list({ customer: customerId, status: 'active', limit: 10 });
+    for (const sub of activeSubs.data) {
+      await stripe.subscriptions.cancel(sub.id);
+      console.log('[billing/checkout] cancelled existing subscription', sub.id, 'for customer', customerId);
+    }
+
     const session = await stripe.checkout.sessions.create({
       customer:   customerId,
       mode:       'subscription',

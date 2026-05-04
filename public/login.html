@@ -179,8 +179,10 @@ async function handleLogin(){
     var res=await fetch('/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});
     var data=await res.json();
     if(data.error){showError(data.error);btn.disabled=false;btn.textContent='Sign in →';return;}
-    // Cookies set server-side — just redirect
-    window.location.href='/dashboard';
+    // Cookies set server-side — redirect, honouring any pending plan from pricing page
+    var pending=sessionStorage.getItem('pendingPlan');
+    if(pending){sessionStorage.removeItem('pendingPlan');window.location.href='/dashboard?plan='+encodeURIComponent(pending);}
+    else{window.location.href='/dashboard';}
   }catch(e){showError('Something went wrong. Please try again.');btn.disabled=false;btn.textContent='Sign in →';}
 }
 async function handleForgotPassword(){
