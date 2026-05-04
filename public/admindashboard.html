@@ -281,12 +281,27 @@ body{font-family:var(--sans);background:var(--bg);color:var(--t0);display:flex;f
       </div>
 
       <div class="slbl">Revenue</div>
-      <div style="border:1px solid var(--brd);padding:12px 16px;display:flex;align-items:center;gap:32px;flex-wrap:wrap;margin-bottom:24px;font-family:var(--mono);">
-        <div style="display:flex;flex-direction:column;gap:3px;"><span style="font-size:8.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--t3);">MRR</span><span id="k-mrr" style="font-size:22px;font-weight:700;color:var(--signal);">—</span></div>
-        <div style="width:1px;height:36px;background:var(--brd);"></div>
-        <div style="display:flex;flex-direction:column;gap:3px;"><span style="font-size:8.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--t3);">Paying</span><span id="k-paying" style="font-size:18px;font-weight:700;color:var(--t0);">—</span></div>
-        <div style="display:flex;flex-direction:column;gap:3px;"><span style="font-size:8.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--t3);">Free</span><span id="k-free" style="font-size:18px;font-weight:700;color:var(--t0);">—</span></div>
-        <div style="display:flex;flex-direction:column;gap:3px;"><span style="font-size:8.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--t3);">Conversion</span><span id="k-conv" style="font-size:18px;font-weight:700;color:var(--t0);">—</span></div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px;">
+        <div style="border:1px solid var(--signal-brd);background:var(--signal-bg);padding:16px 18px;display:flex;flex-direction:column;gap:6px;">
+          <span style="font-family:var(--mono);font-size:8.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--signal-dim);">MRR</span>
+          <span id="k-mrr" style="font-family:var(--mono);font-size:26px;font-weight:700;color:var(--signal);line-height:1;">—</span>
+          <span style="font-size:11px;color:var(--t3);">monthly recurring</span>
+        </div>
+        <div style="border:1px solid var(--brd);background:var(--bg-0);padding:16px 18px;display:flex;flex-direction:column;gap:6px;">
+          <span style="font-family:var(--mono);font-size:8.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--t3);">ARR</span>
+          <span id="k-arr" style="font-family:var(--mono);font-size:26px;font-weight:700;color:var(--t0);line-height:1;">—</span>
+          <span style="font-size:11px;color:var(--t3);">annualised run rate</span>
+        </div>
+        <div style="border:1px solid var(--brd);background:var(--bg-0);padding:16px 18px;display:flex;flex-direction:column;gap:6px;">
+          <span style="font-family:var(--mono);font-size:8.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--t3);">Paying / Free</span>
+          <span style="font-family:var(--mono);font-size:26px;font-weight:700;color:var(--t0);line-height:1;"><span id="k-paying">—</span> <span style="font-size:14px;color:var(--t3);">/ <span id="k-free">—</span></span></span>
+          <span style="font-size:11px;color:var(--t3);">users on paid plans</span>
+        </div>
+        <div style="border:1px solid var(--brd);background:var(--bg-0);padding:16px 18px;display:flex;flex-direction:column;gap:6px;">
+          <span style="font-family:var(--mono);font-size:8.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--t3);">Conversion</span>
+          <span id="k-conv" style="font-family:var(--mono);font-size:26px;font-weight:700;color:var(--t0);line-height:1;">—</span>
+          <span style="font-size:11px;color:var(--t3);">free → paid rate</span>
+        </div>
       </div>
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:4px;">
@@ -632,7 +647,10 @@ function renderDashStats(d) {
   if (d.users         != null) document.getElementById('k-users').textContent   = fmt(d.users);
   if (d.agents        != null) document.getElementById('k-agents').textContent  = fmt(d.agents);
   if (d.commits       != null) document.getElementById('k-total').textContent   = fmt(d.commits);
-  if (d.mrr           != null) document.getElementById('k-mrr').textContent     = '$' + fmt(d.mrr);
+  if (d.mrr           != null) {
+    document.getElementById('k-mrr').textContent  = '$' + fmt(d.mrr);
+    document.getElementById('k-arr').textContent  = '$' + fmt(d.mrr * 12);
+  }
   if (d.paying_users  != null) document.getElementById('k-paying').textContent  = fmt(d.paying_users);
   if (d.free_users    != null) document.getElementById('k-free').textContent    = fmt(d.free_users);
   if (d.conversion_pct!= null) document.getElementById('k-conv').textContent   = d.conversion_pct + '%';
