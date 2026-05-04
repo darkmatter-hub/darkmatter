@@ -200,6 +200,12 @@ app.use((req, res, next) => {
 });
 
 app.use(cookieParser());
+
+// ── Health check — no auth, no DB, responds immediately ──────────────────────
+// Railway uses this to verify the container is alive. Must be registered before
+// any middleware that could hang or reject unauthenticated requests.
+app.get('/healthz', (_req, res) => res.status(200).json({ ok: true }));
+
 // Skip JSON parsing for the Stripe webhook — it needs the raw Buffer so
 // stripe.webhooks.constructEvent() can verify the HMAC signature.
 // Route-level express.raw() on that route handles the body instead.
@@ -7386,12 +7392,26 @@ process.on('unhandledRejection', (reason, promise) => {
 
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`DarkMatter server running on port ${PORT}`);
   if (_JWT_SECRET) {
     console.log('[auth] JWT fast-path active — local HS256 verification enabled (no Supabase disk IO per request)');
   } else {
     console.log('[auth] JWT fast-path inactive — set SUPABASE_JWT_SECRET to enable local verification');
   }
+});
+
+// Graceful shutdown — Railway sends SIGTERM before replacing the container.
+// Give in-flight requests up to 10 s to complete, then exit cleanly.
+process.on('SIGTERM', () => {
+  console.log('[server] SIGTERM received — starting graceful shutdown');
+  server.close(() => {
+    console.log('[server] all connections closed — exiting');
+    process.exit(0);
+  });
+  setTimeout(() => {
+    console.warn('[server] graceful shutdown timed out — forcing exit');
+    process.exit(1);
+  }, 10_000);
 });
 
