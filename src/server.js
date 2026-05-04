@@ -6029,12 +6029,29 @@ app.get('/admin/stats', requireAuth, async (req, res) => {
       supabaseService.auth.admin.listUsers({ page: 1, perPage: 1 }),
     ]);
 
+    // Revenue: count active paid subscriptions and compute MRR
+    const PLAN_PRICE = { pro: 29, teams: 99, enterprise: 499 };
+    const { data: activeSubs } = await supabaseService
+      .from('subscriptions')
+      .select('plan, user_id')
+      .eq('status', 'active')
+      .not('plan', 'eq', 'free');
+    const payingUsers = (activeSubs || []).length;
+    const mrr = (activeSubs || []).reduce((sum, s) => sum + (PLAN_PRICE[s.plan] || 0), 0);
+    const totalUsers = usersRes.data?.total || 0;
+    const freeUsers  = Math.max(0, totalUsers - payingUsers);
+    const conversionPct = totalUsers > 0 ? Math.round(payingUsers / totalUsers * 100) : 0;
+
     res.json({
       admin: true,
       email: req.user.email,
       agents: agentsRes.count || 0,
       commits: commitsRes.count || 0,
-      users: usersRes.data?.total || 0,
+      users: totalUsers,
+      paying_users: payingUsers,
+      free_users:   freeUsers,
+      mrr,
+      conversion_pct: conversionPct,
     });
   } catch(e) {
     res.status(500).json({ error: e.message });
@@ -6240,6 +6257,27 @@ app.get('/api/admin/users', requireAuth, async (req, res) => {
     res.json({ users, total: users.length });
   } catch (err) {
     console.error('[admin/users]', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── GET /api/admin/subs — all active subscriptions (admin only) ───────────────
+app.get('/api/admin/subs', requireAuth, async (req, res) => {
+  try {
+    const superuser   = process.env.SUPERUSER_EMAIL || '';
+    const adminList   = process.env.ADMIN_EMAILS    || '';
+    const adminEmails = [...new Set([
+      ...superuser.split(','), ...adminList.split(','),
+    ].map(e => e.trim()).filter(Boolean))];
+    if (!adminEmails.includes(req.user.email)) {
+      return res.status(403).json({ error: 'Admin only' });
+    }
+    const { data: subs } = await supabaseService
+      .from('subscriptions')
+      .select('user_id, plan, status')
+      .eq('status', 'active');
+    res.json({ subs: subs || [] });
+  } catch(err) {
     res.status(500).json({ error: err.message });
   }
 });

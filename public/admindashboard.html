@@ -279,6 +279,14 @@ body{font-family:var(--sans);background:var(--bg);color:var(--t0);display:flex;f
         <div class="kcard"><div class="klbl">New L3 commits 7d</div><div class="kval" id="k-l37">—</div></div>
       </div>
 
+      <div class="slbl">Revenue</div>
+      <div class="kgrid" style="grid-template-columns:repeat(4,1fr);">
+        <div class="kcard hl"><div class="klbl">MRR</div><div class="kval" id="k-mrr">—</div></div>
+        <div class="kcard"><div class="klbl">Paying users</div><div class="kval" id="k-paying">—</div></div>
+        <div class="kcard"><div class="klbl">Free users</div><div class="kval" id="k-free">—</div></div>
+        <div class="kcard"><div class="klbl">Conversion</div><div class="kval" id="k-conv">—</div></div>
+      </div>
+
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:4px;">
         <div>
           <div class="slbl">Recent commits</div>
@@ -414,16 +422,16 @@ body{font-family:var(--sans);background:var(--bg);color:var(--t0);display:flex;f
         <table class="tbl">
           <thead><tr><th>Package</th><th>Latest</th><th>Registry</th><th>Status</th></tr></thead>
           <tbody>
-            <tr><td class="mono">darkmatter-sdk</td><td class="mono">1.3.0</td><td>PyPI</td><td><span class="badge green">Live</span></td></tr>
-            <tr><td class="mono">darkmatter-js</td><td class="mono">—</td><td><a href="https://www.npmjs.com/package/darkmatter-js" target="_blank" rel="noopener" style="color:var(--signal);font-family:var(--mono);font-size:11px;">npm ↗</a></td><td><span class="badge amber">Verify</span></td></tr>
+            <tr><td class="mono">darkmatter-sdk</td><td class="mono">1.4.4</td><td><a href="https://pypi.org/project/darkmatter-sdk/" target="_blank" rel="noopener" style="color:var(--signal);font-family:var(--mono);font-size:11px;">PyPI ↗</a></td><td><span class="badge green">Live</span></td></tr>
+            <tr><td class="mono">darkmatter-js</td><td class="mono">1.4.0</td><td><a href="https://www.npmjs.com/package/darkmatter-js" target="_blank" rel="noopener" style="color:var(--signal);font-family:var(--mono);font-size:11px;">npm ↗</a></td><td><span class="badge green">Live</span></td></tr>
           </tbody>
         </table>
       </div>
 
       <div class="slbl">Billing</div>
       <div style="border:1px solid var(--brd);padding:14px 18px;font-size:13px;color:var(--t2);display:flex;align-items:center;justify-content:space-between;gap:16px;">
-        <span>Stripe not yet wired. All billing routes return <code style="font-family:var(--mono);font-size:11px;background:var(--bg-1);padding:1px 5px;">501</code>.</span>
-        <a href="/pricing" style="color:var(--signal);font-family:var(--mono);font-size:10px;white-space:nowrap;">View pricing →</a>
+        <span style="display:flex;align-items:center;gap:10px;"><span class="badge green">Live</span>Stripe live mode active. Pro $29/month · Teams $99/month · Enterprise $499/month.</span>
+        <a href="https://dashboard.stripe.com" target="_blank" rel="noopener" style="color:var(--signal);font-family:var(--mono);font-size:10px;white-space:nowrap;">Stripe dashboard →</a>
       </div>
     </div>
 
@@ -459,16 +467,19 @@ body{font-family:var(--sans);background:var(--bg);color:var(--t0);display:flex;f
           <div class="toggle on" onclick="toggleFlag(this,'checkpoint_scheduler')" title="Toggle checkpoints"></div>
         </div>
       </div>
-      <div style="margin-top:12px;font-family:var(--mono);font-size:10px;color:var(--t4);">Flag state is stored in memory only — persists until server restart. Wire to <code>feature_flags</code> table to persist.</div>
     </div>
 
     <!-- ── AUDIT LOG ──────────────────────────────────────────────────── -->
     <div class="pane" id="p-auditlog">
       <div class="pane-header">
         <div><div class="pane-title">Audit log</div><div class="pane-sub">Admin actions · all mutations</div></div>
+        <button class="btn" onclick="loadAuditLog()">↻ Refresh</button>
       </div>
-      <div style="border:1px solid var(--brd);padding:24px;text-align:center;font-family:var(--mono);font-size:11px;color:var(--t3);">
-        Audit log requires an <code style="background:var(--bg-1);padding:1px 5px;">admin_audit_log</code> table. Add the table per the admin spec, then wire <code style="background:var(--bg-1);padding:1px 5px;">GET /api/admin/audit-log</code> here.
+      <div class="tbl-wrap">
+        <table class="tbl">
+          <thead><tr><th>Time</th><th>Actor</th><th>Action</th><th>Target</th><th>IP</th></tr></thead>
+          <tbody id="audit-body"><tr><td colspan="5" style="padding:20px 12px;font-family:var(--mono);font-size:11px;color:var(--t3);">Loading…</td></tr></tbody>
+        </table>
       </div>
     </div>
 
@@ -505,68 +516,44 @@ body{font-family:var(--sans);background:var(--bg);color:var(--t0);display:flex;f
 </div>
 
 <script>
-// ── Auth ──────────────────────────────────────────────────────────────────────
-function getSession() {
-  try {
-    const dm = localStorage.getItem('dm_session');
-    if (dm) { const s = JSON.parse(dm); if (s?.access_token) return s; }
-    for (let i = 0; i < localStorage.length; i++) {
-      const k = localStorage.key(i);
-      if (k?.includes('auth-token')) {
-        const r = localStorage.getItem(k);
-        if (r) { const s = JSON.parse(r); if (s?.access_token) return s; }
-      }
-    }
-  } catch {}
-  return null;
+// ── Auth (cookie-based) ───────────────────────────────────────────────────────
+function signOut() {
+  fetch('/auth/logout', { method: 'POST' }).finally(() => { window.location.href = '/login'; });
 }
+const authH = () => ({ 'Content-Type': 'application/json' });
 
-const session = getSession();
-if (!session || !session.access_token) {
-  // No session — redirect to login
-  location.href = '/login?next=/admindashboard';
-} else {
-  const userEmail = session.user?.email || '';
-  document.getElementById('tb-email').textContent = userEmail;
+(async function() {
+  try {
+    const r = await fetch('/api/user/me');
+    if (!r.ok) { window.location.replace('/login'); return; }
+    const data = await r.json();
+    const userEmail = data.user?.email || data.email || '';
+    document.getElementById('tb-email').textContent = userEmail;
+    window._dmUser = data;
+  } catch(e) { window.location.replace('/login'); return; }
+
   // Verify admin status then show layout
-  const _adminHeaders = { 'Authorization': `Bearer ${session.access_token}`, 'Content-Type': 'application/json' };
-  if (session.refresh_token) _adminHeaders['X-Refresh-Token'] = session.refresh_token;
-  fetch('/admin/stats', { headers: _adminHeaders })
-    .then(async r => {
-      // Handle token rotation
-      const newToken = r.headers.get('X-New-Access-Token');
-      if (newToken) {
-        session.access_token = newToken;
-        try { const s = JSON.parse(localStorage.getItem('dm_session') || '{}'); s.access_token = newToken; localStorage.setItem('dm_session', JSON.stringify(s)); } catch(_) {}
-      }
-      if (r.status === 401) {
-        // Session expired — redirect to login
-        location.href = '/login?next=/admindashboard';
-        return null;
-      }
-      return r.json();
-    })
-    .then(d => {
-      if (!d) return;
-      if (d.admin) {
-        document.getElementById('layout').style.display = 'flex';
-        loadAll();
-      } else {
-        document.getElementById('not-admin').style.display = 'block';
-        const msg = document.getElementById('not-admin-msg');
-        if (msg) msg.innerHTML = `Not authorized as admin (signed in as <strong>${userEmail}</strong>).<br>Check that SUPERUSER_EMAIL on Railway includes this address. <a href="/dashboard" style="color:var(--signal)">Go to dashboard</a>`;
-      }
-    })
-    .catch(e => {
-      console.error('[admin] stats fetch failed:', e);
+  try {
+    const r = await fetch('/admin/stats', { headers: authH() });
+    if (r.status === 401) { window.location.replace('/login'); return; }
+    const d = await r.json();
+    if (d.admin) {
+      document.getElementById('layout').style.display = 'flex';
+      renderDashStats(d);
+      loadAll();
+    } else {
       document.getElementById('not-admin').style.display = 'block';
       const msg = document.getElementById('not-admin-msg');
-      if (msg) msg.textContent = 'Network error reaching /admin/stats. Check console.';
-    });
-}
-
-function signOut() { localStorage.removeItem('dm_session'); location.href = '/login'; }
-const authH = () => { const h = { 'Authorization': `Bearer ${session.access_token}`, 'Content-Type': 'application/json' }; if (session.refresh_token) h['X-Refresh-Token'] = session.refresh_token; return h; };
+      const email = document.getElementById('tb-email').textContent;
+      if (msg) msg.innerHTML = `Not authorized as admin (signed in as <strong>${email}</strong>).<br>Check that SUPERUSER_EMAIL on Railway includes this address. <a href="/dashboard" style="color:var(--signal)">Go to dashboard</a>`;
+    }
+  } catch(e) {
+    console.error('[admin] stats fetch failed:', e);
+    document.getElementById('not-admin').style.display = 'block';
+    const msg = document.getElementById('not-admin-msg');
+    if (msg) msg.textContent = 'Network error reaching /admin/stats. Check console.';
+  }
+})();
 
 // ── Navigation ────────────────────────────────────────────────────────────────
 document.querySelectorAll('.sb-item[data-pane]').forEach(btn => {
@@ -633,9 +620,13 @@ async function loadAll() {
 
 function renderDashStats(d) {
   if (!d) return;
-  if (d.users  != null) document.getElementById('k-users').textContent  = fmt(d.users);
-  if (d.agents != null) document.getElementById('k-agents').textContent = fmt(d.agents);
-  if (d.commits!= null) document.getElementById('k-total').textContent  = fmt(d.commits);
+  if (d.users         != null) document.getElementById('k-users').textContent   = fmt(d.users);
+  if (d.agents        != null) document.getElementById('k-agents').textContent  = fmt(d.agents);
+  if (d.commits       != null) document.getElementById('k-total').textContent   = fmt(d.commits);
+  if (d.mrr           != null) document.getElementById('k-mrr').textContent     = '$' + fmt(d.mrr);
+  if (d.paying_users  != null) document.getElementById('k-paying').textContent  = fmt(d.paying_users);
+  if (d.free_users    != null) document.getElementById('k-free').textContent    = fmt(d.free_users);
+  if (d.conversion_pct!= null) document.getElementById('k-conv').textContent   = d.conversion_pct + '%';
   // Load org count separately
   fetch('/api/workspace/members', { headers: authH() })
     .then(r => r.ok ? r.json() : {}).then(d => {
@@ -715,16 +706,27 @@ function renderChain() {
 async function loadOrgs() {
   const tbody = document.getElementById('orgs-body');
   try {
-    const d = await fetch('/api/workspace/members', { headers: authH() }).then(r => r.json());
+    const [d, subsData] = await Promise.all([
+      fetch('/api/workspace/members', { headers: authH() }).then(r => r.ok ? r.json() : {}),
+      fetch('/api/admin/subs',        { headers: authH() }).then(r => r.ok ? r.json() : {}),
+    ]);
     const members = d?.members || [];
+    // Build user_id → plan map from subscriptions
+    const planByUser = {};
+    (subsData?.subs || []).forEach(s => { if (s.user_id) planByUser[s.user_id] = s.plan; });
+
     if (!members.length) { tbody.innerHTML = '<tr><td colspan="5" style="padding:20px 12px;font-family:var(--mono);font-size:11px;color:var(--t3);">No organizations found</td></tr>'; return; }
-    tbody.innerHTML = members.map(m => `<tr>
-      <td class="mono truncate">${m.workspace_name || m.workspace_id || '—'}</td>
-      <td class="dim" style="font-size:11px;">${m.email||'—'}</td>
-      <td class="mono">${fmt(m.member_count||1)}</td>
-      <td><span class="badge gray">free</span></td>
-      <td class="mono dim" style="font-size:10px;">${validDate(m.created_at)}</td>
-    </tr>`).join('');
+    tbody.innerHTML = members.map(m => {
+      const plan = planByUser[m.user_id] || 'free';
+      const badgeCls = plan === 'enterprise' ? 'blue' : plan === 'teams' ? 'blue' : plan === 'pro' ? 'green' : 'gray';
+      return `<tr>
+        <td class="mono truncate">${m.workspace_name || m.workspace_id || '—'}</td>
+        <td class="dim" style="font-size:11px;">${m.email||'—'}</td>
+        <td class="mono">${fmt(m.member_count||1)}</td>
+        <td><span class="badge ${badgeCls}">${plan}</span></td>
+        <td class="mono dim" style="font-size:10px;">${validDate(m.created_at)}</td>
+      </tr>`;
+    }).join('');
   } catch { tbody.innerHTML = '<tr><td colspan="5" style="padding:20px 12px;color:var(--red);font-family:var(--mono);font-size:11px;">Error</td></tr>'; }
 }
 
