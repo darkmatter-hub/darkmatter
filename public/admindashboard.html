@@ -280,11 +280,12 @@ body{font-family:var(--sans);background:var(--bg);color:var(--t0);display:flex;f
       </div>
 
       <div class="slbl">Revenue</div>
-      <div class="kgrid" style="grid-template-columns:repeat(4,1fr);">
-        <div class="kcard hl"><div class="klbl">MRR</div><div class="kval" id="k-mrr">—</div></div>
-        <div class="kcard"><div class="klbl">Paying users</div><div class="kval" id="k-paying">—</div></div>
-        <div class="kcard"><div class="klbl">Free users</div><div class="kval" id="k-free">—</div></div>
-        <div class="kcard"><div class="klbl">Conversion</div><div class="kval" id="k-conv">—</div></div>
+      <div style="border:1px solid var(--brd);padding:12px 16px;display:flex;align-items:center;gap:32px;flex-wrap:wrap;margin-bottom:24px;font-family:var(--mono);">
+        <div style="display:flex;flex-direction:column;gap:3px;"><span style="font-size:8.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--t3);">MRR</span><span id="k-mrr" style="font-size:22px;font-weight:700;color:var(--signal);">—</span></div>
+        <div style="width:1px;height:36px;background:var(--brd);"></div>
+        <div style="display:flex;flex-direction:column;gap:3px;"><span style="font-size:8.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--t3);">Paying</span><span id="k-paying" style="font-size:18px;font-weight:700;color:var(--t0);">—</span></div>
+        <div style="display:flex;flex-direction:column;gap:3px;"><span style="font-size:8.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--t3);">Free</span><span id="k-free" style="font-size:18px;font-weight:700;color:var(--t0);">—</span></div>
+        <div style="display:flex;flex-direction:column;gap:3px;"><span style="font-size:8.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--t3);">Conversion</span><span id="k-conv" style="font-size:18px;font-weight:700;color:var(--t0);">—</span></div>
       </div>
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:4px;">
@@ -347,14 +348,21 @@ body{font-family:var(--sans);background:var(--bg);color:var(--t0);display:flex;f
     <!-- ── USERS ──────────────────────────────────────────────────────── -->
     <div class="pane" id="p-users">
       <div class="pane-header">
-        <div><div class="pane-title">Users</div><div class="pane-sub">All registered accounts</div></div>
+        <div><div class="pane-title">Users</div><div class="pane-sub" id="users-sub">All registered accounts</div></div>
         <div style="display:flex;gap:8px;align-items:center;">
+          <select id="user-plan-filter" onchange="filterUsers(document.getElementById('user-search').value)" style="font-family:var(--mono);font-size:11px;border:1px solid var(--brd);background:var(--bg);padding:4px 8px;color:var(--t1);">
+            <option value="">All plans</option>
+            <option value="free">Free</option>
+            <option value="pro">Pro</option>
+            <option value="teams">Teams</option>
+            <option value="enterprise">Enterprise</option>
+          </select>
           <input type="text" id="user-search" placeholder="Search email…" oninput="filterUsers(this.value)" style="font-family:var(--mono);font-size:11px;border:1px solid var(--brd);background:var(--bg-0);padding:5px 10px;color:var(--t0);outline:none;width:200px;" onfocus="this.style.borderColor='var(--signal)'" onblur="this.style.borderColor='var(--brd)'"/>
         </div>
       </div>
       <div class="tbl-wrap">
         <table class="tbl">
-          <thead><tr><th>Email</th><th>ID</th><th>Agents</th><th>Commits</th><th>Last sign-in</th><th>Created</th></tr></thead>
+          <thead><tr><th>Email</th><th>Plan</th><th>Charges/mo</th><th>Commits</th><th>Last sign-in</th><th>Created</th></tr></thead>
           <tbody id="users-body"><tr><td colspan="6" style="padding:20px 12px;font-family:var(--mono);font-size:11px;color:var(--t3);">Loading…</td></tr></tbody>
         </table>
       </div>
@@ -737,8 +745,10 @@ async function loadUsers() {
   try {
     const d = await fetch('/api/admin/users', { headers: authH() }).then(r => r.json());
     _allUsers = d?.users || [];
-    // Also update total users KPI
+    // Update KPIs
     if (d?.total) document.getElementById('k-users').textContent = fmt(d.total);
+    const sub = document.getElementById('users-sub');
+    if (sub) sub.textContent = _allUsers.length + ' accounts';
     renderUsers(_allUsers);
   } catch(e) {
     tbody.innerHTML = '<tr><td colspan="6" style="padding:20px 12px;color:var(--red);font-family:var(--mono);font-size:11px;">Error: ' + e.message + '</td></tr>';
@@ -748,20 +758,30 @@ async function loadUsers() {
 function renderUsers(users) {
   const tbody = document.getElementById('users-body');
   if (!users.length) { tbody.innerHTML = '<tr><td colspan="6" style="padding:20px 12px;font-family:var(--mono);font-size:11px;color:var(--t3);">No users found</td></tr>'; return; }
-  tbody.innerHTML = users.map(u => `<tr>
-    <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${u.email||'—'}</td>
-    <td class="mono dim" style="font-size:10px;">${(u.id||'').slice(0,14)}…</td>
-    <td class="mono">${fmt(u.agent_count)}</td>
-    <td class="mono">${fmt(u.commit_count)}</td>
-    <td class="mono dim" style="font-size:10px;">${validDate(u.last_sign_in)}</td>
-    <td class="mono dim" style="font-size:10px;">${validDate(u.created_at)}</td>
-  </tr>`).join('');
+  const planBadge = { free:'gray', pro:'green', teams:'blue', enterprise:'blue' };
+  tbody.innerHTML = users.map(u => {
+    const plan   = u.plan || 'free';
+    const charge = u.charge != null ? (u.charge === 0 ? '—' : '$' + u.charge) : '—';
+    return `<tr>
+      <td style="max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${u.email||'—'}</td>
+      <td><span class="badge ${planBadge[plan]||'gray'}">${plan}</span></td>
+      <td class="mono">${charge}</td>
+      <td class="mono">${fmt(u.commit_count)}</td>
+      <td class="mono dim" style="font-size:10px;">${validDate(u.last_sign_in)}</td>
+      <td class="mono dim" style="font-size:10px;">${validDate(u.created_at)}</td>
+    </tr>`;
+  }).join('');
 }
 
 function filterUsers(val) {
-  if (!val) { renderUsers(_allUsers); return; }
-  const q = val.toLowerCase();
-  renderUsers(_allUsers.filter(u => (u.email||'').toLowerCase().includes(q)));
+  const planFilter = document.getElementById('user-plan-filter')?.value || '';
+  const q = (val || '').toLowerCase();
+  const sub = document.getElementById('users-sub');
+  let list = _allUsers;
+  if (planFilter) list = list.filter(u => (u.plan||'free') === planFilter);
+  if (q)          list = list.filter(u => (u.email||'').toLowerCase().includes(q));
+  if (sub) sub.textContent = list.length + ' of ' + _allUsers.length + ' accounts';
+  renderUsers(list);
 }
 
 // ── Commits ───────────────────────────────────────────────────────────────────

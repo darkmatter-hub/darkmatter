@@ -60,6 +60,13 @@ const PLAN_META = {
   enterprise: { commitLimit: null,   retentionDays: null, price: 499 }, // display only — contact sales
 };
 
+// ── Admin check helper — only SUPERUSER_EMAIL has access ─────────────────────
+function isAdminEmail(email) {
+  return (process.env.SUPERUSER_EMAIL || '')
+    .split(',').map(e => e.trim()).filter(Boolean)
+    .includes((email || '').trim());
+}
+
 // ── Monthly data caps (abuse prevention) ─────────────────────────────────────
 const DATA_LIMIT_BYTES = {
   free:       500  * 1024 * 1024,        //  500 MB / month
@@ -2973,11 +2980,7 @@ app.get('/api/billing/subscription', wsAuth, async (req, res) => {
     const userId = req.user.id;
 
     // Admin accounts — show as internal/unlimited
-    const adminEmails = [
-      ...(process.env.SUPERUSER_EMAIL || '').split(','),
-      ...(process.env.ADMIN_EMAILS    || '').split(','),
-    ].map(e => e.trim()).filter(Boolean);
-    if (adminEmails.includes(email)) {
+    if (isAdminEmail(email)) {
       return res.json({
         plan: 'enterprise', status: 'active',
         planInfo: { name: 'Internal', price: null },
@@ -6010,15 +6013,9 @@ app.use(express.static(publicDir));
 app.get('/admin/stats', requireAuth, async (req, res) => {
   try {
     // Check if the authenticated user is an admin email
-    const superuser = process.env.SUPERUSER_EMAIL || '';
-    const adminList  = process.env.ADMIN_EMAILS    || '';
-    const adminEmails = [...new Set([
-      ...superuser.split(','),
-      ...adminList.split(','),
-    ].map(e => e.trim()).filter(Boolean))];
     const userEmail = req.user.email || '';
-    console.log('[admin/stats] auth attempt:', userEmail, '| admin list:', adminEmails.join(','));
-    if (!adminEmails.includes(userEmail)) {
+    console.log('[admin/stats] auth attempt:', userEmail);
+    if (!isAdminEmail(userEmail)) {
       console.warn('[admin/stats] DENIED for:', userEmail);
       return res.status(403).json({ error: 'Admin only', attempted: userEmail, hint: 'Add your email to SUPERUSER_EMAIL on Railway' });
     }
@@ -6068,13 +6065,7 @@ app.get('/admin', requireAuth, (req, res) => {
 app.get('/api/workspace/stats/usage', requireAuth, async (req, res) => {
   try {
     // Admin only — same check as /admin/stats
-    const superuser  = process.env.SUPERUSER_EMAIL || '';
-    const adminList  = process.env.ADMIN_EMAILS    || '';
-    const adminEmails = [...new Set([
-      ...superuser.split(','),
-      ...adminList.split(','),
-    ].map(e => e.trim()).filter(Boolean))];
-    if (!adminEmails.includes(req.user.email)) {
+    if (!isAdminEmail(req.user.email)) {
       return res.status(403).json({ error: 'Admin only' });
     }
 
@@ -6198,12 +6189,7 @@ app.get('/api/workspace/stats/usage', requireAuth, async (req, res) => {
 // ── GET /api/admin/users — all platform users (admin only) ──────────────────
 app.get('/api/admin/users', requireAuth, async (req, res) => {
   try {
-    const superuser   = process.env.SUPERUSER_EMAIL || '';
-    const adminList   = process.env.ADMIN_EMAILS    || '';
-    const adminEmails = [...new Set([
-      ...superuser.split(','), ...adminList.split(','),
-    ].map(e => e.trim()).filter(Boolean))];
-    if (!adminEmails.includes(req.user.email)) {
+    if (!isAdminEmail(req.user.email)) {
       return res.status(403).json({ error: 'Admin only' });
     }
 
@@ -6240,9 +6226,22 @@ app.get('/api/admin/users', requireAuth, async (req, res) => {
       });
     }
 
+    // Get plan info per user from subscriptions table
+    const { data: subRows } = await supabaseService
+      .from('subscriptions')
+      .select('user_id, plan, status, current_period_end')
+      .eq('status', 'active');
+    const subByUser = {};
+    (subRows || []).forEach(s => { if (s.user_id) subByUser[s.user_id] = s; });
+
+    const PLAN_PRICE_MAP = { pro: 29, teams: 99, enterprise: 499, free: 0 };
+
     const users = allUsers.map(u => {
-      const userAgents = agentsByUser[u.id] || [];
+      const userAgents  = agentsByUser[u.id] || [];
       const commitCount = userAgents.reduce((sum, aid) => sum + (commitsByAgent[aid] || 0), 0);
+      const sub         = subByUser[u.id];
+      const plan        = sub?.plan || 'free';
+      const charge      = PLAN_PRICE_MAP[plan] ?? 0;
       return {
         id:            u.id,
         email:         u.email,
@@ -6251,6 +6250,9 @@ app.get('/api/admin/users', requireAuth, async (req, res) => {
         confirmed:     !!u.email_confirmed_at,
         agent_count:   userAgents.length,
         commit_count:  commitCount,
+        plan,
+        charge,
+        period_end:    sub?.current_period_end || null,
       };
     }).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
@@ -6264,12 +6266,7 @@ app.get('/api/admin/users', requireAuth, async (req, res) => {
 // ── GET /api/admin/subs — all active subscriptions (admin only) ───────────────
 app.get('/api/admin/subs', requireAuth, async (req, res) => {
   try {
-    const superuser   = process.env.SUPERUSER_EMAIL || '';
-    const adminList   = process.env.ADMIN_EMAILS    || '';
-    const adminEmails = [...new Set([
-      ...superuser.split(','), ...adminList.split(','),
-    ].map(e => e.trim()).filter(Boolean))];
-    if (!adminEmails.includes(req.user.email)) {
+    if (!isAdminEmail(req.user.email)) {
       return res.status(403).json({ error: 'Admin only' });
     }
     const { data: subs } = await supabaseService
@@ -6284,12 +6281,7 @@ app.get('/api/admin/subs', requireAuth, async (req, res) => {
 
 // ── GET /api/admin/ping — lightweight DB health check (admin only) ────────────
 app.get('/api/admin/ping', requireAuth, async (req, res) => {
-  const superuser   = process.env.SUPERUSER_EMAIL || '';
-  const adminList   = process.env.ADMIN_EMAILS    || '';
-  const adminEmails = [...new Set([
-    ...superuser.split(','), ...adminList.split(','),
-  ].map(e => e.trim()).filter(Boolean))];
-  if (!adminEmails.includes(req.user.email)) {
+  if (!isAdminEmail(req.user.email)) {
     return res.status(403).json({ error: 'Admin only' });
   }
   try {
@@ -6472,11 +6464,7 @@ async function getFlag(key) {
 
 app.get('/api/admin/flags', requireAuth, async (req, res) => {
   try {
-    const adminEmails = [...new Set([
-      ...(process.env.SUPERUSER_EMAIL || '').split(','),
-      ...(process.env.ADMIN_EMAILS    || '').split(','),
-    ].map(e => e.trim()).filter(Boolean))];
-    if (!adminEmails.includes(req.user.email)) return res.status(403).json({ error: 'Admin only' });
+    if (!isAdminEmail(req.user.email)) return res.status(403).json({ error: 'Admin only' });
     const { data, error } = await supabaseService.from('feature_flags').select('*').order('key');
     if (error) throw error;
     res.json({ flags: data || [] });
@@ -6485,11 +6473,7 @@ app.get('/api/admin/flags', requireAuth, async (req, res) => {
 
 app.post('/api/admin/flags', requireAuth, async (req, res) => {
   try {
-    const adminEmails = [...new Set([
-      ...(process.env.SUPERUSER_EMAIL || '').split(','),
-      ...(process.env.ADMIN_EMAILS    || '').split(','),
-    ].map(e => e.trim()).filter(Boolean))];
-    if (!adminEmails.includes(req.user.email)) return res.status(403).json({ error: 'Admin only' });
+    if (!isAdminEmail(req.user.email)) return res.status(403).json({ error: 'Admin only' });
     const { key, enabled, updated_by } = req.body;
     if (!key) return res.status(400).json({ error: 'key required' });
     const { data, error } = await supabaseService
@@ -6524,12 +6508,7 @@ async function writeAuditLog(actorId, actorEmail, action, targetType, targetId, 
 }
 
 app.get('/api/admin/audit-log', requireAuth, async (req, res) => {
-  const superuser   = process.env.SUPERUSER_EMAIL || '';
-  const adminList   = process.env.ADMIN_EMAILS    || '';
-  const adminEmails = [...new Set([
-    ...superuser.split(','), ...adminList.split(','),
-  ].map(e => e.trim()).filter(Boolean))];
-  if (!adminEmails.includes(req.user.email)) {
+  if (!isAdminEmail(req.user.email)) {
     return res.status(403).json({ error: 'Admin only' });
   }
   try {

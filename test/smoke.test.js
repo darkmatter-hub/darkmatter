@@ -321,7 +321,7 @@ test('/api/admin/audit-log has admin email guard (H-1)', function() {
   var routeStart = server.indexOf("app.get('/api/admin/audit-log'");
   assert(routeStart > 0, 'audit-log route not found');
   var routeSlice = server.slice(routeStart, routeStart + 800);
-  assert(routeSlice.includes('adminEmails.includes'), 'audit-log must check adminEmails, not just requireAuth');
+  assert(routeSlice.includes('isAdminEmail('), 'audit-log must check isAdminEmail, not just requireAuth');
 });
 
 // H-2: admin email guard on ping
@@ -329,7 +329,7 @@ test('/api/admin/ping has admin email guard (H-2)', function() {
   var routeStart = server.indexOf("app.get('/api/admin/ping'");
   assert(routeStart > 0, 'ping route not found');
   var routeSlice = server.slice(routeStart, routeStart + 800);
-  assert(routeSlice.includes('adminEmails.includes'), 'ping must check adminEmails, not just requireAuth');
+  assert(routeSlice.includes('isAdminEmail('), 'ping must check isAdminEmail, not just requireAuth');
 });
 
 // H-4: demo endpoint is fully static — no DB query
@@ -440,21 +440,21 @@ test('/api/admin/users has admin email guard', function() {
   var idx = server.indexOf("app.get('/api/admin/users'");
   assert(idx > 0, '/api/admin/users route not found');
   var slice = server.slice(idx, idx + 600);
-  assert(slice.includes('adminEmails.includes'), '/api/admin/users must check adminEmails, not just requireAuth');
+  assert(slice.includes('isAdminEmail('), '/api/admin/users must check isAdminEmail, not just requireAuth');
 });
 
 test('/api/admin/flags GET has admin email guard', function() {
   var idx = server.indexOf("app.get('/api/admin/flags'");
   assert(idx > 0, '/api/admin/flags GET route not found');
   var slice = server.slice(idx, idx + 600);
-  assert(slice.includes('adminEmails.includes'), '/api/admin/flags GET must check adminEmails, not just requireAuth');
+  assert(slice.includes('isAdminEmail('), '/api/admin/flags GET must check isAdminEmail, not just requireAuth');
 });
 
 test('/api/admin/flags POST has admin email guard', function() {
   var idx = server.indexOf("app.post('/api/admin/flags'");
   assert(idx > 0, '/api/admin/flags POST route not found');
   var slice = server.slice(idx, idx + 700);
-  assert(slice.includes('adminEmails.includes'), '/api/admin/flags POST must check adminEmails, not just requireAuth');
+  assert(slice.includes('isAdminEmail('), '/api/admin/flags POST must check isAdminEmail, not just requireAuth');
 });
 
 test('client_attestation verified before assuranceLevel set to L3', function() {
