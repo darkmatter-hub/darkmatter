@@ -99,6 +99,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--t0);display:flex;f
 .badge.amber{background:var(--amber-bg);color:var(--amber);border-color:hsl(30 80% 40% / .2);}
 .badge.blue{background:var(--blue-bg);color:var(--blue);border-color:hsl(215 80% 50% / .2);}
 .badge.gray{background:var(--bg-1);color:var(--t3);border-color:var(--brd);}
+.badge.purple{background:hsl(270 60% 96%);color:hsl(270 60% 40%);border-color:hsl(270 60% 80%);}
 
 /* ── Chain live tail ────────────────────────────────────────────────────────── */
 .chain-row{display:grid;grid-template-columns:120px 100px 80px 90px 120px 80px auto;gap:0;border-bottom:1px solid var(--bg-1);padding:7px 12px;align-items:center;font-family:var(--mono);font-size:11px;color:var(--t2);cursor:pointer;transition:background .1s;}
@@ -725,8 +726,9 @@ async function loadOrgs() {
 
     if (!members.length) { tbody.innerHTML = '<tr><td colspan="5" style="padding:20px 12px;font-family:var(--mono);font-size:11px;color:var(--t3);">No organizations found</td></tr>'; return; }
     tbody.innerHTML = members.map(m => {
-      const plan = planByUser[m.user_id] || 'free';
-      const badgeCls = plan === 'enterprise' ? 'blue' : plan === 'teams' ? 'blue' : plan === 'pro' ? 'green' : 'gray';
+      const _adminEmailStr = (window._dmUser?.user?.email || window._dmUser?.email || '').toLowerCase();
+      const plan = (m.email || '').toLowerCase() === _adminEmailStr ? 'internal' : (planByUser[m.user_id] || 'free');
+      const badgeCls = plan === 'internal' ? 'purple' : plan === 'enterprise' ? 'blue' : plan === 'teams' ? 'blue' : plan === 'pro' ? 'green' : 'gray';
       return `<tr>
         <td class="mono truncate">${m.workspace_name || m.workspace_id || '—'}</td>
         <td class="dim" style="font-size:11px;">${m.email||'—'}</td>
@@ -758,10 +760,10 @@ async function loadUsers() {
 function renderUsers(users) {
   const tbody = document.getElementById('users-body');
   if (!users.length) { tbody.innerHTML = '<tr><td colspan="6" style="padding:20px 12px;font-family:var(--mono);font-size:11px;color:var(--t3);">No users found</td></tr>'; return; }
-  const planBadge = { free:'gray', pro:'green', teams:'blue', enterprise:'blue' };
+  const planBadge = { free:'gray', pro:'green', teams:'blue', enterprise:'blue', internal:'purple' };
   tbody.innerHTML = users.map(u => {
     const plan   = u.plan || 'free';
-    const charge = u.charge != null ? (u.charge === 0 ? '—' : '$' + u.charge) : '—';
+    const charge = (plan === 'internal') ? 'Internal' : (u.charge != null ? (u.charge === 0 ? '—' : '$' + u.charge) : '—');
     return `<tr>
       <td style="max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${u.email||'—'}</td>
       <td><span class="badge ${planBadge[plan]||'gray'}">${plan}</span></td>

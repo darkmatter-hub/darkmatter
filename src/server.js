@@ -6245,9 +6245,24 @@ app.get('/api/admin/users', requireAuth, async (req, res) => {
     const users = allUsers.map(u => {
       const userAgents  = agentsByUser[u.id] || [];
       const commitCount = userAgents.reduce((sum, aid) => sum + (commitsByAgent[aid] || 0), 0);
-      const sub         = subByUser[u.id];
-      const plan        = sub?.plan || 'free';
-      const charge      = PLAN_PRICE_MAP[plan] ?? 0;
+      // Admin accounts always show as Internal regardless of what's in subscriptions table
+      if (isAdminEmail(u.email)) {
+        return {
+          id:           u.id,
+          email:        u.email,
+          created_at:   u.created_at,
+          last_sign_in: u.last_sign_in_at,
+          confirmed:    !!u.email_confirmed_at,
+          agent_count:  userAgents.length,
+          commit_count: commitCount,
+          plan:         'internal',
+          charge:       0,
+          period_end:   null,
+        };
+      }
+      const sub    = subByUser[u.id];
+      const plan   = sub?.plan || 'free';
+      const charge = PLAN_PRICE_MAP[plan] ?? 0;
       return {
         id:            u.id,
         email:         u.email,
