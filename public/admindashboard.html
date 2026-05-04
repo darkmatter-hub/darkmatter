@@ -209,6 +209,10 @@ body{font-family:var(--sans);background:var(--bg);color:var(--t0);display:flex;f
         <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg>
         <span>Users</span>
       </button>
+      <button class="sb-item" data-pane="p-plans">
+        <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        <span>Plans &amp; revenue</span>
+      </button>
     </div>
     <div class="sb-group">
       <div class="sb-label">Records</div>
@@ -274,18 +278,26 @@ body{font-family:var(--sans);background:var(--bg);color:var(--t0);display:flex;f
 
       <div class="slbl">Platform</div>
       <div class="kgrid" style="grid-template-columns:repeat(4,1fr);">
-        <div class="kcard"><div class="klbl">Total users</div><div class="kval" id="k-users">—</div></div>
+        <div class="kcard"><div class="klbl">Total users</div><div class="kval" id="k-users">—</div><div class="ksub" id="k-users-delta">—</div></div>
         <div class="kcard"><div class="klbl">Total orgs</div><div class="kval" id="k-orgs">—</div></div>
         <div class="kcard"><div class="klbl">Registered keys (L3)</div><div class="kval" id="k-keys">—</div></div>
         <div class="kcard"><div class="klbl">New L3 commits 7d</div><div class="kval" id="k-l37">—</div></div>
       </div>
 
+      <div class="slbl">Users by plan</div>
+      <div class="kgrid" style="grid-template-columns:repeat(4,1fr);">
+        <div class="kcard"><div class="klbl">Free · $0</div><div class="kval" id="k-u-free">—</div><div class="ksub">10k commits · 500MB · 30d</div></div>
+        <div class="kcard hl"><div class="klbl">Pro · $29</div><div class="kval" id="k-u-pro">—</div><div class="ksub">50k commits · 5GB · 1y</div></div>
+        <div class="kcard"><div class="klbl">Teams · $99</div><div class="kval" id="k-u-teams">—</div><div class="ksub">250k · 25GB · ∞</div></div>
+        <div class="kcard"><div class="klbl">Enterprise · $499</div><div class="kval" id="k-u-ent">—</div><div class="ksub">Unlimited</div></div>
+      </div>
+
       <div class="slbl">Revenue</div>
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px;">
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:12px;">
         <div style="border:1px solid var(--signal-brd);background:var(--signal-bg);padding:16px 18px;display:flex;flex-direction:column;gap:6px;">
           <span style="font-family:var(--mono);font-size:8.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--signal-dim);">MRR</span>
           <span id="k-mrr" style="font-family:var(--mono);font-size:26px;font-weight:700;color:var(--signal);line-height:1;">—</span>
-          <span style="font-size:11px;color:var(--t3);">monthly recurring</span>
+          <span style="font-size:11px;color:var(--t3);">29·pro + 99·teams + 499·ent</span>
         </div>
         <div style="border:1px solid var(--brd);background:var(--bg-0);padding:16px 18px;display:flex;flex-direction:column;gap:6px;">
           <span style="font-family:var(--mono);font-size:8.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--t3);">ARR</span>
@@ -302,6 +314,12 @@ body{font-family:var(--sans);background:var(--bg);color:var(--t0);display:flex;f
           <span id="k-conv" style="font-family:var(--mono);font-size:26px;font-weight:700;color:var(--t0);line-height:1;">—</span>
           <span style="font-size:11px;color:var(--t3);">free → paid rate</span>
         </div>
+      </div>
+
+      <div class="kgrid" style="grid-template-columns:repeat(3,1fr);margin-bottom:24px;">
+        <div class="kcard"><div class="klbl">MRR · Pro tier</div><div class="kval" id="k-mrr-pro">—</div><div class="ksub">$29 × paying</div></div>
+        <div class="kcard"><div class="klbl">MRR · Teams tier</div><div class="kval" id="k-mrr-teams">—</div><div class="ksub">$99 × paying</div></div>
+        <div class="kcard"><div class="klbl">MRR · Enterprise tier</div><div class="kval" id="k-mrr-ent">—</div><div class="ksub">$499 × paying</div></div>
       </div>
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:4px;">
@@ -378,8 +396,8 @@ body{font-family:var(--sans);background:var(--bg);color:var(--t0);display:flex;f
       </div>
       <div class="tbl-wrap">
         <table class="tbl">
-          <thead><tr><th>Email</th><th>Plan</th><th>Charges/mo</th><th>Commits</th><th>Last sign-in</th><th>Created</th></tr></thead>
-          <tbody id="users-body"><tr><td colspan="6" style="padding:20px 12px;font-family:var(--mono);font-size:11px;color:var(--t3);">Loading…</td></tr></tbody>
+          <thead><tr><th>Email</th><th>Plan</th><th>Charges/mo</th><th>Commits</th><th>Quota usage</th><th>Last sign-in</th><th>Created</th></tr></thead>
+          <tbody id="users-body"><tr><td colspan="7" style="padding:20px 12px;font-family:var(--mono);font-size:11px;color:var(--t3);">Loading…</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -454,7 +472,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--t0);display:flex;f
 
       <div class="slbl">Billing</div>
       <div style="border:1px solid var(--brd);padding:14px 18px;font-size:13px;color:var(--t2);display:flex;align-items:center;justify-content:space-between;gap:16px;">
-        <span style="display:flex;align-items:center;gap:10px;"><span class="badge green">Live</span>Stripe live mode active. Pro $29/month · Teams $99/month · Enterprise $499/month.</span>
+        <span style="display:flex;align-items:center;gap:10px;"><span class="badge green">Live</span>Stripe live mode active. Free $0 · Pro $29 · Teams $99 · Enterprise $499 / month.</span>
         <a href="https://dashboard.stripe.com" target="_blank" rel="noopener" style="color:var(--signal);font-family:var(--mono);font-size:10px;white-space:nowrap;">Stripe dashboard →</a>
       </div>
     </div>
@@ -525,6 +543,46 @@ body{font-family:var(--sans);background:var(--bg);color:var(--t0);display:flex;f
       </div>
     </div>
 
+
+    <!-- ── PLANS & REVENUE ─────────────────────────────────────────────── -->
+    <div class="pane" id="p-plans">
+      <div class="pane-header">
+        <div><div class="pane-title">Plans &amp; revenue</div><div class="pane-sub">Live pricing tiers · quotas · conversion</div></div>
+        <a href="https://dashboard.stripe.com" target="_blank" rel="noopener" class="btn">Stripe ↗</a>
+      </div>
+
+      <div class="slbl">Pricing tiers (live)</div>
+      <div class="tbl-wrap">
+        <table class="tbl">
+          <thead><tr><th>Plan</th><th>Price</th><th>Commits / mo</th><th>Data / mo</th><th>Retention</th><th>Users</th><th>MRR contribution</th></tr></thead>
+          <tbody id="plans-body">
+            <tr><td><span class="badge gray">Free</span></td><td class="mono">$0</td><td class="mono">10,000</td><td class="mono">500 MB</td><td class="mono">30 days</td><td class="mono" id="pl-free">—</td><td class="mono dim">—</td></tr>
+            <tr><td><span class="badge green">Pro</span></td><td class="mono">$29</td><td class="mono">50,000</td><td class="mono">5 GB</td><td class="mono">1 year</td><td class="mono" id="pl-pro">—</td><td class="mono" id="pl-pro-mrr">—</td></tr>
+            <tr><td><span class="badge blue">Teams</span></td><td class="mono">$99</td><td class="mono">250,000</td><td class="mono">25 GB</td><td class="mono">Unlimited</td><td class="mono" id="pl-teams">—</td><td class="mono" id="pl-teams-mrr">—</td></tr>
+            <tr><td><span class="badge blue">Enterprise</span></td><td class="mono">$499</td><td class="mono">Unlimited</td><td class="mono">Unlimited</td><td class="mono">Unlimited</td><td class="mono" id="pl-ent">—</td><td class="mono" id="pl-ent-mrr">—</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="slbl">Plan distribution</div>
+      <div style="border:1px solid var(--brd);padding:20px;" id="plan-dist-bars">
+        <div style="font-family:var(--mono);font-size:11px;color:var(--t3);">Loading…</div>
+      </div>
+
+      <div class="slbl">Quota pressure (users at &gt;70%)</div>
+      <div class="tbl-wrap">
+        <table class="tbl">
+          <thead><tr><th>Email</th><th>Plan</th><th>Commits</th><th>Quota</th><th>Usage</th></tr></thead>
+          <tbody id="quota-body"><tr><td colspan="5" style="padding:20px 12px;font-family:var(--mono);font-size:11px;color:var(--t3);">Loading…</td></tr></tbody>
+        </table>
+      </div>
+
+      <div class="slbl">Pricing notes</div>
+      <div style="border:1px solid var(--brd);padding:14px 18px;font-size:13px;color:var(--t2);line-height:1.7;">
+        No cryptographic feature gating — L1 / L2 / L3 verification is included on every tier. Scale (commits, storage, retention) is the only difference. Commits over the monthly limit return <code style="background:var(--bg-1);padding:1px 5px;">429</code> until reset.
+      </div>
+    </div>
+
   </div><!-- .main -->
 </div><!-- .layout -->
 
@@ -591,6 +649,7 @@ document.querySelectorAll('.sb-item[data-pane]').forEach(btn => {
       'p-chain':   loadChain,
       'p-orgs':    loadOrgs,
       'p-users':   loadUsers,
+      'p-plans':   loadPlans,
       'p-commits': loadCommits,
       'p-keys':    loadKeys,
       'p-growth':  loadGrowth,
@@ -635,6 +694,9 @@ async function loadAll() {
   } catch(e) {
     document.getElementById('dash-updated').textContent = 'Error loading';
   }
+
+  // Populate user tier KPIs on dashboard
+  loadUsers().catch(() => {});
 
   // Also try usage endpoint
   fetch('/api/workspace/stats/usage', { headers: authH() })
@@ -765,6 +827,7 @@ async function loadUsers() {
   try {
     const d = await fetch('/api/admin/users', { headers: authH() }).then(r => r.json());
     _allUsers = d?.users || [];
+    updateTierKpis(_allUsers);
     // Update KPIs
     if (d?.total) document.getElementById('k-users').textContent = fmt(d.total);
     const sub = document.getElementById('users-sub');
@@ -777,16 +840,25 @@ async function loadUsers() {
 
 function renderUsers(users) {
   const tbody = document.getElementById('users-body');
-  if (!users.length) { tbody.innerHTML = '<tr><td colspan="6" style="padding:20px 12px;font-family:var(--mono);font-size:11px;color:var(--t3);">No users found</td></tr>'; return; }
+  if (!users.length) { tbody.innerHTML = '<tr><td colspan="7" style="padding:20px 12px;font-family:var(--mono);font-size:11px;color:var(--t3);">No users found</td></tr>'; return; }
   const planBadge = { free:'gray', pro:'green', teams:'blue', enterprise:'blue', internal:'purple' };
   tbody.innerHTML = users.map(u => {
     const plan   = u.plan || 'free';
     const charge = (plan === 'internal') ? 'Internal' : (u.charge != null ? (u.charge === 0 ? '—' : '$' + u.charge) : '—');
+    const quotaMap = { free: 10000, pro: 50000, teams: 250000, enterprise: Infinity, internal: Infinity };
+    const q = quotaMap[plan] ?? 10000;
+    const used = u.commit_count || 0;
+    const pct = q === Infinity ? 0 : Math.min(100, Math.round(used / q * 100));
+    const barColor = pct >= 90 ? 'var(--red)' : pct >= 70 ? 'var(--amber)' : 'var(--signal)';
+    const quotaCell = q === Infinity
+      ? '<span class="mono dim" style="font-size:10px;">unlimited</span>'
+      : `<div style="display:flex;align-items:center;gap:6px;min-width:120px;"><div style="flex:1;height:5px;background:var(--bg-2);overflow:hidden;"><div style="height:100%;width:${pct}%;background:${barColor};"></div></div><span class="mono dim" style="font-size:10px;white-space:nowrap;">${pct}%</span></div>`;
     return `<tr>
       <td style="max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${u.email||'—'}</td>
       <td><span class="badge ${planBadge[plan]||'gray'}">${plan}</span></td>
       <td class="mono">${charge}</td>
       <td class="mono">${fmt(u.commit_count)}</td>
+      <td>${quotaCell}</td>
       <td class="mono dim" style="font-size:10px;">${validDate(u.last_sign_in)}</td>
       <td class="mono dim" style="font-size:10px;">${validDate(u.created_at)}</td>
     </tr>`;
@@ -993,6 +1065,96 @@ function closeDrawer() {
   document.body.style.overflow = '';
 }
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrawer(); });
+
+
+
+// ── Tier KPIs (dashboard + plans pane) ───────────────────────────────────────
+function tierCounts(users) {
+  const c = { free:0, pro:0, teams:0, enterprise:0, internal:0 };
+  (users || []).forEach(u => { const p = u.plan || 'free'; if (c[p] != null) c[p]++; else c.free++; });
+  return c;
+}
+function updateTierKpis(users) {
+  const c = tierCounts(users);
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = fmt(v); };
+  set('k-u-free', c.free);
+  set('k-u-pro', c.pro);
+  set('k-u-teams', c.teams);
+  set('k-u-ent', c.enterprise);
+  // MRR per tier
+  const mrrPro = c.pro * 29, mrrTeams = c.teams * 99, mrrEnt = c.enterprise * 499;
+  const total = mrrPro + mrrTeams + mrrEnt;
+  const setM = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = '$' + fmt(v); };
+  setM('k-mrr-pro', mrrPro);
+  setM('k-mrr-teams', mrrTeams);
+  setM('k-mrr-ent', mrrEnt);
+  // Override MRR card with computed total if backend didn't supply
+  const mrrEl = document.getElementById('k-mrr');
+  if (mrrEl && (mrrEl.textContent === '—' || mrrEl.textContent === '$—')) mrrEl.textContent = '$' + fmt(total);
+  const arrEl = document.getElementById('k-arr');
+  if (arrEl && (arrEl.textContent === '—' || arrEl.textContent === '$—')) arrEl.textContent = '$' + fmt(total * 12);
+}
+
+// ── Plans pane ────────────────────────────────────────────────────────────────
+async function loadPlans() {
+  if (!_allUsers.length) { try { await loadUsers(); } catch {} }
+  const c = tierCounts(_allUsers);
+  const total = (_allUsers || []).length || 1;
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = fmt(v); };
+  set('pl-free', c.free); set('pl-pro', c.pro); set('pl-teams', c.teams); set('pl-ent', c.enterprise);
+  const setM = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = '$' + fmt(v); };
+  setM('pl-pro-mrr', c.pro*29); setM('pl-teams-mrr', c.teams*99); setM('pl-ent-mrr', c.enterprise*499);
+
+  // Distribution bars
+  const tiers = [
+    { label: 'Free',       n: c.free,       color: 'var(--t4)' },
+    { label: 'Pro',        n: c.pro,        color: 'var(--signal)' },
+    { label: 'Teams',      n: c.teams,      color: 'var(--blue)' },
+    { label: 'Enterprise', n: c.enterprise, color: 'var(--blue)' },
+  ];
+  const distEl = document.getElementById('plan-dist-bars');
+  if (distEl) {
+    distEl.innerHTML = tiers.map(t => {
+      const pct = Math.round(t.n / total * 100);
+      return `<div style="margin-bottom:10px;">
+        <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;color:var(--t2);margin-bottom:5px;">
+          <span>${t.label}</span><span>${t.n} · ${pct}%</span>
+        </div>
+        <div style="height:8px;background:var(--bg-2);overflow:hidden;">
+          <div style="height:100%;width:${Math.max(2, pct)}%;background:${t.color};transition:width .4s;"></div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // Quota pressure
+  const quotaMap = { free: 10000, pro: 50000, teams: 250000, enterprise: Infinity, internal: Infinity };
+  const planBadge = { free:'gray', pro:'green', teams:'blue', enterprise:'blue', internal:'purple' };
+  const stressed = (_allUsers || []).map(u => {
+    const plan = u.plan || 'free';
+    const q = quotaMap[plan] ?? 10000;
+    const used = u.commit_count || 0;
+    const pct = q === Infinity ? 0 : Math.round(used / q * 100);
+    return { ...u, plan, q, pct };
+  }).filter(u => u.pct >= 70).sort((a,b) => b.pct - a.pct);
+  const qBody = document.getElementById('quota-body');
+  if (qBody) {
+    if (!stressed.length) {
+      qBody.innerHTML = '<tr><td colspan="5" style="padding:20px 12px;font-family:var(--mono);font-size:11px;color:var(--t3);">No users currently above 70% quota.</td></tr>';
+    } else {
+      qBody.innerHTML = stressed.map(u => {
+        const color = u.pct >= 90 ? 'var(--red)' : 'var(--amber)';
+        return `<tr>
+          <td style="max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${u.email||'—'}</td>
+          <td><span class="badge ${planBadge[u.plan]||'gray'}">${u.plan}</span></td>
+          <td class="mono">${fmt(u.commit_count)}</td>
+          <td class="mono dim">${u.q === Infinity ? '∞' : fmt(u.q)}</td>
+          <td><div style="display:flex;align-items:center;gap:6px;min-width:140px;"><div style="flex:1;height:6px;background:var(--bg-2);overflow:hidden;"><div style="height:100%;width:${Math.min(100,u.pct)}%;background:${color};"></div></div><span class="mono" style="font-size:10px;color:${color};white-space:nowrap;">${u.pct}%</span></div></td>
+        </tr>`;
+      }).join('');
+    }
+  }
+}
 
 // ── Feature flags (local only) ────────────────────────────────────────────────
 async function toggleFlag(el, key) {
