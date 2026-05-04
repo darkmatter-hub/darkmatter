@@ -283,6 +283,21 @@ body{font-family:var(--sans);background:var(--bg);color:var(--t0);display:flex;f
         </table>
       </div>
 
+      <div class="slbl" style="margin-top:28px;">Users</div>
+      <div class="tbl-wrap" style="margin-bottom:24px;">
+        <table class="tbl">
+          <thead><tr>
+            <th class="sortable" onclick="sortUsers('email','dash')">Email</th>
+            <th class="sortable" onclick="sortUsers('plan','dash')">Plan</th>
+            <th class="sortable" onclick="sortUsers('charge','dash')">Charges/mo</th>
+            <th class="sortable" onclick="sortUsers('commit_count','dash')">Commits</th>
+            <th class="sortable" onclick="sortUsers('last_sign_in','dash')">Last sign-in</th>
+            <th class="sortable sort-desc" id="dash-th-created_at" onclick="sortUsers('created_at','dash')">Created</th>
+          </tr></thead>
+          <tbody id="dash-users-body"><tr><td colspan="6" style="padding:20px 12px;font-family:var(--mono);font-size:11px;color:var(--t3);">Loading…</td></tr></tbody>
+        </table>
+      </div>
+
       <div class="slbl">Volume</div>
       <div class="kgrid" style="grid-template-columns:repeat(auto-fill,minmax(155px,1fr));" id="kg-volume">
         <div class="kcard"><div class="klbl">Total commits</div><div class="kval" id="k-total">—</div></div>
@@ -354,20 +369,6 @@ body{font-family:var(--sans);background:var(--bg);color:var(--t0);display:flex;f
         </div>
       </div>
 
-      <div class="slbl" style="margin-top:28px;">Users</div>
-      <div class="tbl-wrap">
-        <table class="tbl">
-          <thead><tr>
-            <th class="sortable" onclick="sortUsers('email','dash')">Email</th>
-            <th class="sortable" onclick="sortUsers('plan','dash')">Plan</th>
-            <th class="sortable" onclick="sortUsers('charge','dash')">Charges/mo</th>
-            <th class="sortable" onclick="sortUsers('commit_count','dash')">Commits</th>
-            <th class="sortable" onclick="sortUsers('last_sign_in','dash')">Last sign-in</th>
-            <th class="sortable sort-desc" id="dash-th-created_at" onclick="sortUsers('created_at','dash')">Created</th>
-          </tr></thead>
-          <tbody id="dash-users-body"><tr><td colspan="6" style="padding:20px 12px;font-family:var(--mono);font-size:11px;color:var(--t3);">Loading…</td></tr></tbody>
-        </table>
-      </div>
     </div>
 
     <!-- ── LIVE CHAIN ─────────────────────────────────────────────────── -->
