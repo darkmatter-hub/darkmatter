@@ -673,6 +673,19 @@ app.post('/auth/signup', authLimiter, async (req, res) => {
     });
     if (error) return res.status(400).json({ error: error.message });
 
+    // Auto-create first agent immediately so the user has an API key the moment
+    // they confirm their email — no dashboard visit required before the first commit.
+    if (data.user?.id) {
+      const agentId   = generateAgentId();
+      const apiKey    = generateApiKey();
+      const agentName = (email || 'my').split('@')[0] + '-agent';
+      supabaseService
+        .from('agents')
+        .insert({ agent_id: agentId, agent_name: agentName, user_id: data.user.id, api_key: apiKey })
+        .then(() => {})
+        .catch(() => {});
+    }
+
     if (data.session) setAuthCookies(res, data.session);
     res.json({ user: data.user });
   } catch (err) {
@@ -5440,7 +5453,7 @@ app.get('/api/workspace/members', wsAuth, async (req, res) => {
     const weekAgo = new Date(Date.now() - 7*86400000).toISOString();
     const agentIds = members.map(m => m.agent_id).filter(Boolean);
 
-    const { data: recentCommits } = agentIds.length ? await supabase
+    const { data: recentCommits } = agentIds.length ? await supabaseService
       .from('commits').select('agent_id')
       .in('agent_id', agentIds)
       .gte('accepted_at', weekAgo) : { data: [] };
@@ -6281,6 +6294,48 @@ app.get('/api/admin/users', requireAuth, async (req, res) => {
     res.json({ users, total: users.length });
   } catch (err) {
     console.error('[admin/users]', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── GET /api/admin/commits — all platform commits newest-first (admin only) ───
+app.get('/api/admin/commits', requireAuth, async (req, res) => {
+  try {
+    if (!isAdminEmail(req.user.email)) {
+      return res.status(403).json({ error: 'Admin only' });
+    }
+    const limit = Math.min(parseInt(req.query.limit) || 50, 500);
+
+    // Fetch commits newest-first across ALL agents
+    const { data: commits, error } = await supabaseService
+      .from('commits')
+      .select('id, trace_id, from_agent, agent_id, agent_info, payload, timestamp, event_type, verified, assurance_level, integrity_hash, payload_hash, parent_id, capture_mode')
+      .order('timestamp', { ascending: false })
+      .limit(limit);
+    if (error) throw error;
+
+    // Resolve agent names for display
+    const agentIds = [...new Set((commits || []).map(c => c.from_agent || c.agent_id).filter(Boolean))];
+    let agentNameMap = {};
+    if (agentIds.length) {
+      const { data: agents } = await supabaseService
+        .from('agents')
+        .select('agent_id, agent_name')
+        .in('agent_id', agentIds);
+      (agents || []).forEach(a => { agentNameMap[a.agent_id] = a.agent_name; });
+    }
+
+    const activity = (commits || []).map(c => {
+      const aid = c.from_agent || c.agent_id;
+      return {
+        ...c,
+        agentName: agentNameMap[aid] || c.agent_info?.agent_name || aid,
+      };
+    });
+
+    res.json({ activity, total: activity.length });
+  } catch (err) {
+    console.error('[admin/commits]', err.message);
     res.status(500).json({ error: err.message });
   }
 });
