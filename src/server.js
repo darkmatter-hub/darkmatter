@@ -31,17 +31,21 @@ const {
 const app = express();
 
 // ── Sensitive-value encryption helpers (AES-256-GCM) ─────────────────────────
-// ENCRYPTION_KEY must be a 64-char hex string (32 bytes) in Railway env vars.
+// DM_ENCRYPTION_KEY must be a 64-char hex string (32 bytes) in Railway env vars.
 // Generate: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 // Used for: user_recording_keys.encrypted_key, event_hooks.secret,
 //           agents.webhook_secret stored at rest.
+console.log('[crypto] DM_ENCRYPTION_KEY loaded:', process.env.DM_ENCRYPTION_KEY
+  ? 'YES (' + process.env.DM_ENCRYPTION_KEY.length + ' chars)'
+  : 'MISSING');
+
 function encryptValue(plaintext) {
-  const keyHex = process.env.ENCRYPTION_KEY;
+  const keyHex = process.env.DM_ENCRYPTION_KEY;
   if (!keyHex) {
     // No key configured — store plaintext with a warning prefix so we know
     // it is unencrypted. This allows startup without the env var while making
     // the gap visible in the data.
-    console.warn('[encrypt] ENCRYPTION_KEY not set — storing value unencrypted');
+    console.warn('[encrypt] DM_ENCRYPTION_KEY not set — storing value unencrypted');
     return 'plain:' + plaintext;
   }
   const key       = Buffer.from(keyHex, 'hex');
@@ -56,7 +60,7 @@ function decryptValue(ciphertext) {
   if (!ciphertext) return '';
   // Handle legacy plaintext values stored before encryption was added
   if (ciphertext.startsWith('plain:')) return ciphertext.slice(6);
-  const keyHex = process.env.ENCRYPTION_KEY;
+  const keyHex = process.env.DM_ENCRYPTION_KEY;
   if (!keyHex) return ciphertext; // key not set — return as-is (legacy plaintext)
   try {
     const parts   = ciphertext.split(':');
