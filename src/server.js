@@ -2540,6 +2540,16 @@ app.get('/api/commits/:commitId/signature', requireApiKey, async (req, res) => {
   }
 });
 
+// ── Commit immutability guard ─────────────────────────────────────────────────
+// Commits are permanently immutable once stored. No DELETE method is permitted
+// on any commit resource. This is intentional: the tamper-evident guarantee
+// depends on every committed record remaining in the chain forever.
+// Correction is done via a follow-up "redaction" commit, not by deletion.
+app.delete('/api/commit',              (_req, res) => res.status(405).set('Allow', 'POST').json({ error: 'Commits cannot be deleted. Submit a redaction commit instead.' }));
+app.delete('/api/commit/rich',         (_req, res) => res.status(405).set('Allow', 'POST').json({ error: 'Commits cannot be deleted. Submit a redaction commit instead.' }));
+app.delete('/api/commits/:commitId',   (_req, res) => res.status(405).set('Allow', 'GET').json({ error: 'Commits cannot be deleted. Submit a redaction commit instead.' }));
+app.delete('/api/commits/:commitId/*', (_req, res) => res.status(405).set('Allow', 'GET').json({ error: 'Commits cannot be deleted. Submit a redaction commit instead.' }));
+
 // ═══════════════════════════════════════════════════
 // ENTERPRISE FEATURES
 // ═══════════════════════════════════════════════════

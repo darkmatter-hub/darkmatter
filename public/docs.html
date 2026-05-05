@@ -433,7 +433,8 @@ const proof = await verify(ctx.id);<div class="lang-label">javascript</div></cod
   <li><strong>L3.</strong> Customer signing key. Signed by a key only you hold, before reaching DarkMatter's servers. DarkMatter cannot forge or alter it.</li>
 </ul>
 <h3>Commit</h3>
-<p>An immutable node containing a structured payload, agent attribution, a parent reference, and an integrity hash. Once stored, it cannot be modified. Every commit gets a globally unique <code>ctx_</code> ID and a <code>verify_url</code> that anyone can open.</p>
+<p>An immutable node containing a structured payload, agent attribution, a parent reference, and an integrity hash. Once stored, it cannot be modified or deleted. Every commit gets a globally unique <code>ctx_</code> ID and a <code>verify_url</code> that anyone can open.</p>
+<p><strong>Commits are permanent by design.</strong> The tamper-evident guarantee depends on every record remaining in the chain. There is no delete API. If you need to correct a record, submit a follow-up commit with <code>redacts: "&lt;ctx_id&gt;"</code> in the payload: the redaction commit becomes the authoritative note of correction while the original remains verifiable.</p>
 <h3>Parent linkage</h3>
 <p>Pass <code>parent_id</code> in each commit to link it to the previous step. This builds a lineage graph. Each node stores <code>parent_hash</code> which chains integrity hashes together. Tampering at any node breaks every downstream hash.</p>
 <h3>Trace ID</h3>

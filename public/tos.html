@@ -214,6 +214,13 @@ footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;gri
   <li>Record availability is subject to our infrastructure uptime; we target 99.9% availability but do not guarantee it</li>
   <li>Records on the Free plan are subject to the stated retention window; we may delete Records beyond the retention window without additional notice</li>
 </ul>
+<p><strong>Committed Records cannot be deleted or modified.</strong> This is intentional and is the foundation of DarkMatter's tamper-evident guarantee. Once a Record is committed to the chain, it remains there permanently (subject only to the retention window described above). The API does not expose a delete method for commits, and we will not delete individual Records on request.</p>
+<p>If a Record contains an error or sensitive information that should not have been submitted, your options are:</p>
+<ul>
+  <li><strong>Redaction commit.</strong> Submit a follow-up commit with <code>redacts: &lt;ctx_id&gt;</code> in the payload, documenting what was incorrect and why. The original Record remains in the chain; the redaction commit becomes the authoritative note of correction.</li>
+  <li><strong>Retention expiry.</strong> Free-plan Records are automatically purged at the end of your retention window. You may also contact us to discuss a shorter retention period for your workspace.</li>
+  <li><strong>Export and account deletion.</strong> You may export all your Records at any time and close your account, after which we will delete your workspace data.</li>
+</ul>
 
 <h2>8. Intellectual Property</h2>
 <p>All software, infrastructure, APIs, SDKs, documentation, and interface elements of the Service are owned by us. You may use the Service only as permitted by these Terms. The DarkMatter name, sigil, and brand elements are proprietary. You may not use them without written permission.</p>
