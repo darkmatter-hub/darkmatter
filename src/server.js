@@ -565,15 +565,35 @@ app.post('/api/provision', provisionLimiter, async (req, res) => {
       throw agentError;
     }
 
-    // ── Send magic link for account setup (non-blocking) ──
+    // ── Send magic link for account setup via Resend (non-blocking) ──
     supabaseService.auth.admin.generateLink({
-      type:       'magiclink',
+      type:    'magiclink',
       email,
-      options:    { redirectTo: `${process.env.BASE_URL || 'https://darkmatterhub.ai'}/dashboard` },
-    }).then(({ data }) => {
-      // In production, send this via Resend/email
-      // For now just log — the developer can still use the API key immediately
-      console.log(`  📧 Magic link sent to: ${email}`);
+      options: { redirectTo: `${process.env.BASE_URL || 'https://darkmatterhub.ai'}/dashboard` },
+    }).then(({ data: linkData }) => {
+      const magicUrl = linkData?.properties?.action_link;
+      if (!magicUrl) return;
+      if (process.env.RESEND_API_KEY) {
+        fetch('https://api.resend.com/emails', {
+          method:  'POST',
+          headers: { 'Authorization': `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            from:    'DarkMatter <hello@darkmatterhub.ai>',
+            to:      [email],
+            subject: 'Your DarkMatter agent is ready',
+            text:    [
+              `Your agent "${name}" is set up and ready to commit.`,
+              '',
+              `API key: ${apiKey}`,
+              '',
+              `Access your dashboard:`,
+              magicUrl,
+              '',
+              `Quickstart: https://darkmatterhub.ai/docs`,
+            ].join('\n'),
+          }),
+        }).catch(e => console.error('[provision] Resend failed:', e.message));
+      }
     }).catch(() => {});
 
     // Track activation (fire and forget — table may not exist yet)
