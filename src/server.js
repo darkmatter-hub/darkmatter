@@ -30,6 +30,61 @@ const {
 
 const app = express();
 
+// ── Sensitive-value encryption helpers (AES-256-GCM) ─────────────────────────
+// ENCRYPTION_KEY must be a 64-char hex string (32 bytes) in Railway env vars.
+// Generate: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+// Used for: user_recording_keys.encrypted_key, event_hooks.secret,
+//           agents.webhook_secret stored at rest.
+function encryptValue(plaintext) {
+  const keyHex = process.env.ENCRYPTION_KEY;
+  if (!keyHex) {
+    // No key configured — store plaintext with a warning prefix so we know
+    // it is unencrypted. This allows startup without the env var while making
+    // the gap visible in the data.
+    console.warn('[encrypt] ENCRYPTION_KEY not set — storing value unencrypted');
+    return 'plain:' + plaintext;
+  }
+  const key       = Buffer.from(keyHex, 'hex');
+  const iv        = crypto.randomBytes(12);
+  const cipher    = crypto.createCipheriv('aes-256-gcm', key, iv);
+  const encrypted = Buffer.concat([cipher.update(plaintext, 'utf8'), cipher.final()]);
+  const tag       = cipher.getAuthTag();
+  return iv.toString('hex') + ':' + tag.toString('hex') + ':' + encrypted.toString('hex');
+}
+
+function decryptValue(ciphertext) {
+  if (!ciphertext) return '';
+  // Handle legacy plaintext values stored before encryption was added
+  if (ciphertext.startsWith('plain:')) return ciphertext.slice(6);
+  const keyHex = process.env.ENCRYPTION_KEY;
+  if (!keyHex) return ciphertext; // key not set — return as-is (legacy plaintext)
+  try {
+    const parts   = ciphertext.split(':');
+    if (parts.length !== 3) return ciphertext; // legacy plaintext, not in iv:tag:data format
+    const [ivHex, tagHex, dataHex] = parts;
+    const key       = Buffer.from(keyHex, 'hex');
+    const decipher  = crypto.createDecipheriv('aes-256-gcm', key, Buffer.from(ivHex, 'hex'));
+    decipher.setAuthTag(Buffer.from(tagHex, 'hex'));
+    return decipher.update(Buffer.from(dataHex, 'hex')) + decipher.final('utf8');
+  } catch (e) {
+    console.error('[decrypt] Failed to decrypt value:', e.message);
+    return ''; // return empty string on decryption failure — caller must handle
+  }
+}
+
+// ── API key hashing and masking helpers ───────────────────────────────────────
+function hashApiKey(key) {
+  return crypto.createHash('sha256').update(key).digest('hex');
+}
+
+function maskApiKey(key) {
+  if (!key || key.length < 14) return '••••••••';
+  // Show prefix (dm_sk_) + first 4 hex chars, then mask, then last 4 chars
+  const prefix = key.startsWith('dm_sk_') ? 'dm_sk_' : key.slice(0, 6);
+  const body   = key.slice(prefix.length);
+  return prefix + body.slice(0, 4) + '••••••••' + body.slice(-4);
+}
+
 // ── Stripe client (lazy init so server starts even if key missing) ────────────
 let _stripe = null;
 function getStripe() {
@@ -329,20 +384,22 @@ async function requireApiKey(req, res, next) {
   }
 
   try {
-    // Try direct api_key match first (most agents store key plaintext)
-    let { data, error } = await supabaseService
+    // Primary lookup: hash-based (all new keys and migrated keys use this)
+    const keyHash = hashApiKey(apiKey);
+    let { data } = await supabaseService
       .from('agents')
-      .select('agent_id, agent_name, user_id, api_key')
-      .eq('api_key', apiKey)
+      .select('agent_id, agent_name, user_id')
+      .eq('api_key_hash', keyHash)
       .limit(1);
 
-    // Fallback: try api_key_hash
+    // Fallback: plaintext match for legacy keys not yet migrated to hash
+    // TODO: drop this fallback and the api_key column after migration is confirmed
+    // complete (target: one week after deploy of api_key_hash migration).
     if (!data || data.length === 0) {
-      const keyHash = require('crypto').createHash('sha256').update(apiKey).digest('hex');
       const res2 = await supabaseService
         .from('agents')
-        .select('agent_id, agent_name, user_id, api_key')
-        .eq('api_key_hash', keyHash)
+        .select('agent_id, agent_name, user_id')
+        .eq('api_key', apiKey)
         .limit(1);
       data = res2.data;
     }
@@ -562,10 +619,11 @@ app.post('/api/provision', provisionLimiter, async (req, res) => {
     const { data: agentData, error: agentError } = await supabaseService
       .from('agents')
       .insert({
-        agent_id:   agentId,
-        agent_name: name,
-        user_id:    userId,
-        api_key:    apiKey,
+        agent_id:      agentId,
+        agent_name:    name,
+        user_id:       userId,
+        api_key:       apiKey,       // kept for rollback safety; TODO: drop after migration
+        api_key_hash:  hashApiKey(apiKey),
       })
       .select()
       .single();
@@ -1044,10 +1102,11 @@ app.post('/api/agents/register', apiLimiter, requireApiKey, async (req, res) => 
     const { data, error } = await supabaseService
       .from('agents')
       .insert({
-        agent_id:   newAgentId,
-        agent_name: sanitizeText(agentName, 100),
-        user_id:    userId,
-        api_key:    newApiKey,
+        agent_id:      newAgentId,
+        agent_name:    sanitizeText(agentName, 100),
+        user_id:       userId,
+        api_key:       newApiKey,          // kept for rollback; TODO: drop after migration
+        api_key_hash:  hashApiKey(newApiKey),
       })
       .select()
       .single();
@@ -1094,10 +1153,11 @@ app.post('/dashboard/agents', requireAuth, async (req, res) => {
     const { data, error } = await supabaseService
       .from('agents')
       .insert({
-        agent_id:   agentId,
-        agent_name: agentName,
-        user_id:    req.user.id,
-        api_key:    apiKey,
+        agent_id:      agentId,
+        agent_name:    agentName,
+        user_id:       req.user.id,
+        api_key:       apiKey,         // kept for rollback; TODO: drop after migration
+        api_key_hash:  hashApiKey(apiKey),
       })
       .select()
       .single();
@@ -1107,9 +1167,9 @@ app.post('/dashboard/agents', requireAuth, async (req, res) => {
     res.json({
       agentId:   data.agent_id,
       agentName: data.agent_name,
-      apiKey:    data.api_key,
+      apiKey,   // full key returned only once at creation — not stored in response cache
       createdAt: data.created_at,
-      note: 'Save your API key — use it as: Authorization: Bearer <apiKey>',
+      note: 'Save your API key now — it will not be shown again.',
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -1135,16 +1195,23 @@ app.get('/dashboard/agents', requireAuth, async (req, res) => {
       const agentName = (req.user.email || 'my').split('@')[0] + '-agent';
       const { data: newAgent, error: createErr } = await supabaseService
         .from('agents')
-        .insert({ agent_id: agentId, agent_name: agentName, user_id: req.user.id, api_key: apiKey })
+        .insert({
+          agent_id:     agentId,
+          agent_name:   agentName,
+          user_id:      req.user.id,
+          api_key:      apiKey,       // kept for rollback; TODO: drop after migration
+          api_key_hash: hashApiKey(apiKey),
+        })
         .select()
         .single();
       if (!createErr && newAgent) data = [newAgent];
     }
 
+    // api_key is never returned to the client — use masked hint for display only
     res.json((data || []).map(a => ({
       agentId:       a.agent_id,
       agentName:     a.agent_name,
-      apiKey:        a.api_key,
+      apiKeyHint:    maskApiKey(a.api_key),   // masked hint: dm_sk_abcd••••••••5678
       createdAt:     a.created_at,
       lastActive:    a.last_active,
       webhookUrl:    a.webhook_url    || null,
@@ -1180,13 +1247,14 @@ app.post('/dashboard/agents/:agentId/rotate', requireAuth, async (req, res) => {
 
     const { data, error } = await supabaseService
       .from('agents')
-      .update({ api_key: newKey })
+      .update({ api_key: newKey, api_key_hash: hashApiKey(newKey) })
       .eq('agent_id', agentId)
       .eq('user_id', req.user.id)
       .select()
       .single();
 
     if (error) throw error;
+    // Full key returned only once at rotation — not stored in client state
     res.json({ agentId, apiKey: newKey, rotated: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -1330,9 +1398,10 @@ async function fireEventHooks(agentId, eventType, data) {
       .eq('is_active', true);
     if (!hooks || !hooks.length) return;
     for (const hook of hooks) {
+      const hookSecret = hook.secret ? decryptValue(hook.secret) : null;
       fetch(hook.url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...(hook.secret ? { 'X-Hook-Secret': hook.secret } : {}) },
+        headers: { 'Content-Type': 'application/json', ...(hookSecret ? { 'X-Hook-Secret': hookSecret } : {}) },
         body: JSON.stringify({ event: eventType, agent_id: agentId, ...data }),
       }).catch(() => {});
     }
@@ -3868,7 +3937,7 @@ app.post('/api/hooks', apiLimiter, requireApiKey, async (req, res) => {
       agent_id: req.agent.agent_id,
       url:      sanitizeText(url, 500),
       events,
-      secret:   secret ? sanitizeText(secret, 200) : null,
+      secret:   secret ? encryptValue(sanitizeText(secret, 200)) : null,
       enabled:  true,
     });
     if (error) throw error;
@@ -5176,7 +5245,7 @@ app.get('/api/recording-keys/test/:provider', requireAuth, async (req, res) => {
     if (!rk.recording_enabled) return res.json({ status: 'paused', message: 'Recording is paused for this provider' });
 
     // Quick test — just verify the key format, don't make a live API call
-    const key = rk.encrypted_key || '';
+    const key = rk.encrypted_key ? decryptValue(rk.encrypted_key) : '';
     const valid = provider === 'anthropic' ? key.startsWith('sk-') :
                   provider === 'openai'    ? key.startsWith('sk-') :
                   provider === 'google'    ? key.startsWith('AIza') : true;
@@ -5212,9 +5281,7 @@ app.all('/ext/claude/*', claudeProxyAuth, async (req, res) => {
       .eq('recording_enabled', true)
       .single();
     if (rk?.encrypted_key) {
-      // For now: stored as-is (no server-side encryption without user BYOK key)
-      // In production: decrypt with user-provided BYOK key
-      realAnthropicKey = rk.encrypted_key;
+      realAnthropicKey = decryptValue(rk.encrypted_key);
     }
   }
 
@@ -5420,22 +5487,23 @@ app.post('/api/recording-keys', requireAuth, async (req, res) => {
     const { provider = 'anthropic', apiKey, label } = req.body;
     if (!apiKey) return res.status(400).json({ error: 'apiKey required' });
 
-    // Store key hint (last 4 chars) for display — never expose full key
+    // Store key hint for display — never expose full key
     const keyHint = apiKey.slice(0, 10).replace(/./g, (c, i) => i < 4 ? c : '•') + '...' + apiKey.slice(-4);
 
-    // Store encrypted key — in prod this would be encrypted with a server key
-    // For MVP: store directly (key is only used server-side for proxying)
+    // Encrypt with AES-256-GCM before storing
+    const encryptedKey = encryptValue(apiKey);
+
     // Remove any existing key for this provider
     await supabaseService.from('user_recording_keys')
       .delete().eq('user_id', req.user.id).eq('provider', provider);
 
     const { data, error } = await supabaseService.from('user_recording_keys').insert({
-      user_id:          req.user.id,
+      user_id:           req.user.id,
       provider,
-      key_hint:         keyHint,
-      encrypted_key:    apiKey,   // TODO: encrypt in production
+      key_hint:          keyHint,
+      encrypted_key:     encryptedKey,
       recording_enabled: true,
-      label:            label || null,
+      label:             label || null,
     }).select('id, provider, key_hint, recording_enabled, label, created_at').single();
 
     if (error) throw error;
@@ -5892,7 +5960,11 @@ app.get('/api/workspace/proxy-keys', wsAuth, async (req, res) => {
       query.eq('member_id', me.id);
     }
     const { data: keys } = await query.order('created_at', { ascending: false });
-    res.json(keys || []);
+    // Mask proxy_key — full value is only shown at creation time
+    res.json((keys || []).map(k => ({
+      ...k,
+      proxy_key: k.proxy_key ? maskApiKey(k.proxy_key) : null,
+    })));
   } catch(e) {
     res.status(500).json({ error: e.message });
   }
@@ -6176,7 +6248,10 @@ app.post('/api/auth/refresh', async (req, res) => {
 
 // ── GET /api/user/me ─────────────────────────────────────────────────────────
 app.get('/api/user/me', requireAuth, (req, res) => {
-  res.json({ user: req.user });
+  // Return only the fields the client actually needs — never the full Supabase
+  // user object (which includes app_metadata, identities, etc.)
+  const u = req.user;
+  res.json({ user: { id: u.id, email: u.email, created_at: u.created_at } });
 });
 
 // ── Static file serving ──────────────────────────────────────────────── v2
