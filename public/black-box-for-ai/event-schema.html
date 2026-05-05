@@ -178,19 +178,19 @@
 <!-- HERO -->
 <section class="hero">
   <div class="container">
-    <p class="hero-kicker">Version 1.0 — April 2026 — Stable</p>
+    <p class="hero-kicker">Version 1.0, April 2026, Stable</p>
     <h1 class="hero-headline">Black Box<br><em>Event Schema</em></h1>
 
     <p class="hero-sub">
       The <a href="/black-box-for-ai" style="color:var(--ink-mid);text-decoration:underline;text-decoration-color:var(--rule)">Black Box for AI definition</a> specifies that a conforming system must record inputs, outputs, timestamps, agent identity, event sequence, and integrity proofs. This document defines the typed event taxonomy that turns those abstract requirements into a concrete, testable protocol.
     </p>
     <p class="hero-sub">
-      <strong>Every action an AI agent takes belongs to one of these event types.</strong> Typed events are what make a record reconstructable — not just a sequence of blobs, but a traceable chain of classified actions where investigators can ask "show me every decision event" or "show me every human override" and get a clean answer.
+      <strong>Every action an AI agent takes belongs to one of these event types.</strong> Typed events are what make a record reconstructable, not just a sequence of blobs, but a traceable chain of classified actions where investigators can ask "show me every decision event" or "show me every human override" and get a clean answer.
     </p>
 
     <div class="hero-stamp">
       <span class="hero-stamp-dot"></span>
-      Part of the Black Box for AI standard — DarkMatter, April 2026
+      Part of the Black Box for AI standard, DarkMatter, April 2026
     </div>
   </div>
 </section>
@@ -200,7 +200,7 @@
 <section style="padding: 2.5rem 0;">
   <div class="container">
     <div class="toc">
-      <p class="toc-label">Contents — Part of the Black Box for AI standard</p>
+      <p class="toc-label">Contents, Part of the Black Box for AI standard</p>
       <ul class="toc-list">
         <li><a href="#base-schema"><span class="toc-num">01</span> Base event schema</a></li>
         <li><a href="#agent-events"><span class="toc-num">02</span> Agent execution events</a></li>
@@ -210,8 +210,8 @@
         <li><a href="#conformance"><span class="toc-num">06</span> Conformance and versioning</a></li>
         <li class="toc-divider"></li>
         <li style="margin-bottom:0.3rem"><span style="font-family:var(--mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--ink-faint);">Related documents</span></li>
-        <li class="external-doc"><a href="/black-box-for-ai"><span class="toc-num">↗</span> Black Box for AI — Definition</a></li>
-        <li class="external-doc"><a href="/integrity"><span class="toc-num">↗</span> BBIS v1.0 — Black Box Integrity Specification</a></li>
+        <li class="external-doc"><a href="/black-box-for-ai"><span class="toc-num">↗</span> Black Box for AI, Definition</a></li>
+        <li class="external-doc"><a href="/integrity"><span class="toc-num">↗</span> BBIS v1.0, Black Box Integrity Specification</a></li>
       </ul>
     </div>
   </div>
@@ -221,36 +221,36 @@
 <!-- BASE SCHEMA -->
 <section id="base-schema">
   <div class="container">
-    <p class="eyebrow">01 — Base event schema</p>
+    <p class="eyebrow">01, Base event schema</p>
     <h2 class="section-title">Every event shares this structure</h2>
     <div class="prose">
-      <p>Every event recorded by a Black Box for AI — regardless of type — must contain the base fields below. These are the fields that satisfy the six required properties in the canonical definition. Event-type-specific fields extend this base; they do not replace it.</p>
+      <p>Every event recorded by a Black Box for AI, regardless of type, must contain the base fields below. These are the fields that satisfy the six required properties in the canonical definition. Event-type-specific fields extend this base; they do not replace it.</p>
     </div>
 
     <div class="schema-block">
       <div class="schema-header">
-        <span class="schema-header-label">Base event — required fields</span>
+        <span class="schema-header-label">Base event, required fields</span>
         <span class="schema-header-version">Schema v1.0</span>
       </div>
       <div class="schema-body">
 {<br>
-&nbsp;&nbsp;<span class="sf">"event_id"</span>:        <span class="sv">"evt_01H..."</span>,        <span class="sc">// unique identifier — immutable once assigned</span><br>
+&nbsp;&nbsp;<span class="sf">"event_id"</span>:        <span class="sv">"evt_01H..."</span>,        <span class="sc">// unique identifier, immutable once assigned</span><br>
 &nbsp;&nbsp;<span class="sf">"event_type"</span>:      <span class="sv">"decision"</span>,          <span class="sc">// see event taxonomy below</span><br>
 &nbsp;&nbsp;<span class="sf">"trace_id"</span>:        <span class="sv">"trc_01H..."</span>,        <span class="sc">// groups events into one pipeline run</span><br>
 &nbsp;&nbsp;<span class="sf">"agent"</span>: {<br>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="sf">"id"</span>:             <span class="sv">"dm_abc123"</span>,          <span class="sc">// authenticated agent identity</span><br>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="sf">"model"</span>:          <span class="sv">"claude-sonnet-4-6"</span>,  <span class="sc">// model and version — strongly recommended</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="sf">"model"</span>:          <span class="sv">"claude-sonnet-4-6"</span>,  <span class="sc">// model and version, strongly recommended</span><br>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="sf">"provider"</span>:       <span class="sv">"anthropic"</span><br>
 &nbsp;&nbsp;},<br>
-&nbsp;&nbsp;<span class="sf">"input"</span>:           <span class="sv">{ ... }</span>,              <span class="sc">// what the agent received — required</span><br>
-&nbsp;&nbsp;<span class="sf">"output"</span>:          <span class="sv">{ ... }</span>,              <span class="sc">// what the agent produced — required</span><br>
+&nbsp;&nbsp;<span class="sf">"input"</span>:           <span class="sv">{ ... }</span>,              <span class="sc">// what the agent received, required</span><br>
+&nbsp;&nbsp;<span class="sf">"output"</span>:          <span class="sv">{ ... }</span>,              <span class="sc">// what the agent produced, required</span><br>
 &nbsp;&nbsp;<span class="sf">"timestamps"</span>: {<br>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="sf">"client_time"</span>:    <span class="sv">"2026-04-15T16:21:09Z"</span>,  <span class="sc">// agent-asserted — part of signed envelope</span><br>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="sf">"accepted_time"</span>:  <span class="sv">"2026-04-15T16:21:10Z"</span>   <span class="sc">// server ledger — independent of agent</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="sf">"client_time"</span>:    <span class="sv">"2026-04-15T16:21:09Z"</span>,  <span class="sc">// agent-asserted, part of signed envelope</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="sf">"accepted_time"</span>:  <span class="sv">"2026-04-15T16:21:10Z"</span>   <span class="sc">// server ledger, independent of agent</span><br>
 &nbsp;&nbsp;},<br>
 &nbsp;&nbsp;<span class="sf">"sequence"</span>: {<br>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="sf">"parent_event_id"</span>: <span class="sv">"evt_previous..."</span>,  <span class="sc">// causal chain linkage</span><br>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="sf">"position"</span>:        <span class="sv">3</span>                     <span class="sc">// position in log — immutable</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="sf">"position"</span>:        <span class="sv">3</span>                     <span class="sc">// position in log, immutable</span><br>
 &nbsp;&nbsp;},<br>
 &nbsp;&nbsp;<span class="sf">"integrity"</span>: {<br>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="sf">"payload_hash"</span>:    <span class="sv">"sha256:a9c4e1..."</span>,  <span class="sc">// computed client-side before transmission</span><br>
@@ -352,10 +352,10 @@
 <!-- AGENT EXECUTION EVENTS -->
 <section id="agent-events">
   <div class="container">
-    <p class="eyebrow">02 — Agent execution events</p>
+    <p class="eyebrow">02, Agent execution events</p>
     <h2 class="section-title">Actions the agent takes autonomously</h2>
     <div class="prose">
-      <p>These are the core events that record what the agent did. Every pipeline action belongs to one of these types. <strong>Decision</strong> and <strong>tool_call</strong> are the most important — they cover the two categories where agent behavior is most consequential and most likely to be investigated.</p>
+      <p>These are the core events that record what the agent did. Every pipeline action belongs to one of these types. <strong>Decision</strong> and <strong>tool_call</strong> are the most important, they cover the two categories where agent behavior is most consequential and most likely to be investigated.</p>
     </div>
 
     <div class="event-group">
@@ -368,7 +368,7 @@
           <span class="event-type-desc">Agent evaluated options and chose a course of action</span>
         </div>
         <div class="event-type-body">
-          The primary event type. Use whenever the agent produces a meaningful output in response to a prompt or context — approving, rejecting, classifying, generating, routing. <strong>If you only record one event type, record this one.</strong>
+          The primary event type. Use whenever the agent produces a meaningful output in response to a prompt or context, approving, rejecting, classifying, generating, routing. <strong>If you only record one event type, record this one.</strong>
           <div class="event-type-example">input: { prompt, context } &nbsp;|&nbsp; output: { decision, reasoning, confidence }</div>
         </div>
       </div>
@@ -380,7 +380,7 @@
           <span class="event-type-desc">Agent invoked an external tool, API, or function</span>
         </div>
         <div class="event-type-body">
-          Records every external action the agent took — API calls, database queries, web searches, code execution. <strong>Tool calls are where agent behavior becomes operationally consequential.</strong> Most real failures trace back to a tool call, not the final output. Recording these as first-class events is the difference between a record and a black box.
+          Records every external action the agent took, API calls, database queries, web searches, code execution. <strong>Tool calls are where agent behavior becomes operationally consequential.</strong> Most real failures trace back to a tool call, not the final output. Recording these as first-class events is the difference between a record and a black box.
           <div class="event-type-example">input: { tool_name, parameters } &nbsp;|&nbsp; output: { result, status_code, latency_ms }</div>
         </div>
       </div>
@@ -392,7 +392,7 @@
           <span class="event-type-desc">Agent sent or received a message in a conversation</span>
         </div>
         <div class="event-type-body">
-          Captures conversational context — user messages, agent responses, system prompts. Use when the pipeline involves dialogue rather than discrete task execution.
+          Captures conversational context, user messages, agent responses, system prompts. Use when the pipeline involves dialogue rather than discrete task execution.
           <div class="event-type-example">input: { role, content } &nbsp;|&nbsp; output: { role, content }</div>
         </div>
       </div>
@@ -404,7 +404,7 @@
           <span class="event-type-desc">Agent passed context to another agent</span>
         </div>
         <div class="event-type-body">
-          Records multi-agent transitions — when Agent A finishes and passes work to Agent B. Creates the cross-agent lineage chain that makes multi-agent pipelines fully reconstructable.
+          Records multi-agent transitions, when Agent A finishes and passes work to Agent B. Creates the cross-agent lineage chain that makes multi-agent pipelines fully reconstructable.
           <div class="event-type-example">input: { context, from_agent_id } &nbsp;|&nbsp; output: { to_agent_id, payload_hash }</div>
         </div>
       </div>
@@ -416,7 +416,7 @@
           <span class="event-type-desc">Agent saved mid-task state without completing a handoff</span>
         </div>
         <div class="event-type-body">
-          Progress save during a long-running task. Not a final output — a recoverable state. Enables reconstruction of where a task was at any point, not just at the beginning and end.
+          Progress save during a long-running task. Not a final output, a recoverable state. Enables reconstruction of where a task was at any point, not just at the beginning and end.
           <div class="event-type-example">input: { task_description, progress } &nbsp;|&nbsp; output: { state_snapshot }</div>
         </div>
       </div>
@@ -428,7 +428,7 @@
           <span class="event-type-desc">Agent failed mid-task, logging last known state</span>
         </div>
         <div class="event-type-body">
-          Records failure state — the last known context before the agent stopped. This is the most important event when the investigation starts. A black box that doesn't record failures is least useful precisely when it is most needed.
+          Records failure state, the last known context before the agent stopped. This is the most important event when the investigation starts. A black box that doesn't record failures is least useful precisely when it is most needed.
           <div class="event-type-example">input: { last_context } &nbsp;|&nbsp; output: { error_type, error_message, stack_trace }</div>
         </div>
       </div>
@@ -440,10 +440,10 @@
 <!-- HUMAN INTERACTION EVENTS -->
 <section id="human-events">
   <div class="container">
-    <p class="eyebrow">03 — Human interaction events</p>
+    <p class="eyebrow">03, Human interaction events</p>
     <h2 class="section-title">Moments where a human entered the loop</h2>
     <div class="prose">
-      <p>These events record the moments that matter most in disputes. If an AI system made a consequential decision and a human later claims they reviewed it, approved it, or changed it — the black box record of that interaction is the only independent evidence of what actually happened.</p>
+      <p>These events record the moments that matter most in disputes. If an AI system made a consequential decision and a human later claims they reviewed it, approved it, or changed it, the black box record of that interaction is the only independent evidence of what actually happened.</p>
     </div>
 
     <div class="event-group">
@@ -456,7 +456,7 @@
           <span class="event-type-desc">Human explicitly approved an agent action before execution</span>
         </div>
         <div class="event-type-body">
-          EU AI Act Article 14 requires human oversight for high-risk AI systems. Recording approvals as first-class events is how you demonstrate that requirement was met — not by assertion, but by an independent record.
+          EU AI Act Article 14 requires human oversight for high-risk AI systems. Recording approvals as first-class events is how you demonstrate that requirement was met, not by assertion, but by an independent record.
           <div class="event-type-example">input: { agent_proposal } &nbsp;|&nbsp; output: { approved_by, approved_at, conditions }</div>
         </div>
       </div>
@@ -480,7 +480,7 @@
           <span class="event-type-desc">Agent paused and flagged for human review</span>
         </div>
         <div class="event-type-body">
-          Records the moment an agent stopped and waited for human input. Creates a verifiable record that the system did not proceed autonomously past a defined threshold — which matters for both compliance and liability.
+          Records the moment an agent stopped and waited for human input. Creates a verifiable record that the system did not proceed autonomously past a defined threshold, which matters for both compliance and liability.
           <div class="event-type-example">input: { reason_for_escalation } &nbsp;|&nbsp; output: { escalated_to, escalation_context }</div>
         </div>
       </div>
@@ -492,7 +492,7 @@
           <span class="event-type-desc">Human explicitly consented to a proposed agent action</span>
         </div>
         <div class="event-type-body">
-          Distinct from approval — consent records that the affected party (not just a reviewer) agreed to what the agent was about to do. Relevant in regulated industries where patient, customer, or user consent must be documented.
+          Distinct from approval, consent records that the affected party (not just a reviewer) agreed to what the agent was about to do. Relevant in regulated industries where patient, customer, or user consent must be documented.
           <div class="event-type-example">input: { proposed_action, consent_request } &nbsp;|&nbsp; output: { consented_by, consent_scope }</div>
         </div>
       </div>
@@ -504,10 +504,10 @@
 <!-- SYSTEM EVENTS -->
 <section id="system-events">
   <div class="container">
-    <p class="eyebrow">04 — System and lifecycle events</p>
+    <p class="eyebrow">04, System and lifecycle events</p>
     <h2 class="section-title">Pipeline structure and operational state</h2>
     <div class="prose">
-      <p>These events record the structure of the pipeline itself — when agents are spawned, when pipelines branch, when tasks time out. They are what make a reconstruction complete rather than just a sequence of decisions.</p>
+      <p>These events record the structure of the pipeline itself, when agents are spawned, when pipelines branch, when tasks time out. They are what make a reconstruction complete rather than just a sequence of decisions.</p>
     </div>
 
     <div class="event-group">
@@ -520,7 +520,7 @@
           <span class="event-type-desc">Agent dynamically created a child agent</span>
         </div>
         <div class="event-type-body">
-          Records multi-agent hierarchy. When an orchestrator creates sub-agents, the spawn event creates the lineage link — making the full tree reconstructable, not just the leaf-level actions.
+          Records multi-agent hierarchy. When an orchestrator creates sub-agents, the spawn event creates the lineage link, making the full tree reconstructable, not just the leaf-level actions.
           <div class="event-type-example">input: { spawn_reason, parent_agent_id } &nbsp;|&nbsp; output: { child_agent_id, initial_context }</div>
         </div>
       </div>
@@ -568,7 +568,7 @@
           <span class="event-type-desc">Agent reattempted a previously failed task</span>
         </div>
         <div class="event-type-body">
-          Links to the original failed event. Creates a record that distinguishes "the agent succeeded on the first attempt" from "the agent succeeded after three retries" — which is relevant for both debugging and compliance.
+          Links to the original failed event. Creates a record that distinguishes "the agent succeeded on the first attempt" from "the agent succeeded after three retries", which is relevant for both debugging and compliance.
           <div class="event-type-example">input: { original_event_id, retry_context } &nbsp;|&nbsp; output: { attempt_number, outcome }</div>
         </div>
       </div>
@@ -580,10 +580,10 @@
 <!-- COMPLIANCE EVENTS -->
 <section id="compliance-events">
   <div class="container">
-    <p class="eyebrow">05 — Compliance events</p>
+    <p class="eyebrow">05, Compliance events</p>
     <h2 class="section-title">Regulatory and data governance actions</h2>
     <div class="prose">
-      <p>These events exist because regulatory frameworks require evidence of specific actions — not just general audit logs. They map directly to articles in the EU AI Act, GDPR, and sector-specific regulations. Recording them as first-class typed events means a compliance export can answer "show me all consent events from Q1" without parsing freeform text.</p>
+      <p>These events exist because regulatory frameworks require evidence of specific actions, not just general audit logs. They map directly to articles in the EU AI Act, GDPR, and sector-specific regulations. Recording them as first-class typed events means a compliance export can answer "show me all consent events from Q1" without parsing freeform text.</p>
     </div>
 
     <div class="event-group">
@@ -596,7 +596,7 @@
           <span class="event-type-desc">System evaluated output against a defined policy</span>
         </div>
         <div class="event-type-body">
-          Records automated policy evaluations — content filters, safety checks, compliance rules. Creates a verifiable record that governance controls were applied, not just that they exist.
+          Records automated policy evaluations, content filters, safety checks, compliance rules. Creates a verifiable record that governance controls were applied, not just that they exist.
           <div class="event-type-example">input: { output_evaluated, policy_id } &nbsp;|&nbsp; output: { passed, violations[], policy_version }</div>
         </div>
       </div>
@@ -608,7 +608,7 @@
           <span class="event-type-desc">PII or sensitive data removed before handoff or storage</span>
         </div>
         <div class="event-type-body">
-          Records that data was removed and why — without storing the removed data. Maps to EU AI Act Article 10 and GDPR data minimisation requirements. The record proves redaction happened without recreating the redacted content.
+          Records that data was removed and why, without storing the removed data. Maps to EU AI Act Article 10 and GDPR data minimisation requirements. The record proves redaction happened without recreating the redacted content.
           <div class="event-type-example">input: { pre_redaction_hash } &nbsp;|&nbsp; output: { redaction_reason, fields_redacted[], post_redaction_hash }</div>
         </div>
       </div>
@@ -620,7 +620,7 @@
           <span class="event-type-desc">External auditor or regulator accessed the record</span>
         </div>
         <div class="event-type-body">
-          Records third-party access to the audit trail itself. Creates a meta-record of who accessed the black box, when, and what they accessed — which matters for chain-of-custody in formal investigations.
+          Records third-party access to the audit trail itself. Creates a meta-record of who accessed the black box, when, and what they accessed, which matters for chain-of-custody in formal investigations.
           <div class="event-type-example">input: { access_request } &nbsp;|&nbsp; output: { accessed_by, accessed_at, scope }</div>
         </div>
       </div>
@@ -632,18 +632,18 @@
 <!-- CONFORMANCE -->
 <section id="conformance" style="padding-bottom: 6rem;">
   <div class="container">
-    <p class="eyebrow">06 — Conformance and versioning</p>
+    <p class="eyebrow">06, Conformance and versioning</p>
     <h2 class="section-title">What it means to conform to this schema</h2>
 
     <div class="prose">
       <p>A conforming implementation must record all <strong>Required</strong> base fields for every event. It must use one of the defined event types, or declare a custom type in the format <code style="font-family:var(--mono);font-size:0.85em;background:var(--paper-off);padding:0.1rem 0.3rem;border-radius:2px;border:1px solid var(--rule)">custom.{namespace}.{type}</code> to avoid collision with reserved types.</p>
-      <p>Recommended fields are not required for conformance, but their absence should be noted in any conformance claim. A claim of "conforms to Black Box Event Schema v1.0" without model attribution, tool calls, or human interaction events is technically valid — but incomplete for most real-world investigation scenarios.</p>
-      <p>This schema is versioned. Version 1.0 is stable. Future versions will add new event types and fields — they will not remove or rename existing ones. Any breaking change requires a new major version.</p>
+      <p>Recommended fields are not required for conformance, but their absence should be noted in any conformance claim. A claim of "conforms to Black Box Event Schema v1.0" without model attribution, tool calls, or human interaction events is technically valid, but incomplete for most real-world investigation scenarios.</p>
+      <p>This schema is versioned. Version 1.0 is stable. Future versions will add new event types and fields, they will not remove or rename existing ones. Any breaking change requires a new major version.</p>
     </div>
 
     <div class="version-block">
       <p class="version-label">Schema provenance</p>
-      <div class="version-row"><span class="version-key">Schema version</span><span class="version-val">v1.0 — Stable</span></div>
+      <div class="version-row"><span class="version-key">Schema version</span><span class="version-val">v1.0, Stable</span></div>
       <div class="version-row"><span class="version-key">First published</span><span class="version-val">April 2026</span></div>
       <div class="version-row"><span class="version-key">Defined by</span><span class="version-val">DarkMatter</span></div>
       <div class="version-row"><span class="version-key">Part of</span><span class="version-val"><a href="/black-box-for-ai">Black Box for AI standard</a></span></div>

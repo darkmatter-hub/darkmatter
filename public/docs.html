@@ -373,9 +373,9 @@ for s in replay[<span class="cv">"replay"</span>]:
 
 <h2 id="jupyter-quickstart">Quickstart: Jupyter</h2>
 <p>Works in JupyterLab, Jupyter Notebook, Google Colab, and VS Code notebooks.</p>
-<pre><code><span class="cm"># Cell 1 &#8212; install</span>
+<pre><code><span class="cm"># Cell 1: install</span>
 %pip install darkmatter-sdk -q<div class="lang-label">python</div></code></pre>
-<pre><code><span class="cm"># Cell 2 &#8212; commit</span>
+<pre><code><span class="cm"># Cell 2: commit</span>
 import darkmatter as dm
 import os
 
@@ -392,7 +392,7 @@ ctx = dm.commit(
 )
 print(f<span class="cv">"Committed: {ctx[&#8217;id&#8217;]}"</span>)
 print(f<span class="cv">"Verify: {ctx[&#8217;verify_url&#8217;]}"</span>)<div class="lang-label">python</div></code></pre>
-<pre><code><span class="cm"># Cell 3 &#8212; fork and compare two runs</span>
+<pre><code><span class="cm"># Cell 3: fork and compare two runs</span>
 result_b = <span class="cv">"Rejected."</span>
 
 fork  = dm.fork(ctx[<span class="cv">"id"</span>])
@@ -407,7 +407,7 @@ diff  = dm.diff(ctx[<span class="cv">"id"</span>], ctx_b[<span class="cv">"id"</
 const { commit, verify, replay, fork } = require(<span class="cv">'darkmatter-js'</span>);
 
 <span class="cm">// DARKMATTER_API_KEY and DARKMATTER_AGENT_ID read from process.env automatically</span>
-const ctx   = await commit(<span class="cv">"dm_agent_..."</span>, { input: <span class="cv">"Summarise this"</span>, output: result });
+const ctx   = await commit(<span class="cv">"dm_agent_..."</span>, { input: <span class="cv">"Summarise this"</span>, output: <span class="cv">"Approved."</span> });
 const chain = await replay(ctx.id);
 const proof = await verify(ctx.id);<div class="lang-label">javascript</div></code></pre>
 <div class="callout info"><span class="callout-title">Same primitives as Python</span><code>commit</code>, <code>verify</code>, <code>export</code>, <code>replay</code>, <code>fork</code>: identical to the Python SDK. Source on <a href="https://github.com/darkmatter-hub/darkmatter" target="_blank" rel="noopener">GitHub</a>.</div>
@@ -516,7 +516,7 @@ client = Anthropic(
 app = workflow.compile()
 app = DarkMatterTracer(app, agent_id=<span class="cv">"MY_AGENT_ID"</span>)
 
-<span class="cm"># Use exactly as before &#8212; every node auto-commits</span>
+<span class="cm"># Use exactly as before; every node auto-commits</span>
 result = app.invoke({<span class="ck">"input"</span>: <span class="cv">"Write a report"</span>})<div class="lang-label">python</div></code></pre>
 <div class="callout"><strong>LangGraph note:</strong> LangGraph&#8217;s own checkpointing persists internal graph state. DarkMatter captures what was passed between agents and produces a cryptographically verifiable chain. Use both.</div>
 

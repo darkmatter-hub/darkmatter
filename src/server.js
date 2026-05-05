@@ -3962,6 +3962,8 @@ app.get('/api/bundle/:ctxId', requireApiKey, async (req, res) => {
       })),
     };
 
+    const safeId = ctxId.replace(/[^a-zA-Z0-9_\-]/g, '').slice(0, 80);
+    res.setHeader('Content-Disposition', `attachment; filename="darkmatter-bundle-${safeId}.json"`);
     res.json(bundle);
   } catch (err) {
     res.status(500).json({ error: err.message });
