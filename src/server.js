@@ -1083,6 +1083,8 @@ app.post('/api/account/delete', deleteLimiter, requireAuth, async (req, res) => 
   // ── Step 5: Delete the Supabase auth user (hard requirement) ───────────────
   // This must succeed before we return success. If it fails the user can still
   // sign in — data cleanup above is idempotent so retry will work.
+  const { error: testError } = await supabaseService.auth.admin.listUsers({ perPage: 1 });
+  console.log('[account-delete] admin access test:', testError ? 'FAILED: ' + testError.message : 'OK');
   const { error: authDeleteError } = await supabaseService.auth.admin.deleteUser(userId);
   if (authDeleteError) {
     console.error('[account/delete] CRITICAL: auth user deletion failed:', authDeleteError.message);
