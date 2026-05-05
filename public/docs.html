@@ -345,7 +345,7 @@ print(ctx2[<span class="cv">"verify_url"</span>])<div class="lang-label">python<
 
 <div class="steps">
   <div class="step"><div class="step-num">1</div><div><div class="step-title">Install</div><div class="step-desc"><code>pip install darkmatter-sdk</code>, which installs the SDK and CLI.</div></div></div>
-  <div class="step"><div class="step-num">2</div><div><div class="step-title">Get your API key</div><div class="step-desc">Sign up at <a href="/signup">darkmatterhub.ai/signup</a>, then create an API key from the dashboard under API Keys. The key is shown once at creation and looks like <code>dm_sk_...</code></div></div></div>
+  <div class="step"><div class="step-num">2</div><div><div class="step-title">Get your API key</div><div class="step-desc">Sign up at <a href="/signup">darkmatterhub.ai/signup</a>. Open your dashboard and go to API Keys to create your first key. Copy it when shown: it is displayed once. The key looks like <code>dm_sk_...</code></div></div></div>
   <div class="step"><div class="step-num">3</div><div><div class="step-title">Commit</div><div class="step-desc">Call <code>dm.commit()</code> after each agent action. Pass <code>parent_id</code> to chain commits into a lineage.</div></div></div>
   <div class="step"><div class="step-num">4</div><div><div class="step-title">Replay and verify</div><div class="step-desc"><code>dm.replay(ctx_id)</code> walks the chain root&#8594;tip. <code>dm.verify(ctx_id)</code> proves integrity. Share the verify URL. No account needed to view it.</div></div></div>
 </div>

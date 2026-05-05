@@ -703,19 +703,6 @@ app.post('/auth/signup', authLimiter, async (req, res) => {
     });
     if (error) return res.status(400).json({ error: error.message });
 
-    // Auto-create first agent immediately so the user has an API key the moment
-    // they confirm their email — no dashboard visit required before the first commit.
-    if (data.user?.id) {
-      const agentId   = generateAgentId();
-      const apiKey    = generateApiKey();
-      const agentName = (email || 'my').split('@')[0] + '-agent';
-      supabaseService
-        .from('agents')
-        .insert({ agent_id: agentId, agent_name: agentName, user_id: data.user.id, api_key: apiKey })
-        .then(() => {})
-        .catch(() => {});
-    }
-
     if (data.session) setAuthCookies(res, data.session);
     res.json({ user: data.user });
   } catch (err) {
