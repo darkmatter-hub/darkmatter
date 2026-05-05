@@ -1080,20 +1080,33 @@ app.post('/api/account/delete', deleteLimiter, requireAuth, async (req, res) => 
     }
   }
 
-  // ── Step 5: Delete the Supabase auth user (hard requirement) ───────────────
-  // This must succeed before we return success. If it fails the user can still
-  // sign in — data cleanup above is idempotent so retry will work.
-  const { error: testError } = await supabaseService.auth.admin.listUsers({ perPage: 1 });
-  console.log('[account-delete] admin access test:', testError ? 'FAILED: ' + testError.message : 'OK');
-  const { error: authDeleteError } = await supabaseService.auth.admin.deleteUser(userId);
-  if (authDeleteError) {
-    console.error('[account/delete] CRITICAL: auth user deletion failed:', authDeleteError.message);
+  // ── Step 5: Delete the Supabase auth user via REST API (hard requirement) ───
+  // The JS-client deleteUser can fail with "Database error deleting user" when
+  // auth-schema rows (sessions, identities, mfa_factors, etc.) block deletion.
+  // Calling the REST endpoint directly triggers Supabase's own pre-deletion
+  // cleanup path and is more reliable than the JS client wrapper.
+  // This must succeed before we return success. Data cleanup above is idempotent.
+  console.log('[account/delete] Attempting auth user deletion via REST API...');
+  const deleteResponse = await fetch(
+    `${process.env.SUPABASE_URL}/auth/v1/admin/users/${userId}`,
+    {
+      method:  'DELETE',
+      headers: {
+        'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_KEY}`,
+        'apikey':         process.env.SUPABASE_SERVICE_KEY,
+      },
+    }
+  );
+
+  if (!deleteResponse.ok) {
+    const errBody = await deleteResponse.text();
+    console.error('[account/delete] CRITICAL: REST auth user deletion failed:', deleteResponse.status, errBody);
     return res.status(500).json({
       error: 'Account deletion failed at the authentication step. Please contact hello@darkmatterhub.ai to complete deletion.',
       code:  'AUTH_DELETE_FAILED',
     });
   }
-  console.log(`[account/delete] Auth user deleted`);
+  console.log(`[account/delete] Auth user deleted via REST (status ${deleteResponse.status})`);
 
   // ── Step 6: Confirmation email to the user ───────────────────────────────────
   if (process.env.RESEND_API_KEY) {
