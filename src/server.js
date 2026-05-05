@@ -206,6 +206,16 @@ app.use(cookieParser());
 // any middleware that could hang or reject unauthenticated requests.
 app.get('/healthz', (_req, res) => res.status(200).json({ ok: true }));
 
+// Serve spec markdown files from repo root
+app.get('/ENVELOPE_SPEC_V1.md', (_req, res) => {
+  res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
+  res.sendFile('ENVELOPE_SPEC_V1.md', { root: path.join(__dirname, '..') });
+});
+app.get('/INTEGRITY_SPEC_V1.md', (_req, res) => {
+  res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
+  res.sendFile('INTEGRITY_SPEC_V1.md', { root: path.join(__dirname, '..') });
+});
+
 // Skip JSON parsing for the Stripe webhook — it needs the raw Buffer so
 // stripe.webhooks.constructEvent() can verify the HMAC signature.
 // Route-level express.raw() on that route handles the body instead.
@@ -5518,7 +5528,6 @@ app.post('/api/workspace/invite', wsAuth, async (req, res) => {
 
     // Send invite email via Resend
     const resendKey = process.env.RESEND_API_KEY;
-    console.log('[invite] RESEND_API_KEY present:', !!resendKey, '| to:', email);
     if (resendKey) {
       try {
         const emailRes = await fetch('https://api.resend.com/emails', {

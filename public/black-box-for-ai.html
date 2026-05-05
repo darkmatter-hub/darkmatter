@@ -619,6 +619,17 @@
     .property-criteria { padding-left: 0; }
     .property-header { gap: 0.75rem; }
   }
+  .dm-hamburger { display: none; flex-direction: column; justify-content: center; gap: 5px; width: 36px; height: 36px; cursor: pointer; padding: 6px; border: none; background: none; }
+  @media (max-width: 700px) { .dm-hamburger { display: flex; } }
+  .dm-hamburger span { display: block; height: 1.5px; background: var(--ink); transition: all .25s; }
+  .dm-hamburger.open span:nth-child(1) { transform: translateY(6.5px) rotate(45deg); }
+  .dm-hamburger.open span:nth-child(2) { opacity: 0; }
+  .dm-hamburger.open span:nth-child(3) { transform: translateY(-6.5px) rotate(-45deg); }
+  .dm-mobile-nav { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(252,251,249,.98); backdrop-filter: blur(16px); z-index: 9999; flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem; padding-top: 4.5rem; }
+  .dm-mobile-nav.open { display: flex; }
+  .dm-mobile-nav a { font-family: var(--mono); font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-mid); padding: .875rem 0; border-bottom: 1px solid var(--border); text-decoration: none; display: block; text-align: center; width: 100%; max-width: 280px; }
+  .dm-mobile-nav a:last-child { border-bottom: none; }
+  .dm-mobile-nav a:hover { color: var(--ink); }
 </style>
 </head>
 <body>
@@ -633,7 +644,17 @@
     <li><a href="/blog">Blog</a></li>
     <li><a class="nav-cta" href="/signup">Get API key</a></li>
   </ul>
+  <button class="dm-hamburger" id="bbai-ham" onclick="bbaiHam()" aria-label="Menu"><span></span><span></span><span></span></button>
 </nav>
+<div class="dm-mobile-nav" id="bbai-mobile-nav">
+  <a href="/demo">Demo</a>
+  <a href="/docs">Docs</a>
+  <a href="/why">Why</a>
+  <a href="/pricing">Pricing</a>
+  <a href="/blog">Blog</a>
+  <a href="/login">Sign in</a>
+  <a href="/signup">Get API key</a>
+</div>
 
 
 <!-- HERO -->
@@ -1079,4 +1100,11 @@ document.querySelectorAll('.citation-format-text').forEach(el => {
     });
   });
 });
+function bbaiHam() {
+  var h = document.getElementById('bbai-ham');
+  var m = document.getElementById('bbai-mobile-nav');
+  h.classList.toggle('open');
+  m.classList.toggle('open');
+  document.body.style.overflow = m.classList.contains('open') ? 'hidden' : '';
+}
 </script>
