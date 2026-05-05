@@ -628,7 +628,7 @@ app.post('/api/provision', provisionLimiter, async (req, res) => {
   try {
     const { email, agentName, source } = req.body;
 
-    if (!email || !email.includes('@')) {
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return res.status(400).json({ error: 'Valid email required' });
     }
 
@@ -798,6 +798,7 @@ app.post('/auth/signup', authLimiter, async (req, res) => {
   try {
     const { email, password } = req.body;
     if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: 'Invalid email address' });
     if (password.length < 8) return res.status(400).json({ error: 'Password must be at least 8 characters' });
 
     const { data, error } = await supabaseAnon.auth.signUp({
@@ -825,6 +826,7 @@ app.post('/auth/login', authLimiter, async (req, res) => {
   try {
     const { email, password } = req.body;
     if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: 'Invalid email address' });
 
     // Per-email lockout: block after 5 failures in 15 minutes regardless of IP
     if (_isEmailLockedOut(email)) {
@@ -2670,6 +2672,9 @@ app.post('/api/agents/keys', keyRegLimiter, requireApiKey, async (req, res) => {
   try {
     const { publicKey, keyId = 'default', validUntil } = req.body;
     if (!publicKey) return res.status(400).json({ error: 'publicKey required' });
+    if (keyId.length > 64 || !/^[a-zA-Z0-9_-]+$/.test(keyId)) {
+      return res.status(400).json({ error: 'keyId must be 1–64 characters and contain only letters, numbers, hyphens, or underscores' });
+    }
     const result = await registerKey(
       supabaseService,
       req.agent.agent_id,
@@ -3393,6 +3398,9 @@ app.get('/api/billing/subscription', wsAuth, async (req, res) => {
 app.post('/api/billing/checkout', wsAuth, async (req, res) => {
   try {
     const { plan = 'pro' } = req.body || {};
+    if (!['pro', 'teams', 'enterprise'].includes(plan)) {
+      return res.status(400).json({ error: 'Invalid plan. Must be one of: pro, teams, enterprise' });
+    }
     const priceId = STRIPE_PRICES[plan];
     if (!priceId) {
       return res.status(400).json({ error: 'Unknown plan or price not configured. Set STRIPE_PRICE_' + plan.toUpperCase() + ' on Railway.' });
@@ -3438,6 +3446,10 @@ app.post('/api/billing/checkout', wsAuth, async (req, res) => {
 });
 app.post('/api/billing/portal', wsAuth, async (req, res) => {
   try {
+    const { plan } = req.body || {};
+    if (plan !== undefined && !['pro', 'teams', 'enterprise'].includes(plan)) {
+      return res.status(400).json({ error: 'Invalid plan. Must be one of: pro, teams, enterprise' });
+    }
     const stripe  = getStripe();
     const email   = req.user.email;
     const appUrl  = process.env.APP_URL || 'https://darkmatterhub.ai';
