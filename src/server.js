@@ -1036,44 +1036,81 @@ app.post('/api/account/delete', deleteLimiter, requireAuth, async (req, res) => 
   }
 
   // ── Step 3: Delete commits in batches of 1000 ───────────────────────────────
+  // commits has three agent-referencing columns:
+  //   agent_id   — added later, indexed, may differ from from_agent
+  //   from_agent — original FK, NO cascade
+  //   to_agent   — original FK, NO cascade
+  // All three must be cleared or agents rows cannot be deleted (FK violation).
   if (agentIds.length) {
     let deleted = 0;
-    let keepGoing = true;
-    while (keepGoing) {
-      try {
-        // Fetch a batch of commit IDs
-        const { data: batch } = await supabaseService
-          .from('commits')
-          .select('id')
-          .in('agent_id', agentIds)
-          .limit(1000);
-        if (!batch || batch.length === 0) { keepGoing = false; break; }
-        const ids = batch.map(r => r.id);
-        await supabaseService.from('commits').delete().in('id', ids);
-        deleted += ids.length;
-        if (ids.length < 1000) keepGoing = false;
-      } catch (err) {
-        console.error('[account/delete] Commits batch delete error (stopping loop):', err.message);
-        keepGoing = false;
+    // Collect all commit IDs that reference these agents via any of the three columns.
+    // Use OR logic by fetching each column set and merging IDs before bulk-deleting.
+    const commitIdSet = new Set();
+    for (const col of ['agent_id', 'from_agent', 'to_agent']) {
+      let keepGoing = true;
+      while (keepGoing) {
+        try {
+          const { data: batch } = await supabaseService
+            .from('commits')
+            .select('id')
+            .in(col, agentIds)
+            .limit(1000);
+          if (!batch || batch.length === 0) { keepGoing = false; break; }
+          batch.forEach(r => commitIdSet.add(r.id));
+          if (batch.length < 1000) keepGoing = false;
+        } catch (err) {
+          console.error(`[account/delete] Commits fetch by ${col} error:`, err.message);
+          keepGoing = false;
+        }
       }
     }
-    console.log(`[account/delete] Deleted ${deleted} commits`);
+    // Delete in batches of 1000
+    const allIds = [...commitIdSet];
+    for (let i = 0; i < allIds.length; i += 1000) {
+      try {
+        await supabaseService.from('commits').delete().in('id', allIds.slice(i, i + 1000));
+        deleted += Math.min(1000, allIds.length - i);
+      } catch (err) {
+        console.error('[account/delete] Commits batch delete error:', err.message);
+      }
+    }
+    console.log(`[account/delete] Deleted ${deleted} commits (scanned ${allIds.length} unique IDs)`);
   }
 
   // ── Step 4: Delete related data in FK-safe order ────────────────────────────
+  // Order matters: child rows before parent rows, and rows that reference agents
+  // (shared_chains.created_by, event_hooks.agent_id) BEFORE agents itself.
+  // All auth.users-referencing tables are listed so nothing blocks deleteUser.
   const deletions = [
+    // User-keyed tables that don't depend on agents
     { table: 'commit_usage',          col: 'user_id',      val: userId },
     { table: 'signing_keys',          col: 'user_id',      val: userId },
+    { table: 'user_recording_keys',   col: 'user_id',      val: userId },
+    { table: 'enterprise_accounts',   col: 'user_id',      val: userId },
+    { table: 'conversation_threads',  col: 'user_id',      val: userId },
+    { table: 'saved_chains',          col: 'user_id',      val: userId },
+    { table: 'project_members',       col: 'user_id',      val: userId },
+    { table: 'projects',              col: 'owner_id',     val: userId },
     { table: 'workspace_invitations', col: 'invited_by',   val: userId },
     { table: 'workspace_members',     col: 'user_id',      val: userId },
     { table: 'workspaces',            col: 'owner_user_id',val: userId },
     { table: 'subscriptions',         col: 'user_id',      val: userId },
     { table: 'activation_events',     col: 'user_id',      val: userId },
+    // Agent-referencing tables with no cascade — must go before agents
+    { table: 'shared_chains',         col: 'created_by',   val: agentIds,  useIn: true },
+    // Finally agents itself
     { table: 'agents',                col: 'user_id',      val: userId },
   ];
-  for (const { table, col, val } of deletions) {
+  for (const { table, col, val, useIn } of deletions) {
     try {
-      await supabaseService.from(table).delete().eq(col, val);
+      // useIn=true for agent-list lookups (val is an array); skip if empty
+      if (useIn && (!val || val.length === 0)) {
+        console.log(`[account/delete] Skipped ${table} (no agent IDs)`);
+        continue;
+      }
+      await (useIn
+        ? supabaseService.from(table).delete().in(col, val)
+        : supabaseService.from(table).delete().eq(col, val));
       console.log(`[account/delete] Deleted from ${table}`);
     } catch (err) {
       console.error(`[account/delete] Delete from ${table} failed (continuing):`, err.message);
