@@ -229,6 +229,58 @@ const feedbackLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+// Strict limiter for account deletion — 3 attempts per hour per IP
+const deleteLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 3,
+  message: { error: 'Too many deletion attempts — please try again in an hour' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Strict limiter for L3 key registration — 10 per hour per IP
+const keyRegLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 10,
+  message: { error: 'Too many key registration attempts — please try again in an hour' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// ── Per-email login failure tracking ──────────────────────────────────────────
+// After 5 failures for the same email within 15 minutes, block that email
+// regardless of IP to prevent distributed brute-force attacks.
+const _loginFailures = new Map(); // email → { count, firstFail }
+const LOGIN_FAIL_WINDOW  = 15 * 60 * 1000; // 15 minutes
+const LOGIN_FAIL_MAX     = 5;
+
+function _recordLoginFailure(email) {
+  const key  = email.toLowerCase();
+  const now  = Date.now();
+  const prev = _loginFailures.get(key);
+  if (!prev || now - prev.firstFail > LOGIN_FAIL_WINDOW) {
+    _loginFailures.set(key, { count: 1, firstFail: now });
+  } else {
+    prev.count++;
+  }
+}
+
+function _isEmailLockedOut(email) {
+  const key  = email.toLowerCase();
+  const now  = Date.now();
+  const prev = _loginFailures.get(key);
+  if (!prev) return false;
+  if (now - prev.firstFail > LOGIN_FAIL_WINDOW) {
+    _loginFailures.delete(key);
+    return false;
+  }
+  return prev.count >= LOGIN_FAIL_MAX;
+}
+
+function _clearLoginFailures(email) {
+  _loginFailures.delete(email.toLowerCase());
+}
+
 // ── CORS ─────────────────────────────────────────────
 // Explicit origin allowlist — no wildcard.
 // Server-side SDK/CLI calls (no Origin header) pass through unaffected by CORS.
@@ -774,9 +826,20 @@ app.post('/auth/login', authLimiter, async (req, res) => {
     const { email, password } = req.body;
     if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
 
-    const { data, error } = await supabaseAnon.auth.signInWithPassword({ email, password });
-    if (error) return res.status(400).json({ error: error.message });
+    // Per-email lockout: block after 5 failures in 15 minutes regardless of IP
+    if (_isEmailLockedOut(email)) {
+      return res.status(429).json({
+        error: 'Too many failed login attempts for this email. Please try again in 15 minutes.',
+      });
+    }
 
+    const { data, error } = await supabaseAnon.auth.signInWithPassword({ email, password });
+    if (error) {
+      _recordLoginFailure(email);
+      return res.status(400).json({ error: error.message });
+    }
+
+    _clearLoginFailures(email); // reset on successful login
     setAuthCookies(res, data.session);
     res.json({ user: data.user });
   } catch (err) {
@@ -895,7 +958,7 @@ app.get('/reset-password', (req, res) => {
 });
 
 // ── POST /auth/reset-password ────────────────────────
-app.post('/auth/reset-password', async (req, res) => {
+app.post('/auth/reset-password', authLimiter, async (req, res) => {
   try {
     const { token, password } = req.body;
     if (!token || !password) return res.status(400).json({ error: 'Token and password required' });
@@ -929,7 +992,7 @@ app.post('/auth/logout', async (req, res) => {
 // Fully automated account deletion. Requires the user to confirm by providing
 // their registered email address in the request body.
 // Steps run in order; failures are logged but do not abort remaining steps.
-app.post('/api/account/delete', requireAuth, async (req, res) => {
+app.post('/api/account/delete', deleteLimiter, requireAuth, async (req, res) => {
   const userId = req.user?.id;
   const email  = req.user?.email;
 
@@ -1015,13 +1078,18 @@ app.post('/api/account/delete', requireAuth, async (req, res) => {
     }
   }
 
-  // ── Step 5: Delete the Supabase auth user ───────────────────────────────────
-  try {
-    await supabaseService.auth.admin.deleteUser(userId);
-    console.log(`[account/delete] Auth user deleted`);
-  } catch (err) {
-    console.error('[account/delete] Auth user delete error (continuing):', err.message);
+  // ── Step 5: Delete the Supabase auth user (hard requirement) ───────────────
+  // This must succeed before we return success. If it fails the user can still
+  // sign in — data cleanup above is idempotent so retry will work.
+  const { error: authDeleteError } = await supabaseService.auth.admin.deleteUser(userId);
+  if (authDeleteError) {
+    console.error('[account/delete] CRITICAL: auth user deletion failed:', authDeleteError.message);
+    return res.status(500).json({
+      error: 'Account deletion failed at the authentication step. Please contact hello@darkmatterhub.ai to complete deletion.',
+      code:  'AUTH_DELETE_FAILED',
+    });
   }
+  console.log(`[account/delete] Auth user deleted`);
 
   // ── Step 6: Confirmation email to the user ───────────────────────────────────
   if (process.env.RESEND_API_KEY) {
@@ -2598,7 +2666,7 @@ app.post('/api/admin/witnesses', requireApiKey, async (req, res) => {
 // ── POST /api/agents/keys ────────────────────────────────────────────────────
 // Register a public key for the authenticated agent.
 // Only public key is stored — private key never leaves the agent's machine.
-app.post('/api/agents/keys', requireApiKey, async (req, res) => {
+app.post('/api/agents/keys', keyRegLimiter, requireApiKey, async (req, res) => {
   try {
     const { publicKey, keyId = 'default', validUntil } = req.body;
     if (!publicKey) return res.status(400).json({ error: 'publicKey required' });
@@ -4594,7 +4662,7 @@ ${images.map(img => img.public_url ? `<img src="${img.public_url}" alt="${img.fi
 // GET /r/:traceId       → human-readable HTML (default)
 // GET /r/:traceId?format=json → raw JSON
 // ═══════════════════════════════════════════════════════════════════════
-app.get('/r/:traceId', async (req, res) => {
+app.get('/r/:traceId', apiLimiter, async (req, res) => {
   try {
     const { traceId } = req.params;
     if (!traceId || traceId.length > 120 || !/^[a-zA-Z0-9_-]+$/.test(traceId)) return res.status(400).json({ error: 'Invalid ID' });
@@ -5095,7 +5163,7 @@ h1{font-size:26px;font-weight:700;letter-spacing:-.04em;color:var(--ink);margin-
 
 
 // ── GET /api/demo ── static fake demo data (no real user data exposed) ────────
-app.get('/api/demo', async (req, res) => {
+app.get('/api/demo', apiLimiter, async (req, res) => {
   const now = Date.now();
   const activity = [
     {
@@ -6230,7 +6298,7 @@ app.get('/join', (req, res) => {
 ;
 
 // ── POST /api/auth/refresh ──────────────────────────────────────────────
-app.post('/api/auth/refresh', async (req, res) => {
+app.post('/api/auth/refresh', authLimiter, async (req, res) => {
   try {
     const refresh_token = req.cookies?.dm_refresh || req.body?.refresh_token;
     if (!refresh_token) return res.status(400).json({ error: 'No refresh token' });
