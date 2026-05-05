@@ -867,6 +867,137 @@ app.post('/auth/logout', async (req, res) => {
   res.json({ success: true });
 });
 
+// ── POST /api/account/delete ──────────────────────────────────────────────────
+// Fully automated account deletion. Requires the user to confirm by providing
+// their registered email address in the request body.
+// Steps run in order; failures are logged but do not abort remaining steps.
+app.post('/api/account/delete', requireAuth, async (req, res) => {
+  const userId = req.user?.id;
+  const email  = req.user?.email;
+
+  // Verify the user typed their exact email to confirm intent.
+  const { email: confirmedEmail } = req.body || {};
+  if (!confirmedEmail || confirmedEmail.trim().toLowerCase() !== (email || '').toLowerCase()) {
+    return res.status(400).json({ error: 'Email confirmation does not match the registered address.' });
+  }
+
+  console.log(`[account/delete] Starting deletion for user ${userId} (${email})`);
+
+  // ── Step 1: Cancel active Stripe subscription ───────────────────────────────
+  try {
+    const { data: sub } = await supabaseService
+      .from('subscriptions')
+      .select('stripe_subscription_id')
+      .eq('user_id', userId)
+      .eq('status', 'active')
+      .maybeSingle();
+    if (sub?.stripe_subscription_id && process.env.STRIPE_SECRET_KEY) {
+      const stripe = getStripe();
+      await stripe.subscriptions.cancel(sub.stripe_subscription_id);
+      console.log(`[account/delete] Cancelled Stripe subscription ${sub.stripe_subscription_id}`);
+    }
+  } catch (err) {
+    console.error('[account/delete] Stripe cancel error (continuing):', err.message);
+  }
+
+  // ── Step 2: Collect agent IDs belonging to this user ────────────────────────
+  let agentIds = [];
+  try {
+    const { data: agents } = await supabaseService
+      .from('agents')
+      .select('agent_id')
+      .eq('user_id', userId);
+    agentIds = (agents || []).map(a => a.agent_id);
+  } catch (err) {
+    console.error('[account/delete] Agent ID fetch error (continuing):', err.message);
+  }
+
+  // ── Step 3: Delete commits in batches of 1000 ───────────────────────────────
+  if (agentIds.length) {
+    let deleted = 0;
+    let keepGoing = true;
+    while (keepGoing) {
+      try {
+        // Fetch a batch of commit IDs
+        const { data: batch } = await supabaseService
+          .from('commits')
+          .select('id')
+          .in('agent_id', agentIds)
+          .limit(1000);
+        if (!batch || batch.length === 0) { keepGoing = false; break; }
+        const ids = batch.map(r => r.id);
+        await supabaseService.from('commits').delete().in('id', ids);
+        deleted += ids.length;
+        if (ids.length < 1000) keepGoing = false;
+      } catch (err) {
+        console.error('[account/delete] Commits batch delete error (stopping loop):', err.message);
+        keepGoing = false;
+      }
+    }
+    console.log(`[account/delete] Deleted ${deleted} commits`);
+  }
+
+  // ── Step 4: Delete related data in FK-safe order ────────────────────────────
+  const deletions = [
+    { table: 'commit_usage',          col: 'user_id',      val: userId },
+    { table: 'signing_keys',          col: 'user_id',      val: userId },
+    { table: 'workspace_invitations', col: 'invited_by',   val: userId },
+    { table: 'workspace_members',     col: 'user_id',      val: userId },
+    { table: 'workspaces',            col: 'owner_user_id',val: userId },
+    { table: 'subscriptions',         col: 'user_id',      val: userId },
+    { table: 'activation_events',     col: 'user_id',      val: userId },
+    { table: 'agents',                col: 'user_id',      val: userId },
+  ];
+  for (const { table, col, val } of deletions) {
+    try {
+      await supabaseService.from(table).delete().eq(col, val);
+      console.log(`[account/delete] Deleted from ${table}`);
+    } catch (err) {
+      console.error(`[account/delete] Delete from ${table} failed (continuing):`, err.message);
+    }
+  }
+
+  // ── Step 5: Delete the Supabase auth user ───────────────────────────────────
+  try {
+    await supabaseService.auth.admin.deleteUser(userId);
+    console.log(`[account/delete] Auth user deleted`);
+  } catch (err) {
+    console.error('[account/delete] Auth user delete error (continuing):', err.message);
+  }
+
+  // ── Step 6: Confirmation email to the user ───────────────────────────────────
+  if (process.env.RESEND_API_KEY) {
+    fetch('https://api.resend.com/emails', {
+      method:  'POST',
+      headers: { 'Authorization': `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from:    'DarkMatter <hello@darkmatterhub.ai>',
+        to:      [email],
+        subject: 'Your DarkMatter account has been deleted',
+        text:    'Your DarkMatter account has been deleted. All associated data has been removed.\n\nIf you did not request this, contact hello@darkmatterhub.ai immediately.',
+      }),
+    }).catch(e => console.error('[account/delete] Resend user email failed:', e.message));
+  }
+
+  // ── Step 7: Internal notification ───────────────────────────────────────────
+  if (process.env.RESEND_API_KEY) {
+    fetch('https://api.resend.com/emails', {
+      method:  'POST',
+      headers: { 'Authorization': `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from:    'DarkMatter <hello@darkmatterhub.ai>',
+        to:      ['hello@darkmatterhub.ai'],
+        subject: `Account deleted: ${email}`,
+        text:    `User ${email} (${userId}) deleted their account.`,
+      }),
+    }).catch(e => console.error('[account/delete] Resend notify email failed:', e.message));
+  }
+
+  // ── Step 8: Clear auth cookies and respond ───────────────────────────────────
+  clearAuthCookies(res);
+  res.json({ deleted: true });
+});
+
 // ═══════════════════════════════════════════════════
 // AGENT SELF-REGISTRATION
 // Allows an authenticated agent to spawn a new agent

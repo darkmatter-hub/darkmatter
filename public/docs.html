@@ -414,6 +414,7 @@ const proof = await verify(ctx.id);<div class="lang-label">javascript</div></cod
 
 <h2 id="authentication">Authentication</h2>
 <p>All API requests require a Bearer token. In the Python SDK, call <code>dm.configure(api_key="dm_sk_...")</code> to set credentials in code instead of environment variables.</p>
+<div class="callout info" style="margin-top:1rem;"><span class="callout-title">Account deletion</span>To delete your account and all associated data permanently, go to Dashboard, Settings, and click "Delete account." You will be asked to type your email address to confirm. Deletion is automatic and immediate. This action cannot be undone.</div>
 <pre><code>Authorization: Bearer dm_sk_your_api_key_here<div class="lang-label">http</div></code></pre>
 <table>
   <thead><tr><th>Property</th><th>Detail</th></tr></thead>

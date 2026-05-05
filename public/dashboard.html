@@ -1328,6 +1328,13 @@ window._dmAuthPromise = fetch('/api/user/me')
             </a>
           </div>
 
+          <!-- Danger zone panel -->
+          <div class="panel" style="padding:24px;border-color:hsl(0 60% 60% / .35);">
+            <div style="font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:hsl(0 60% 55%);margin-bottom:12px;">Danger zone</div>
+            <div style="font-size:13px;color:var(--t2);margin-bottom:14px;">Delete your account and all associated data permanently. This action cannot be undone.</div>
+            <button onclick="openDeleteAccountModal()" style="padding:7px 14px;background:none;border:1px solid hsl(0 60% 60% / .5);border-radius:6px;font-size:12.5px;font-weight:600;color:hsl(0 60% 50%);cursor:pointer;transition:background .15s,border-color .15s;" onmouseover="this.style.background='hsl(0 60% 96%)';this.style.borderColor='hsl(0 60% 50%)'" onmouseout="this.style.background='none';this.style.borderColor='hsl(0 60% 60% / .5)'">Delete account</button>
+          </div>
+
         </div>
       </div>
 
@@ -1606,6 +1613,32 @@ window._dmAuthPromise = fetch('/api/user/me')
   <div class="drawer-actions">
     <button type="button" class="drawer-btn-primary" onclick="deleteCurrentKey()" style="background:#dc2626;border-color:#dc2626;">Delete key</button>
     <button type="button" class="drawer-btn-secondary" onclick="closeKeyDrawer()">Close</button>
+  </div>
+</div>
+
+<!-- Delete account modal -->
+<div class="modal-overlay" id="modal-delete-account">
+  <div class="modal" style="max-width:440px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <div class="modal-title" style="margin-bottom:0;color:hsl(0 60% 45%);">Delete account</div>
+      <button type="button" onclick="closeDeleteAccountModal()" style="background:none;border:none;cursor:pointer;color:var(--t3);padding:4px;font-size:18px;line-height:1;">&#x00D7;</button>
+    </div>
+    <p style="font-size:13px;color:var(--t2);line-height:1.6;margin-bottom:16px;">This will permanently delete your account and all associated data, including all commits, agents, API keys, and workspace records. Stripe subscriptions will be cancelled immediately. <strong style="color:var(--t0);">This action cannot be undone.</strong></p>
+    <div style="margin-bottom:14px;">
+      <label style="display:block;font-size:12px;color:var(--t3);margin-bottom:6px;">Type your email address to confirm</label>
+      <input id="delete-account-email-input" type="email" autocomplete="off"
+        style="width:100%;background:var(--bg-0);border:1px solid hsl(0 60% 60% / .4);border-radius:6px;padding:8px 10px;font-size:13px;color:var(--t0);font-family:var(--mono);outline:none;transition:border-color .15s;"
+        onfocus="this.style.borderColor='hsl(0 60% 50%)'" onblur="this.style.borderColor='hsl(0 60% 60% / .4)'"
+        placeholder="you@example.com"
+        oninput="var _b=document.getElementById('delete-account-confirm-btn');var _match=this.value.trim().toLowerCase()===(window._dmUser?.email||'').toLowerCase();_b.disabled=!_match;_b.style.opacity=_match?'1':'.4';"/>
+      <div id="delete-account-error" style="font-size:11.5px;color:hsl(0 60% 50%);margin-top:5px;min-height:16px;display:none;"></div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;">
+      <button onclick="closeDeleteAccountModal()" style="padding:8px 16px;background:none;border:1px solid var(--brd);border-radius:6px;font-size:12.5px;color:var(--t2);cursor:pointer;">Cancel</button>
+      <button id="delete-account-confirm-btn" onclick="confirmDeleteAccount()" disabled
+        style="padding:8px 16px;background:hsl(0 60% 48%);color:#fff;border:none;border-radius:6px;font-size:12.5px;font-weight:600;cursor:pointer;opacity:.4;transition:opacity .15s;"
+        onmouseover="if(!this.disabled)this.style.opacity='.85'" onmouseout="if(!this.disabled)this.style.opacity='1'">Delete my account</button>
+    </div>
   </div>
 </div>
 
@@ -3323,6 +3356,58 @@ function copyNewKey(btn) {
 async function signOut() {
   try { await fetch('/auth/logout', { method: 'POST' }); } catch(_) {}
   window.location.href = '/login';
+}
+
+// ── Delete account ──────────────────────────────────────────────────────────
+function openDeleteAccountModal() {
+  const input = document.getElementById('delete-account-email-input');
+  if (input) input.value = '';
+  const btn = document.getElementById('delete-account-confirm-btn');
+  if (btn) { btn.disabled = true; btn.style.opacity = '.4'; btn.textContent = 'Delete my account'; }
+  const err = document.getElementById('delete-account-error');
+  if (err) err.style.display = 'none';
+  openModal('modal-delete-account');
+  setTimeout(function(){ if (input) input.focus(); }, 80);
+}
+function closeDeleteAccountModal() {
+  closeModal('modal-delete-account');
+}
+async function confirmDeleteAccount() {
+  const input = document.getElementById('delete-account-email-input');
+  const btn   = document.getElementById('delete-account-confirm-btn');
+  const err   = document.getElementById('delete-account-error');
+  const email = (input?.value || '').trim();
+  if (!email) return;
+  btn.disabled = true;
+  btn.textContent = 'Deleting…';
+  btn.style.opacity = '.6';
+  err.style.display = 'none';
+  try {
+    const r = await fetch('/api/account/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+    const data = await r.json();
+    if (r.ok && data.deleted) {
+      // Clear any residual cookies client-side, then redirect
+      document.cookie = 'dm_access=; Max-Age=0; path=/';
+      document.cookie = 'dm_refresh=; Max-Age=0; path=/';
+      window.location.href = 'https://darkmatterhub.ai/?deleted=true';
+    } else {
+      err.textContent = data.error || 'Deletion failed. Please try again.';
+      err.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'Delete my account';
+      btn.style.opacity = '1';
+    }
+  } catch(e) {
+    err.textContent = 'Network error. Please try again.';
+    err.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Delete my account';
+    btn.style.opacity = '1';
+  }
 }
 
 // ── Modals ──
