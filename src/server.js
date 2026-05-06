@@ -820,6 +820,23 @@ app.post('/auth/signup', authLimiter, async (req, res) => {
 
     if (data.session) setAuthCookies(res, data.session);
     res.json({ user: data.user });
+
+    // Fire-and-forget admin notification — do not await, never blocks signup response
+    if (process.env.RESEND_API_KEY && data.user) {
+      const signupUserId  = data.user.id || 'unknown';
+      const signupEmail   = data.user.email || email;
+      const signupTime    = new Date().toUTCString();
+      fetch('https://api.resend.com/emails', {
+        method:  'POST',
+        headers: { 'Authorization': `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          from:    'DarkMatter <hello@darkmatterhub.ai>',
+          to:      ['hello@darkmatterhub.ai'],
+          subject: `New signup: ${signupEmail}`,
+          text:    `New user signed up on DarkMatter.\n\nEmail: ${signupEmail}\nUser ID: ${signupUserId}\nTime: ${signupTime}\n\nhttps://darkmatterhub.ai/admindashboard\n`,
+        }),
+      }).catch(e => console.error('[signup] Admin notification email failed:', e.message));
+    }
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
