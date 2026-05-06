@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>DarkMatter: The independent record for AI systems</title>
-<meta name="description" content="DarkMatter records every AI agent action outside your system, seals it the moment it happens, and lets anyone verify it without trust." />
+<title>DarkMatter: The Vault for AI decisions</title>
+<meta name="description" content="DarkMatter gives your AI agents a secure vault for the decisions that matter. Sealed at the moment they happen. Verifiable by anyone. Independent of your system." />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -222,6 +222,55 @@ footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;gri
 .mobile-nav a:last-child{border-bottom:none}
 .mobile-nav a:hover{color:#0a0e1a}
 .mobile-nav a.cta-link{color:hsl(152,64%,34%)}
+
+/* Vault entries (hero card) */
+.vault-entries{border-top:1px solid hsl(var(--void-line));font-family:'JetBrains Mono',monospace}
+.vault-entry{padding:1rem;border-bottom:1px solid hsl(var(--void-line))}
+.ve-top{display:flex;align-items:flex-start;gap:.5rem;margin-bottom:.25rem}
+.ve-ok{color:hsl(var(--signal));font-size:12px;flex-shrink:0;padding-top:1px}
+.ve-title{font-size:12px;line-height:1.4;color:hsl(var(--foreground)/.9)}
+.ve-meta{font-size:10px;letter-spacing:.1em;color:hsl(var(--trace-dim));padding-left:1.25rem}
+.vault-footer{display:flex;align-items:center;justify-content:space-between;padding:.625rem 1rem;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:hsl(var(--trace-dim))}
+.vault-footer a{color:hsl(var(--trace));transition:color .15s}
+.vault-footer a:hover{color:hsl(var(--signal))}
+
+/* Pain */
+.pain-grid{display:grid;grid-template-columns:1fr;gap:1px;background:hsl(var(--void-line));border:1px solid hsl(var(--void-line))}
+@media(min-width:768px){.pain-grid{grid-template-columns:repeat(3,1fr)}}
+.pain-card{background:hsl(var(--void));padding:2.5rem 2rem;transition:background .15s}
+.pain-card:hover{background:hsl(var(--void-elevated))}
+.pc-num{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.2em;color:hsl(var(--trace-dim));margin-bottom:1.5rem}
+.pain-card h3{font-size:1.25rem;letter-spacing:-.01em;margin-bottom:1rem;font-weight:500;line-height:1.25}
+.pain-card p{font-size:14px;line-height:1.65;color:hsl(var(--trace))}
+
+/* Steps */
+.steps-grid{display:grid;grid-template-columns:1fr;gap:3rem}
+@media(min-width:768px){.steps-grid{grid-template-columns:repeat(3,1fr);gap:2rem}}
+.step{border-top:2px solid hsl(var(--signal)/.4);padding-top:1.5rem}
+.step-num{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.2em;color:hsl(var(--signal));margin-bottom:1rem}
+.step h3{font-size:1.25rem;letter-spacing:-.01em;margin-bottom:.875rem;font-weight:500;line-height:1.3}
+.step p{font-size:14px;line-height:1.65;color:hsl(var(--trace))}
+.step-code{margin-top:1.25rem;font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.02em;color:hsl(var(--foreground)/.7);background:hsl(var(--void-elevated));border:1px solid hsl(var(--void-line));padding:.5rem .75rem}
+
+/* Integrations */
+.int-lead{max-width:36rem;font-size:16px;line-height:1.6;color:hsl(var(--trace));margin-bottom:2.5rem}
+.int-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:hsl(var(--void-line));border:1px solid hsl(var(--void-line));max-width:56rem}
+@media(min-width:640px){.int-grid{grid-template-columns:repeat(5,1fr)}}
+.int-item{background:hsl(var(--void));padding:1.25rem 1rem;display:flex;flex-direction:column;gap:.375rem;transition:background .15s}
+.int-item:hover{background:hsl(var(--void-elevated))}
+.int-name{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;color:hsl(var(--foreground)/.85)}
+.int-status{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:hsl(var(--signal))}
+.int-status.soon{color:hsl(var(--trace-dim))}
+.more-link{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:hsl(var(--signal));transition:color .15s}
+.more-link:hover{color:hsl(var(--foreground))}
+
+/* Trust points */
+.trust-pts{display:grid;grid-template-columns:1fr;gap:3rem}
+@media(min-width:768px){.trust-pts{grid-template-columns:repeat(3,1fr);gap:2rem}}
+.trust-pt{border-top:1px solid hsl(var(--void-line));padding-top:1.5rem}
+.tp-num{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.2em;color:hsl(var(--trace-dim));margin-bottom:1rem}
+.trust-pt h3{font-size:1.25rem;letter-spacing:-.01em;margin-bottom:.875rem;font-weight:500;line-height:1.3}
+.trust-pt p{font-size:14px;line-height:1.65;color:hsl(var(--trace))}
 </style>
 </head>
 <body>
@@ -267,17 +316,16 @@ footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;gri
     <div class="eyebrow"><span class="rule"></span><span>DarkMatter Vault</span></div>
     <div class="hero-grid" style="margin-top:2.5rem">
       <div class="hero-left">
-        <h1 class="balance">The independent record of what your <em>AI agents</em> actually did.</h1>
-        <p style="font-size:22px;font-weight:600;color:hsl(var(--foreground));letter-spacing:-.01em;line-height:1.2;margin-top:1.25rem;margin-bottom:0">DarkMatter proves what happened.</p>
-        <p>DarkMatter records every agent action outside your system, seals it the moment it happens, and lets anyone verify it without asking you to vouch for anything. Regulators, auditors, counterparties.</p>
+        <h1 class="balance">A secure vault for the decisions your <em>AI agents</em> make.</h1>
+        <p>Commit a record at the moment of decision. It is sealed, stored outside your system, and verifiable by anyone without asking you to vouch for it.</p>
         <div class="actions">
-          <a href="/signup" class="btn-primary">Start recording <span>→</span></a>
-          <a href="/demo" class="btn-ghost">See a live proof record →</a>
+          <a href="/signup" class="btn-primary">Start for free <span>→</span></a>
+          <a href="/demo" class="btn-ghost">See how it works →</a>
         </div>
         <div class="trust">
-          <div><div class="k">Out of band</div><div class="v">outside the system</div></div>
-          <div><div class="k">Tamper-evident</div><div class="v">sealed at commit</div></div>
-          <div><div class="k">Reconstructable</div><div class="v">step-by-step replay</div></div>
+          <div><div class="k">Independent</div><div class="v">outside your system</div></div>
+          <div><div class="k">Sealed</div><div class="v">at the moment it happens</div></div>
+          <div><div class="k">Verifiable</div><div class="v">by anyone, anywhere</div></div>
         </div>
       </div>
       <div class="hero-right">
@@ -290,34 +338,30 @@ footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;gri
           </div>
           <div class="body">
             <div class="titlebar">
-              <div style="display:flex;align-items:center;gap:.5rem"><span class="dot"></span><span>ctx_7f3a9b · live record</span></div>
-              <span>verifier.local · v1.4</span>
+              <div style="display:flex;align-items:center;gap:.5rem"><span class="dot"></span><span>DarkMatter Vault · live</span></div>
+              <span>3 records today</span>
             </div>
-            <div class="content">
-              <div class="prompt">$ darkmatter verify ctx_7f3a9b</div>
-              <div class="checks">
-                <div class="row"><span class="ok">✓</span><span class="lbl">Payload hash</span><span class="val">sha256:a9c4e1·8f2b·7d10·e44c</span></div>
-                <div class="row"><span class="ok">✓</span><span class="lbl">Metadata hash</span><span class="val">sha256:31bd·772a·09cf·b6e2</span></div>
-                <div class="row"><span class="ok">✓</span><span class="lbl">Envelope hash</span><span class="val">sha256:fe04·1c8a·5503·ddaf</span></div>
-                <div class="row"><span class="ok">✓</span><span class="lbl">Ed25519 signature</span><span class="val">ed25519:5d2a·…·valid</span></div>
-                <div class="row"><span class="ok">✓</span><span class="lbl">Chain linkage</span><span class="val">parent → ctx_7f3a9a · OK</span></div>
-              <div class="row"><span class="ok">✓</span><span class="lbl">OpenTimestamps</span><span class="val">anchored · recent</span></div>
+            <div class="vault-entries">
+              <div class="vault-entry">
+                <div class="ve-top"><span class="ve-ok">✓</span><span class="ve-title">Payment approved — $84,000 to Acme Corp</span></div>
+                <div class="ve-meta">sealed 2 min ago · ctx_7f3a9b</div>
               </div>
-              <div class="summary">
-                <div>
-                  <div class="ok-text">All checks passed: L3 verified</div>
-                  <div class="ts">sealed at commit time · verified locally</div>
-                </div>
-                <div class="l3">L3</div>
+              <div class="vault-entry">
+                <div class="ve-top"><span class="ve-ok">✓</span><span class="ve-title">Customer data shared with billing provider</span></div>
+                <div class="ve-meta">sealed 1 hr ago · ctx_7f3a8c</div>
+              </div>
+              <div class="vault-entry">
+                <div class="ve-top"><span class="ve-ok">✓</span><span class="ve-title">Model selected: claude-sonnet-4-6</span></div>
+                <div class="ve-meta">sealed 3 hr ago · ctx_7f3a7a</div>
               </div>
             </div>
-            <div class="footbar">
-              <span>ed25519 · sha-256 · opentimestamps</span>
-              <a href="https://github.com/darkmatter-hub/darkmatter-l3-example" target="_blank" rel="noopener">run locally →</a>
+            <div class="vault-footer">
+              <span>Independent of your system</span>
+              <a href="/demo">Verify a record →</a>
             </div>
           </div>
         </div>
-        <div class="cap">no DarkMatter account · no internet · no trust in us</div>
+        <div class="cap">no DarkMatter account needed to verify</div>
       </div>
     </div>
   </div>
@@ -353,122 +397,117 @@ footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;gri
   </div>
 </section>
 
-<!-- PROPERTIES -->
-<section class="props section">
+<!-- PAIN -->
+<section class="section">
   <div class="wrap section-pad">
-    <div class="header"><span class="rule"></span><span>Three properties · non-negotiable</span></div>
-    <div class="props-grid">
-      <div class="prop">
-        <div class="top"><span class="tag">L1</span><span class="idx">01 / 03</span></div>
-        <h3>Recorded outside the system</h3>
-        <p>The record does not live inside your agent runtime, or inside the model provider. It lives in an independent layer neither party controls.</p>
+    <div class="eyebrow" style="margin-bottom:3rem"><span class="rule"></span><span>The problem</span></div>
+    <div class="pain-grid">
+      <div class="pain-card">
+        <div class="pc-num">01</div>
+        <h3>Your logs live inside your system</h3>
+        <p>Logs, databases, and audit trails all live in systems you control. When something goes wrong, you are asking people to trust you. Some situations do not allow that.</p>
       </div>
-      <div class="prop">
-        <div class="top"><span class="tag">L2</span><span class="idx">02 / 03</span></div>
-        <h3>Sealed at the moment it happens</h3>
-        <p>Each event is cryptographically chained and signed client-side before transmission. Any modification breaks the hash chain, detectable by anyone who runs the verifier.</p>
+      <div class="pain-card">
+        <div class="pc-num">02</div>
+        <h3>By the time you need proof, it is too late</h3>
+        <p>You cannot retroactively create an independent record. Evidence that appears after an incident is not evidence. The record has to exist before anyone knew it would matter.</p>
       </div>
-      <div class="prop">
-        <div class="top"><span class="tag">L3</span><span class="idx">03 / 03</span></div>
-        <h3>Customer-verified, not vendor-verified</h3>
-        <p>Signed with keys only you hold. DarkMatter cannot forge a record on your behalf. Non-repudiation by construction, not by policy.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- AVIATION -->
-
-<!-- CODEBLOCK (paper section, dark only on terminal) -->
-<section class="codeblock">
-  <div class="inner">
-    <div class="grid">
-      <div class="left">
-        <div class="eyebrow" style="margin-bottom:2rem"><span class="rule"></span><span>One call. At decision time.</span></div>
-        <h2 class="balance">The record was written before you knew you'd need it.<em>That's what makes it credible.</em></h2>
-        <p>A record you control is not independent evidence. <strong>DarkMatter inverts that.</strong> The chain is sealed at the moment of action and lives somewhere you don't control, which is exactly why it can be trusted.</p>
-        <a href="/docs" class="more">Read the SDK reference →</a>
-      </div>
-      <div class="right">
-        <div class="term">
-          <div class="titlebar">
-            <div class="dots"><span class="d1"></span><span class="d2"></span><span class="d3"></span><span class="file">agent.py</span></div>
-            <span>ctx_7f3a9b · 340 ms</span>
-          </div>
-<pre><code># At the moment of the decision, before anyone knew it would matter.
-dm.commit(payload={
-    "input":  "Approve payment to Acme Corp ($84,000)",
-    "output": "Payment approved. Scheduled for Friday.",
-    "model":  "claude-sonnet-4-6",
-})
-
-# Returns instantly. The record exists outside your system from this moment.
-{
-    "id": "ctx_7f3a9b…",
-    "integrity": {
-        "payload_hash":        "sha256:a9c4e1…",
-        "verification_status": "valid"
-    },
-    "verification_url": "https://darkmatterhub.ai/r/ctx_7f3a9b"
-}
-</code></pre>
-        </div>
+      <div class="pain-card">
+        <div class="pc-num">03</div>
+        <h3>AI decisions are too consequential to leave unverified</h3>
+        <p>Automated decisions about money, safety, and compliance need a record that works without your involvement. Not logs you wrote. Not a dashboard you built.</p>
       </div>
     </div>
   </div>
 </section>
 
-<!-- LEVELS -->
-<section class="levels">
-  <div class="inner">
-    <div class="eyebrow"><span class="rule"></span><span>Verification levels</span></div>
-    <h2 class="balance">Not every record carries the same weight. <em>DarkMatter makes that explicit.</em></h2>
-    <div class="table">
-      <div class="row">
-        <div class="c-tag"><span class="tag">L1</span><span class="num">01</span></div>
-        <div class="c-name"><div class="name">Verifiable record</div></div>
-        <div class="c-means means">SHA-256 payload hash + parent chain linkage. Tampering at any node breaks every downstream hash. Independent offline verifier included.</div>
-        <div class="c-how how">Default with every <code class="cmd">dm.commit()</code> call. No extra steps.</div>
+<!-- HOW IT WORKS -->
+<section class="section">
+  <div class="wrap section-pad">
+    <div class="eyebrow" style="margin-bottom:3rem"><span class="rule"></span><span>How it works</span></div>
+    <h2 class="balance" style="max-width:40rem;font-size:34px;line-height:1.05;letter-spacing:-.02em;font-weight:500;margin-bottom:3.5rem">One line of code. A record that stands on its own.</h2>
+    <div class="steps-grid">
+      <div class="step">
+        <div class="step-num">01</div>
+        <h3>Add one line at decision time</h3>
+        <p>Call <code class="cmd">dm.commit()</code> when your agent makes a decision. It takes under a second and does not change how your agent works.</p>
+        <div class="step-code">dm.commit(payload={...})</div>
       </div>
-      <div class="row">
-        <div class="c-tag"><span class="tag">L2</span><span class="num">02</span></div>
-        <div class="c-name"><div class="name">Independent verification</div></div>
-        <div class="c-means means">Signed checkpoint bundles anchored via OpenTimestamps. Timestamp proof lives outside DarkMatter's infrastructure entirely.</div>
-        <div class="c-how how">Automatic. Every checkpoint batch is anchored and signed.</div>
+      <div class="step">
+        <div class="step-num">02</div>
+        <h3>DarkMatter seals it outside your system</h3>
+        <p>The record is stored in a vault that is independent of your infrastructure. No one inside your organization can modify it after it is committed.</p>
       </div>
-      <div class="row">
-        <div class="c-tag"><span class="tag">L3</span><span class="num">03</span></div>
-        <div class="c-name"><div class="name">Non-repudiation</div></div>
-        <div class="c-means means">Customer-held signing keys. Even DarkMatter cannot forge a record. Only your key can sign a valid commit.</div>
-        <div class="c-how how">Available now. Generate a key with <code class="cmd">darkmatter keys generate</code>.</div>
+      <div class="step">
+        <div class="step-num">03</div>
+        <h3>Anyone can verify it, independently</h3>
+        <p>Share a link or export a proof bundle. Regulators, auditors, and counterparties can check the record themselves, without a DarkMatter account, without coming to you.</p>
       </div>
     </div>
   </div>
 </section>
 
-<!-- CTA -->
+<!-- INTEGRATIONS -->
+<section class="section" style="background:hsl(var(--void-elevated)/.4)">
+  <div class="wrap section-pad" style="padding-top:5rem;padding-bottom:5rem">
+    <div class="eyebrow" style="margin-bottom:2rem"><span class="rule"></span><span>Works with your stack</span></div>
+    <p class="int-lead">DarkMatter works with the tools you already use. One line drops into any Python or TypeScript agent.</p>
+    <div class="int-grid">
+      <div class="int-item"><span class="int-name">Python SDK</span><span class="int-status">Available</span></div>
+      <div class="int-item"><span class="int-name">TypeScript SDK</span><span class="int-status">Available</span></div>
+      <div class="int-item"><span class="int-name">REST API</span><span class="int-status">Available</span></div>
+      <div class="int-item"><span class="int-name">Anthropic SDK</span><span class="int-status">Available</span></div>
+      <div class="int-item"><span class="int-name">OpenAI SDK</span><span class="int-status">Available</span></div>
+      <div class="int-item"><span class="int-name">LangChain</span><span class="int-status">Available</span></div>
+      <div class="int-item"><span class="int-name">LangGraph</span><span class="int-status soon">Soon</span></div>
+      <div class="int-item"><span class="int-name">CrewAI</span><span class="int-status soon">Soon</span></div>
+      <div class="int-item"><span class="int-name">AWS Bedrock</span><span class="int-status soon">Soon</span></div>
+      <div class="int-item"><span class="int-name">Self-host</span><span class="int-status soon">Soon</span></div>
+    </div>
+    <div style="margin-top:2rem">
+      <a href="/docs" class="more-link">Read the SDK docs →</a>
+    </div>
+  </div>
+</section>
+
+<!-- TRUST -->
+<section class="section">
+  <div class="wrap section-pad">
+    <div class="eyebrow" style="margin-bottom:3rem"><span class="rule"></span><span>Why it works</span></div>
+    <div class="trust-pts">
+      <div class="trust-pt">
+        <div class="tp-num">01</div>
+        <h3>Independent of your system</h3>
+        <p>The vault exists outside your infrastructure. DarkMatter stores the record, but the record can be verified without us. We cannot modify a commit after it is made.</p>
+      </div>
+      <div class="trust-pt">
+        <div class="tp-num">02</div>
+        <h3>You hold the keys</h3>
+        <p>Records are signed with keys that only you control. Not us. That means if DarkMatter disappeared tomorrow, your records would still be verifiable.</p>
+      </div>
+      <div class="trust-pt">
+        <div class="tp-num">03</div>
+        <h3>No vendor dependency to verify</h3>
+        <p>Anyone can check a record without a DarkMatter account, without internet access, and without trusting us. The verifier is open source and runs locally.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FINAL CTA -->
 <section class="cta">
   <div class="noise grid-noise"></div>
   <div class="inner">
-    <div class="ey">See it before you need it</div>
-    <h2 class="balance">When the system fails, logs are not enough.<em>DarkMatter is the record that survives it.</em></h2>
-    <p>Commit a record, replay the chain, export a proof bundle, and verify it yourself with zero DarkMatter dependency. Before writing any production code.</p>
+    <div class="ey">Get started today</div>
+    <h2 class="balance">The vault your AI agents need<em>before they need it.</em></h2>
+    <p>Set up in minutes. One line of code. Free to start. No card required.</p>
     <div class="actions">
-      <a href="/signup" class="run">Run the demo →</a>
-      <a href="/docs" class="docs">Read the docs</a>
+      <a href="/signup" class="run">Start for free →</a>
+      <a href="/demo" class="docs">See a live record</a>
     </div>
   </div>
 </section>
 
-<section class="aviation">
-  <div class="inner">
-    <div class="eyebrow"><span class="rule"></span><span>DarkMatter Vault</span></div>
-    <h2 class="balance">A secure vault for AI decisions.<em>Independent of your system.</em></h2>
-    <div class="copy">
-      <p>DarkMatter gives your AI agents a secure vault that is independent of your system. Commit the AI decisions that matter. Each one is sealed at the moment it happens and verifiable by anyone who needs to check, including third parties, regulators, and auditors, without asking you to vouch for it.</p>
-    </div>
-  </div>
-</section>
 </main>
 
 <footer>
