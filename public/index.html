@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>DarkMatter: The Vault for AI decisions</title>
-<meta name="description" content="DarkMatter gives your AI agents a secure vault for the decisions that matter. Sealed at the moment they happen. Verifiable by anyone. Independent of your system." />
+<meta name="description" content="DarkMatter is a proof engine for AI agents — not just another audit log. Every agent decision is sealed at the moment it happens and verifiable by anyone, even if DarkMatter goes away." />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -308,6 +308,33 @@ footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;gri
   Your account has been deleted. Thanks for using DarkMatter.
 </div>
 
+<!-- EU AI Act enforcement countdown bar -->
+<div id="euai-bar" style="display:none;background:hsl(var(--signal)/.08);border-bottom:1px solid hsl(var(--signal)/.25);padding:.6rem 1.5rem;text-align:center;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:hsl(var(--signal));">
+  <span id="euai-bar-text"></span>
+  &nbsp;·&nbsp;
+  <a href="/eu-ai-act" style="color:hsl(var(--foreground));text-decoration:underline;text-underline-offset:3px;">How DarkMatter helps</a>
+</div>
+<script>
+(function(){
+  var deadline = new Date('2026-08-02T00:00:00Z');
+  var now = new Date();
+  var bar = document.getElementById('euai-bar');
+  var txt = document.getElementById('euai-bar-text');
+  if (!bar || !txt) return;
+  var msPerDay = 86400000;
+  var diffDays = Math.ceil((deadline - now) / msPerDay);
+  if (diffDays > 0) {
+    txt.textContent = 'EU AI Act Article 12 enforceable in ' + diffDays + ' day' + (diffDays === 1 ? '' : 's');
+  } else if (diffDays === 0) {
+    txt.textContent = 'EU AI Act Article 12 — enforcement today';
+  } else {
+    var since = Math.abs(diffDays);
+    txt.textContent = 'EU AI Act Article 12 — enforceable since Aug 2, 2026 · ' + since + ' day' + (since === 1 ? '' : 's') + ' of evidence required';
+  }
+  bar.style.display = 'block';
+})();
+</script>
+
 <!-- HERO -->
 <section class="hero">
   <div class="noise grid-noise"></div>
@@ -317,7 +344,8 @@ footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;gri
     <div class="hero-grid" style="margin-top:2.5rem">
       <div class="hero-left">
         <h1 class="balance">A secure vault for the decisions your <em>AI agents</em> make.</h1>
-        <p>Commit a record at the moment of decision. It is sealed, stored outside your system, and verifiable by anyone without asking you to vouch for it.</p>
+        <p style="font-size:18px;font-weight:500;color:hsl(var(--foreground));margin-top:1.5rem;letter-spacing:-.005em;line-height:1.35">DarkMatter is a <em style="font-style:italic;color:hsl(var(--signal));font-weight:500">proof engine</em> for AI agents — not just another audit log.</p>
+        <p>Commit a record at the moment of decision. It is sealed, stored outside your system, and verifiable by anyone — even if DarkMatter were to go away.</p>
         <div class="actions">
           <a href="/signup" class="btn-primary">Start for free <span>→</span></a>
           <a href="/demo" class="btn-ghost">See how it works →</a>
@@ -456,10 +484,10 @@ footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;gri
       <div class="int-item"><span class="int-name">Python SDK</span><span class="int-status">Available</span></div>
       <div class="int-item"><span class="int-name">TypeScript SDK</span><span class="int-status">Available</span></div>
       <div class="int-item"><span class="int-name">REST API</span><span class="int-status">Available</span></div>
-      <div class="int-item"><span class="int-name">Anthropic SDK</span><span class="int-status">Available</span></div>
-      <div class="int-item"><span class="int-name">OpenAI SDK</span><span class="int-status">Available</span></div>
-      <div class="int-item"><span class="int-name">LangChain</span><span class="int-status">Available</span></div>
-      <div class="int-item"><span class="int-name">LangGraph</span><span class="int-status soon">Soon</span></div>
+      <div class="int-item"><span class="int-name">LangGraph</span><span class="int-status">Available</span></div>
+      <div class="int-item"><span class="int-name">Anthropic SDK</span><span class="int-status soon">Soon</span></div>
+      <div class="int-item"><span class="int-name">OpenAI SDK</span><span class="int-status soon">Soon</span></div>
+      <div class="int-item"><span class="int-name">LangChain</span><span class="int-status soon">Soon</span></div>
       <div class="int-item"><span class="int-name">CrewAI</span><span class="int-status soon">Soon</span></div>
       <div class="int-item"><span class="int-name">AWS Bedrock</span><span class="int-status soon">Soon</span></div>
       <div class="int-item"><span class="int-name">Self-host</span><span class="int-status soon">Soon</span></div>

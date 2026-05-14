@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>EU AI Act Article 12 — DarkMatter</title>
+<meta name="description" content="How DarkMatter helps high-risk AI system providers satisfy the EU AI Act Article 12 automatic event-logging requirement before the August 2, 2026 enforcement deadline." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --void:38 30% 97%; --void-elevated:38 24% 94%; --void-line:38 14% 84%;
+  --paper:38 30% 97%; --ink:220 20% 10%;
+  --trace:220 10% 38%; --trace-dim:220 8% 55%;
+  --signal:152 64% 34%; --signal-dim:152 30% 60%;
+  --background:var(--paper); --foreground:var(--ink);
+}
+*{box-sizing:border-box;margin:0;padding:0;border:0 solid hsl(var(--void-line))}
+html,body{background:hsl(var(--background));color:hsl(var(--foreground));font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:60rem;margin:0 auto;padding:0 1.5rem}
+.eyebrow{display:flex;align-items:center;gap:.75rem;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:hsl(var(--trace))}
+.eyebrow .rule{height:1px;width:2rem;background:hsl(var(--trace-dim))}
+.nav{position:sticky;top:0;z-index:40;border-bottom:1px solid hsl(var(--void-line));background:hsl(var(--void)/.85);backdrop-filter:blur(8px)}
+.nav-inner{display:flex;height:3.5rem;align-items:center;justify-content:space-between;max-width:80rem;margin:0 auto;padding:0 1.5rem}
+.wordmark{display:flex;align-items:center;gap:.75rem;font-family:'JetBrains Mono',monospace}
+.wordmark .name{display:flex;align-items:baseline;gap:1px;line-height:1}
+.wordmark .name .d{font-size:16px;font-weight:600;letter-spacing:.02em;color:hsl(var(--foreground))}
+.wordmark .name .m{font-size:16px;font-weight:300;letter-spacing:.02em;color:hsl(var(--trace))}
+.nav-links{display:none;gap:2rem;align-items:center}
+@media(min-width:768px){.nav-links{display:flex}}
+.nav-links a{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:hsl(var(--trace));transition:color .15s}
+.nav-links a:hover{color:hsl(var(--foreground))}
+.nav-cta a{display:inline-flex;align-items:center;gap:.5rem;border:1px solid hsl(var(--signal)/.4);background:hsl(var(--signal)/.1);padding:.5rem .75rem;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:hsl(var(--signal))}
+.hero{padding:5rem 0 3rem}
+.hero h1{font-size:34px;line-height:1.1;letter-spacing:-.02em;font-weight:500;margin-top:1.5rem;max-width:42rem}
+@media(min-width:640px){.hero h1{font-size:44px}}
+.hero h1 em{font-style:italic;color:hsl(var(--trace));font-weight:300}
+.hero .lede{margin-top:2rem;max-width:38rem;font-size:18px;line-height:1.55;color:hsl(var(--trace))}
+.countdown{margin-top:2.5rem;display:inline-flex;align-items:center;gap:.75rem;padding:.75rem 1.25rem;background:hsl(var(--signal)/.1);border:1px solid hsl(var(--signal)/.3);font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:.05em;color:hsl(var(--signal))}
+.section{padding:3.5rem 0;border-top:1px solid hsl(var(--void-line))}
+.section h2{font-size:24px;letter-spacing:-.01em;font-weight:500;margin-top:1rem;margin-bottom:1.5rem}
+.section p{font-size:15px;line-height:1.7;color:hsl(var(--trace));margin-bottom:1rem;max-width:42rem}
+.section p strong{color:hsl(var(--foreground));font-weight:600}
+.section ul{list-style:none;margin:1.25rem 0;max-width:42rem}
+.section ul li{padding:.625rem 0 .625rem 1.5rem;font-size:15px;line-height:1.6;color:hsl(var(--trace));border-bottom:1px solid hsl(var(--void-line));position:relative}
+.section ul li:before{content:"→";position:absolute;left:0;color:hsl(var(--signal));font-family:'JetBrains Mono',monospace}
+.section ul li strong{color:hsl(var(--foreground));font-weight:600}
+.match-grid{display:grid;grid-template-columns:1fr;gap:1px;background:hsl(var(--void-line));border:1px solid hsl(var(--void-line));margin-top:1.5rem}
+@media(min-width:768px){.match-grid{grid-template-columns:1fr 1fr}}
+.match-cell{background:hsl(var(--void));padding:1.5rem 1.25rem}
+.match-cell .label{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:hsl(var(--trace-dim));margin-bottom:.75rem}
+.match-cell .text{font-size:14px;line-height:1.6;color:hsl(var(--foreground))}
+.match-cell.signal{background:hsl(var(--signal)/.06)}
+.cta{padding:4rem 0;border-top:1px solid hsl(var(--void-line));background:hsl(var(--void-elevated)/.5)}
+.cta h2{font-size:28px;letter-spacing:-.01em;font-weight:500;margin-bottom:1.25rem}
+.cta p{font-size:15px;line-height:1.65;color:hsl(var(--trace));margin-bottom:2rem;max-width:36rem}
+.cta a.primary{display:inline-flex;align-items:center;gap:.5rem;background:hsl(var(--foreground));color:hsl(var(--background));padding:.875rem 1.25rem;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase}
+.cta a.primary:hover{background:hsl(var(--signal))}
+footer{border-top:1px solid hsl(var(--void-line));padding:1.5rem 0;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:hsl(var(--trace-dim))}
+footer .inner{max-width:80rem;margin:0 auto;padding:0 1.5rem;display:flex;justify-content:space-between;align-items:center}
+footer a{color:inherit}
+.disclaimer{margin-top:2.5rem;padding:1rem 1.25rem;background:hsl(var(--void-elevated)/.6);border-left:2px solid hsl(var(--trace-dim));font-size:13px;line-height:1.6;color:hsl(var(--trace));max-width:42rem}
+.disclaimer strong{color:hsl(var(--foreground));font-weight:600}
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="nav-inner">
+    <a href="/" class="wordmark" aria-label="DarkMatter">
+      <span class="name"><span class="d">DARK</span><span class="m">MATTER</span></span>
+    </a>
+    <nav class="nav-links">
+      <a href="/demo">Demo</a><a href="/docs">Docs</a><a href="/pricing">Pricing</a><a href="/compare">Compare</a><a href="/integrity">Integrity</a>
+    </nav>
+    <div class="nav-cta"><a href="/signup">Try it free</a></div>
+  </div>
+</header>
+
+<main>
+
+<section class="hero">
+  <div class="wrap">
+    <div class="eyebrow"><span class="rule"></span><span>Regulatory readiness</span></div>
+    <h1>EU AI Act Article 12.<em><br>Automatic logging — without trusting your own logs.</em></h1>
+    <p class="lede">High-risk AI system providers must produce automatic, traceable event records. DarkMatter is a proof engine for AI agents — the record is sealed at the moment of action and verifiable by anyone, including regulators, without your involvement.</p>
+    <div class="countdown" id="countdown">Enforcement: August 2, 2026</div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap">
+    <div class="eyebrow"><span class="rule"></span><span>What Article 12 requires</span></div>
+    <h2>The text in plain language</h2>
+    <p>Article 12 of the EU AI Act requires providers of high-risk AI systems to ensure their systems <strong>technically allow for the automatic recording of events</strong> over the lifetime of the system. The events recorded must be sufficient to:</p>
+    <ul>
+      <li>Identify situations that may result in the AI system presenting a <strong>risk under Article 79(1)</strong>, or in a substantial modification of the system.</li>
+      <li>Facilitate <strong>post-market monitoring</strong> as referenced in Article 72.</li>
+      <li>Monitor the operation of high-risk AI systems referred to in <strong>Article 26(5)</strong>.</li>
+    </ul>
+    <p>"Traceability" is the operative word. The European Commission's interpretive guidance treats it as a property of the record itself — not just a claim about how the record was made.</p>
+    <p class="disclaimer"><strong>Not legal advice.</strong> This page describes how DarkMatter's technical properties align with Article 12's logging and traceability requirements. Compliance with the EU AI Act is determined by your legal counsel and notified body, not by us. Reach out if you'd like an introduction to a notified body or AI Act counsel.</p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap">
+    <div class="eyebrow"><span class="rule"></span><span>How DarkMatter maps to the requirements</span></div>
+    <h2>What you get, requirement by requirement</h2>
+    <div class="match-grid">
+      <div class="match-cell">
+        <div class="label">Article 12 requires</div>
+        <div class="text">Automatic recording of events sufficient to identify risk situations and substantial modifications.</div>
+      </div>
+      <div class="match-cell signal">
+        <div class="label">DarkMatter provides</div>
+        <div class="text">A single line of code at decision time emits a signed, hash-chained record. Every agent action, decision, override, and consent event is captured automatically as a Context Passport — including those that turn out to be the risk situation later.</div>
+      </div>
+      <div class="match-cell">
+        <div class="label">Article 12 requires</div>
+        <div class="text">Records sufficient to facilitate post-market monitoring under Article 72.</div>
+      </div>
+      <div class="match-cell signal">
+        <div class="label">DarkMatter provides</div>
+        <div class="text">A queryable, replayable chain of every decision the agent made, with parent linkage. Reconstruction of any incident is byte-exact, not approximate.</div>
+      </div>
+      <div class="match-cell">
+        <div class="label">Article 12 requires</div>
+        <div class="text">Traceability sufficient to monitor operation under Article 26(5).</div>
+      </div>
+      <div class="match-cell signal">
+        <div class="label">DarkMatter provides</div>
+        <div class="text">Records are anchored to a public Witness Log. Tampering at any point breaks the cryptographic chain and is detectable by anyone, including the regulator, without our involvement.</div>
+      </div>
+      <div class="match-cell">
+        <div class="label">Article 12 implies</div>
+        <div class="text">The record must be credible to the regulator — not just to you.</div>
+      </div>
+      <div class="match-cell signal">
+        <div class="label">DarkMatter's structural property</div>
+        <div class="text">Records are signed with keys you control, anchored outside our infrastructure, and verifiable by anyone with the open-source verifier. Even if DarkMatter were compromised, your records remain verifiable independently.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap">
+    <div class="eyebrow"><span class="rule"></span><span>Why a self-hosted Postgres log will not satisfy Article 12</span></div>
+    <h2>The traceability problem</h2>
+    <p>A standard Postgres audit table records what your application says happened. The regulator's question is whether that record can be trusted. If the record lives inside the system being audited, the answer is no — that's a self-report, not an audit trail.</p>
+    <p>Article 12 does not say "log events." It says <strong>"automatic recording of events"</strong> with traceability. The European Commission and notified bodies are interpreting "traceability" as a structural property: <strong>tamper-evidence, independence, and external verifiability</strong>. A row in your own database does not satisfy any of those.</p>
+    <p>DarkMatter's records are signed at the moment of action with keys you control. The chain is anchored to a public Witness Log every ten minutes. The verifier is open source. A regulator can take a single Context Passport, run the verifier offline, and confirm independently that the record has not been altered since the moment it was created. That is what "traceability" actually means.</p>
+  </div>
+</section>
+
+<section class="cta">
+  <div class="wrap">
+    <h2>80 days to August 2.<br>Set up takes 15 minutes.</h2>
+    <p>One line of code at decision time, one open-source verifier, one Witness Log entry that survives even if we don't. Start free — no card required.</p>
+    <a href="/signup" class="primary">Start for free →</a>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="inner">
+    <span>&copy; 2026 DarkMatter</span>
+    <span><a href="/">Home</a> &nbsp;·&nbsp; <a href="/docs">Docs</a> &nbsp;·&nbsp; <a href="/enterprise">Enterprise</a></span>
+  </div>
+</footer>
+
+<script>
+(function(){
+  var deadline = new Date('2026-08-02T00:00:00Z');
+  var now = new Date();
+  var msPerDay = 86400000;
+  var days = Math.ceil((deadline - now) / msPerDay);
+  var el = document.getElementById('countdown');
+  if (!el) return;
+  if (days > 0) {
+    el.textContent = 'Enforcement: August 2, 2026 — ' + days + ' day' + (days === 1 ? '' : 's') + ' remaining';
+  } else if (days === 0) {
+    el.textContent = 'Enforcement begins today.';
+  } else {
+    el.textContent = 'Enforceable since August 2, 2026 (' + Math.abs(days) + ' day' + (Math.abs(days) === 1 ? '' : 's') + ' ago).';
+  }
+})();
+</script>
+
+</body>
+</html>
