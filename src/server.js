@@ -1457,12 +1457,24 @@ app.get('/dashboard/commits', requireAuth, async (req, res) => {
   }
 });
 
-// ── Build canonical v2 context object from DB row ────
+// ── Context Passport v1.0 — open standard envelope ───────────────────────────
+// The buildContext() response below is Context Passport v1.0 conformant.
+// Spec:   https://github.com/contextpassport/spec
+// Schema: https://contextpassport.com/schema/v1.json
+//
+// Note on schema_version values used in this codebase:
+//   "1.0" — Context Passport v1.0 (external wire format, what clients see)
+//   "2"   — DarkMatter internal commit envelope (integrity.js, used for hashing/signing)
+//   "3"   — DarkMatter checkpoint envelope (append-log.js, used by the Witness Log)
+// ──────────────────────────────────────────────────────────────────────────────
+const CONTEXT_PASSPORT_SCHEMA_URL = 'https://contextpassport.com/schema/v1.json';
+
 function buildContext(c, agentMap = {}) {
   const ai = c.agent_info || {};
   const p  = c.payload || c.context || {};
   const { _eventType, ...cleanPayload } = p;
   return {
+    $schema:        CONTEXT_PASSPORT_SCHEMA_URL,
     id:             c.id,
     schema_version: c.schema_version || '1.0',
     parent_id:      c.parent_id   || null,
