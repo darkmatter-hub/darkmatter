@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>EU AI Act Article 12 — DarkMatter</title>
+<title>EU AI Act Article 12, DarkMatter</title>
 <meta name="description" content="How DarkMatter helps high-risk AI system providers satisfy the EU AI Act Article 12 automatic event-logging requirement before the August 2, 2026 enforcement deadline." />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -84,8 +84,8 @@ footer a{color:inherit}
 <section class="hero">
   <div class="wrap">
     <div class="eyebrow"><span class="rule"></span><span>Regulatory readiness</span></div>
-    <h1>EU AI Act Article 12.<em><br>Automatic logging — without trusting your own logs.</em></h1>
-    <p class="lede">High-risk AI system providers must produce automatic, traceable event records. DarkMatter is a proof engine for AI agents — the record is sealed at the moment of action and verifiable by anyone, including regulators, without your involvement.</p>
+    <h1>EU AI Act Article 12.<em><br>Automatic logging, without trusting your own logs.</em></h1>
+    <p class="lede">High-risk AI system providers must produce automatic, traceable event records. DarkMatter is a proof engine for AI agents, the record is sealed at the moment of action and verifiable by anyone, including regulators, without your involvement.</p>
     <div class="countdown" id="countdown">Enforcement: August 2, 2026</div>
   </div>
 </section>
@@ -100,7 +100,7 @@ footer a{color:inherit}
       <li>Facilitate <strong>post-market monitoring</strong> as referenced in Article 72.</li>
       <li>Monitor the operation of high-risk AI systems referred to in <strong>Article 26(5)</strong>.</li>
     </ul>
-    <p>"Traceability" is the operative word. The European Commission's interpretive guidance treats it as a property of the record itself — not just a claim about how the record was made.</p>
+    <p>"Traceability" is the operative word. The European Commission's interpretive guidance treats it as a property of the record itself, not just a claim about how the record was made.</p>
     <p class="disclaimer"><strong>Not legal advice.</strong> This page describes how DarkMatter's technical properties align with Article 12's logging and traceability requirements. Compliance with the EU AI Act is determined by your legal counsel and notified body, not by us. Reach out if you'd like an introduction to a notified body or AI Act counsel.</p>
   </div>
 </section>
@@ -116,7 +116,7 @@ footer a{color:inherit}
       </div>
       <div class="match-cell signal">
         <div class="label">DarkMatter provides</div>
-        <div class="text">A single line of code at decision time emits a signed, hash-chained record. Every agent action, decision, override, and consent event is captured automatically as a Context Passport — including those that turn out to be the risk situation later.</div>
+        <div class="text">A single line of code at decision time emits a signed, hash-chained record. Every agent action, decision, override, and consent event is captured automatically as a Context Passport, including those that turn out to be the risk situation later.</div>
       </div>
       <div class="match-cell">
         <div class="label">Article 12 requires</div>
@@ -136,7 +136,7 @@ footer a{color:inherit}
       </div>
       <div class="match-cell">
         <div class="label">Article 12 implies</div>
-        <div class="text">The record must be credible to the regulator — not just to you.</div>
+        <div class="text">The record must be credible to the regulator, not just to you.</div>
       </div>
       <div class="match-cell signal">
         <div class="label">DarkMatter's structural property</div>
@@ -150,7 +150,7 @@ footer a{color:inherit}
   <div class="wrap">
     <div class="eyebrow"><span class="rule"></span><span>Why a self-hosted Postgres log will not satisfy Article 12</span></div>
     <h2>The traceability problem</h2>
-    <p>A standard Postgres audit table records what your application says happened. The regulator's question is whether that record can be trusted. If the record lives inside the system being audited, the answer is no — that's a self-report, not an audit trail.</p>
+    <p>A standard Postgres audit table records what your application says happened. The regulator's question is whether that record can be trusted. If the record lives inside the system being audited, the answer is no, that's a self-report, not an audit trail.</p>
     <p>Article 12 does not say "log events." It says <strong>"automatic recording of events"</strong> with traceability. The European Commission and notified bodies are interpreting "traceability" as a structural property: <strong>tamper-evidence, independence, and external verifiability</strong>. A row in your own database does not satisfy any of those.</p>
     <p>DarkMatter's records are signed at the moment of action with keys you control. The chain is anchored to a public Witness Log every ten minutes. The verifier is open source. A regulator can take a single Context Passport, run the verifier offline, and confirm independently that the record has not been altered since the moment it was created. That is what "traceability" actually means.</p>
   </div>
@@ -159,7 +159,7 @@ footer a{color:inherit}
 <section class="cta">
   <div class="wrap">
     <h2>80 days to August 2.<br>Set up takes 15 minutes.</h2>
-    <p>One line of code at decision time, one open-source verifier, one Witness Log entry that survives even if we don't. Start free — no card required.</p>
+    <p>One line of code at decision time, one open-source verifier, one Witness Log entry that survives even if we don't. Start free, no card required.</p>
     <a href="/signup" class="primary">Start for free →</a>
   </div>
 </section>
@@ -182,7 +182,7 @@ footer a{color:inherit}
   var el = document.getElementById('countdown');
   if (!el) return;
   if (days > 0) {
-    el.textContent = 'Enforcement: August 2, 2026 — ' + days + ' day' + (days === 1 ? '' : 's') + ' remaining';
+    el.textContent = 'Enforcement: August 2, 2026, ' + days + ' day' + (days === 1 ? '' : 's') + ' remaining';
   } else if (days === 0) {
     el.textContent = 'Enforcement begins today.';
   } else {

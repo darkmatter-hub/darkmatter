@@ -6,7 +6,7 @@
 <title>Sign in: DarkMatter</title>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
 <style>
-/* DarkMatter design system — extracted from homepage */
+/* DarkMatter design system, extracted from homepage */
 /* Include after Google Fonts link */
 
 :root{
@@ -179,7 +179,7 @@ async function handleLogin(){
     var res=await fetch('/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});
     var data=await res.json();
     if(data.error){showError(data.error);btn.disabled=false;btn.textContent='Sign in →';return;}
-    // Cookies set server-side — redirect, honouring any pending plan from pricing page
+    // Cookies set server-side, redirect, honouring any pending plan from pricing page
     var pending=sessionStorage.getItem('pendingPlan');
     if(pending){sessionStorage.removeItem('pendingPlan');window.location.href='/dashboard?plan='+encodeURIComponent(pending);}
     else{window.location.href='/dashboard';}

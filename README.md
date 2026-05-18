@@ -1,6 +1,6 @@
 # 🌑 DarkMatter
 
-> **The black box for AI systems.**
+> **A proof engine for AI agents.**
 > An independent, tamper-evident record of what your AI agents actually did.
 > Verifiable by anyone. Stored outside your system. Live in one line of code.
 
@@ -8,12 +8,12 @@
 
 ## The Problem
 
-Every time one AI agent finishes work and needs to pass it to another, developers are left duct-taping solutions together — stuffing context into prompts, writing to files, or hoping nothing gets lost. There is no standard layer for agents to hand off work reliably.
+Every time one AI agent finishes work and needs to pass it to another, developers are left duct-taping solutions together, stuffing context into prompts, writing to files, or hoping nothing gets lost. There is no standard layer for agents to hand off work reliably.
 
 When **Agent X** finishes a task and passes work to **Agent Y**, one of three things happen today:
 
-1. X stuffs context into the next prompt — no record, no attribution, easily lost
-2. X writes to a shared file or database — no proof of who wrote what, no history
+1. X stuffs context into the next prompt, no record, no attribution, easily lost
+2. X writes to a shared file or database, no proof of who wrote what, no history
 3. Context is lost entirely and Y starts from zero
 
 There is no equivalent of `git commit` for agent work. No attributed handoff. No audit trail. No recovery if something breaks mid-pipeline.
@@ -24,7 +24,7 @@ There is no equivalent of `git commit` for agent work. No attributed handoff. No
 
 ## How It Works
 
-DarkMatter gives AI agents the same primitives developers have used for decades — applied to context instead of code.
+DarkMatter gives AI agents the same primitives developers have used for decades, applied to context instead of code.
 
 | Git | DarkMatter | What it does |
 |-----|------------|--------------|
@@ -39,7 +39,7 @@ DarkMatter gives AI agents the same primitives developers have used for decades 
 
 ## Live API
 
-DarkMatter is live — no setup required:
+DarkMatter is live, no setup required:
 
 ```
 https://darkmatterhub.ai
@@ -49,9 +49,9 @@ https://darkmatterhub.ai
 
 ---
 
-## L3 — Reproducible offline verification
+## L3, Reproducible offline verification
 
-DarkMatter L3 means every commit is signed with a key only you hold, before it reaches DarkMatter's servers. DarkMatter cannot forge a record — verification requires only your public key.
+DarkMatter L3 means every commit is signed with a key only you hold, before it reaches DarkMatter's servers. DarkMatter cannot forge a record, verification requires only your public key.
 
 **Reproducible L3 example:** clone the repo, run the offline verifier, and validate a real customer-signed DarkMatter record with zero network calls.
 
@@ -68,7 +68,7 @@ Expected output:
 ✔ Metadata hash
 ✔ Envelope hash
 ✔ Ed25519 signature valid  key_id=my-signing-key
-✔ All checks passed — L3 verified
+✔ All checks passed, L3 verified
 ```
 
 Verification does not depend on DarkMatter.
@@ -126,7 +126,7 @@ python examples/claude-to-gpt/agent_xx.py
 python examples/claude-to-gpt/agent_yy.py
 ```
 
-The full handoff appears in your [dashboard commit log](https://darkmatterhub.ai/dashboard) — you can see exactly what Claude passed to GPT, when, and that it was received.
+The full handoff appears in your [dashboard commit log](https://darkmatterhub.ai/dashboard), you can see exactly what Claude passed to GPT, when, and that it was received.
 
 ---
 
@@ -152,11 +152,11 @@ Commit agent context to DarkMatter. Returns a canonical v2 context object.
 
 `payload` is the only required field. Everything else is optional:
 
-- `toAgentId` — for multi-agent pipelines, routes the commit to a specific recipient agent. Omit for single-agent workflows
-- `parentId` — links this commit to a previous context, building the lineage graph
-- `eventType` — defaults to `commit`. See [Event Types](#event-types)
-- `traceId` — groups commits into a run/trace
-- `agent` — `{ role, provider, model }` metadata from the caller
+- `toAgentId`, for multi-agent pipelines, routes the commit to a specific recipient agent. Omit for single-agent workflows
+- `parentId`, links this commit to a previous context, building the lineage graph
+- `eventType`, defaults to `commit`. See [Event Types](#event-types)
+- `traceId`, groups commits into a run/trace
+- `agent`, `{ role, provider, model }` metadata from the caller
 
 Returns a canonical v2 context object:
 ```json
@@ -373,7 +373,7 @@ Set a retention policy for an agent's commits. Commits older than the policy are
 { "retentionDays": 182 }
 ```
 
-- Minimum: `182` days (6 months — EU AI Act Article 19 minimum)
+- Minimum: `182` days (6 months, EU AI Act Article 19 minimum)
 - `null` = keep forever (default, recommended)
 
 ---
@@ -396,7 +396,7 @@ Every commit carries an `eventType` that describes what kind of agent action occ
 
 | Event | When to use |
 |-------|-------------|
-| `commit` | Agent finished work and handed off context — **default** |
+| `commit` | Agent finished work and handed off context, **default** |
 | `revert` | Agent rolled back to a previous checkpoint |
 | `branch` | Pipeline split into parallel agents |
 | `merge` | Parallel branches rejoined |
@@ -410,13 +410,13 @@ Every commit carries an `eventType` that describes what kind of agent action occ
 
 | Event | Regulation hook |
 |-------|----------------|
-| `override` | Human changed agent output — EU AI Act Art. 14 |
-| `consent` | Human explicitly approved agent action before execution — EU AI Act Art. 14 |
-| `escalate` | Agent paused and flagged for human review — EU AI Act Art. 14 |
-| `redact` | PII or sensitive data removed before handoff — EU AI Act Art. 10 / GDPR |
+| `override` | Human changed agent output, EU AI Act Art. 14 |
+| `consent` | Human explicitly approved agent action before execution, EU AI Act Art. 14 |
+| `escalate` | Agent paused and flagged for human review, EU AI Act Art. 14 |
+| `redact` | PII or sensitive data removed before handoff, EU AI Act Art. 10 / GDPR |
 | `audit` | External system or regulator accessed the audit trail |
 
-**Example — logging a human override:**
+**Example, logging a human override:**
 ```bash
 curl -X POST https://darkmatterhub.ai/api/commit \
   -H "Authorization: Bearer YOUR_KEY" \
@@ -440,22 +440,22 @@ curl -X POST https://darkmatterhub.ai/api/commit \
 import darkmatter as dm
 # DARKMATTER_API_KEY read from environment automatically
 
-# Single agent — no toAgentId needed
+# Single agent, no toAgentId needed
 ctx = dm.commit(payload={
     "input":  "Analyze Q1 earnings",
     "output": "Revenue up 34% YoY",
     "model":  "claude-sonnet-4-6",
 })
-print(ctx["verify_url"])  # share with anyone — no account needed to verify
+print(ctx["verify_url"])  # share with anyone, no account needed to verify
 
-# Multi-agent pipeline — pass toAgentId explicitly
+# Multi-agent pipeline, pass toAgentId explicitly
 import requests
 DM = "https://darkmatterhub.ai"
 X  = {"Authorization": "Bearer AGENT_X_KEY"}
 Y  = {"Authorization": "Bearer AGENT_Y_KEY"}
 
 requests.post(f"{DM}/api/commit", headers=X, json={
-    "toAgentId": "dm_AGENT_Y_ID",   # optional — only needed for multi-agent routing
+    "toAgentId": "dm_AGENT_Y_ID",   # optional, only needed for multi-agent routing
     "payload":   {"input": "...", "output": "..."},
 })
 
@@ -472,13 +472,13 @@ context = data["commits"][0]["context"]
 import { commit, replay, verify } from 'darkmatter-js';
 // DARKMATTER_API_KEY read from process.env automatically
 
-// Single agent — no toAgentId needed
+// Single agent, no toAgentId needed
 const ctx = await commit({
   payload: { input: "Analyze Q1", output: "Revenue up 34%", model: "gpt-4o" },
 });
 console.log(ctx.verify_url);  // share with anyone
 
-// Multi-agent — toAgentId is optional, only for routing to another agent
+// Multi-agent, toAgentId is optional, only for routing to another agent
 const DM   = "https://darkmatterhub.ai";
 const hdrs = key => ({ "Authorization": `Bearer ${key}`, "Content-Type": "application/json" });
 
@@ -500,7 +500,7 @@ const context = (await res.json()).commits[0].context;
 
 Companies running AI agents face a fundamental credibility problem: **they cannot credibly audit their own agent activity.**
 
-EU AI Act Articles 12 and 19 (Regulation EU 2024/1689) require high-risk AI systems to produce automatically generated, tamper-evident logs kept for at least six months. But a company storing its own AI logs faces the same credibility problem as auditing its own books — the same team that operates the agents controls the logs.
+EU AI Act Articles 12 and 19 (Regulation EU 2024/1689) require high-risk AI systems to produce automatically generated, tamper-evident logs kept for at least six months. But a company storing its own AI logs faces the same credibility problem as auditing its own books, the same team that operates the agents controls the logs.
 
 **DarkMatter provides the independent layer that makes those logs credible to regulators and auditors.**
 
@@ -511,7 +511,7 @@ Every commit written to DarkMatter:
 - Cannot be modified after the fact without breaking the record
 - Captures human oversight actions (`override`, `consent`, `escalate`) required by EU AI Act Art. 14
 
-When a regulator, auditor, or client asks *"what did your AI agents do, and how do we know that's accurate?"* — the answer is: *"Here is the DarkMatter commit log. It was written in real time by authenticated agents to a third-party system we do not control."*
+When a regulator, auditor, or client asks *"what did your AI agents do, and how do we know that's accurate?"*, the answer is: *"Here is the DarkMatter commit log. It was written in real time by authenticated agents to a third-party system we do not control."*
 
 ---
 
@@ -558,35 +558,35 @@ See [PRODUCTION.md](./PRODUCTION.md) for full setup instructions.
 
 ## What's Next
 
-- [x] Webhook notifications — POST to your URL when a commit arrives
-- [x] Retention policies — auto-expire commits with EU AI Act 6-month minimum
-- [x] Replay endpoint — full decision path with integrity verification
-- [x] Three-agent demo — Claude → GPT → Claude with lineage
-- [x] SDK packages — Python (`darkmatter-sdk`) and Node (`darkmatter-js`)
-- [x] Fork endpoint — branch from any checkpoint with full lineage fields
-- [x] Verify endpoint — standalone cryptographic trust object
-- [x] Export endpoint — portable proof artifact with chain_hash
-- [x] Chain viewer in dashboard — visual timeline with fork/replay CTAs
-- [x] /demo page — live seeded demo chain, no login required
-- [x] /blog page — announcement and technical posts
-- [x] No agent creation step — API key maps directly to account
-- [ ] Compliance PDF export — EU AI Act audit artifact
-- [ ] BYOK — Bring Your Own Key encryption
-- [ ] Demo page outputs real verify_url — fork/replay directly from browser
+- [x] Webhook notifications, POST to your URL when a commit arrives
+- [x] Retention policies, auto-expire commits with EU AI Act 6-month minimum
+- [x] Replay endpoint, full decision path with integrity verification
+- [x] Three-agent demo, Claude → GPT → Claude with lineage
+- [x] SDK packages, Python (`darkmatter-sdk`) and Node (`darkmatter-js`)
+- [x] Fork endpoint, branch from any checkpoint with full lineage fields
+- [x] Verify endpoint, standalone cryptographic trust object
+- [x] Export endpoint, portable proof artifact with chain_hash
+- [x] Chain viewer in dashboard, visual timeline with fork/replay CTAs
+- [x] /demo page, live seeded demo chain, no login required
+- [x] /blog page, announcement and technical posts
+- [x] No agent creation step, API key maps directly to account
+- [ ] Compliance PDF export, EU AI Act audit artifact
+- [ ] BYOK, Bring Your Own Key encryption
+- [ ] Demo page outputs real verify_url, fork/replay directly from browser
 
 ---
 
 ## Philosophy
 
-AI agents are making decisions autonomously. The people who need to know what those agents decided — executives, regulators, auditors, clients — have no way to verify it. The operator controls the logs. The model provider controls the infrastructure. Neither is independent.
+AI agents are making decisions autonomously. The people who need to know what those agents decided, executives, regulators, auditors, clients, have no way to verify it. The operator controls the logs. The model provider controls the infrastructure. Neither is independent.
 
-DarkMatter is the independent record. Recorded outside your system, outside the model provider, tamper-evident from the moment it's written. When something goes wrong with an AI agent, you can prove what it actually did — not what the logs say, not what the operator claims. Cryptographically, to anyone, offline.
+DarkMatter is the independent record. Recorded outside your system, outside the model provider, tamper-evident from the moment it's written. When something goes wrong with an AI agent, you can prove what it actually did, not what the logs say, not what the operator claims. Cryptographically, to anyone, offline.
 
 ---
 
 ## License
 
-MIT — build whatever you want with this.
+MIT, build whatever you want with this.
 
 ---
 

@@ -30,7 +30,7 @@
 </head>
 <body>
 
-<h1>DarkMatter — Usage</h1>
+<h1>DarkMatter, Usage</h1>
 <div class="sub">Admin only · <span class="refresh" onclick="load()">Refresh</span> · <span id="ts"></span></div>
 
 <div id="error" style="display:none;"></div>
@@ -39,30 +39,30 @@
   <div class="grid">
     <div class="card">
       <div class="card-label">Total commits</div>
-      <div class="card-value" id="total-commits">—</div>
+      <div class="card-value" id="total-commits">,</div>
     </div>
     <div class="card">
       <div class="card-label">Unique agents</div>
-      <div class="card-value" id="unique-agents">—</div>
+      <div class="card-value" id="unique-agents">,</div>
     </div>
     <div class="card">
       <div class="card-label">L3 adoption</div>
-      <div class="card-value" id="l3-pct">—</div>
+      <div class="card-value" id="l3-pct">,</div>
       <div class="card-sub" id="l3-count"></div>
     </div>
     <div class="card">
       <div class="card-label">Active agents (7d)</div>
-      <div class="card-value" id="active-7d">—</div>
+      <div class="card-value" id="active-7d">,</div>
       <div class="card-sub" id="active-30d"></div>
     </div>
     <div class="card">
       <div class="card-label">New agents (7d)</div>
-      <div class="card-value" id="new-agents-7d">—</div>
+      <div class="card-value" id="new-agents-7d">,</div>
       <div class="card-sub">acquisition signal</div>
     </div>
     <div class="card">
       <div class="card-label">New L3 commits (7d)</div>
-      <div class="card-value" id="new-l3-7d">—</div>
+      <div class="card-value" id="new-l3-7d">,</div>
       <div class="card-sub">L3 momentum</div>
     </div>
   </div>
@@ -107,7 +107,7 @@
 </div>
 
 <script>
-  // Get session from localStorage — try all known key patterns
+  // Get session from localStorage, try all known key patterns
   function getToken() {
     try {
       // Try dm_session first (DarkMatter's own key)
@@ -172,8 +172,8 @@
     document.getElementById('l3-count').textContent       = d.l3_usage.count.toLocaleString() + ' L3 commits';
     document.getElementById('active-7d').textContent      = d.active_agents.last_7d;
     document.getElementById('active-30d').textContent     = d.active_agents.last_30d + ' active last 30d';
-    document.getElementById('new-agents-7d').textContent  = d.momentum?.new_agents_7d ?? '—';
-    document.getElementById('new-l3-7d').textContent      = d.l3_usage?.last_7d ?? '—';
+    document.getElementById('new-agents-7d').textContent  = d.momentum?.new_agents_7d ?? ',';
+    document.getElementById('new-l3-7d').textContent      = d.l3_usage?.last_7d ?? ',';
 
     const wu    = d.wrapper_usage;
     const total = wu.anthropic + wu.openai + wu.manual || 1;

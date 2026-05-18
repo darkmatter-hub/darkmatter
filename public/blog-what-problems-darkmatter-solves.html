@@ -4,7 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>The Three Problems DarkMatter Solves: DarkMatter Blog</title>
-<meta name="description" content="AI agents are making consequential decisions. But when something goes wrong, nobody can prove what the agent actually did, why it did it, or whether the record is trustworthy. Here's what that costs — and what DarkMatter does about it."/>
+<meta name="description" content="AI agents are making consequential decisions. But when something goes wrong, nobody can prove what the agent actually did, why it did it, or whether the record is trustworthy. Here's what that costs, and what DarkMatter does about it."/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <style>
@@ -19,7 +19,7 @@ html{scroll-behavior:smooth;}
 body{font-family:var(--sans);color:var(--text);background:var(--bg);font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased;}
 a{color:inherit;text-decoration:none;}
 
-/* NAV + FOOTER — canonical */
+/* NAV + FOOTER, canonical */
 .dm-nav{position:sticky;top:0;z-index:300;height:60px;background:#fff;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;padding:0 40px;}
 .dm-nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none;flex-shrink:0;z-index:1;}
 .dm-nav-name{font-family:'IBM Plex Mono','Courier New',monospace;font-size:17px;font-weight:700;color:#111827;letter-spacing:-0.03em;}
@@ -139,7 +139,7 @@ a{color:inherit;text-decoration:none;}
   <a class="back-link" href="/blog">← All posts</a>
 
   <div class="article-eyebrow">Product thinking</div>
-  <h1 class="article-title">The three problems DarkMatter solves — and why AWS, Anthropic, and Google can't solve them for you</h1>
+  <h1 class="article-title">The three problems DarkMatter solves, and why AWS, Anthropic, and Google can't solve them for you</h1>
 
   <div class="article-meta">
     <span class="article-date">April 2026</span>
@@ -149,9 +149,9 @@ a{color:inherit;text-decoration:none;}
 
   <div class="prose">
 
-    <p>AI agents are no longer prototypes. They are writing code, processing loan applications, generating compliance reports, managing customer communications, and executing financial transactions — often without a human in the loop for individual decisions. The question nobody is asking loudly enough yet is: <strong>when something goes wrong, can you prove what the agent actually did?</strong></p>
+    <p>AI agents are no longer prototypes. They are writing code, processing loan applications, generating compliance reports, managing customer communications, and executing financial transactions, often without a human in the loop for individual decisions. The question nobody is asking loudly enough yet is: <strong>when something goes wrong, can you prove what the agent actually did?</strong></p>
 
-    <p>Not what the logs say it did. Not what your dashboard shows. Can you prove it to a regulator, a client, a judge, or your own engineering team in a way that can't be disputed — because the record was never in your hands to alter?</p>
+    <p>Not what the logs say it did. Not what your dashboard shows. Can you prove it to a regulator, a client, a judge, or your own engineering team in a way that can't be disputed, because the record was never in your hands to alter?</p>
 
     <p>That's the gap DarkMatter fills. But to understand why the gap exists, you need to understand the three specific problems underneath it.</p>
 
@@ -159,26 +159,26 @@ a{color:inherit;text-decoration:none;}
 
     <h2>Problem 1: Agent outputs are unverifiable by design</h2>
 
-    <p>When your agent produces an output — a decision, a document, a recommendation — that output gets written somewhere you control: your database, your S3 bucket, your application logs. The model provider has their own logs. You have yours. But there is no independent record that neither party could have altered.</p>
+    <p>When your agent produces an output, a decision, a document, a recommendation, that output gets written somewhere you control: your database, your S3 bucket, your application logs. The model provider has their own logs. You have yours. But there is no independent record that neither party could have altered.</p>
 
-    <p>This matters because the parties with the most at stake in a dispute are exactly the parties who control the records. If your agent denied someone a loan, recommended a drug dosage, or approved a financial transaction, the evidence of what it received as input and what it produced is owned by you — the party being questioned.</p>
+    <p>This matters because the parties with the most at stake in a dispute are exactly the parties who control the records. If your agent denied someone a loan, recommended a drug dosage, or approved a financial transaction, the evidence of what it received as input and what it produced is owned by you, the party being questioned.</p>
 
     <div class="scenario">
-      <div class="scenario-label">Scenario — Financial services</div>
+      <div class="scenario-label">Scenario, Financial services</div>
       <div class="scenario-title">The compliance audit</div>
       <p>A bank deploys a credit-scoring agent. A customer is denied a loan and claims discrimination. The regulator asks for a complete record of what data the agent received, what model it used, what intermediate reasoning led to the decision, and what output it produced. The bank provides logs from their own system. The regulator's response: "How do we know these logs weren't modified after the decision?" There is no answer, because all the records live inside the bank's infrastructure.</p>
     </div>
 
     <div class="scenario">
-      <div class="scenario-label">Scenario — Healthcare</div>
+      <div class="scenario-label">Scenario, Healthcare</div>
       <div class="scenario-title">The clinical AI audit trail</div>
       <p>A hospital uses an AI agent to assist with triage prioritisation. A patient outcome is poor and a legal question arises about whether the AI made a recommendation that influenced care. The hospital's IT team can produce logs, but they can also be asked: "Could anyone in your organisation have modified these records?" The honest answer is yes. Without an external, tamper-evident record, the logs are evidence of what the system claims happened, not proof of what happened.</p>
     </div>
 
-    <p>DarkMatter solves this by storing every commit as a SHA-256 hash-linked record <strong>outside your system</strong>. The hash chain means any modification to any record breaks every subsequent hash downstream — making tampering immediately detectable. And because the record lives outside your infrastructure, neither you nor the model provider controls it.</p>
+    <p>DarkMatter solves this by storing every commit as a SHA-256 hash-linked record <strong>outside your system</strong>. The hash chain means any modification to any record breaks every subsequent hash downstream, making tampering immediately detectable. And because the record lives outside your infrastructure, neither you nor the model provider controls it.</p>
 
     <div class="honest-note">
-      <strong>An important limitation to understand:</strong> DarkMatter records what you tell it to record. If your agent makes 10 internal reasoning steps before producing a final output, and you only call <code>dm.commit()</code> on the final output, then only the final output is provably recorded. The 10 steps leading to it are not in the chain. The granularity of your audit trail is exactly as fine as your commit granularity. This is why our SDK integrations and Chrome extension auto-commit at every model call — so every step is captured, not just the output you chose to log. If you need step-level provability, commit at every step.
+      <strong>An important limitation to understand:</strong> DarkMatter records what you tell it to record. If your agent makes 10 internal reasoning steps before producing a final output, and you only call <code>dm.commit()</code> on the final output, then only the final output is provably recorded. The 10 steps leading to it are not in the chain. The granularity of your audit trail is exactly as fine as your commit granularity. This is why our SDK integrations and Chrome extension auto-commit at every model call, so every step is captured, not just the output you chose to log. If you need step-level provability, commit at every step.
     </div>
 
     <hr/>
@@ -190,15 +190,15 @@ a{color:inherit;text-decoration:none;}
     <p>If the final output is wrong, you face a genuinely hard debugging problem: was the error introduced by the researcher's retrieval, the writer's synthesis, or the reviewer's evaluation? Without a recorded chain of custody for every handoff, you're reading flat logs and reconstructing a chain of events that was never formally captured.</p>
 
     <div class="scenario">
-      <div class="scenario-label">Scenario — Legal / professional services</div>
+      <div class="scenario-label">Scenario, Legal / professional services</div>
       <div class="scenario-title">The multi-agent contract review</div>
       <p>A law firm deploys a three-agent pipeline: a document parser, a clause analyser, and a risk summariser. The risk summary delivered to a client turns out to contain a significant error. The firm needs to know: did the parser extract the right clauses? Did the analyser correctly identify risk? Or did the summariser hallucinate? Without a DarkMatter chain recording each handoff, they have three sets of logs and no way to prove the exact state of the context at each transition point.</p>
     </div>
 
     <div class="scenario">
-      <div class="scenario-label">Scenario — Software engineering</div>
+      <div class="scenario-label">Scenario, Software engineering</div>
       <div class="scenario-title">The autonomous code pipeline</div>
-      <p>A Manus-type agent autonomously opens a GitHub issue, writes code, runs tests, and submits a pull request. Five agents in sequence. If the pull request introduces a security vulnerability, the engineering team needs to trace exactly which agent introduced the flaw and what input it was working with. Flat logs per agent tell you what each agent did in isolation. A DarkMatter chain tells you the exact parent-child relationship between every step — who handed what to whom.</p>
+      <p>A Manus-type agent autonomously opens a GitHub issue, writes code, runs tests, and submits a pull request. Five agents in sequence. If the pull request introduces a security vulnerability, the engineering team needs to trace exactly which agent introduced the flaw and what input it was working with. Flat logs per agent tell you what each agent did in isolation. A DarkMatter chain tells you the exact parent-child relationship between every step, who handed what to whom.</p>
     </div>
 
     <p>The mental model is Git for agent execution. Git doesn't just store files; it stores the complete history of every change, who made it, when, and what parent state it was built on. DarkMatter does the same for agent context. Every commit records its parent ID, creating a graph of custody that can be walked backwards from any output to its root input.</p>
@@ -207,20 +207,20 @@ a{color:inherit;text-decoration:none;}
 
     <h2>Problem 3: You can't experiment on a live decision</h2>
 
-    <p>In software development, you branch. You test a change against a known state without touching the original. You compare two branches to see exactly what differed. This workflow — branch, test, diff, decide — is so fundamental to software quality that we take it for granted.</p>
+    <p>In software development, you branch. You test a change against a known state without touching the original. You compare two branches to see exactly what differed. This workflow, branch, test, diff, decide, is so fundamental to software quality that we take it for granted.</p>
 
     <p>AI agent pipelines have nothing equivalent. If you want to know what would have happened if you'd used a different model at step 3, you re-run the entire pipeline from the beginning with fresh inputs. You can't isolate the change. You can't be sure the re-run reflects the same conditions. And you certainly can't compare the two outputs in a structured way that shows exactly what changed and where.</p>
 
     <div class="scenario">
-      <div class="scenario-label">Scenario — Product / AI engineering</div>
+      <div class="scenario-label">Scenario, Product / AI engineering</div>
       <div class="scenario-title">Model evaluation in production</div>
-      <p>Your production pipeline uses Claude at step 3 to generate summaries. You want to evaluate whether GPT-4o produces meaningfully different summaries. With DarkMatter, you fork from the step-3 checkpoint — branching off the exact same input state — run it with GPT-4o, and diff the two chains. You get a structured comparison of what changed: which steps produced different output, how the models differed, and what propagated downstream. Without DarkMatter, you run two separate pipeline executions and manually compare logs.</p>
+      <p>Your production pipeline uses Claude at step 3 to generate summaries. You want to evaluate whether GPT-4o produces meaningfully different summaries. With DarkMatter, you fork from the step-3 checkpoint, branching off the exact same input state, run it with GPT-4o, and diff the two chains. You get a structured comparison of what changed: which steps produced different output, how the models differed, and what propagated downstream. Without DarkMatter, you run two separate pipeline executions and manually compare logs.</p>
     </div>
 
     <div class="scenario">
-      <div class="scenario-label">Scenario — Regulated industries</div>
+      <div class="scenario-label">Scenario, Regulated industries</div>
       <div class="scenario-title">The explainability request</div>
-      <p>A pharmaceutical company uses an AI agent to assist with adverse event analysis. A regulator under EU AI Act Article 12 requests an explanation of how a specific output was reached, and asks: "What would the output have been if the agent had been given this alternative data?" With DarkMatter, you fork from the relevant checkpoint, substitute the alternative data, re-run, and produce a verified diff — two chains, both tamper-evident, both externally auditable. Without DarkMatter, you re-run the analysis and hope the conditions are sufficiently similar.</p>
+      <p>A pharmaceutical company uses an AI agent to assist with adverse event analysis. A regulator under EU AI Act Article 12 requests an explanation of how a specific output was reached, and asks: "What would the output have been if the agent had been given this alternative data?" With DarkMatter, you fork from the relevant checkpoint, substitute the alternative data, re-run, and produce a verified diff, two chains, both tamper-evident, both externally auditable. Without DarkMatter, you re-run the analysis and hope the conditions are sufficiently similar.</p>
     </div>
 
     <hr/>
@@ -233,7 +233,7 @@ a{color:inherit;text-decoration:none;}
 
     <p><strong>Their incentives run the other way.</strong> AWS, Anthropic, and Google profit when you use more of their services. A tool that makes it easy to swap Claude for GPT-4o, fork a run, compare models, and diff outputs is architecturally against their lock-in interest. DarkMatter has no model allegiance. We commit what you ran, regardless of which model or framework you used.</p>
 
-    <p><strong>Platform logs aren't lineage.</strong> CloudWatch, Datadog, LangSmith — these solve observability: what happened, when, on which service, with what latency. DarkMatter solves lineage: what did Agent A pass to Agent B, what was the hash-chained sequence of decisions that produced this output, and can I branch from step 3 and replay it? These are different questions requiring different infrastructure. LangSmith is the closest competitor and it does tracing well — but it lives inside your LangSmith account (tamper risk remains), is scoped to LangChain/LangGraph, and doesn't produce offline-verifiable proof artifacts.</p>
+    <p><strong>Platform logs aren't lineage.</strong> CloudWatch, Datadog, LangSmith, these solve observability: what happened, when, on which service, with what latency. DarkMatter solves lineage: what did Agent A pass to Agent B, what was the hash-chained sequence of decisions that produced this output, and can I branch from step 3 and replay it? These are different questions requiring different infrastructure. LangSmith is the closest competitor and it does tracing well, but it lives inside your LangSmith account (tamper risk remains), is scoped to LangChain/LangGraph, and doesn't produce offline-verifiable proof artifacts.</p>
 
     <p><strong>The compliance pressure is accelerating.</strong> EU AI Act Article 12 requires high-risk AI systems to maintain logs enabling post-hoc verification. Financial regulators are beginning to ask for explainability records on algorithmic decisions. Healthcare AI is heading toward audit requirements modelled on drug trial documentation. None of the platform players have built a neutral audit infrastructure product specifically because building it credibly requires being independent of both you and the model provider. That's a position only a purpose-built third party can occupy.</p>
 
@@ -243,12 +243,12 @@ a{color:inherit;text-decoration:none;}
 
     <p>DarkMatter is not an observability platform. It doesn't replace your logs, your Datadog, your LangSmith. It is a narrow, specific thing: an independent execution record for agent pipelines, with replay, fork, and offline verification built on top.</p>
 
-    <p>It's the layer that answers: <em>"Can you prove what your agent actually did?"</em> — in a way that doesn't rely on trusting you, the model provider, or us.</p>
+    <p>It's the layer that answers: <em>"Can you prove what your agent actually did?"</em>, in a way that doesn't rely on trusting you, the model provider, or us.</p>
 
-    <p>If your agents are doing things that don't matter if they can't be proved — internal tooling, low-stakes automation, experimental pipelines — DarkMatter probably isn't worth the overhead. If your agents are making decisions that affect real people, are subject to regulatory scrutiny, or where a client might one day ask "show me exactly what your AI did," DarkMatter is the infrastructure that makes that answer possible.</p>
+    <p>If your agents are doing things that don't matter if they can't be proved, internal tooling, low-stakes automation, experimental pipelines, DarkMatter probably isn't worth the overhead. If your agents are making decisions that affect real people, are subject to regulatory scrutiny, or where a client might one day ask "show me exactly what your AI did," DarkMatter is the infrastructure that makes that answer possible.</p>
 
     <p style="margin-top:2.5rem;">
-      <a href="/demo" style="display:inline-block;background:#111827;color:#fff;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:700;padding:12px 24px;border-radius:8px;text-decoration:none;transition:opacity .15s;" onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">Run the demo — no signup required →</a>
+      <a href="/demo" style="display:inline-block;background:#111827;color:#fff;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:700;padding:12px 24px;border-radius:8px;text-decoration:none;transition:opacity .15s;" onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">Run the demo, no signup required →</a>
     </p>
 
   </div>

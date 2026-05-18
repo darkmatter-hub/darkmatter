@@ -105,7 +105,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--sans);min-height:10
 const token = new URLSearchParams(location.search).get('token');
 
 async function init() {
-  if (!token) { showError('Invalid invite link — no token found.'); return; }
+  if (!token) { showError('Invalid invite link, no token found.'); return; }
 
   try {
     const res  = await fetch('/api/workspace/invite/validate?token=' + encodeURIComponent(token));

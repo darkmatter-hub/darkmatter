@@ -197,7 +197,7 @@ nav { position: sticky; top: 0; z-index: 100; background: rgba(255,255,255,0.96)
   <div class="page-eyebrow">Independent verification</div>
   <h1>Verify a record.</h1>
   <p>Upload a proof bundle to confirm that a record is intact, still fits into its history, and has not been changed since signing. Runs entirely in your browser. No account required.</p>
-  <p style="margin-top:10px;font-size:13.5px;color:var(--t3);font-family:var(--mono);">The proof bundle contains an Ed25519 signature and SHA-256 hash chain. Any standard cryptography library can verify these — DarkMatter does not need to exist for the math to work.</p>
+  <p style="margin-top:10px;font-size:13.5px;color:var(--t3);font-family:var(--mono);">The proof bundle contains an Ed25519 signature and SHA-256 hash chain. Any standard cryptography library can verify these, DarkMatter does not need to exist for the math to work.</p>
 </div>
 
 <div class="verify-main">
@@ -237,7 +237,7 @@ nav { position: sticky; top: 0; z-index: 100; background: rgba(255,255,255,0.96)
     <div class="ow-grid">
       <div class="ow-item">
         <div class="ow-num">Python script</div>
-        <div class="ow-body">Run the verifier locally. Works offline. Written by DarkMatter — open source.</div>
+        <div class="ow-body">Run the verifier locally. Works offline. Written by DarkMatter, open source.</div>
         <div class="ow-code">python verify_darkmatter_chain.py proof_bundle.json</div>
       </div>
       <div class="ow-item ow-item-independent">
@@ -363,7 +363,7 @@ function runVerify() {
   btn.textContent = 'Verifying…';
   document.getElementById('verify-hint').textContent = '';
 
-  // Show verbose log — stays visible throughout
+  // Show verbose log, stays visible throughout
   const logEl = document.getElementById('verify-log');
   const linesEl = document.getElementById('vl-lines');
   logEl.style.display = 'block';
@@ -413,10 +413,10 @@ function verifyStep1() {
       ? 'The payload hash matches the stored record. No changes detected.'
       : 'The payload hash does not match. The record may have been altered after it was created.',
     technical: [
-      { key: 'Record ID', val: loadedBundle.record_id || '—' },
-      { key: 'Proof level', val: loadedBundle.proof_level || '—' },
-      { key: 'Payload hash', val: loadedBundle.payload_hash || '—', highlight: pass },
-      { key: 'Integrity hash', val: loadedBundle.integrity_hash || '—', highlight: pass },
+      { key: 'Record ID', val: loadedBundle.record_id || ',' },
+      { key: 'Proof level', val: loadedBundle.proof_level || ',' },
+      { key: 'Payload hash', val: loadedBundle.payload_hash || ',', highlight: pass },
+      { key: 'Integrity hash', val: loadedBundle.integrity_hash || ',', highlight: pass },
     ],
     delay: 0,
   });
@@ -438,7 +438,7 @@ function verifyStep2(step1Pass) {
     detail: pass
       ? (hasParent
           ? 'Nothing appears to be missing, reordered, or replaced in the record\'s history.'
-          : 'This is a root record — it has no parent. History is intact by definition.')
+          : 'This is a root record, it has no parent. History is intact by definition.')
       : 'The parent record reference does not match. Something may have been inserted or removed.',
     technical: [
       { key: 'Parent ID', val: loadedBundle.parent_id || 'none (root record)' },
@@ -457,11 +457,11 @@ function verifyStep3(step1Pass, step2Pass) {
   addResult({
     id: 'r3',
     status: signaturePass ? 'pass' : (recordedLevel ? 'warn' : 'fail'),
-    label: signaturePass ? 'Origin confirmed' : (recordedLevel ? 'No signature — Recorded level' : 'Signature check failed'),
+    label: signaturePass ? 'Origin confirmed' : (recordedLevel ? 'No signature, Recorded level' : 'Signature check failed'),
     desc: signaturePass
       ? 'This record still matches the signer that created it.'
       : (recordedLevel
-          ? 'This record is Recorded level — it was captured by DarkMatter but not signed by the agent.'
+          ? 'This record is Recorded level, it was captured by DarkMatter but not signed by the agent.'
           : 'The signature does not match. This record may have been changed after it was signed.'),
     detail: signaturePass
       ? 'It does not appear to have been changed after signing.'
@@ -469,7 +469,7 @@ function verifyStep3(step1Pass, step2Pass) {
           ? 'Recorded level does not include an agent signature by design. Upgrade to Signed level using the SDK for a verifiable signature.'
           : 'Check that the agent public key matches the key registered at record creation.'),
     technical: [
-      { key: 'Proof level', val: loadedBundle.proof_level || '—' },
+      { key: 'Proof level', val: loadedBundle.proof_level || ',' },
       { key: 'Signature', val: loadedBundle.signature ? loadedBundle.signature.slice(0, 40) + '…' : 'none' },
       { key: 'Agent public key', val: loadedBundle.agent_public_key ? loadedBundle.agent_public_key.slice(0, 36) + '…' : 'none' },
       { key: 'Verified at', val: new Date().toISOString(), highlight: true },
@@ -539,7 +539,7 @@ function toggleTechnical(id) {
   btn.textContent = el.classList.contains('open') ? 'Details ↑' : 'Details ↓';
 }
 
-// ── Verification logic (demo — uses bundle fields) ──
+// ── Verification logic (demo, uses bundle fields) ──
 function checkIntegrity(b) {
   // In production: recompute payload hash and compare
   // Demo: pass if required fields present
@@ -650,9 +650,9 @@ function processMultiFiles(files) {
         const pass = integrityPass && historyPass && originPass;
         const status = (bundle.proof_level === 'recorded' && integrityPass && historyPass)
           ? 'warn' : (pass ? 'pass' : 'fail');
-        results[i] = { name: file.name, id: bundle.record_id || '—', pass, status, proofLevel: bundle.proof_level || '—' };
+        results[i] = { name: file.name, id: bundle.record_id || ',', pass, status, proofLevel: bundle.proof_level || ',' };
       } catch {
-        results[i] = { name: file.name, id: '—', pass: false, status: 'fail', error: true };
+        results[i] = { name: file.name, id: ',', pass: false, status: 'fail', error: true };
       }
       loaded++;
       if (loaded === jsonFiles.length) renderMultiResults(results);

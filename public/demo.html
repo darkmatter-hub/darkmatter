@@ -64,7 +64,7 @@ a{color:inherit;text-decoration:none}
 .demo-layout{display:grid;grid-template-columns:1fr;min-height:calc(100vh - 3.5rem - 53px)}
 @media(min-width:900px){.demo-layout{grid-template-columns:1fr 1fr}}
 
-/* LEFT PANE — agent side */
+/* LEFT PANE, agent side */
 .pane-left{border-right:1px solid hsl(var(--void-line));display:flex;flex-direction:column;background:hsl(var(--void))}
 .pane-header{padding:1.5rem 1.75rem 1rem;border-bottom:1px solid hsl(var(--void-line))}
 .pane-eyebrow{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:hsl(var(--trace-dim));margin-bottom:.5rem}
@@ -72,7 +72,7 @@ a{color:inherit;text-decoration:none}
 .pane-sub{font-size:13px;color:hsl(var(--trace));line-height:1.5;margin-top:.25rem}
 .pane-body{flex:1;padding:1.5rem 1.75rem;display:flex;flex-direction:column;gap:1.25rem;overflow-y:auto}
 
-/* RIGHT PANE — DarkMatter side */
+/* RIGHT PANE, DarkMatter side */
 .pane-right{display:flex;flex-direction:column;background:hsl(var(--background))}
 .pane-right .pane-body{background:hsl(var(--background))}
 
@@ -237,7 +237,7 @@ footer{border-top:1px solid hsl(var(--void-line));background:hsl(var(--void))}
   <div class="pane-left">
     <div class="pane-header">
       <div class="pane-eyebrow">Refund approval agent</div>
-      <div class="pane-title" id="left-title">Step 1 — Agent processes request</div>
+      <div class="pane-title" id="left-title">Step 1, Agent processes request</div>
       <div class="pane-sub" id="left-sub">The agent receives a refund request and decides whether to approve, escalate, or deny.</div>
     </div>
     <div class="step-nav">
@@ -250,7 +250,7 @@ footer{border-top:1px solid hsl(var(--void-line));background:hsl(var(--void))}
       <!-- STEP 1 content -->
       <div id="s0-left" class="step-content">
         <div style="font-size:13px;line-height:1.75;color:hsl(var(--trace));margin-bottom:1rem;">
-          A customer requests a refund for order <strong style="color:hsl(var(--foreground));font-family:'JetBrains Mono',monospace">#84721</strong> — $284.00, purchased 18 days ago. The agent runs its policy logic and calls Claude to make a decision.
+          A customer requests a refund for order <strong style="color:hsl(var(--foreground));font-family:'JetBrains Mono',monospace">#84721</strong>, $284.00, purchased 18 days ago. The agent runs its policy logic and calls Claude to make a decision.
         </div>
         <div class="term">
           <div class="term-bar">
@@ -262,7 +262,7 @@ footer{border-top:1px solid hsl(var(--void-line));background:hsl(var(--void))}
             <span>refund_agent.py</span>
           </div>
           <div class="term-body" id="term-s0">
-            <span class="t-dim"># One import change — everything else stays the same</span><br>
+            <span class="t-dim"># One import change, everything else stays the same</span><br>
             <span class="t-blu">from</span> <span class="t-wht">darkmatter.integrations.anthropic</span> <span class="t-blu">import</span> <span class="t-wht">Anthropic</span><br><br>
             <span class="t-wht">client</span> <span class="t-dim">=</span> <span class="t-wht">Anthropic</span><span class="t-dim">(</span><span class="t-yel">dm_api_key</span><span class="t-dim">=</span><span class="t-grn">"dm_sk_..."</span><span class="t-dim">)</span><br><br>
             <span class="t-dim"># Agent calls Claude with policy context</span><br>
@@ -285,11 +285,11 @@ footer{border-top:1px solid hsl(var(--void-line));background:hsl(var(--void))}
       <!-- STEP 2 content -->
       <div id="s1-left" class="step-content hidden">
         <div style="font-size:13px;line-height:1.75;color:hsl(var(--trace));margin-bottom:1rem;">
-          Claude returns its decision. The agent processes it. <strong style="color:hsl(var(--foreground))">At this exact moment</strong> — before any action is taken — the wrapper hashes the full interaction and sends it to DarkMatter.
+          Claude returns its decision. The agent processes it. <strong style="color:hsl(var(--foreground))">At this exact moment</strong>, before any action is taken, the wrapper hashes the full interaction and sends it to DarkMatter.
         </div>
         <div class="decision-card approved fade-in">
-          <div class="dc-verdict approved">&#10003; Approved — Refund $284.00</div>
-          <div class="dc-reason">Customer is within the 30-day return window (18 days). No prior refund history on this account. Amount is within auto-approval threshold ($500). Policy criteria met — approve immediately.</div>
+          <div class="dc-verdict approved">&#10003; Approved, Refund $284.00</div>
+          <div class="dc-reason">Customer is within the 30-day return window (18 days). No prior refund history on this account. Amount is within auto-approval threshold ($500). Policy criteria met, approve immediately.</div>
           <div class="dc-meta">
             <div class="dc-chip">order #84721</div>
             <div class="dc-chip">$284.00</div>
@@ -307,7 +307,7 @@ footer{border-top:1px solid hsl(var(--void-line));background:hsl(var(--void))}
             <span>darkmatter wrapper</span>
           </div>
           <div class="term-body">
-            <span class="t-dim"># Intercepted — before response reaches your code</span><br>
+            <span class="t-dim"># Intercepted, before response reaches your code</span><br>
             <span class="t-wht">payload_hash</span> <span class="t-dim">=</span> <span class="t-wht">sha256</span><span class="t-dim">(</span><span class="t-wht">canonical</span><span class="t-dim">(</span><span class="t-yel">input</span> <span class="t-dim">+</span> <span class="t-yel">output</span><span class="t-dim">))</span><br>
             <span class="t-grn"># → e11466b0601e6ec30070a8091a0e0455...</span><br><br>
             <span class="t-wht">dm.commit</span><span class="t-dim">(</span><span class="t-wht">payload</span><span class="t-dim">,</span> <span class="t-wht">timestamp</span><span class="t-dim">=</span><span class="t-grn">"now"</span><span class="t-dim">)</span><br>
@@ -331,25 +331,25 @@ footer{border-top:1px solid hsl(var(--void-line));background:hsl(var(--void))}
             <span>receipt</span>
           </div>
           <div class="term-body">
-            <span class="t-grn">✓ Committed</span> <span class="t-dim">—</span> <span class="t-wht">ctx_1777407029545_d088f4</span><br><br>
+            <span class="t-grn">✓ Committed</span> <span class="t-dim">,</span> <span class="t-wht">ctx_1777407029545_d088f4</span><br><br>
             <span class="t-yel">integrity_hash</span><span class="t-dim">:</span> <span class="t-grn">"e11466b0601e6ec3..."</span><br>
             <span class="t-yel">chain_position</span><span class="t-dim">:</span> <span class="t-wht">1 of 1</span><br>
             <span class="t-yel">chain_intact</span><span class="t-dim">:</span> <span class="t-grn">true</span><br>
             <span class="t-yel">assurance_level</span><span class="t-dim">:</span> <span class="t-grn">"L2"</span><span class="t-dim"> &nbsp;# hash-chain verified (L3 adds customer signatures)</span><br>
             <span class="t-yel">verify_url</span><span class="t-dim">:</span> <span class="t-blu">"darkmatterhub.ai/r/ctx_..."</span><br><br>
-            <span class="t-dim"># Agent can now proceed — refund issued</span><br>
+            <span class="t-dim"># Agent can now proceed, refund issued</span><br>
             <span class="t-grn">✓ Refund processed for order #84721</span>
           </div>
         </div>
         <div style="font-size:12px;color:hsl(var(--trace-dim));font-family:'JetBrains Mono',monospace;margin-top:.25rem;line-height:1.6;">
-          The record existed before the refund was processed. If this decision is ever disputed, the proof was sealed at decision time — not reconstructed after the fact.
+          The record existed before the refund was processed. If this decision is ever disputed, the proof was sealed at decision time, not reconstructed after the fact.
         </div>
       </div>
 
       <!-- STEP 4 content -->
       <div id="s3-left" class="step-content hidden">
         <div style="font-size:13px;line-height:1.75;color:hsl(var(--trace));margin-bottom:1rem;">
-          The verify URL can be shared with anyone — a regulator, auditor, counterparty, or your own legal team. <strong style="color:hsl(var(--foreground))">No account needed to view or verify it.</strong>
+          The verify URL can be shared with anyone, a regulator, auditor, counterparty, or your own legal team. <strong style="color:hsl(var(--foreground))">No account needed to view or verify it.</strong>
         </div>
         <div style="border:1px solid hsl(var(--void-line));padding:1.25rem;margin-bottom:1rem;">
           <div style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:hsl(var(--trace-dim));margin-bottom:.875rem;">Who can use this link</div>
@@ -364,7 +364,7 @@ footer{border-top:1px solid hsl(var(--void-line));background:hsl(var(--void))}
             </div>
             <div style="display:flex;align-items:flex-start;gap:.75rem">
               <div style="color:hsl(var(--signal));font-size:13px;margin-top:1px">&#10003;</div>
-              <div><div style="font-size:13px;font-weight:500;color:hsl(var(--foreground));margin-bottom:.2rem">Your own systems</div><div style="font-size:12px;color:hsl(var(--trace));line-height:1.5">Call <span style="font-family:'JetBrains Mono',monospace">GET /api/verify/:id</span> — public endpoint, no auth required. Returns the same integrity check shown above.</div></div>
+              <div><div style="font-size:13px;font-weight:500;color:hsl(var(--foreground));margin-bottom:.2rem">Your own systems</div><div style="font-size:12px;color:hsl(var(--trace));line-height:1.5">Call <span style="font-family:'JetBrains Mono',monospace">GET /api/verify/:id</span>, public endpoint, no auth required. Returns the same integrity check shown above.</div></div>
             </div>
           </div>
         </div>
@@ -391,7 +391,7 @@ footer{border-top:1px solid hsl(var(--void-line));background:hsl(var(--void))}
     </div>
     <div class="pane-body" id="right-body">
 
-      <!-- STEP 1 — waiting state -->
+      <!-- STEP 1, waiting state -->
       <div id="s0-right" class="step-content">
         <div style="display:flex;flex-direction:column;gap:.875rem">
           <div class="proof-card" style="opacity:.45">
@@ -414,7 +414,7 @@ footer{border-top:1px solid hsl(var(--void-line));background:hsl(var(--void))}
         </div>
       </div>
 
-      <!-- STEP 2 — sealing -->
+      <!-- STEP 2, sealing -->
       <div id="s1-right" class="step-content hidden">
         <div class="proof-card fade-in">
           <div class="proof-card-header">
@@ -449,11 +449,11 @@ footer{border-top:1px solid hsl(var(--void-line));background:hsl(var(--void))}
           </div>
         </div>
         <div style="font-size:12px;color:hsl(var(--trace-dim));font-family:'JetBrains Mono',monospace;margin-top:.5rem;line-height:1.6">
-          The hash is computed client-side before transmission. DarkMatter cannot alter the payload — any change would break the hash.
+          The hash is computed client-side before transmission. DarkMatter cannot alter the payload, any change would break the hash.
         </div>
       </div>
 
-      <!-- STEP 3 — verified -->
+      <!-- STEP 3, verified -->
       <div id="s2-right" class="step-content hidden">
         <div class="proof-card fade-in">
           <div class="proof-card-header">
@@ -479,7 +479,7 @@ footer{border-top:1px solid hsl(var(--void-line));background:hsl(var(--void))}
             </div>
             <div class="proof-row">
               <div class="proof-key">Parent hash</div>
-              <div class="proof-val green">"root" — first in chain</div>
+              <div class="proof-val green">"root", first in chain</div>
             </div>
             <div class="proof-row">
               <div class="proof-key">Timestamp</div>
@@ -491,7 +491,7 @@ footer{border-top:1px solid hsl(var(--void-line));background:hsl(var(--void))}
             </div>
             <div class="proof-row">
               <div class="proof-key">Assurance</div>
-              <div class="proof-val green">L2 — hash-chain verified<br><span style="font-size:10px;color:hsl(var(--trace-dim))">L3 adds customer-held Ed25519 signatures</span></div>
+              <div class="proof-val green">L2, hash-chain verified<br><span style="font-size:10px;color:hsl(var(--trace-dim))">L3 adds customer-held Ed25519 signatures</span></div>
             </div>
             <div class="proof-row">
               <div class="proof-key">Chain intact</div>
@@ -500,19 +500,19 @@ footer{border-top:1px solid hsl(var(--void-line));background:hsl(var(--void))}
           </div>
         </div>
         <div style="margin-top:.875rem;padding:.875rem 1rem;border:1px solid hsl(var(--signal)/.2);background:hsl(var(--signal)/.04);font-size:12.5px;color:hsl(var(--trace));line-height:1.6">
-          <strong style="color:hsl(var(--signal))">&#10003; Sealed.</strong> This record is now tamper-evident. Any modification to the input, output, timestamp, or agent metadata would produce a different hash — detectable by anyone.
+          <strong style="color:hsl(var(--signal))">&#10003; Sealed.</strong> This record is now tamper-evident. Any modification to the input, output, timestamp, or agent metadata would produce a different hash, detectable by anyone.
         </div>
       </div>
 
-      <!-- STEP 4 — share -->
+      <!-- STEP 4, share -->
       <div id="s3-right" class="step-content hidden">
         <div class="verify-badge fade-in">
           <div class="verify-icon">&#10003;</div>
           <div class="verify-body">
-            <div class="verify-title">Public verify link — no account needed</div><div style="font-size:11px;font-family:'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:hsl(152,64%,34%);margin-top:.2rem;">Verification does not depend on DarkMatter.</div>
+            <div class="verify-title">Public verify link, no account needed</div><div style="font-size:11px;font-family:'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:hsl(152,64%,34%);margin-top:.2rem;">Verification does not depend on DarkMatter.</div>
             <div class="verify-sub">Anyone with this link can view the full record, verify the hash chain, and download the proof bundle. Works offline.</div>
             <div class="verify-url"><a href="https://darkmatterhub.ai/r/ctx_1777407029545_d088f43e983c" target="_blank" rel="noopener" style="color:hsl(152,64%,34%)">darkmatterhub.ai/r/ctx_1777407029545_d088f43e983c</a></div>
-            <div style="font-size:12px;margin-top:.5rem;color:hsl(var(--trace-dim));font-family:'JetBrains Mono',monospace;">Download the bundle and verify it yourself — no DarkMatter required.</div>
+            <div style="font-size:12px;margin-top:.5rem;color:hsl(var(--trace-dim));font-family:'JetBrains Mono',monospace;">Download the bundle and verify it yourself, no DarkMatter required.</div>
           </div>
         </div>
 
@@ -540,7 +540,7 @@ footer{border-top:1px solid hsl(var(--void-line));background:hsl(var(--void))}
             </div>
             <div class="proof-row">
               <div class="proof-key">DarkMatter dependency</div>
-              <div class="proof-val dim">not required — bundle verifiable offline</div>
+              <div class="proof-val dim">not required, bundle verifiable offline</div>
             </div>
           </div>
         </div>
@@ -573,10 +573,10 @@ var currentStep = 0;
 var totalSteps = 4;
 
 var LEFT_TITLES = [
-  'Step 1 — Agent processes request',
-  'Step 2 — Decision made, record captured',
-  'Step 3 — Commit acknowledged',
-  'Step 4 — Proof link ready to share'
+  'Step 1, Agent processes request',
+  'Step 2, Decision made, record captured',
+  'Step 3, Commit acknowledged',
+  'Step 4, Proof link ready to share'
 ];
 var LEFT_SUBS = [
   'The agent receives a refund request and decides whether to approve, escalate, or deny.',
