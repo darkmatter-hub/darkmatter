@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>DarkMatter: The Vault for AI decisions</title>
-<meta name="description" content="DarkMatter is a proof engine for AI agents — not just another audit log. Every agent decision is sealed at the moment it happens and verifiable by anyone, even if DarkMatter goes away." />
+<meta name="description" content="DarkMatter is a proof engine for AI agents, not just another audit log. Every agent decision is sealed at the moment it happens and verifiable by anyone, even if DarkMatter goes away." />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -144,7 +144,7 @@ a{color:inherit;text-decoration:none}
 .codeblock .left .more{display:inline-flex;align-items:center;gap:.5rem;margin-top:2rem;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:hsl(var(--signal));transition:gap .15s}
 .codeblock .left .more:hover{gap:.75rem}
 
-/* Section dark — only the agent.py panel */
+/* Section dark, only the agent.py panel */
 .term{
   --void:220 18% 6%; --void-elevated:220 16% 9%; --void-line:220 12% 18%;
   --ink:38 20% 96%; --trace:220 10% 68%; --trace-dim:220 8% 48%;
@@ -326,10 +326,10 @@ footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;gri
   if (diffDays > 0) {
     txt.textContent = 'EU AI Act Article 12 enforceable in ' + diffDays + ' day' + (diffDays === 1 ? '' : 's');
   } else if (diffDays === 0) {
-    txt.textContent = 'EU AI Act Article 12 — enforcement today';
+    txt.textContent = 'EU AI Act Article 12, enforcement today';
   } else {
     var since = Math.abs(diffDays);
-    txt.textContent = 'EU AI Act Article 12 — enforceable since Aug 2, 2026 · ' + since + ' day' + (since === 1 ? '' : 's') + ' of evidence required';
+    txt.textContent = 'EU AI Act Article 12, enforceable since Aug 2, 2026 · ' + since + ' day' + (since === 1 ? '' : 's') + ' of evidence required';
   }
   bar.style.display = 'block';
 })();
@@ -344,8 +344,8 @@ footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;gri
     <div class="hero-grid" style="margin-top:2.5rem">
       <div class="hero-left">
         <h1 class="balance">A secure vault for the decisions your <em>AI agents</em> make.</h1>
-        <p style="font-size:18px;font-weight:500;color:hsl(var(--foreground));margin-top:1.5rem;letter-spacing:-.005em;line-height:1.35">DarkMatter is a <em style="font-style:italic;color:hsl(var(--signal));font-weight:500">proof engine</em> for AI agents — not just another audit log.</p>
-        <p>Commit a record at the moment of decision. It is sealed, stored outside your system, and verifiable by anyone — even if DarkMatter were to go away.</p>
+        <p style="font-size:18px;font-weight:500;color:hsl(var(--foreground));margin-top:1.5rem;letter-spacing:-.005em;line-height:1.35">DarkMatter is a <em style="font-style:italic;color:hsl(var(--signal));font-weight:500">proof engine</em> for AI agents, not just another audit log.</p>
+        <p>Commit a record at the moment of decision. It is sealed, stored outside your system, and verifiable by anyone, even if DarkMatter were to go away.</p>
         <div class="actions">
           <a href="/signup" class="btn-primary">Start for free <span>→</span></a>
           <a href="/demo" class="btn-ghost">See how it works →</a>
@@ -371,7 +371,7 @@ footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;gri
             </div>
             <div class="vault-entries">
               <div class="vault-entry">
-                <div class="ve-top"><span class="ve-ok">✓</span><span class="ve-title">Payment approved — $84,000 to Acme Corp</span></div>
+                <div class="ve-top"><span class="ve-ok">✓</span><span class="ve-title">Payment approved, $84,000 to Acme Corp</span></div>
                 <div class="ve-meta">sealed 2 min ago · ctx_7f3a9b</div>
               </div>
               <div class="vault-entry">

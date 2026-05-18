@@ -7,7 +7,7 @@
 <meta name="description" content="Create a free DarkMatter account. Commit your first AI agent record in under 2 minutes."/>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
 <style>
-/* DarkMatter design system — extracted from homepage */
+/* DarkMatter design system, extracted from homepage */
 /* Include after Google Fonts link */
 
 :root{
@@ -229,7 +229,7 @@ async function handleSignup(){
     var data=await res.json();
     if(data.error){showError(data.error);btn.disabled=false;btn.textContent='Create free account →';return;}
     if(data.user?.confirmed_at||data.user?.email_confirmed_at){
-      // Session cookie set server-side — redirect immediately
+      // Session cookie set server-side, redirect immediately
       window.location.href='/dashboard';
     } else {
       // Email confirmation required

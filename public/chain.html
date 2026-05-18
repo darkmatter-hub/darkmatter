@@ -4,9 +4,9 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>DarkMatter Chain</title>
-<meta name="description" content="Shared execution chain — replay, verify, and inspect AI agent execution history."/>
+<meta name="description" content="Shared execution chain, replay, verify, and inspect AI agent execution history."/>
 
-<!-- OG / Social preview — updated dynamically by JS after chain loads -->
+<!-- OG / Social preview, updated dynamically by JS after chain loads -->
 <meta property="og:type"        content="website"/>
 <meta property="og:site_name"   content="DarkMatter"/>
 <meta property="og:title"       id="og-title"       content="DarkMatter chain"/>
@@ -197,7 +197,7 @@ footer{border-top:1px solid var(--border);padding:1.5rem 2rem;display:flex;align
   </div>
 
 
-<!-- SHARE SECTION — between chain results and try-strip -->
+<!-- SHARE SECTION, between chain results and try-strip -->
 <div style="border-top:1px solid var(--border);padding:2rem 2rem 1.5rem;">
   <div style="max-width:860px;margin:0 auto;">
     <div style="font-size:0.72rem;color:var(--text3);margin-bottom:0.4rem;">Share this chain</div>
@@ -236,7 +236,7 @@ footer{border-top:1px solid var(--border);padding:1.5rem 2rem;display:flex;align
 </div>
 </div>
 
-<!-- TRY THIS YOURSELF — bottom conversion block -->
+<!-- TRY THIS YOURSELF, bottom conversion block -->
 <div id="try-strip" style="display:none;border-top:1px solid var(--border);background:var(--bg2);padding:3rem 2rem;">
   <div style="max-width:860px;margin:0 auto;">
     <div style="font-family:var(--mono);font-size:0.6rem;color:var(--text3);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:1rem;">Try this yourself</div>
@@ -379,7 +379,7 @@ function buildXText() {
   const fork   = chainData.forkPoints ? ` • forked at step ${chainData.forkPoints}` : '';
   const intact = chainData.chainIntact ? 'chain intact' : 'chain broken';
   const models = chainData.models?.length ? `\n${chainData.models.join(' → ')}` : '';
-  return `Replayable AI workflow — ${steps} steps • ${intact}${fork}${models}\n\nCompare models, fork from any step, see what changed.\n\n${window.location.href}`;
+  return `Replayable AI workflow, ${steps} steps • ${intact}${fork}${models}\n\nCompare models, fork from any step, see what changed.\n\n${window.location.href}`;
 }
 
 // ── LinkedIn share text ────────────────────────────────────────
@@ -577,8 +577,8 @@ function renderChain(data) {
         </div>
         <div class="payload-label">Payload</div>
         <div class="payload-wrap"><pre>${escHtml(payload)}</pre></div>
-        <div class="hash-row"><span class="hash-key">payload_hash</span><span class="hash-val">${step.integrity.payload_hash || '—'}</span></div>
-        <div class="hash-row"><span class="hash-key">integrity_hash</span><span class="hash-val">${step.integrity.integrity_hash || '—'}</span></div>
+        <div class="hash-row"><span class="hash-key">payload_hash</span><span class="hash-val">${step.integrity.payload_hash || ','}</span></div>
+        <div class="hash-row"><span class="hash-key">integrity_hash</span><span class="hash-val">${step.integrity.integrity_hash || ','}</span></div>
       </div>
     </div>`;
   }).join('');
@@ -634,7 +634,7 @@ function _ago(ts) {
 
 function replayAPI(e) {
   e.preventDefault();
-  // Show the public replay endpoint — note it requires an API key
+  // Show the public replay endpoint, note it requires an API key
   const ctxId = chainData?.ctxId || '';
   const snippet = `# Replay via SDK (requires API key):
 import darkmatter as dm
@@ -719,7 +719,7 @@ function copyCtxId(e, id) {
   });
 }
 
-// Check if user has a DM session (logged in) — show workspace CTA
+// Check if user has a DM session (logged in), show workspace CTA
 async function checkSession() {
   try {
     const res = await fetch('/api/me', { headers: { 'Authorization': 'Bearer ' + (localStorage.getItem('dm_key') || '') } });

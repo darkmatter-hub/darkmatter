@@ -899,7 +899,7 @@ let currentModelType = 'claude';
 let isWaiting = false;
 let activeRecord = null;
 
-// allThreads is populated from the server on load — no hardcoded data
+// allThreads is populated from the server on load, no hardcoded data
 let allThreads = [];
 
 // ── Thread loader ─────────────────────────────────────────────────────────────
@@ -996,13 +996,13 @@ async function loadThreadsFromServer() {
   try {
     const payload = JSON.parse(atob(_s.access_token.split('.')[1]));
     if (Date.now() > (payload.exp * 1000) - 60000) {
-      // Token expired — try refresh before giving up
+      // Token expired, try refresh before giving up
       if (_s.refresh_token) {
         try {
           await ensureValidSession();
           _s = getSession(); // re-read after refresh
         } catch(e) {
-          // Refresh failed — proceed anyway; authFetch will redirect on 401
+          // Refresh failed, proceed anyway; authFetch will redirect on 401
           // Avoids false redirect when Supabase refresh is temporarily unavailable
         }
       } else {
@@ -1010,7 +1010,7 @@ async function loadThreadsFromServer() {
         return;
       }
     }
-  } catch(e) { /* can't decode — proceed and let authFetch handle it */ }
+  } catch(e) { /* can't decode, proceed and let authFetch handle it */ }
 
   // Populate sidebar user from session immediately
   var email    = (_s.user && _s.user.email) || '';
@@ -1101,7 +1101,7 @@ async function loadThread(id) {
         renderMessages();
       }
     }
-  } catch(e) { /* silent — local messages already rendered */ }
+  } catch(e) { /* silent, local messages already rendered */ }
 }
 
 function newChat() {
@@ -1507,11 +1507,11 @@ function openRecordPanel(recId, content) {
     </div>
     <div class="rp-field">
       <div class="rp-label">User</div>
-      <div class="rp-value" id="rp-user-val">—</div>
+      <div class="rp-value" id="rp-user-val">,</div>
     </div>
     <div class="rp-field">
       <div class="rp-label">Workspace</div>
-      <div class="rp-value" id="rp-workspace-val">—</div>
+      <div class="rp-value" id="rp-workspace-val">,</div>
     </div>
     <div class="rp-field">
       <div class="rp-label">Saved at</div>
@@ -1592,7 +1592,7 @@ function formatResponse(text) {
     .replace(/$/, '</p>');
 }
 
-// getMockResponse removed — using real /api/workspace/chat endpoint
+// getMockResponse removed, using real /api/workspace/chat endpoint
 
 // Close dropdowns on outside click
 document.addEventListener('click', (e) => {

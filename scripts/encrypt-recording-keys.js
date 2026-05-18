@@ -42,7 +42,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function isAlreadyEncrypted(value) {
   if (!value) return false;
-  if (value.startsWith('plain:')) return false; // explicit plaintext marker — needs encrypting
+  if (value.startsWith('plain:')) return false; // explicit plaintext marker, needs encrypting
   const parts = value.split(':');
   return parts.length === 3; // iv:tag:data AES-GCM format
 }
@@ -94,10 +94,10 @@ async function main() {
         continue;
       }
 
-      // Row is plaintext (or has 'plain:' prefix) — encrypt it
+      // Row is plaintext (or has 'plain:' prefix), encrypt it
       const plaintext = resolvePlaintext(row.encrypted_key);
       if (!plaintext) {
-        console.log(`  Row ${row.id}: encrypted_key is null/empty — skipping`);
+        console.log(`  Row ${row.id}: encrypted_key is null/empty, skipping`);
         skipped++;
         continue;
       }

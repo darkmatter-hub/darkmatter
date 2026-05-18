@@ -166,14 +166,14 @@ footer{border-top:1px solid var(--rule);padding:28px 48px;}
 <div class="page">
   <div class="eye">Security</div>
   <h1 class="h1">Threat model and offline verification</h1>
-  <p class="lead">The same three questions apply here: who made the decision, what happened, and can the record be trusted. This page explains the adversarial model behind that claim — what DarkMatter protects against, what it doesn't, and how to verify records without depending on our infrastructure.</p>
+  <p class="lead">The same three questions apply here: who made the decision, what happened, and can the record be trusted. This page explains the adversarial model behind that claim, what DarkMatter protects against, what it doesn't, and how to verify records without depending on our infrastructure.</p>
 
   <hr class="rule"/>
   <h2 class="h2">What DarkMatter is designed to prevent</h2>
 
   <div class="threat-card">
     <div class="threat-title">Retroactive modification of execution records</div>
-    <div class="threat-ans">Every commit is hashed client-side by the SDK. The <code>integrity_hash</code> is SHA-256 of the canonical commit envelope — which binds agent_id, key_id, timestamp, payload_hash, and parent_integrity_hash. The agent signs this envelope with their Ed25519 key. Any change to any field breaks the chain from that point forward. The next <code>dm.verify()</code> call will flag the break and identify the step. This protects against: developers editing records after the fact, database administrators modifying rows, and accidental data corruption.</div>
+    <div class="threat-ans">Every commit is hashed client-side by the SDK. The <code>integrity_hash</code> is SHA-256 of the canonical commit envelope, which binds agent_id, key_id, timestamp, payload_hash, and parent_integrity_hash. The agent signs this envelope with their Ed25519 key. Any change to any field breaks the chain from that point forward. The next <code>dm.verify()</code> call will flag the break and identify the step. This protects against: developers editing records after the fact, database administrators modifying rows, and accidental data corruption.</div>
   </div>
 
   <div class="threat-card">
@@ -191,17 +191,17 @@ footer{border-top:1px solid var(--rule);padding:28px 48px;}
 
   <div class="threat-card" style="border-color:var(--warn-rule);background:var(--warn-bg);">
     <div class="threat-title">Malicious data committed before recording begins</div>
-    <div class="threat-ans">DarkMatter records what you commit. If an agent produces a manipulated output and you commit that output, DarkMatter will faithfully record the manipulated output. The chain integrity is preserved — but the content integrity depends on what you chose to commit. DarkMatter does not validate payload content.</div>
+    <div class="threat-ans">DarkMatter records what you commit. If an agent produces a manipulated output and you commit that output, DarkMatter will faithfully record the manipulated output. The chain integrity is preserved, but the content integrity depends on what you chose to commit. DarkMatter does not validate payload content.</div>
   </div>
 
   <div class="threat-card" style="border-color:var(--warn-rule);background:var(--warn-bg);">
     <div class="threat-title">DarkMatter infrastructure compromise</div>
-    <div class="threat-ans">If DarkMatter's own infrastructure were compromised, records could theoretically be modified at the storage layer before hashing. Mitigation: export proof bundles regularly and store them independently. The offline verifier uses the hashes in the bundle — if DarkMatter servers were compromised after export, your local bundle still proves what was recorded at export time. For highest assurance, use self-hosting (MIT license) or BYOK encryption.</div>
+    <div class="threat-ans">If DarkMatter's own infrastructure were compromised, records could theoretically be modified at the storage layer before hashing. Mitigation: export proof bundles regularly and store them independently. The offline verifier uses the hashes in the bundle, if DarkMatter servers were compromised after export, your local bundle still proves what was recorded at export time. For highest assurance, use self-hosting (MIT license) or BYOK encryption.</div>
   </div>
 
   <div class="threat-card" style="border-color:var(--warn-rule);background:var(--warn-bg);">
     <div class="threat-title">Self-hosted deployments</div>
-    <div class="threat-ans">When you self-host DarkMatter, you control the infrastructure. This removes the "independent execution record" guarantee — because you could modify the database directly. Self-hosting is appropriate for privacy and data sovereignty requirements. The cloud product with BYOK is the correct choice when you need third-party independence.</div>
+    <div class="threat-ans">When you self-host DarkMatter, you control the infrastructure. This removes the "independent execution record" guarantee, because you could modify the database directly. Self-hosting is appropriate for privacy and data sovereignty requirements. The cloud product with BYOK is the correct choice when you need third-party independence.</div>
   </div>
 
   <hr class="rule"/>
@@ -212,7 +212,7 @@ footer{border-top:1px solid var(--rule);padding:28px 48px;}
   <div class="code-block">darkmatter_proof_bundle.json
 ├── chain_records.json      # all commit records with hashes
 ├── integrity_map.json      # SHA-256 chain for each step
-└── verifier.py             # standalone Python verifier — no dependencies</div>
+└── verifier.py             # standalone Python verifier, no dependencies</div>
 
   <p>Run verification with no internet connection, no DarkMatter account:</p>
   <div class="code-block">python verify_darkmatter_chain.py bundle.json
@@ -235,14 +235,14 @@ footer{border-top:1px solid var(--rule);padding:28px 48px;}
   <div class="code-block">// Each commit record:
 {
   "id":             "ctx_1775...",
-  "payload_hash":   "sha256:3c3654...",  // SHA-256 of canonical(payload) — Integrity Spec v1.0
+  "payload_hash":   "sha256:3c3654...",  // SHA-256 of canonical(payload), Integrity Spec v1.0
   "parent_hash":    "sha256:dec459...",  // integrity_hash of parent commit (null for root)
   "integrity_hash": "sha256:a7b2c4...",  // SHA-256 of canonical({schema_version, agent_id, key_id, timestamp, payload_hash, parent_integrity_hash})
   "created_at":     "2026-04-03T...",
   "payload":        {...}
 }</div>
 
-  <p>To verify a single commit: <code>SHA-256(canonical(commit_envelope)) === integrity_hash — <a href="/integrity#spec">full spec</a></code></p>
+  <p>To verify a single commit: <code>SHA-256(canonical(commit_envelope)) === integrity_hash, <a href="/integrity#spec">full spec</a></code></p>
   <p>To verify the chain: each commit's <code>parent_hash</code> must equal the previous commit's <code>integrity_hash</code>.</p>
   <p>The format follows the <a href="https://contextpassport.com" style="color:var(--trust);">Context Passport</a> open standard (CC0). Any compatible verifier will work.</p>
 

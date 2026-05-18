@@ -4,7 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Claude Managed Agents Integration: DarkMatter</title>
-<meta name="description" content="The independent audit layer for Claude Managed Agents. Prove what your Claude agents did — without trusting Anthropic's logs."/>
+<meta name="description" content="The independent audit layer for Claude Managed Agents. Prove what your Claude agents did, without trusting Anthropic's logs."/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
 <style>
@@ -143,12 +143,12 @@ body{font-family:var(--sans);color:var(--ink);background:#fff;-webkit-font-smoot
       <div class="ow-col">
         <div class="ow-label">Session logs</div>
         <div class="ow-owner">Anthropic</div>
-        <div class="ow-note">Stored on Anthropic servers — trust-based, not independently provable</div>
+        <div class="ow-note">Stored on Anthropic servers, trust-based, not independently provable</div>
       </div>
       <div class="ow-col dm">
         <div class="ow-label">Independent proof</div>
         <div class="ow-owner">DarkMatter</div>
-        <div class="ow-note">Cryptographic records outside your system — verifiable offline, no Anthropic access required</div>
+        <div class="ow-note">Cryptographic records outside your system, verifiable offline, no Anthropic access required</div>
       </div>
     </div>
   </div>
@@ -156,7 +156,7 @@ body{font-family:var(--sans);color:var(--ink);background:#fff;-webkit-font-smoot
   <div class="section">
     <div class="section-eye">Integration</div>
     <h2 class="section-h2">One line of setup.</h2>
-    <p class="section-lead" style="margin-bottom:24px;">Point the Anthropic SDK at DarkMatter. Every call — messages, managed agent sessions, streaming events — is automatically recorded as a verifiable DarkMatter record.</p>
+    <p class="section-lead" style="margin-bottom:24px;">Point the Anthropic SDK at DarkMatter. Every call, messages, managed agent sessions, streaming events, is automatically recorded as a verifiable DarkMatter record.</p>
     <div class="steps">
       <div class="step">
         <div class="step-line"><div class="step-num">1</div><div class="step-conn"></div></div>
@@ -177,7 +177,7 @@ export DM_PROXY_KEY=dmp_your_proxy_key</pre></div>
 
 client = anthropic.Anthropic()  <span class="cm"># picks up ANTHROPIC_BASE_URL automatically</span>
 
-<span class="cm"># Managed Agents session — recorded automatically</span>
+<span class="cm"># Managed Agents session, recorded automatically</span>
 session = client.beta.sessions.create(
     agent_id=<span class="st">"agent_..."</span>,
     environment_id=<span class="st">"env_..."</span>
@@ -193,7 +193,7 @@ session = client.beta.sessions.create(
       <div class="step">
         <div class="step-line"><div class="step-num">3</div><div class="step-conn"></div></div>
         <div class="step-body">
-          <div class="step-title">Verify any record — without Anthropic</div>
+          <div class="step-title">Verify any record, without Anthropic</div>
           <div class="step-desc">Export a proof bundle. Your auditor, regulator, or legal team can verify it offline with no DarkMatter account and no Anthropic access.</div>
           <div class="code"><pre><span class="cm"># Standalone offline verification</span>
 python verify_darkmatter_chain.py proof_bundle.json
@@ -217,7 +217,7 @@ This record has not been altered.</span></pre></div>
       <div class="mode-card best">
         <span class="mode-badge client">✦ Client-signed</span>
         <div class="mode-title">SDK or browser extension</div>
-        <div class="mode-desc">Payload hashed and signed on your machine before reaching DarkMatter. Full cryptographic independence — DarkMatter never sees the pre-hash payload.</div>
+        <div class="mode-desc">Payload hashed and signed on your machine before reaching DarkMatter. Full cryptographic independence, DarkMatter never sees the pre-hash payload.</div>
       </div>
       <div class="mode-card">
         <span class="mode-badge proxy">⇄ Proxy · forwarded</span>
@@ -227,7 +227,7 @@ This record has not been altered.</span></pre></div>
       <div class="mode-card">
         <span class="mode-badge proxy">⇄ Proxy · stored key</span>
         <div class="mode-title">Dashboard key storage</div>
-        <div class="mode-desc">Key stored in DarkMatter dashboard. Convenient for development — upgrade to SDK or forwarded key for production independence.</div>
+        <div class="mode-desc">Key stored in DarkMatter dashboard. Convenient for development, upgrade to SDK or forwarded key for production independence.</div>
       </div>
     </div>
     <div style="background:#f4f6fb;border:1px solid #e2e6ef;border-left:3px solid var(--blue);border-radius:6px;padding:14px 18px;font-size:13.5px;color:#2d3552;line-height:1.7;">
@@ -240,11 +240,11 @@ This record has not been altered.</span></pre></div>
     <h2 class="section-h2" style="margin-bottom:24px;">Common questions</h2>
     <div class="faq-item">
       <div class="faq-q">Does this add latency to my Claude calls?</div>
-      <div class="faq-a">No. DarkMatter records the interaction after forwarding the response to your application. The client receives Anthropic's response at normal speed — recording happens asynchronously after the response is sent.</div>
+      <div class="faq-a">No. DarkMatter records the interaction after forwarding the response to your application. The client receives Anthropic's response at normal speed, recording happens asynchronously after the response is sent.</div>
     </div>
     <div class="faq-item">
       <div class="faq-q">Does DarkMatter store my Anthropic API key?</div>
-      <div class="faq-a">Only if you explicitly add it via the dashboard. Using <code>ANTHROPIC_API_KEY</code> with <code>ANTHROPIC_BASE_URL</code> — your key is forwarded per-call in the request header and never written to disk on DarkMatter's servers.</div>
+      <div class="faq-a">Only if you explicitly add it via the dashboard. Using <code>ANTHROPIC_API_KEY</code> with <code>ANTHROPIC_BASE_URL</code>, your key is forwarded per-call in the request header and never written to disk on DarkMatter's servers.</div>
     </div>
     <div class="faq-item">
       <div class="faq-q">Can I verify records without a DarkMatter account?</div>
@@ -252,7 +252,7 @@ This record has not been altered.</span></pre></div>
     </div>
     <div class="faq-item">
       <div class="faq-q">Does this work with the Messages API too, not just Managed Agents?</div>
-      <div class="faq-a">Both. The <code>ANTHROPIC_BASE_URL</code> proxy captures all Claude API calls — <code>/v1/messages</code>, <code>/v1/sessions</code>, <code>/v1/sessions/{id}/events</code>, and streaming.</div>
+      <div class="faq-a">Both. The <code>ANTHROPIC_BASE_URL</code> proxy captures all Claude API calls, <code>/v1/messages</code>, <code>/v1/sessions</code>, <code>/v1/sessions/{id}/events</code>, and streaming.</div>
     </div>
   </div>
 
