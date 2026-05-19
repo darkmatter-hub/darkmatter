@@ -244,6 +244,11 @@ footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;gri
     <a class="docs-sb-link" href="#openai-sdk-wrapper">OpenAI SDK</a>
   </div>
   <div class="docs-sb-group">
+    <span class="docs-sb-label">Dev tool integrations</span>
+    <a class="docs-sb-link" href="#mcp-server">MCP server (any client)</a>
+    <a class="docs-sb-link" href="#claude-code-hooks">Claude Code (auto-capture)</a>
+  </div>
+  <div class="docs-sb-group">
     <span class="docs-sb-label">Framework integrations</span>
     <a class="docs-sb-link" href="#langgraph">LangGraph</a>
     <a class="docs-sb-link" href="#langchain">LangChain</a>
@@ -510,6 +515,74 @@ client = Anthropic(
     <tr><td><code>dm_debug</code></td><td><code>False</code></td><td>Print full traceback on commit errors</td></tr>
   </tbody>
 </table>
+
+<h2 id="mcp-server">MCP server (any MCP client)</h2>
+<p>The DarkMatter MCP server exposes Context Passport tools (<code>darkmatter_commit</code>, <code>darkmatter_verify</code>, <code>darkmatter_replay</code>, <code>darkmatter_export</code>, <code>darkmatter_list_sessions</code>) to any MCP-compatible AI tool. One server install reaches every MCP client at once: Claude Code, Cursor, Cline, Continue, Zed, ChatGPT Desktop, Goose, and the rest of the ecosystem.</p>
+<div class="callout info"><span class="callout-title">When to use this</span>Use this when you want a Context Passport commit available as a tool the agent can call on demand. It captures whatever the agent explicitly invokes. For auto-capture of every event without invocation, also install the per-tool adapter (e.g., the Claude Code hook bundle below).</div>
+<h3>Install</h3>
+<p>In your MCP client's config (<code>claude_desktop_config.json</code>, Cursor's <code>mcp.json</code>, etc.):</p>
+<pre><code>{
+  <span class="ck">"mcpServers"</span>: {
+    <span class="ck">"darkmatter"</span>: {
+      <span class="ck">"command"</span>: <span class="cv">"npx"</span>,
+      <span class="ck">"args"</span>: [<span class="cv">"-y"</span>, <span class="cv">"@darkmatter/mcp-server"</span>]
+    }
+  }
+}<div class="lang-label">json</div></code></pre>
+<p>Restart the client. The five DarkMatter tools become available to your agent.</p>
+<h3>What the agent gets</h3>
+<table>
+  <thead><tr><th>Tool</th><th>Purpose</th></tr></thead>
+  <tbody>
+    <tr><td><code>darkmatter_commit</code></td><td>Record an agent decision or action. Returns id and verify_url.</td></tr>
+    <tr><td><code>darkmatter_verify</code></td><td>Check that the chain has not been tampered with.</td></tr>
+    <tr><td><code>darkmatter_replay</code></td><td>Walk the full chain in chronological order.</td></tr>
+    <tr><td><code>darkmatter_export</code></td><td>Produce a portable JSON proof bundle.</td></tr>
+    <tr><td><code>darkmatter_list_sessions</code></td><td>List sessions with stored records.</td></tr>
+  </tbody>
+</table>
+<h3>Storage</h3>
+<p>Default is local-only. Passports stored at <code>~/.darkmatter/mcp/&lt;session_id&gt;/chain.jsonl</code>. To also forward each passport to a DarkMatter receiving server, set <code>DARKMATTER_API_KEY</code> in the environment that launches the MCP server.</p>
+<p>Source: <a href="https://github.com/darkmatter-hub/mcp" target="_blank" rel="noopener">github.com/darkmatter-hub/mcp</a>. Apache-2.0. Implements <a href="https://github.com/contextpassport/spec/blob/main/proposals/context-passport-for-mcp.md" target="_blank" rel="noopener">Context Passport for MCP</a>.</p>
+
+<h2 id="claude-code-hooks">Claude Code (auto-capture via hooks)</h2>
+<p>The MCP server above captures what the agent explicitly invokes. For Claude Code specifically, the <code>darkmatter-claude-code</code> package adds <strong>auto-capture</strong> of every event (user prompt, tool use, tool result, assistant turn) using Claude Code's native hooks. Zero code change in your project, one config file edit handled by the install command.</p>
+<div class="callout info"><span class="callout-title">When to use this</span>Use this when you want every single Claude Code action recorded as a Context Passport without the agent having to remember to call a commit tool. Pairs cleanly with the MCP server above; install both for full coverage.</div>
+<h3>Install</h3>
+<pre><code>pip install <span class="cv">"darkmatter-claude-code[signing]"</span>
+cd path/to/your/project
+darkmatter-claude-code install<div class="lang-label">bash</div></code></pre>
+<p>The install command:</p>
+<ol>
+  <li>Adds four hook entries to <code>.claude/settings.json</code> in the current project (creates it if needed)</li>
+  <li>Generates an Ed25519 signing key at <code>~/.darkmatter/claude-code/key.pem</code></li>
+  <li>Prints the public key so anyone can verify your records without contacting you</li>
+</ol>
+<p>Restart Claude Code. Every session from this point forward auto-captures.</p>
+<h3>What gets captured</h3>
+<table>
+  <thead><tr><th>Claude Code event</th><th>Hook</th><th>Context Passport <code>event.type</code></th><th>Payload</th></tr></thead>
+  <tbody>
+    <tr><td>User submits a prompt</td><td><code>UserPromptSubmit</code></td><td><code>commit</code></td><td>The prompt text</td></tr>
+    <tr><td>Claude is about to use a tool</td><td><code>PreToolUse</code></td><td><code>commit</code></td><td>Tool name and arguments</td></tr>
+    <tr><td>Tool returns a result</td><td><code>PostToolUse</code></td><td><code>commit</code></td><td>Tool name and result</td></tr>
+    <tr><td>Assistant finishes the turn</td><td><code>Stop</code></td><td><code>checkpoint</code></td><td>Stop reason or final summary</td></tr>
+  </tbody>
+</table>
+<p>Every record is signed with your Ed25519 key, hash-chained to the previous record in the session, and stored at <code>~/.darkmatter/claude-code/sessions/&lt;session_id&gt;/chain.jsonl</code>.</p>
+<h3>Verify your chain</h3>
+<pre><code>darkmatter-claude-code verify &lt;session_id&gt;<div class="lang-label">bash</div></code></pre>
+<p>Or independently with the open-source Python reference verifier (no DarkMatter dependency):</p>
+<pre><code>pip install context-passport
+python -c <span class="cv">"
+import json
+from context_passport import verify_chain
+chain = [json.loads(line) for line in open('$HOME/.darkmatter/claude-code/sessions/default/chain.jsonl')]
+print('chain intact:', verify_chain(chain))
+"</span><div class="lang-label">bash</div></code></pre>
+<h3>Optional: forward to DarkMatter</h3>
+<p>By default everything stays on the developer's machine. To also push each passport to a DarkMatter account (cross-machine access, Witness Log anchoring, dashboard view), set <code>DARKMATTER_API_KEY</code>. Forwarding is best-effort and never blocks the hook; local records remain the source of truth.</p>
+<p>Source: <a href="https://github.com/darkmatter-hub/claude-code" target="_blank" rel="noopener">github.com/darkmatter-hub/claude-code</a>. Apache-2.0.</p>
 
 <h2 id="langgraph">Integration: LangGraph</h2>
 <p>LangGraph handles internal graph checkpointing. DarkMatter adds cross-framework lineage and an independent record outside your infrastructure. They&#8217;re complementary.</p>
