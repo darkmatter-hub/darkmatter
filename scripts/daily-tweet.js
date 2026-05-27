@@ -99,12 +99,73 @@ const TWEETS = [
   `One API call creates a tamper-evident, cryptographically signed record of any AI agent action.\n\nThat record can be verified by anyone, anywhere, without trusting DarkMatter.\n\ndarkmatterhub.ai`,
 ];
 
+// ── Hashtags ──────────────────────────────────────────────────────────────────
+// Rotating sets, 3 tags per day, chosen deterministically by UTC day. Tags are
+// appended only if the result still fits in X's 280-char limit (URLs count as
+// 23 chars regardless of length).
+const HASHTAG_SETS = [
+  ['#AI', '#AIagents', '#AIsafety'],
+  ['#AIgovernance', '#LLM', '#AIagents'],
+  ['#responsibleAI', '#AIaudit', '#AI'],
+  ['#AIcompliance', '#AIagents', '#MLOps'],
+  ['#AIsafety', '#AIgovernance', '#LLMs'],
+  ['#AI', '#AIaudit', '#EUAIact'],
+  ['#AIagents', '#AItransparency', '#LLMOps'],
+];
+
+// X counts an auto-linked URL as 23 characters. Substitute any URL with a
+// 23-char placeholder before measuring length.
+function tweetLength(text) {
+  return text.replace(/(https?:\/\/\S+|\bdarkmatterhub\.ai\b)/g, 'x'.repeat(23)).length;
+}
+
+function withHashtags(text, dayIndex) {
+  const tags = [...HASHTAG_SETS[dayIndex % HASHTAG_SETS.length]];
+  // Drop trailing tags until the whole post fits in 280 chars.
+  while (tags.length && tweetLength(text + '\n\n' + tags.join(' ')) > 280) {
+    tags.pop();
+  }
+  return tags.length ? text + '\n\n' + tags.join(' ') : text;
+}
+
 // ── Pick today's tweet ────────────────────────────────────────────────────────
 // Deterministic by UTC date, same day always picks the same tweet.
 // Cycles through the full bank before repeating.
 function todaysTweet() {
   const daysSinceEpoch = Math.floor(Date.now() / 86_400_000);
   return TWEETS[daysSinceEpoch % TWEETS.length];
+}
+
+// ── Posting-time slots ──────────────────────────────────────────────────────────
+// The workflow fires at all of these UTC times every day, but only the slot
+// matching today's deterministic index actually posts; the others exit quietly.
+// This rotates the posting time across days without burning Actions minutes on
+// long sleeps. Times target US engagement windows (≈9am, 12:45pm, 5:30pm ET).
+// Keep these in sync with the cron entries in .github/workflows/daily-tweet.yml.
+const SLOTS_UTC = [
+  { h: 13, m: 15 },
+  { h: 16, m: 45 },
+  { h: 21, m: 30 },
+];
+
+// Returns true if this run should post. A run "belongs" to the slot whose time
+// is closest to the current UTC time (tolerates GitHub's cron delivery jitter).
+function shouldPostThisRun() {
+  if (process.env.FORCE_POST === 'true') return true;
+  const days = Math.floor(Date.now() / 86_400_000);
+  const todaysSlot = days % SLOTS_UTC.length;
+  const now = new Date();
+  const nowMin = now.getUTCHours() * 60 + now.getUTCMinutes();
+  let runSlot = 0, best = Infinity;
+  SLOTS_UTC.forEach((s, i) => {
+    const d = Math.abs((s.h * 60 + s.m) - nowMin);
+    if (d < best) { best = d; runSlot = i; }
+  });
+  if (runSlot !== todaysSlot) {
+    console.log(`This run maps to slot ${runSlot} (UTC ${SLOTS_UTC[runSlot].h}:${String(SLOTS_UTC[runSlot].m).padStart(2,'0')}); today's posting slot is ${todaysSlot}. Skipping.`);
+    return false;
+  }
+  return true;
 }
 
 // ── OAuth 1.0a signing ────────────────────────────────────────────────────────
@@ -177,8 +238,12 @@ async function postTweet(text, secrets) {
     if (!v) { console.error(`Missing env var: ${k}`); process.exit(1); }
   }
 
-  const text = todaysTweet();
-  console.log('Posting tweet #' + (Math.floor(Date.now() / 86_400_000) % TWEETS.length + 1) + ' of ' + TWEETS.length + ':');
+  // Only the run matching today's slot posts; the others exit 0 quietly.
+  if (!shouldPostThisRun()) process.exit(0);
+
+  const days = Math.floor(Date.now() / 86_400_000);
+  const text = withHashtags(todaysTweet(), days);
+  console.log('Posting tweet #' + (days % TWEETS.length + 1) + ' of ' + TWEETS.length + ` (${tweetLength(text)}/280 chars):`);
   console.log(text);
   console.log('---');
 
