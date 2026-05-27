@@ -2,8 +2,12 @@ name: Daily X post
 
 on:
   schedule:
-    # 10:00 AM UTC every day
-    - cron: '0 10 * * *'
+    # Three daily slots (UTC). The script posts on only ONE of them per day,
+    # rotating across days so the posting time varies. Keep these in sync with
+    # SLOTS_UTC in scripts/daily-tweet.js.
+    - cron: '15 13 * * *'   # ~9:15am ET
+    - cron: '45 16 * * *'   # ~12:45pm ET
+    - cron: '30 21 * * *'   # ~5:30pm ET
   workflow_dispatch:
     # Allow manual trigger from GitHub Actions tab for testing
 
@@ -26,4 +30,6 @@ jobs:
           X_API_SECRET:          ${{ secrets.X_API_SECRET }}
           X_ACCESS_TOKEN:        ${{ secrets.X_ACCESS_TOKEN }}
           X_ACCESS_TOKEN_SECRET: ${{ secrets.X_ACCESS_TOKEN_SECRET }}
+          # Manual runs bypass the slot check and always post (for testing).
+          FORCE_POST: ${{ github.event_name == 'workflow_dispatch' }}
         run: node scripts/daily-tweet.js
