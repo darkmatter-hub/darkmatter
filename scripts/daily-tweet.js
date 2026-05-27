@@ -30,12 +30,12 @@ const TWEETS = [
   `Accountability for AI doesn't come from better logs. It comes from records that neither you nor your vendor can change after the fact.\n\nDarkMatter: independent, sealed, verifiable.\n\ndarkmatterhub.ai`,
 
   // Technical, integrity
-  `Every DarkMatter commit gets:\n✓ SHA-256 payload hash\n✓ Ed25519 signature (your key, not ours)\n✓ Hash chain linking it to every prior action\n✓ OpenTimestamps anchor to the Bitcoin blockchain\n\nL3 verification. No trust required.\n\ndarkmatterhub.ai`,
+  `Every DarkMatter commit gets:\n✓ SHA-256 payload hash\n✓ Ed25519 signature (your key, not ours)\n✓ Hash chain linking it to every prior action\n✓ OpenTimestamps anchor for independent proof-of-existence\n\nL3 verification. No trust required.\n\ndarkmatterhub.ai`,
   `DarkMatter uses a Merkle hash chain. Each commit includes the hash of the one before it.\n\nTamper with any record and every subsequent hash breaks. The manipulation is mathematically detectable.\n\ndarkmatterhub.ai`,
   `L3 verification in DarkMatter means a third party can check your agent's record with:\n• No DarkMatter account\n• No internet connection\n• No trust in us\n\nJust math.\n\ndarkmatterhub.ai`,
-  `OpenTimestamps anchors DarkMatter checkpoints to the Bitcoin blockchain.\n\nThis means the existence of a record at a specific time can be proven independently of DarkMatter, permanently.\n\ndarkmatterhub.ai`,
+  `OpenTimestamps anchors DarkMatter checkpoints to a public, independently verifiable timestamp.\n\nThis means the existence of a record at a specific time can be proven independently of DarkMatter, permanently.\n\ndarkmatterhub.ai`,
   `DarkMatter customers hold their own Ed25519 signing keys. We never see them.\n\nThis means even if DarkMatter were compromised, the cryptographic proof that a record is genuine stays with the customer.\n\ndarkmatterhub.ai`,
-  `Three verification levels:\n\nL1, hash chain integrity\nL2, Ed25519 signature valid\nL3, OpenTimestamps anchor confirmed\n\nL3 means the record is provable with nothing but math and a Bitcoin node.\n\ndarkmatterhub.ai`,
+  `Three verification levels:\n\nL1, hash chain integrity\nL2, Ed25519 signature valid\nL3, OpenTimestamps anchor confirmed\n\nL3 means the record is provable with nothing but math and a public timestamp anchor.\n\ndarkmatterhub.ai`,
 
   // Use cases
   `AI agents that approve loans, flag fraud, or route medical decisions need an immutable trail.\n\nDarkMatter gives every action a signed, timestamped, tamper-evident record. Built for the regulatory questions coming in 2025.\n\ndarkmatterhub.ai`,
