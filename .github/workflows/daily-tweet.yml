@@ -9,7 +9,12 @@ on:
     - cron: '45 16 * * *'   # ~12:45pm ET
     - cron: '30 21 * * *'   # ~5:30pm ET
   workflow_dispatch:
-    # Allow manual trigger from GitHub Actions tab for testing
+    # Allow manual trigger from GitHub Actions tab for testing.
+    inputs:
+      tweet_index:
+        description: 'Optional: post a specific tweet by 0-based index (leave blank for the daily pick)'
+        required: false
+        default: ''
 
 jobs:
   tweet:
@@ -32,4 +37,6 @@ jobs:
           X_ACCESS_TOKEN_SECRET: ${{ secrets.X_ACCESS_TOKEN_SECRET }}
           # Manual runs bypass the slot check and always post (for testing).
           FORCE_POST: ${{ github.event_name == 'workflow_dispatch' }}
+          # Optional: post a specific tweet by index (manual runs only).
+          TWEET_INDEX: ${{ github.event.inputs.tweet_index }}
         run: node scripts/daily-tweet.js
