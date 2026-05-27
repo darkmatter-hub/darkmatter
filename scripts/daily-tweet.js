@@ -238,12 +238,27 @@ async function postTweet(text, secrets) {
     if (!v) { console.error(`Missing env var: ${k}`); process.exit(1); }
   }
 
-  // Only the run matching today's slot posts; the others exit 0 quietly.
-  if (!shouldPostThisRun()) process.exit(0);
+  // Manual override: post a specific tweet by index (0-based). Set via the
+  // workflow_dispatch `tweet_index` input. When present, it bypasses the slot
+  // timer and the day-based rotation so you can post a chosen tweet on demand.
+  const override = process.env.TWEET_INDEX;
+  let index;
+  if (override !== undefined && override !== '') {
+    const n = Number(override);
+    if (!Number.isInteger(n) || n < 0 || n >= TWEETS.length) {
+      console.error(`TWEET_INDEX must be an integer 0..${TWEETS.length - 1}; got "${override}"`);
+      process.exit(1);
+    }
+    index = n;
+    console.log(`Manual override: posting tweet index ${index}.`);
+  } else {
+    // Only the run matching today's slot posts; the others exit 0 quietly.
+    if (!shouldPostThisRun()) process.exit(0);
+    index = Math.floor(Date.now() / 86_400_000) % TWEETS.length;
+  }
 
-  const days = Math.floor(Date.now() / 86_400_000);
-  const text = withHashtags(todaysTweet(), days);
-  console.log('Posting tweet #' + (days % TWEETS.length + 1) + ' of ' + TWEETS.length + ` (${tweetLength(text)}/280 chars):`);
+  const text = withHashtags(TWEETS[index], index);
+  console.log('Posting tweet #' + (index + 1) + ' of ' + TWEETS.length + ` (${tweetLength(text)}/280 chars):`);
   console.log(text);
   console.log('---');
 
