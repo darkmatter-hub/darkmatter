@@ -56,29 +56,16 @@ jobs:
               ;;
           esac
 
-      - name: Signup path reaches Supabase
-        run: |
-          probe="healthcheck-$(date +%s)-$RANDOM@example.invalid"
-          body=$(curl -sS --max-time 30 -X POST \
-            -H 'Content-Type: application/json' \
-            --data "{\"email\":\"$probe\",\"password\":\"HealthProbe!2026x\"}" \
-            https://darkmatterhub.ai/auth/signup)
-
-          echo "POST /auth/signup -> $body"
-
-          # example.invalid is reserved and undeliverable, so a healthy Supabase
-          # with working SMTP rejects the address rather than sending mail.
-          # What we are watching for is the infrastructure-level failures.
-          case "$body" in
-            *"Error sending confirmation email"*)
-              echo "::error::Signup is broken: Supabase cannot send confirmation email. Configure custom SMTP in Supabase (Project Settings -> Authentication -> SMTP). New users cannot register until this is fixed."
-              exit 1
-              ;;
-            *"fetch failed"*|*"is not valid JSON"*)
-              echo "::error::Signup cannot reach Supabase."
-              exit 1
-              ;;
-            *)
-              echo "OK: signup path reached Supabase."
-              ;;
-          esac
+      # Deliberately NO signup probe.
+      #
+      # Hitting /auth/signup creates a real row in auth.users on every run,
+      # even with an undeliverable .invalid address. At this cadence that is
+      # roughly 1,460 junk accounts a year, which would corrupt the signup
+      # metrics this product needs to read accurately.
+      #
+      # The login probe above already covers the failure mode that matters:
+      # both endpoints share the same Supabase client, so if signup cannot
+      # reach Supabase, neither can login, and this job fails.
+      #
+      # SMTP delivery is genuinely not covered here. Watch that through the
+      # email provider's own alerting instead.
