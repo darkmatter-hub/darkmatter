@@ -1,0 +1,84 @@
+name: Production health
+
+# Verifies that the *auth path* actually works in production, not just that the
+# web server answers. /healthz returns 200 even when Supabase is completely
+# unreachable, which is how a seven-week signup/login outage went unnoticed.
+#
+# The check sends a deliberately-wrong password and asserts the API responds
+# with Supabase's real rejection. That proves the whole chain is alive:
+# Railway -> app -> Supabase Auth -> back again.
+
+on:
+  schedule:
+    - cron: '17 */6 * * *'   # every 6 hours
+  workflow_dispatch:
+
+jobs:
+  health:
+    name: Auth path reachable
+    runs-on: ubuntu-latest
+    steps:
+      - name: Server responds
+        run: |
+          code=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 30 https://darkmatterhub.ai/healthz)
+          echo "GET /healthz -> HTTP $code"
+          [ "$code" = "200" ] || { echo "::error::Server is down (/healthz returned $code)"; exit 1; }
+
+      - name: Auth path reaches Supabase
+        run: |
+          # Random address each run so the per-email lockout in /auth/login
+          # (5 failures / 15 min) can never mask a real outage behind a 429.
+          probe="healthcheck-$(date +%s)-$RANDOM@example.invalid"
+          body=$(curl -sS --max-time 30 -X POST \
+            -H 'Content-Type: application/json' \
+            --data "{\"email\":\"$probe\",\"password\":\"deliberately-wrong-password\"}" \
+            https://darkmatterhub.ai/auth/login)
+
+          echo "POST /auth/login -> $body"
+
+          # The healthy answer is Supabase rejecting the credentials. Anything
+          # else means the app could not complete a round trip to Supabase.
+          case "$body" in
+            *"Invalid login credentials"*)
+              echo "OK: auth path is healthy end to end."
+              ;;
+            *"fetch failed"*)
+              echo "::error::Supabase unreachable from the app (fetch failed). Likely a paused Supabase project or stale DNS in the Railway container - redeploy after restoring."
+              exit 1
+              ;;
+            *"is not valid JSON"*)
+              echo "::error::Supabase returned HTML instead of JSON. Project may be restoring, or SUPABASE_URL / API keys are wrong."
+              exit 1
+              ;;
+            *)
+              echo "::error::Unexpected response from /auth/login. Auth path may be broken."
+              exit 1
+              ;;
+          esac
+
+      - name: Signup path reaches Supabase
+        run: |
+          probe="healthcheck-$(date +%s)-$RANDOM@example.invalid"
+          body=$(curl -sS --max-time 30 -X POST \
+            -H 'Content-Type: application/json' \
+            --data "{\"email\":\"$probe\",\"password\":\"HealthProbe!2026x\"}" \
+            https://darkmatterhub.ai/auth/signup)
+
+          echo "POST /auth/signup -> $body"
+
+          # example.invalid is reserved and undeliverable, so a healthy Supabase
+          # with working SMTP rejects the address rather than sending mail.
+          # What we are watching for is the infrastructure-level failures.
+          case "$body" in
+            *"Error sending confirmation email"*)
+              echo "::error::Signup is broken: Supabase cannot send confirmation email. Configure custom SMTP in Supabase (Project Settings -> Authentication -> SMTP). New users cannot register until this is fixed."
+              exit 1
+              ;;
+            *"fetch failed"*|*"is not valid JSON"*)
+              echo "::error::Signup cannot reach Supabase."
+              exit 1
+              ;;
+            *)
+              echo "OK: signup path reached Supabase."
+              ;;
+          esac

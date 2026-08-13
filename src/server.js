@@ -838,7 +838,10 @@ app.post('/auth/signup', authLimiter, async (req, res) => {
       }).catch(e => console.error('[signup] Admin notification email failed:', e.message));
     }
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    // Log the real cause server-side; never surface internal errors (e.g.
+    // "fetch failed" when Supabase is unreachable) to the browser.
+    console.error('[auth/signup] unexpected error:', err);
+    res.status(503).json({ error: 'Service temporarily unavailable. Please try again in a moment.' });
   }
 });
 
@@ -866,7 +869,8 @@ app.post('/auth/login', authLimiter, async (req, res) => {
     setAuthCookies(res, data.session);
     res.json({ user: data.user });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[auth/login] unexpected error:', err);
+    res.status(503).json({ error: 'Service temporarily unavailable. Please try again in a moment.' });
   }
 });
 
