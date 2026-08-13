@@ -2,7 +2,6 @@
 -- PostgreSQL database dump
 --
 
-\restrict SJG4obiLEZfxEfs2QOKbvy0YEPJdTbz2wFIPAA6fjJcH43cAsixuD3Bemf5bVzS
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.10
@@ -40,11 +39,11 @@ COMMENT ON SCHEMA public IS 'standard public schema';
 CREATE FUNCTION public.get_agent_by_api_key(p_api_key text) RETURNS TABLE(agent_id text, agent_name text, user_id uuid, public_key text)
     LANGUAGE sql SECURITY DEFINER
     SET search_path TO 'public'
-    AS $$
-  select agent_id, agent_name, user_id, public_key
-  from agents
-  where api_key = p_api_key
-    and api_key is not null;
+    AS $$
+  select agent_id, agent_name, user_id, public_key
+  from agents
+  where api_key = p_api_key
+    and api_key is not null;
 $$;
 
 
@@ -2709,5 +2708,4 @@ ALTER TABLE public.workspaces ENABLE ROW LEVEL SECURITY;
 -- PostgreSQL database dump complete
 --
 
-\unrestrict SJG4obiLEZfxEfs2QOKbvy0YEPJdTbz2wFIPAA6fjJcH43cAsixuD3Bemf5bVzS
 
