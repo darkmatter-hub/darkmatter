@@ -317,6 +317,37 @@ app.use(cookieParser());
 // any middleware that could hang or reject unauthenticated requests.
 app.get('/healthz', (_req, res) => res.status(200).json({ ok: true }));
 
+// ── GET /go/:source ── marketing click attribution ───────────────────────────
+// Short, clean link for social posts (darkmatterhub.ai/go/x). Records the click
+// and redirects to the real destination. Without this there is no way to tell
+// whether a channel sends anyone, because posts linked to a bare domain.
+//
+// Registered before express.static and before auth middleware so it always
+// resolves and never blocks the redirect on a database round trip.
+const CLICK_SOURCES = new Set(['x', 'hn', 'reddit', 'li', 'gh', 'blog']);
+
+app.get('/go/:source', (req, res) => {
+  const source = String(req.params.source || '').toLowerCase().slice(0, 20);
+  // Redirect first; attribution must never delay or break the visitor's click.
+  const dest = CLICK_SOURCES.has(source) ? `/?src=${encodeURIComponent(source)}` : '/';
+  res.redirect(302, dest);
+
+  if (!CLICK_SOURCES.has(source)) return;
+  // Fire and forget. A logging failure must not surface to the visitor.
+  supabaseService
+    .from('click_events')
+    .insert({
+      source,
+      path:       dest,
+      user_agent: (req.get('user-agent')  || '').slice(0, 300),
+      referer:    (req.get('referer')     || '').slice(0, 300),
+    })
+    .then(({ error }) => {
+      if (error) console.error('[click] insert failed:', error.message);
+    })
+    .catch(e => console.error('[click] insert threw:', e.message));
+});
+
 // Serve spec markdown files from repo root
 app.get('/ENVELOPE_SPEC_V1.md', (_req, res) => {
   res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
