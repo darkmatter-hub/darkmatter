@@ -8108,12 +8108,48 @@ process.on('unhandledRejection', (reason, promise) => {
 
 
 const PORT = process.env.PORT || 3000;
+// ── Supabase keepalive ───────────────────────────────────────────────────────
+// Supabase pauses free-tier projects after roughly 7 days without database
+// activity. A paused project stops resolving entirely: the app then fails with
+// "fetch failed" while static pages keep serving normally, so the site looks up
+// while nobody can sign in. That happened in June 2026 and went unnoticed for
+// seven weeks.
+//
+// A trivial query on a timer counts as activity. This lives inside the server
+// rather than in a scheduled workflow on purpose: GitHub disables cron
+// workflows after 60 days of repository inactivity, which is exactly how the
+// previous safety net died. As long as the container runs, this runs.
+//
+// Set KEEPALIVE_DISABLED=true to turn it off. It can be removed entirely once
+// the project moves to a paid Supabase tier, where pausing does not apply.
+const KEEPALIVE_INTERVAL_MS = 6 * 60 * 60 * 1000; // 6h, well inside the ~7 day window
+
+async function supabaseKeepalive() {
+  try {
+    const { error } = await supabaseService
+      .from('agents').select('agent_id').limit(1);
+    if (error) throw new Error(error.message);
+    console.log('[keepalive] Supabase reachable');
+  } catch (e) {
+    // Loud, because this is the early warning that the project has paused or
+    // the credentials have rotated.
+    console.error('[keepalive] Supabase UNREACHABLE:', e.message);
+  }
+}
+
 const server = app.listen(PORT, () => {
   console.log(`DarkMatter server running on port ${PORT}`);
   if (_JWT_SECRET) {
     console.log('[auth] JWT fast-path active — local HS256 verification enabled (no Supabase disk IO per request)');
   } else {
     console.log('[auth] JWT fast-path inactive — set SUPABASE_JWT_SECRET to enable local verification');
+  }
+
+  if (process.env.KEEPALIVE_DISABLED !== 'true') {
+    supabaseKeepalive();
+    const t = setInterval(supabaseKeepalive, KEEPALIVE_INTERVAL_MS);
+    if (t.unref) t.unref(); // never hold the process open during shutdown
+    console.log(`[keepalive] enabled, every ${KEEPALIVE_INTERVAL_MS / 3600000}h`);
   }
 });
 
