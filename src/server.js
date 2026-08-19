@@ -6,10 +6,10 @@ const crypto    = require('crypto');
 const helmet    = require('helmet');
 const rateLimit = require('express-rate-limit');
 const { createClient } = require('@supabase/supabase-js');
-const {
-  canonicalize, hashPayload, hashChain,
-  verifySignature, validateClientHashes, verifyChain,
-} = require('./integrity');
+// F16: hashChain and verifySignature used to be destructured here, but
+// integrity.js exports neither, so both bindings were undefined — never
+// called, but a latent TypeError waiting for a first caller. Removed.
+const { canonicalize, hashPayload, validateClientHashes, verifyChain } = require('./integrity');
 const { appendToLog, getServerPublicKeyPem, verifyLogConsistency,
   generateProofForCommit, CHECKPOINT_SCHEMA_VERSION,
   verifyCheckpointConsistency,
@@ -2443,12 +2443,16 @@ app.post('/api/fork/:ctxId', apiLimiter, requireApiKey, async (req, res) => {
       },
     };
 
-    // Deterministic payload hash — sort keys for stability
-    const normalizedPayload = JSON.stringify(
-      forkPayload,
-      Object.keys(forkPayload).sort()
-    );
-    const payloadHash    = crypto.createHash('sha256').update(normalizedPayload).digest('hex');
+    // Deterministic payload hash.
+    //
+    // Fourth site of the replacer-vs-sorter defect. The array argument to
+    // JSON.stringify is a recursive property allowlist, not a key sorter, so
+    // forkPayload.memory (forked_from, lineage_root, is_root_fork,
+    // source_intact) serialized as {} and fork lineage was never covered by
+    // the hash. A caller-supplied `payload` took the same path. This one was
+    // missed when the other three were fixed because the pattern is split
+    // across lines and a single-line search did not match it.
+    const payloadHash = hashPayload(forkPayload);
     const chainInput     = payloadHash + (forkCommit.integrity_hash || 'root');
     const integrityHash  = crypto.createHash('sha256').update(chainInput).digest('hex');
     const resolvedBranch = branchKey || `fork-${forkId.slice(-6)}`;
