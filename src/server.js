@@ -2037,7 +2037,28 @@ app.post('/api/commit', apiLimiter, requireApiKey, async (req, res) => {
     }, { [req.agent.agent_id]: req.agent.agent_name, [resolvedAgentId]: recipientAgent?.agent_name || resolvedAgentId });
     receipt.assurance_level    = assuranceLevel;
     receipt.completeness_claim = completeness_claim !== undefined ? completeness_claim : null;
-    receipt.verify_url         = (process.env.APP_URL || 'https://darkmatterhub.ai') + '/r/' + commitId;
+
+    // Records are private by default; /r/:id is share-gated. Callers that want
+    // an immediately shareable proof link pass `share: true`, which publishes
+    // this one record. Without it we still return the URL, flagged as private,
+    // so the caller knows it must publish before handing the link to anyone.
+    let shared = false;
+    if (req.body.share === true) {
+      try {
+        await supabaseService.from('shared_chains').insert({
+          id:         'share_' + crypto.randomBytes(8).toString('hex'),
+          ctx_id:     commitId,
+          created_by: req.agent.agent_id,
+          label:      null,
+          expires_at: null,
+        });
+        shared = true;
+      } catch (e) {
+        console.error('[commit] share creation failed:', e.message);
+      }
+    }
+    receipt.verify_url    = (process.env.APP_URL || 'https://darkmatterhub.ai') + '/r/' + commitId;
+    receipt.verify_public = shared;
 
     // ── Phase 3: append to log + Merkle tree ──────────
     let logEntry = null;
@@ -4794,10 +4815,56 @@ ${images.map(img => img.public_url ? `<img src="${img.public_url}" alt="${img.fi
 // GET /r/:traceId       → human-readable HTML (default)
 // GET /r/:traceId?format=json → raw JSON
 // ═══════════════════════════════════════════════════════════════════════
+/**
+ * Return the active share covering `id`, or null.
+ *
+ * `id` may be either a commit id (shared directly) or a trace id (shared via
+ * any commit belonging to that trace). Expired shares do not count.
+ */
+async function findActiveShare(id) {
+  const notExpired = row =>
+    row && (!row.expires_at || new Date(row.expires_at) > new Date());
+
+  // 1. The id was shared directly.
+  const { data: direct } = await supabaseService
+    .from('shared_chains').select('*').eq('ctx_id', id)
+    .order('created_at', { ascending: false }).limit(1);
+  if (direct && direct[0] && notExpired(direct[0])) return direct[0];
+
+  // 2. The id is a trace; any shared commit within it publishes the trace.
+  const { data: traceCommits } = await supabaseService
+    .from('commits').select('id').eq('trace_id', id).limit(200);
+  const ids = (traceCommits || []).map(c => c.id);
+  if (!ids.length) return null;
+
+  const { data: viaTrace } = await supabaseService
+    .from('shared_chains').select('*').in('ctx_id', ids)
+    .order('created_at', { ascending: false }).limit(1);
+  return (viaTrace && viaTrace[0] && notExpired(viaTrace[0])) ? viaTrace[0] : null;
+}
+
 app.get('/r/:traceId', apiLimiter, async (req, res) => {
   try {
     const { traceId } = req.params;
     if (!traceId || traceId.length > 120 || !/^[a-zA-Z0-9_-]+$/.test(traceId)) return res.status(400).json({ error: 'Invalid ID' });
+
+    // ── Share gate ────────────────────────────────────────────────────────
+    // This route is unauthenticated. Serving any commit by id or trace_id
+    // would make every record in the system publicly readable to anyone who
+    // knows or guesses an id. A record is public only if its owner explicitly
+    // shared it (POST /api/share/:ctxId, or `share: true` at commit time).
+    const shareRow = await findActiveShare(traceId);
+    if (!shareRow) {
+      return res.status(404).json({
+        error: 'Not found, or not shared publicly.',
+        hint:  'Records are private by default. The owner can publish one with POST /api/share/:ctxId, or by passing share: true when committing.',
+      });
+    }
+    // Best-effort view counter; never block the response on it.
+    supabaseService.from('shared_chains')
+      .update({ view_count: (shareRow.view_count || 0) + 1 })
+      .eq('id', shareRow.id)
+      .then(() => {}, () => {});
 
     const rSel = 'id, trace_id, parent_id, from_agent, agent_id, agent_info, payload, timestamp, client_timestamp, event_type, integrity_hash, payload_hash, parent_hash, verified, assurance_level, completeness_claim';
     const [{ data: rById }, { data: rByTrace, error }] = await Promise.all([
@@ -4868,12 +4935,13 @@ app.get('/r/:traceId', apiLimiter, async (req, res) => {
           integrity_hash: c.integrity_hash,
           parent_hash: c.parent_hash,
           verified: c.verified,
-          payload: { input: c.payload && c.payload.input, role: c.payload && c.payload.role,
-            text: c.payload && c.payload.text, output: c.payload && c.payload.output,
-            summary: c.payload && c.payload.summary, prompt: c.payload && c.payload.prompt,
-            model: c.payload && c.payload.model, agent: c.payload && c.payload.agent,
-            convTitle: c.payload && c.payload.convTitle,
-            platform: c.payload && c.payload.platform, _source: c.payload && c.payload._source },
+          // Full payload. This route is share-gated above, so the owner has
+          // explicitly published this record. A previous allowlist here kept
+          // only chat-shaped keys (prompt, convTitle, platform, _source) and
+          // silently discarded everything else, so a loan decision or a trade
+          // rendered as an empty object under a "chain intact" banner. That
+          // defeats the purpose of a proof.
+          payload: c.payload || {},
         }; }),
         verify_url: (process.env.APP_URL || 'https://darkmatterhub.ai') + '/r/' + traceId,
       });
