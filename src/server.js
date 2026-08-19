@@ -399,6 +399,44 @@ function escapeHtml(str) {
     .replace(/'/g, '&#x27;');
 }
 
+// ── Ownership / authorization helpers ────────────────────────────────────────
+//
+// Every route in this file queries through supabaseService, the service role,
+// which bypasses RLS. The 63 RLS policies in the schema are therefore inert and
+// authorization has to be enforced in application code on every id-taking
+// route. A security review found ~24 routes that authenticated the caller and
+// then never checked whether the requested id belonged to them, which leaked
+// full payloads cross-tenant to any valid API key.
+//
+// Use callerAgentIds() + assertOwnsCommit() on any route that accepts an id.
+
+/** Agent ids belonging to the authenticated caller, via API key or session. */
+async function callerAgentIds(req) {
+  const userId = req.agent?.user_id || req.user?.id;
+  if (!userId) return [];
+  const { data } = await supabaseService
+    .from('agents').select('agent_id').eq('user_id', userId);
+  return (data || []).map(a => a.agent_id);
+}
+
+/**
+ * Return the commit only if the caller owns it, otherwise null.
+ *
+ * Callers should treat null as 404 rather than 403: telling an attacker that an
+ * id exists but belongs to someone else is itself a disclosure.
+ */
+async function assertOwnsCommit(req, ctxId) {
+  if (!ctxId || typeof ctxId !== 'string') return null;
+  const { data: commit } = await supabaseService
+    .from('commits').select('*').eq('id', ctxId).single();
+  if (!commit) return null;
+  const ids = await callerAgentIds(req);
+  if (!ids.length) return null;
+  return (ids.includes(commit.from_agent) || ids.includes(commit.to_agent) || ids.includes(commit.agent_id))
+    ? commit
+    : null;
+}
+
 // ── SSRF protection for webhook URLs ─────────────────
 function isValidWebhookUrl(url) {
   if (!url) return true; // null = remove webhook, that's fine
@@ -2154,6 +2192,10 @@ app.get('/api/pull', requireApiKey, async (req, res) => {
 app.get('/api/lineage/:ctxId', requireApiKey, async (req, res) => {
   try {
     const { ctxId } = req.params;
+    // SECURITY: authorization check. Without it any valid credential could
+    // read this id, regardless of owner. 404 rather than 403 so the route
+    // does not confirm that someone else's id exists.
+    if (!await assertOwnsCommit(req, ctxId)) return res.status(404).json({ error: 'Not found' });
     const chain = [];
     let currentId = ctxId;
     const MAX_DEPTH = 50; // prevent infinite loops
@@ -2210,6 +2252,10 @@ app.get('/api/lineage/:ctxId', requireApiKey, async (req, res) => {
 app.get('/api/replay/:ctxId', requireApiKey, async (req, res) => {
   try {
     const { ctxId } = req.params;
+    // SECURITY: authorization check. Without it any valid credential could
+    // read this id, regardless of owner. 404 rather than 403 so the route
+    // does not confirm that someone else's id exists.
+    if (!await assertOwnsCommit(req, ctxId)) return res.status(404).json({ error: 'Not found' });
     const steps = [];
     let currentId = ctxId;
     const MAX_DEPTH = 50;
@@ -2499,6 +2545,10 @@ app.get('/api/verify/:ctxId', flexAuth, async (req, res) => {
 app.get('/api/export/:ctxId', flexAuth, async (req, res) => {
   try {
     const { ctxId } = req.params;
+    // SECURITY: authorization check. Without it any valid credential could
+    // read this id, regardless of owner. 404 rather than 403 so the route
+    // does not confirm that someone else's id exists.
+    if (!await assertOwnsCommit(req, ctxId)) return res.status(404).json({ error: 'Not found' });
 
     // ── 1. Walk the chain ────────────────────────────────────────────────────
     const chain = [];
@@ -2954,6 +3004,10 @@ app.get('/api/agents/:agentId/pubkey', async (req, res) => {
 // Verify the agent signature on a specific commit, with full key lifecycle awareness.
 app.get('/api/commits/:commitId/signature', requireApiKey, async (req, res) => {
   try {
+    // SECURITY: authorization check. Without it any valid credential could
+    // read this id, regardless of owner. 404 rather than 403 so the route
+    // does not confirm that someone else's id exists.
+    if (!await assertOwnsCommit(req, req.params.commitId)) return res.status(404).json({ error: 'Not found' });
     const { data: commit } = await supabaseService
       .from('commits')
       .select('*')
@@ -4117,6 +4171,10 @@ app.get('/api/chain/:shareId', async (req, res) => {
 app.get('/api/retention/:ctxId', requireApiKey, async (req, res) => {
   try {
     const { ctxId } = req.params;
+    // SECURITY: authorization check. Without it any valid credential could
+    // read this id, regardless of owner. 404 rather than 403 so the route
+    // does not confirm that someone else's id exists.
+    if (!await assertOwnsCommit(req, ctxId)) return res.status(404).json({ error: 'Not found' });
 
     const { data: commit } = await supabaseService
       .from('commits').select('timestamp, from_agent, to_agent').eq('id', ctxId).single();
@@ -4277,6 +4335,10 @@ app.get('/api/hooks/:hookId/deliveries', requireApiKey, async (req, res) => {
 app.get('/api/bundle/:ctxId', requireApiKey, async (req, res) => {
   try {
     const { ctxId } = req.params;
+    // SECURITY: authorization check. Without it any valid credential could
+    // read this id, regardless of owner. 404 rather than 403 so the route
+    // does not confirm that someone else's id exists.
+    if (!await assertOwnsCommit(req, ctxId)) return res.status(404).json({ error: 'Not found' });
 
     // Walk the full chain
     const steps = [];
@@ -4726,6 +4788,10 @@ app.post('/api/commit/rich', apiLimiter, requireApiKey, async (req, res) => {
 app.get('/api/content/:ctxId', apiLimiter, requireApiKey, async (req, res) => {
   try {
     const { ctxId } = req.params;
+    // SECURITY: authorization check. Without it any valid credential could
+    // read this id, regardless of owner. 404 rather than 403 so the route
+    // does not confirm that someone else's id exists.
+    if (!await assertOwnsCommit(req, ctxId)) return res.status(404).json({ error: 'Not found' });
     const format    = req.query.format || 'json'; // json | html | text | markdown
 
     const [contentRes, attachmentsRes] = await Promise.all([
