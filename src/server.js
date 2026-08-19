@@ -5040,7 +5040,34 @@ app.get('/r/:traceId', apiLimiter, async (req, res) => {
       // Legacy / conversation-style records (role-based)
       var role = p.role || (i % 2 === 0 ? 'user' : 'assistant');
       var text = p.text || p.summary || p.prompt || '';
-      if (!text.trim()) return;
+
+      if (!text.trim()) {
+        // Structured, non-conversational payload: a loan decision, a trade, a
+        // routing call. This branch used to `return` and render nothing, so
+        // the page showed "N steps" above an empty body while claiming the
+        // chain was intact. Render the record as readable fields instead.
+        var skip = { _source: 1, platform: 1, role: 1, agentName: 1, agent_name: 1 };
+        var keys = Object.keys(p).filter(function(k) { return !skip[k] && p[k] !== undefined && p[k] !== null; });
+        if (!keys.length) return;
+
+        var rowsHTML = keys.map(function(k) {
+          var v  = p[k];
+          var vs = (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean')
+            ? String(v) : JSON.stringify(v, null, 2);
+          return '<tr>'
+            + '<td style="padding:3px 12px 3px 0;color:var(--ink4);font-family:var(--mono);font-size:11px;white-space:nowrap;vertical-align:top;">' + escH(k) + '</td>'
+            + '<td style="padding:3px 0;font-family:var(--mono);font-size:12px;word-break:break-word;white-space:pre-wrap;">' + escH(vs) + '</td>'
+            + '</tr>';
+        }).join('');
+
+        var evLabel = (c.event_type || 'record').toUpperCase();
+        messagesHTML += '<div class="msg-grp">'
+          + '<div class="role-label agent">' + escH(evLabel) + platHint + '</div>'
+          + '<div class="bubble agent"><table style="border-collapse:collapse;width:100%;">' + rowsHTML + '</table></div>'
+          + '<div class="msg-time agent">' + tsStr + '</div>'
+          + '</div>';
+        return;
+      }
       var isUser = role === 'user';
       var agentLabel = p.agentName || p.agent_name || 'AGENT';
       if (isUser) {
