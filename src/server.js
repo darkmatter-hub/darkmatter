@@ -686,18 +686,22 @@ app.post('/api/provision', provisionLimiter, async (req, res) => {
 
     let userId;
     if (authError) {
-      // User already exists — look them up
+      // SECURITY: this route is UNAUTHENTICATED. It previously looked up the
+      // existing account for an already-registered email and issued a live API
+      // key bound to it, so anyone could POST a stranger's address and receive
+      // credentials for that person's account, then read their whole corpus
+      // via /api/search. Provisioning may only ever create a NEW account; an
+      // existing one requires proof of ownership, which happens in the
+      // dashboard. Refuse, and do not disclose anything further about the
+      // account beyond what the caller already asserted.
       if (authError.message?.includes('already been registered') || authError.code === 'email_exists') {
-        const { data: existingUsers } = await supabaseService.auth.admin.listUsers();
-        const existing = existingUsers?.users?.find(u => u.email === email.toLowerCase());
-        if (!existing) return res.status(409).json({ error: 'Email already registered. Use the dashboard to create agents.' });
-        userId = existing.id;
-      } else {
-        throw authError;
+        return res.status(409).json({
+          error: 'Email already registered. Sign in at darkmatterhub.ai to create agents.',
+        });
       }
-    } else {
-      userId = authData.user.id;
+      throw authError;
     }
+    userId = authData.user.id;
 
     // ── Create the first agent ────────────────────────
     const agentId = generateAgentId();
@@ -1757,8 +1761,17 @@ app.post('/api/commit', apiLimiter, requireApiKey, async (req, res) => {
     const agentPublicKey       = req.body.agentPublicKey       || null;
 
     // Server always computes independently (for cross-check and legacy clients)
-    const normalizedPayload = JSON.stringify(resolvedPayload, Object.keys(resolvedPayload).sort());
-    const serverPayloadHash = crypto.createHash('sha256').update(normalizedPayload).digest('hex');
+    //
+    // SECURITY: this previously used
+    //   JSON.stringify(payload, Object.keys(payload).sort())
+    // The array argument to JSON.stringify is a REPLACER — a recursive
+    // property allowlist — not a key sorter. Built from top-level keys only,
+    // it caused every nested object to serialize as {}. Two payloads differing
+    // only in memory.amount (10 vs 1000000) hashed identically, so nested
+    // content was never covered by the hash chain and the tamper-evidence
+    // guarantee did not hold. canonicalize() in integrity.js recurses
+    // correctly and sorts keys at every level.
+    const serverPayloadHash = hashPayload(resolvedPayload);
 
     // Fetch parent hash if parentId provided
     let parentHash = null;
@@ -2596,8 +2609,10 @@ app.get('/api/export/:ctxId', flexAuth, async (req, res) => {
       root_hash:    root?.integrity_hash || null,
       tip_hash:     tip?.integrity_hash  || null,
     };
+    // Same replacer-vs-sorter defect as the payload hash; see the note at the
+    // commit route. Nested fields were excluded from the bundle hash.
     const chainHash = crypto.createHash('sha256')
-      .update(JSON.stringify(stableData, Object.keys(stableData).sort()))
+      .update(canonicalize(stableData), 'utf8')
       .digest('hex');
 
     // ── 5. Assemble self-sufficient bundle ───────────────────────────────────
@@ -3906,6 +3921,15 @@ app.post('/api/share/:ctxId', apiLimiter, requireApiKey, async (req, res) => {
     const { data: commit } = await supabaseService
       .from('commits').select('id, from_agent, to_agent').eq('id', ctxId).single();
     if (!commit) return res.status(404).json({ error: 'Context not found' });
+
+    // SECURITY: agentIds was computed above under a comment claiming this
+    // check existed, but the check itself was missing. Any authenticated
+    // caller could publish any tenant's commit and then read it, with full
+    // payloads, at the unauthenticated /chain/:shareId and /r/:id routes.
+    // Publishing someone else's record is a cross-tenant data leak.
+    if (!agentIds.includes(commit.from_agent) && !agentIds.includes(commit.to_agent)) {
+      return res.status(404).json({ error: 'Context not found' });
+    }
 
     const shareId = 'share_' + crypto.randomBytes(8).toString('hex');
     const expiresAt = expiresInDays
@@ -7310,8 +7334,8 @@ async function commitWorkspaceChat({ userId, agentId, provider, model, messages,
       input_messages: messages.length,
     };
 
-    const normalizedPayload = JSON.stringify(payload, Object.keys(payload).sort());
-    const payloadHash       = require('crypto').createHash('sha256').update(normalizedPayload).digest('hex');
+    // Same replacer-vs-sorter defect; see the note at the commit route.
+    const payloadHash = hashPayload(payload);
 
     // Get parent hash for chain
     const { data: parentCommit } = await supabaseService
