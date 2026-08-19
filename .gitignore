@@ -5,3 +5,7 @@ node_modules/
 .DS_Store
 *.witness.private.pem
 backups/
+
+# Agent worktrees and stray local artifacts (swept in accidentally 2026-08-19)
+.claude/
+instagram_post_*/
