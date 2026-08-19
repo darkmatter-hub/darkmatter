@@ -1750,6 +1750,20 @@ app.post('/api/commit', apiLimiter, requireApiKey, async (req, res) => {
     // toAgentId defaults to the authenticated agent's own ID — so dm.configure(api_key=...)
     // alone works without needing agent_id in the request body.
     const resolvedAgentId = toAgentId || req.agent.agent_id;
+
+    // SECURITY: toAgentId was only checked for existence, never ownership, so
+    // a commit could be addressed to another tenant's agent and would surface
+    // in their /api/pull feed as verified input.
+    if (toAgentId && toAgentId !== req.agent.agent_id) {
+      const ownIds = await callerAgentIds(req);
+      if (!ownIds.includes(toAgentId)) {
+        return res.status(404).json({
+          error: 'Recipient agent not found',
+          hint:  'toAgentId must be an agent belonging to your account.',
+        });
+      }
+    }
+
     if (!resolvedAgentId || !resolvedPayload) {
       return res.status(400).json({ error: 'payload (or context) required' });
     }
@@ -1811,15 +1825,27 @@ app.post('/api/commit', apiLimiter, requireApiKey, async (req, res) => {
     // correctly and sorts keys at every level.
     const serverPayloadHash = hashPayload(resolvedPayload);
 
-    // Fetch parent hash if parentId provided
+    // Fetch parent hash if parentId provided.
+    //
+    // SECURITY: parentId was accepted verbatim with no ownership check, and
+    // the resulting row is stored with verified: true. Because /r/:traceId
+    // walks parent_id both upward and downward, an attacker could chain a
+    // fabricated step onto a victim's commit and have it render on the
+    // victim's public proof page, badged verified and indistinguishable from
+    // real steps. For a product sold as evidence that is the worst possible
+    // write primitive. A parent you do not own is now rejected outright
+    // rather than silently ignored, so a caller never believes a link was
+    // recorded when it was not.
     let parentHash = null;
     if (parentId) {
-      const { data: parentCommit } = await supabaseService
-        .from('commits')
-        .select('integrity_hash')
-        .eq('id', parentId)
-        .single();
-      if (parentCommit?.integrity_hash) parentHash = parentCommit.integrity_hash;
+      const parentCommit = await assertOwnsCommit(req, parentId);
+      if (!parentCommit) {
+        return res.status(404).json({
+          error: 'Parent commit not found',
+          hint:  'parentId must reference a commit belonging to your account.',
+        });
+      }
+      if (parentCommit.integrity_hash) parentHash = parentCommit.integrity_hash;
     }
 
     const serverChainInput   = serverPayloadHash + (parentHash || 'root');
@@ -3104,6 +3130,30 @@ app.post('/enterprise/register', requireAuth, async (req, res) => {
     const { companyName, byokKey } = req.body;
     if (!companyName) return res.status(400).json({ error: 'companyName required' });
 
+    // SECURITY: this route was gated on requireAuth alone and inserted into
+    // enterprise_accounts, whose `active` column defaults to true. Because
+    // requireEnterprise only looks for an active row, any free account could
+    // sign up, call this, and self-grant an Enterprise entitlement, bypassing
+    // billing and unlocking the enterprise reporting endpoints.
+    //
+    // Registration now requires a real paid enterprise subscription, and the
+    // row is created inactive pending activation, so a future defect in this
+    // path cannot by itself confer entitlement.
+    const { data: sub } = await supabaseService
+      .from('subscriptions')
+      .select('plan, status')
+      .eq('user_id', req.user.id)
+      .eq('plan', 'enterprise')
+      .in('status', ['active', 'trialing'])
+      .maybeSingle();
+
+    if (!sub) {
+      return res.status(403).json({
+        error: 'Enterprise plan required',
+        hint:  'Enterprise registration requires an active Enterprise subscription. See darkmatterhub.ai/pricing.',
+      });
+    }
+
     const accountId = 'ent_' + Date.now() + '_' + crypto.randomBytes(4).toString('hex');
     let keyId = null;
 
@@ -3128,6 +3178,9 @@ app.post('/enterprise/register', requireAuth, async (req, res) => {
       user_id:      req.user.id,
       company_name: companyName,
       byok_key_id:  keyId,
+      // Defence in depth: the column defaults to true, which is what made
+      // self-granting possible. Activation is a deliberate step.
+      active:       false,
     });
 
     if (error) throw error;
@@ -4962,7 +5015,7 @@ app.get('/r/:traceId', apiLimiter, async (req, res) => {
       supabaseService.from('commits').select(rSel).eq('trace_id', traceId).order('timestamp', { ascending: true }),
     ]);
     const rSeen = new Set();
-    const commits = [...(rById || []), ...(rByTrace || [])]
+    let commits = [...(rById || []), ...(rByTrace || [])]
       .filter(c => !rSeen.has(c.id) && rSeen.add(c.id))
       .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
@@ -4986,6 +5039,30 @@ app.get('/r/:traceId', apiLimiter, async (req, res) => {
       toFetchFwd = fresh.map(c => c.id);
     }
     commits.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+    // SECURITY: restrict the rendered record to commits owned by the account
+    // that published this share.
+    //
+    // trace_id is caller-supplied and not namespaced per user, and this route
+    // additionally walks parent_id upward and downward. Without this filter an
+    // attacker could commit using a victim's trace_id, or graft onto their
+    // chain, and have a fabricated step render on the victim's public proof
+    // page badged verified. The write path now rejects foreign parents, but
+    // trace_id collision remains possible, so the read path is filtered too.
+    {
+      const { data: ownerAgent } = await supabaseService
+        .from('agents').select('user_id').eq('agent_id', shareRow.created_by).maybeSingle();
+      if (ownerAgent?.user_id) {
+        const { data: ownerAgents } = await supabaseService
+          .from('agents').select('agent_id').eq('user_id', ownerAgent.user_id);
+        const ownedIds = new Set((ownerAgents || []).map(a => a.agent_id));
+        const before = commits.length;
+        commits = commits.filter(c => ownedIds.has(c.from_agent) || ownedIds.has(c.agent_id));
+        if (commits.length !== before) {
+          console.warn(`[proof] dropped ${before - commits.length} foreign commit(s) from ${traceId}`);
+        }
+      }
+    }
 
     if (error || !commits || !commits.length) {
       if (req.query.format === 'json') return res.status(404).json({ error: 'Record not found.' });
@@ -8019,11 +8096,30 @@ app.get('/api/workspace/conversation/:traceId', requireAuth, async (req, res) =>
       userAgentIds.has(c.from_agent) || userAgentIds.has(c.agent_id)
     );
 
-    // Also allow workspace admin access
+    // Also allow workspace admin access — but only for the workspace that
+    // actually owns this conversation.
+    //
+    // SECURITY: this previously read `membership?.role === 'admin'`, which
+    // means "is an admin of SOME workspace", not "is an admin of THIS
+    // workspace". Since POST /api/workspace makes its creator an admin member
+    // immediately, anyone could create a throwaway workspace and then read any
+    // tenant's full conversation transcript. The admin bypass now requires the
+    // commits to belong to an agent in the admin's own workspace.
+    let isWorkspaceAdmin = false;
     const membership = await getMembership(req.user.id);
-    const isAdmin    = membership?.role === 'admin';
+    if (membership?.role === 'admin' && membership.workspace_id) {
+      const { data: wsMembers } = await supabaseService
+        .from('workspace_members')
+        .select('agent_id')
+        .eq('workspace_id', membership.workspace_id)
+        .eq('status', 'active');
+      const wsAgentIds = new Set((wsMembers || []).map(m => m.agent_id).filter(Boolean));
+      isWorkspaceAdmin = commits.some(c =>
+        wsAgentIds.has(c.from_agent) || wsAgentIds.has(c.agent_id)
+      );
+    }
 
-    if (!hasAccess && !isAdmin) {
+    if (!hasAccess && !isWorkspaceAdmin) {
       return res.status(403).json({ error: 'Access denied' });
     }
 
