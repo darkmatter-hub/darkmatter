@@ -9,3 +9,4 @@ backups/
 # Agent worktrees and stray local artifacts (swept in accidentally 2026-08-19)
 .claude/
 instagram_post_*/
+0
