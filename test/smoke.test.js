@@ -207,19 +207,28 @@ console.log('\nDashboard ↔ Server endpoint cross-check');
 console.log('\nSchema contract');
 
 // Known-good columns for agents table (verified against actual Supabase schema)
-var AGENTS_SAFE_INSERT_COLS = ['agent_id','agent_name','user_id','api_key',
-  'webhook_url','webhook_secret','retention_days'];
-var AGENTS_UNSAFE_INSERT = ['api_key_hash']; // column may or may not exist — never safe to insert
+// Updated 2026-08-19 (F8). This contract previously required the PLAINTEXT
+// api_key column and forbade api_key_hash on the grounds that it "may not
+// exist" — it does exist and is populated for every agent, and it is what
+// authentication actually uses. The contract is now inverted: hash and masked
+// hint are the safe columns, and writing the plaintext key is the defect.
+var AGENTS_SAFE_INSERT_COLS = ['agent_id','agent_name','user_id','api_key_hash',
+  'key_hint','webhook_url','webhook_secret','retention_days'];
+var AGENTS_UNSAFE_INSERT = ['api_key']; // plaintext credential — never persist
 
-test('api_key_hash not inserted in workspace/api-keys route', function() {
+test('plaintext api_key not inserted in workspace/api-keys route', function() {
   var routeStart = server.indexOf("app.post('/api/workspace/api-keys'");
   var routeEnd   = server.indexOf('});', routeStart) + 3;
   var routeCode  = server.slice(routeStart, routeEnd);
-  assert(!routeCode.includes('api_key_hash:'), 'api_key_hash inserted in workspace/api-keys — column may not exist in DB');
+  // Scope to the .insert({...}) block. The route legitimately RETURNS the raw
+  // key to the caller once on creation ("api_key: rawKey" in the response);
+  // the defect is persisting it, not returning it.
+  var ins = routeCode.match(/\.insert\(\{([\s\S]+?)\}\)/);
+  assert(!ins || !/[^_]api_key:/.test(ins[1]), 'F8 regression: plaintext api_key persisted in workspace/api-keys');
 });
 
 test('workspace/api-keys insert matches original /dashboard/agents pattern', function() {
-  // The safe pattern (proven to work) only inserts: agent_id, agent_name, user_id, api_key
+  // The safe pattern inserts: agent_id, agent_name, user_id, api_key_hash, key_hint
   var routeStart = server.indexOf("app.post('/api/workspace/api-keys'");
   var routeEnd   = server.indexOf('});', routeStart) + 3;
   var routeCode  = server.slice(routeStart, routeEnd);
@@ -868,6 +877,15 @@ test('no supabaseService.auth.refreshSession anywhere in codebase', function() {
   assert(!server.includes('supabaseService.auth.refreshSession'),
     'supabaseService.auth.refreshSession found in server.js — this corrupts the service-role JWT and causes RLS errors');
 });
+
+// ── Section 22: Security regression suite ─────────────────────────────────
+// Locks in the F1-F5 fixes from the pre-launch security review.
+// Also runnable standalone: node test/security.test.js
+(function() {
+  var sec = require('./security.test.js').run();
+  passed += sec.passed;
+  failed += sec.failed;
+})();
 
 // Summary
 console.log('\n' + '-'.repeat(50));

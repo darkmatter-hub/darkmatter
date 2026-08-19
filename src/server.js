@@ -517,17 +517,10 @@ async function requireApiKey(req, res, next) {
       .eq('api_key_hash', keyHash)
       .limit(1);
 
-    // Fallback: plaintext match for legacy keys not yet migrated to hash
-    // TODO: drop this fallback and the api_key column after migration is confirmed
-    // complete (target: one week after deploy of api_key_hash migration).
-    if (!data || data.length === 0) {
-      const res2 = await supabaseService
-        .from('agents')
-        .select('agent_id, agent_name, user_id')
-        .eq('api_key', apiKey)
-        .limit(1);
-      data = res2.data;
-    }
+    // F8: the plaintext fallback that matched .eq('api_key', apiKey) is gone.
+    // Authentication is by hash only. Every agent has a populated
+    // api_key_hash, so this changes no behaviour — but it means a database
+    // read can no longer yield a live credential.
 
     if (!data || data.length === 0) {
       return res.status(401).json({ error: 'Invalid API key' });
@@ -751,7 +744,7 @@ app.post('/api/provision', provisionLimiter, async (req, res) => {
         agent_id:      agentId,
         agent_name:    name,
         user_id:       userId,
-        api_key:       apiKey,       // kept for rollback safety; TODO: drop after migration
+        key_hint:       maskApiKey(apiKey),       // F8: masked hint only; plaintext is never persisted
         api_key_hash:  hashApiKey(apiKey),
       })
       .select()
@@ -1325,7 +1318,7 @@ app.post('/api/agents/register', apiLimiter, requireApiKey, async (req, res) => 
         agent_id:      newAgentId,
         agent_name:    sanitizeText(agentName, 100),
         user_id:       userId,
-        api_key:       newApiKey,          // kept for rollback; TODO: drop after migration
+        key_hint:       maskApiKey(newApiKey),          // F8: masked hint only; plaintext is never persisted
         api_key_hash:  hashApiKey(newApiKey),
       })
       .select()
@@ -1376,7 +1369,7 @@ app.post('/dashboard/agents', requireAuth, async (req, res) => {
         agent_id:      agentId,
         agent_name:    agentName,
         user_id:       req.user.id,
-        api_key:       apiKey,         // kept for rollback; TODO: drop after migration
+        key_hint:       maskApiKey(apiKey),         // F8: masked hint only; plaintext is never persisted
         api_key_hash:  hashApiKey(apiKey),
       })
       .select()
@@ -1401,7 +1394,7 @@ app.get('/dashboard/agents', requireAuth, async (req, res) => {
   try {
     let { data, error } = await supabaseService
       .from('agents')
-      .select('agent_id, agent_name, api_key, created_at, last_active, webhook_url, retention_days')
+      .select('agent_id, agent_name, key_hint, created_at, last_active, webhook_url, retention_days')
       .eq('user_id', req.user.id)
       .order('created_at', { ascending: false });
 
@@ -1419,7 +1412,7 @@ app.get('/dashboard/agents', requireAuth, async (req, res) => {
           agent_id:     agentId,
           agent_name:   agentName,
           user_id:      req.user.id,
-          api_key:      apiKey,       // kept for rollback; TODO: drop after migration
+          key_hint:      maskApiKey(apiKey),       // F8: masked hint only; plaintext is never persisted
           api_key_hash: hashApiKey(apiKey),
         })
         .select()
@@ -1431,7 +1424,7 @@ app.get('/dashboard/agents', requireAuth, async (req, res) => {
     res.json((data || []).map(a => ({
       agentId:       a.agent_id,
       agentName:     a.agent_name,
-      apiKeyHint:    maskApiKey(a.api_key),   // masked hint: dm_sk_abcd••••••••5678
+      apiKeyHint:    a.key_hint || '••••••••', // stored hint; plaintext key is no longer read
       createdAt:     a.created_at,
       lastActive:    a.last_active,
       webhookUrl:    a.webhook_url    || null,
@@ -3372,19 +3365,18 @@ app.get('/api/workspace/api-keys', wsAuth, async (req, res) => {
       // No workspace membership — fall back to user's own agents
       const { data: agents } = await supabaseService
         .from('agents')
-        .select('agent_id, agent_name, api_key, created_at, user_id')
+        .select('agent_id, agent_name, key_hint, created_at, user_id')
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
 
       return res.json({ keys: (agents || []).map(a => {
-        const k = a.api_key || '';
         return {
           id:         a.agent_id,
           name:       a.agent_name,
           agent_name: a.agent_name,
           created_at: a.created_at,
           created_by: req.user.email,
-          hint:       k ? k.slice(0, 10) + '......' + k.slice(-4) : null,
+          hint:       a.key_hint || null,   // F8: stored hint, plaintext no longer read
         };
       })});
     }
@@ -3405,7 +3397,7 @@ app.get('/api/workspace/api-keys', wsAuth, async (req, res) => {
 
     const { data: agents } = await supabaseService
       .from('agents')
-      .select('agent_id, agent_name, api_key, created_at, user_id')
+      .select('agent_id, agent_name, key_hint, created_at, user_id')
       .in('agent_id', agentIds)
       .order('created_at', { ascending: false });
 
@@ -3419,7 +3411,6 @@ app.get('/api/workspace/api-keys', wsAuth, async (req, res) => {
     (allMembers || []).forEach(m => { if (m.agent_id) memberByAgent[m.agent_id] = m; });
 
     const keys = (agents || []).map(a => {
-      const k = a.api_key || '';
       return {
         id:         a.agent_id,
         name:       a.agent_name,
@@ -3427,7 +3418,7 @@ app.get('/api/workspace/api-keys', wsAuth, async (req, res) => {
         created_at: a.created_at,
         created_by: memberByAgent[a.agent_id]?.email || req.user.email,
         note:       'DarkMatter workspace',
-        hint:       k ? k.slice(0, 10) + '......' + k.slice(-4) : null,
+        hint:       a.key_hint || null,   // F8: stored hint, plaintext no longer read
       };
     });
 
@@ -3485,10 +3476,13 @@ app.post('/api/workspace/api-keys', wsAuth, async (req, res) => {
     const agentId = 'dm_' + crypto.randomBytes(12).toString('hex');
 
     const { data: agent, error } = await supabaseService.from('agents').insert({
-      agent_id:   agentId,
-      agent_name: agentName,
-      user_id:    userId,
-      api_key:    rawKey,
+      agent_id:     agentId,
+      agent_name:   agentName,
+      user_id:      userId,
+      // F8: store only the hash and a masked hint. The raw key is returned to
+      // the caller once, here, and never persisted.
+      api_key_hash: hashApiKey(rawKey),
+      key_hint:     maskApiKey(rawKey),
     }).select().single();
 
     if (error) throw error;
@@ -5949,7 +5943,7 @@ async function recordClaudeInteraction({ upstreamPath, requestBody, responseText
 
     // Find or create an agent for this user
     const { data: userAgents } = await supabaseService.from('agents')
-      .select('agent_id, api_key').eq('user_id', userId).limit(1);
+      .select('agent_id, key_hint').eq('user_id', userId).limit(1);
 
     let dmAgentId = userAgents?.[0]?.agent_id;
     if (!dmAgentId) return; // No agent yet — user hasn't set up DarkMatter
@@ -7860,7 +7854,12 @@ app.post('/api/workspace/provider-keys', requireAuth, async (req, res) => {
         .insert({
           user_id:           req.user.id,
           provider,
-          encrypted_key:     apiKey,  // TODO: encrypt with server-side key in production
+          // F9: this wrote the raw sk-ant-... / sk-... value into a column named
+          // encrypted_key, alongside rows that ARE properly AES-256-GCM
+          // encrypted. decryptValue() passes anything not shaped iv:tag:data
+          // through unchanged, so the mixture was invisible at runtime. These
+          // are third-party credentials with direct billing impact.
+          encrypted_key:     encryptValue(apiKey),
           key_hint:          keyHint,
           recording_enabled: true,
           label:             label || provider,
@@ -7896,7 +7895,7 @@ app.post('/api/workspace/provider-keys', requireAuth, async (req, res) => {
       .insert({
         user_id:           req.user.id,
         provider,
-        encrypted_key:     apiKey,
+        encrypted_key:     encryptValue(apiKey),  // F9: see note above
         key_hint:          keyHint,
         recording_enabled: true,
         label:             label || provider,
