@@ -5081,19 +5081,51 @@ app.get('/r/:traceId', apiLimiter, async (req, res) => {
     // Verify chain integrity
     // Only flag broken if BOTH hashes exist and don't match.
     // Missing parent_hash = first commit or extension-captured turn (not broken).
+    // Real verification, not a link check.
+    //
+    // This previously compared only parent_hash against the previous commit's
+    // integrity_hash, skipped whenever either was null, over a list sorted by
+    // timestamp rather than by parent linkage — while the rendered card
+    // claimed "payload hash, integrity hash, parent link, assurance level
+    // verified per commit". payload_hash was never recomputed from payload,
+    // which is precisely why the replacer-vs-sorter hashing defect survived
+    // undetected. Now that hashing is correct, recompute both hashes per
+    // commit so the claim on the page is one the code actually supports.
+    //
+    // Each commit records a per-step result so the page can point at the
+    // failing step instead of only saying the chain is broken.
     let chainIntact = true;
-    for (let i = 1; i < commits.length; i++) {
-      const prevHash = commits[i-1].integrity_hash;
-      const thisParent = commits[i].parent_hash;
-      if (thisParent && prevHash && thisParent !== prevHash) {
-        chainIntact = false; break;
+    const verifyDetail = [];
+    for (let i = 0; i < commits.length; i++) {
+      const c = commits[i];
+      let payloadOk = null;   // null = cannot check (payload not stored)
+      let linkOk    = true;
+
+      if (c.payload && typeof c.payload === 'object') {
+        try {
+          const recomputed = hashPayload(c.payload);
+          const stored = String(c.payload_hash || '').replace(/^sha256:/, '');
+          payloadOk = stored ? recomputed === stored : null;
+        } catch (_) {
+          payloadOk = false; // non-canonicalisable payload cannot be verified
+        }
       }
+
+      if (i > 0) {
+        const prevHash   = commits[i-1].integrity_hash;
+        const thisParent = c.parent_hash;
+        if (thisParent && prevHash) linkOk = thisParent === prevHash;
+      }
+
+      if (payloadOk === false || !linkOk) chainIntact = false;
+      verifyDetail.push({ id: c.id, payload_hash_verified: payloadOk, parent_link_verified: linkOk });
     }
 
     if (req.query.format === 'json') {
       res.setHeader('Content-Disposition', 'attachment; filename="darkmatter-proof-' + traceId + '.json"');
       return res.json({
         trace_id: traceId, chain_intact: chainIntact, step_count: commits.length,
+        verification: verifyDetail,
         commits: commits.map(function(c) { return {
           id: c.id, trace_id: c.trace_id,
           timestamp: c.client_timestamp || c.timestamp,
