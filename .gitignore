@@ -10,3 +10,8 @@ backups/
 .claude/
 instagram_post_*/
 0
+
+# Internal, never published. Strategy, competitive analysis, security detail
+# and the park record. These were briefly committed to a public repo; see
+# private/PARK.md for what that means and what is still in git history.
+private/
