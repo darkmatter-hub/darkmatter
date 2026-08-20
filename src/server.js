@@ -8253,6 +8253,121 @@ const PORT = process.env.PORT || 3000;
 //
 // Set KEEPALIVE_DISABLED=true to turn it off. It can be removed entirely once
 // the project moves to a paid Supabase tier, where pausing does not apply.
+
+// ── Weekly growth report ─────────────────────────────────────────────────────
+// Emails the three numbers that cannot flatter us. Lives in-process for the
+// same reason as the keepalive: GitHub disables cron workflows after 60 days
+// of repository inactivity, which is how the daily-post job died silently.
+//
+// Counts are deliberately conservative. An earlier version of this report
+// counted 46 axios/1.13.2 hits as human because the bot regex only looked for
+// the word "bot", and counted two probe accounts as signups. Both are excluded
+// here. Set GROWTH_REPORT_DISABLED=true to turn it off.
+const GROWTH_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000;
+const GROWTH_TO = process.env.GROWTH_REPORT_TO || 'hello@darkmatterhub.ai';
+
+const BOT_UA = /bot|crawl|spider|preview|fetch|curl|wget|python|headless|slurp|axios|node-fetch|okhttp|go-http|java\/|libwww|httpclient|scrapy|monitor|uptime|facebookexternalhit|Twitterbot|Slackbot|Discordbot/i;
+const isBrowser = ua => typeof ua === 'string' && ua.startsWith('Mozilla/') && !BOT_UA.test(ua);
+const isProbeEmail = e => !e || /@(healthcheck\.invalid|example\.(com|invalid))$/i.test(e) || /^probe/i.test(e);
+
+async function buildGrowthReport() {
+  const since = d => new Date(Date.now() - d * 86400000).toISOString();
+  const countSince = async (table, col, days) => {
+    const { count } = await supabaseService
+      .from(table).select('*', { count: 'exact', head: true }).gt(col, since(days));
+    return count ?? 0;
+  };
+
+  // Clicks: fetched and classified here rather than filtered in SQL, because
+  // "is this a browser" is a judgement the regex above owns.
+  const { data: clicks } = await supabaseService
+    .from('click_events').select('source, user_agent, created_at').gt('created_at', since(30));
+  const browser = (clicks || []).filter(c => isBrowser(c.user_agent));
+  const browser7 = browser.filter(c => c.created_at > since(7)).length;
+  const bySource = {};
+  for (const c of browser) bySource[c.source] = (bySource[c.source] || 0) + 1;
+
+  // Signups, excluding probe addresses this project created itself.
+  let signups7 = 0, signups30 = 0, totalReal = 0;
+  try {
+    const { data: u } = await supabaseService.auth.admin.listUsers({ page: 1, perPage: 1000 });
+    const real = (u?.users || []).filter(x => !isProbeEmail(x.email));
+    totalReal = real.length;
+    signups7  = real.filter(x => x.created_at > since(7)).length;
+    signups30 = real.filter(x => x.created_at > since(30)).length;
+  } catch (e) { console.error('[growth] listUsers failed:', e.message); }
+
+  const commits7  = await countSince('commits', 'timestamp', 7);
+  const commits30 = await countSince('commits', 'timestamp', 30);
+  const { count: shares } = await supabaseService
+    .from('shared_chains').select('*', { count: 'exact', head: true });
+
+  // Repeat-week accounts: the one metric that distinguishes real adoption from
+  // a burst of curiosity. Computed in JS to avoid a raw-SQL dependency here.
+  let repeatWeek = 0;
+  try {
+    const { data: rows } = await supabaseService
+      .from('commits').select('from_agent, timestamp').gt('timestamp', since(90)).limit(10000);
+    const { data: ag } = await supabaseService.from('agents').select('agent_id, user_id');
+    const owner = Object.fromEntries((ag || []).map(a => [a.agent_id, a.user_id]));
+    const weeks = {};
+    for (const r of rows || []) {
+      const u = owner[r.from_agent]; if (!u) continue;
+      const wk = new Date(r.timestamp); wk.setUTCDate(wk.getUTCDate() - wk.getUTCDay());
+      (weeks[u] = weeks[u] || new Set()).add(wk.toISOString().slice(0, 10));
+    }
+    repeatWeek = Object.values(weeks).filter(s => s.size >= 2).length;
+  } catch (e) { console.error('[growth] repeat-week calc failed:', e.message); }
+
+  const srcLines = Object.entries(bySource).sort((a, b) => b[1] - a[1])
+    .map(([s, n]) => `      ${s}: ${n}`).join('\n') || '      (none)';
+
+  return [
+    `DarkMatter growth — week ending ${new Date().toISOString().slice(0, 10)}`,
+    ``,
+    `DEMAND (a person had to act)`,
+    `  browser clicks 7d        ${browser7}`,
+    `  browser clicks 30d       ${browser.length}`,
+    `  automated hits 30d       ${(clicks || []).length - browser.length}  (ignored)`,
+    `  by source, 30d:`,
+    srcLines,
+    `  signups 7d               ${signups7}`,
+    `  signups 30d              ${signups30}`,
+    `  accounts total           ${totalReal}`,
+    ``,
+    `USAGE`,
+    `  records committed 7d     ${commits7}`,
+    `  records committed 30d    ${commits30}`,
+    `  proofs published         ${shares ?? 0}`,
+    ``,
+    `RETENTION`,
+    `  accounts active 2+ weeks ${repeatWeek}   <- the one that decides if growth is real`,
+    ``,
+    `Probe accounts and non-browser traffic are excluded. Package download`,
+    `counts are omitted: at this volume they are mirrors and CI, not people.`,
+  ].join('\n');
+}
+
+async function sendGrowthReport() {
+  try {
+    const body = await buildGrowthReport();
+    console.log('[growth]\n' + body);
+    if (!process.env.RESEND_API_KEY) return;
+    await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from: 'DarkMatter <hello@darkmatterhub.ai>',
+        to: [GROWTH_TO],
+        subject: `DarkMatter growth — week ending ${new Date().toISOString().slice(0, 10)}`,
+        text: body,
+      }),
+    });
+  } catch (e) {
+    console.error('[growth] report failed:', e.message);
+  }
+}
+
 const KEEPALIVE_INTERVAL_MS = 6 * 60 * 60 * 1000; // 6h, well inside the ~7 day window
 
 async function supabaseKeepalive() {
@@ -8281,6 +8396,12 @@ const server = app.listen(PORT, () => {
     const t = setInterval(supabaseKeepalive, KEEPALIVE_INTERVAL_MS);
     if (t.unref) t.unref(); // never hold the process open during shutdown
     console.log(`[keepalive] enabled, every ${KEEPALIVE_INTERVAL_MS / 3600000}h`);
+  }
+
+  if (process.env.GROWTH_REPORT_DISABLED !== 'true') {
+    const g = setInterval(sendGrowthReport, GROWTH_INTERVAL_MS);
+    if (g.unref) g.unref();
+    console.log('[growth] weekly report enabled');
   }
 });
 
