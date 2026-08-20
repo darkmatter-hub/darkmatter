@@ -8400,12 +8400,19 @@ const server = app.listen(PORT, () => {
   }
 
   if (process.env.GROWTH_REPORT_DISABLED !== 'true') {
-    // Log once at boot without emailing, so a deploy proves the query works
-    // rather than the first evidence arriving a week later.
+    // Log only. Emailing is opt-in via GROWTH_REPORT_EMAIL=true.
+    //
+    // This was originally a weekly email. It was switched off because there is
+    // no growth to report: a recurring message saying "0 retained accounts"
+    // trains you to ignore the channel, so when the number finally changes the
+    // alert has already lost its meaning. Run scripts/growth-report.sh when
+    // you want the picture, and turn the email on when there is a trend worth
+    // watching rather than a baseline worth confirming.
     setTimeout(() => sendGrowthReport({ email: false }), 15000);
-    const g = setInterval(() => sendGrowthReport({ email: true }), GROWTH_INTERVAL_MS);
+    const wantEmail = process.env.GROWTH_REPORT_EMAIL === 'true';
+    const g = setInterval(() => sendGrowthReport({ email: wantEmail }), GROWTH_INTERVAL_MS);
     if (g.unref) g.unref();
-    console.log('[growth] weekly report enabled');
+    console.log(`[growth] weekly report enabled (email: ${process.env.GROWTH_REPORT_EMAIL === 'true'})`);
   }
 });
 
