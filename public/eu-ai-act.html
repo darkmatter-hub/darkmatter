@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>EU AI Act Article 12, DarkMatter</title>
-<meta name="description" content="How DarkMatter helps high-risk AI system providers satisfy the EU AI Act Article 12 automatic event-logging requirement before the August 2, 2026 enforcement deadline." />
+<meta name="description" content="How DarkMatter helps high-risk AI system providers satisfy the EU AI Act Article 12 automatic event-logging requirement, which applies from 2 December 2027 after the Digital Omnibus deferral." />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -86,7 +86,7 @@ footer a{color:inherit}
     <div class="eyebrow"><span class="rule"></span><span>Regulatory readiness</span></div>
     <h1>EU AI Act Article 12.<em><br>Automatic logging, without trusting your own logs.</em></h1>
     <p class="lede">High-risk AI system providers must produce automatic, traceable event records. DarkMatter is a proof engine for AI agents, the record is sealed at the moment of action and verifiable by anyone, including regulators, without your involvement.</p>
-    <div class="countdown" id="countdown">Enforcement: August 2, 2026</div>
+    <div class="countdown" id="countdown">Applies from 2 December 2027 (deferred from 2 August 2026 by the Digital Omnibus).</div>
   </div>
 </section>
 
@@ -175,18 +175,22 @@ footer a{color:inherit}
 
 <script>
 (function(){
-  var deadline = new Date('2026-08-02T00:00:00Z');
+  // The high-risk obligations, Article 12 among them, were originally due to
+  // apply from 2 August 2026. The Digital Omnibus (in force 27 July 2026,
+  // OJEU 24 July 2026) deferred them to 2 December 2027. This page previously
+  // counted down to the old date and, after it passed, told visitors the
+  // obligation was "enforceable since August 2, 2026" — which is not true.
+  var deadline = new Date('2027-12-02T00:00:00Z');
   var now = new Date();
-  var msPerDay = 86400000;
-  var days = Math.ceil((deadline - now) / msPerDay);
+  var days = Math.ceil((deadline - now) / 86400000);
   var el = document.getElementById('countdown');
   if (!el) return;
   if (days > 0) {
-    el.textContent = 'Enforcement: August 2, 2026, ' + days + ' day' + (days === 1 ? '' : 's') + ' remaining';
+    el.textContent = 'Applies from 2 December 2027 — ' + days + ' day' + (days === 1 ? '' : 's') + ' away (deferred from 2 August 2026 by the Digital Omnibus).';
   } else if (days === 0) {
-    el.textContent = 'Enforcement begins today.';
+    el.textContent = 'Applies from today, 2 December 2027.';
   } else {
-    el.textContent = 'Enforceable since August 2, 2026 (' + Math.abs(days) + ' day' + (Math.abs(days) === 1 ? '' : 's') + ' ago).';
+    el.textContent = 'Applicable since 2 December 2027.';
   }
 })();
 </script>
