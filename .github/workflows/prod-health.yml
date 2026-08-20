@@ -7,17 +7,51 @@ name: Production health
 # The check sends a deliberately-wrong password and asserts the API responds
 # with Supabase's real rejection. That proves the whole chain is alive:
 # Railway -> app -> Supabase Auth -> back again.
+#
+# This workflow also keeps itself switched on. GitHub disables scheduled
+# workflows after 60 days without repository activity, and a paused project
+# produces exactly that. The failure mode is nasty rather than merely
+# annoying: this alarm would go quiet at roughly the same time as attention
+# does, so an outage after that point is silent. A monthly heartbeat commit
+# counts as activity and keeps the schedule alive with about 2x margin.
+#
+# The heartbeat runs BEFORE the health checks, deliberately. If it ran after,
+# a genuine outage would fail the job before the heartbeat could commit, the
+# repository would go inactive, and the alarm would disable itself precisely
+# when it was the only thing still reporting a problem.
 
 on:
   schedule:
     - cron: '17 */6 * * *'   # every 6 hours
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   health:
     name: Auth path reachable
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+
+      - name: Monthly heartbeat, so this alarm cannot disable itself
+        run: |
+          set -euo pipefail
+          month=$(date -u +%Y-%m)
+          file=.github/heartbeat.txt
+          if [ -f "$file" ] && grep -q "^$month$" "$file"; then
+            echo "Heartbeat for $month already recorded."
+            exit 0
+          fi
+          printf '%s\n' "$month" > "$file"
+          git config user.name  'darkmatter-health'
+          git config user.email 'actions@github.com'
+          git add "$file"
+          git commit -m "chore: health heartbeat $month"
+          git push
+          echo "Heartbeat committed for $month."
+
       - name: Server responds
         run: |
           code=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 30 https://darkmatterhub.ai/healthz)

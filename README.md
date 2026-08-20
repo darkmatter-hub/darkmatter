@@ -77,10 +77,68 @@ DARKMATTER_API_KEY=dm_sk_... node demo-proof.mjs
 
 ## Install
 
+### Inside Claude, in one command
+
+```bash
+claude mcp add darkmatter -- npx -y @darkmatterhub/mcp-server
+```
+
+For Claude Desktop, Cursor, Cline, Zed, or any other MCP client, add the same
+server to the client's config file:
+
+```json
+{
+  "mcpServers": {
+    "darkmatter": {
+      "command": "npx",
+      "args": ["-y", "@darkmatterhub/mcp-server"]
+    }
+  }
+}
+```
+
+Your agent gains five tools: `darkmatter_commit`, `darkmatter_verify`,
+`darkmatter_replay`, `darkmatter_export` and `darkmatter_list_sessions`. No account and no API key are
+required. Records are written to local storage, and the chain verifies
+offline, so you can evaluate the thing before signing up for anything. Add
+`DARKMATTER_API_KEY` when you want a link an auditor can open.
+
+### From the Anthropic SDK, in about fifteen lines
+
+The integration is one function call on the response you already have:
+
+```python
+from context_passport import make_passport, verify_chain
+
+chain = []
+
+def ask(client, prompt, role="assistant"):
+    response = client.messages.create(
+        model="claude-sonnet-5",
+        max_tokens=1024,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    answer = "".join(b.text for b in response.content if b.type == "text")
+    chain.append(make_passport(
+        agent_id="my-agent", agent_name="Claude",
+        payload={"input": prompt, "output": answer},
+        parent=chain[-1] if chain else None,
+        role=role, provider="anthropic", model=response.model,
+    ))
+    return answer
+```
+
+`verify_chain(chain)` returns `True` until any recorded step is altered, at
+which point it returns `False` and names the break. A complete runnable
+version, including an `--offline` mode that needs no API key, is in
+[examples/integrations/anthropic_sdk.py](https://github.com/contextpassport/spec/blob/main/examples/integrations/anthropic_sdk.py).
+
+### Libraries
+
 ```bash
 pip install darkmatter-sdk         # Python
 npm install darkmatter-js          # TypeScript
-npx -y @darkmatterhub/mcp-server   # MCP: Claude, Cursor, any MCP client
+pip install context-passport       # the open record format on its own
 ```
 
 Free tier: 10,000 records a month, no card required.
