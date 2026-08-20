@@ -8348,10 +8348,11 @@ async function buildGrowthReport() {
   ].join('\n');
 }
 
-async function sendGrowthReport() {
+async function sendGrowthReport({ email = true } = {}) {
   try {
     const body = await buildGrowthReport();
     console.log('[growth]\n' + body);
+    if (!email) return;                 // boot verification run: log only
     if (!process.env.RESEND_API_KEY) return;
     await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -8399,7 +8400,10 @@ const server = app.listen(PORT, () => {
   }
 
   if (process.env.GROWTH_REPORT_DISABLED !== 'true') {
-    const g = setInterval(sendGrowthReport, GROWTH_INTERVAL_MS);
+    // Log once at boot without emailing, so a deploy proves the query works
+    // rather than the first evidence arriving a week later.
+    setTimeout(() => sendGrowthReport({ email: false }), 15000);
+    const g = setInterval(() => sendGrowthReport({ email: true }), GROWTH_INTERVAL_MS);
     if (g.unref) g.unref();
     console.log('[growth] weekly report enabled');
   }
