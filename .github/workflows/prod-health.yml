@@ -9,11 +9,11 @@ name: Production health
 # Railway -> app -> Supabase Auth -> back again.
 #
 # This workflow also keeps itself switched on. GitHub disables scheduled
-# workflows after 60 days without repository activity, and a paused project
-# produces exactly that. The failure mode is nasty rather than merely
-# annoying: this alarm would go quiet at roughly the same time as attention
-# does, so an outage after that point is silent. A monthly heartbeat commit
-# counts as activity and keeps the schedule alive with about 2x margin.
+# workflows after 60 days without repository activity, and any quiet stretch
+# can reach that. The failure mode is nasty rather than merely annoying: this
+# alarm would go quiet at roughly the same time as attention does, so an
+# outage after that point is silent. A monthly heartbeat commit counts as
+# activity and keeps the schedule alive with about 2x margin.
 #
 # The heartbeat runs BEFORE the health checks, deliberately. If it ran after,
 # a genuine outage would fail the job before the heartbeat could commit, the
