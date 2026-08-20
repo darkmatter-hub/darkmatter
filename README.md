@@ -1,8 +1,89 @@
 # 🌑 DarkMatter
 
-> **A proof engine for AI agents.**
-> An independent, tamper-evident record of what your AI agents actually did.
-> Verifiable by anyone. Stored outside your system. Live in one line of code.
+> **Proof of what your AI agents actually did.**
+> An independent, tamper-evident record. Verifiable by anyone, without trusting us.
+
+When an autonomous agent makes a decision someone disputes six months later, your
+application logs are not evidence: they live inside the same system that made the
+call, and anyone with database access can edit them.
+
+DarkMatter seals each agent action the moment it happens into a hash chain, so any
+later alteration is mathematically detectable.
+
+## See it in 10 seconds
+
+No account, no signup, no network:
+
+```bash
+git clone https://github.com/darkmatter-hub/darkmatter && cd darkmatter
+node demo-proof.mjs
+```
+
+```
+
+  DarkMatter — proof of what an AI agent decided
+────────────────────────────────────────────────────────────────────
+
+  An AI agent processes a loan application in four steps.
+  Each step is sealed at the moment it happens.
+
+   [1] intake    Application received
+       sha256:dca198f…
+   [2] risk      Risk model scored 0.23 (low)
+       sha256:aed0261…
+   [3] decision  APPROVED at 6.4% APR
+       sha256:88af32f…
+   [4] disburse  Funds released
+       sha256:96e6d3c…
+
+  Chain sealed. 4 records, each linked to the one before it.
+
+────────────────────────────────────────────────────────────────────
+  VERIFICATION
+  Recompute every hash from the payloads and compare.
+
+   ✓ record 1  sha256:dca198f…  intact
+   ✓ record 2  sha256:aed0261…  intact
+   ✓ record 3  sha256:88af32f…  intact
+   ✓ record 4  sha256:96e6d3c…  intact
+
+  Chain intact. 4/4 records verified.
+
+────────────────────────────────────────────────────────────────────
+  SIX MONTHS LATER, A DISPUTE
+
+  Someone with database access edits the decision record,
+  changing the outcome from APPROVED to DENIED.
+
+   ✓ record 1  sha256:dca198f…  intact
+   ✓ record 2  sha256:aed0261…  intact
+   ✗ record 3  HASH MISMATCH
+       stored     sha256:e6a954fba33988b9f6c66ac890d35e01f821e5f27cb973a22fbf7d0d79c3f2ce
+       recomputed sha256:5b7bc539d11a0fb6a521f582e2d887564518d11e2cb50308a27624407621b804
+   ✗ record 4  HASH MISMATCH
+       broken by the altered record above it
+```
+
+That last section is the whole product. The record was altered directly in the
+database, and the alteration is provable by anyone holding the records using
+nothing but SHA-256. Nobody has to be trusted, including us.
+
+Add an API key and the same demo commits a real chain and prints a link you can
+hand to an auditor:
+
+```bash
+DARKMATTER_API_KEY=dm_sk_... node demo-proof.mjs
+```
+
+## Install
+
+```bash
+pip install darkmatter-sdk         # Python
+npm install darkmatter-js          # TypeScript
+npx -y @darkmatterhub/mcp-server   # MCP: Claude, Cursor, any MCP client
+```
+
+Free tier: 10,000 records a month, no card required.
 
 ---
 
