@@ -130,44 +130,166 @@ function withHashtags(text, dayIndex) {
   return tags.length ? text + '\n\n' + tags.join(' ') : text;
 }
 
-// ── Pick today's tweet ────────────────────────────────────────────────────────
-// Deterministic by UTC date, same day always picks the same tweet.
-// Cycles through the full bank before repeating.
-function todaysTweet() {
-  const daysSinceEpoch = Math.floor(Date.now() / 86_400_000);
-  return TWEETS[daysSinceEpoch % TWEETS.length];
-}
+// ── Irregular posting schedule ────────────────────────────────────────────────
+// A post at exactly 24-hour intervals, day after day without a single gap, is
+// the most legible bot signature there is. No person posts that way. So the
+// cadence here is uneven on purpose: some days carry two posts, some days none,
+// and quiet stretches of two or three days are normal.
+//
+// It is irregular but not random at runtime. Everything below is a pure
+// function of the UTC day number, so the three daily workflow runs each reach
+// the same conclusion without sharing any state, and the whole future schedule
+// can be printed and inspected before it happens (`--schedule`).
+//
+// Rates: roughly 0.7 posts a day, about 20 a month, with the 57-tweet bank
+// cycling in roughly three months rather than every eight weeks.
 
-// ── Posting-time slots ──────────────────────────────────────────────────────────
-// The workflow fires at all of these UTC times every day, but only the slot
-// matching today's deterministic index actually posts; the others exit quietly.
-// This rotates the posting time across days without burning Actions minutes on
-// long sleeps. Times target US engagement windows (≈9am, 12:45pm, 5:30pm ET).
-// Keep these in sync with the cron entries in .github/workflows/daily-tweet.yml.
+const SEED = 'darkmatter-x-v1';
+
+// The three times the workflow fires. Keep in sync with the cron entries in
+// .github/workflows/daily-tweet.yml. A run posts only if its slot is one the
+// schedule chose for today. Times target US engagement windows.
 const SLOTS_UTC = [
-  { h: 13, m: 15 },
-  { h: 16, m: 45 },
-  { h: 21, m: 30 },
+  { h: 13, m: 15 },   // ~9:15am ET
+  { h: 16, m: 45 },   // ~12:45pm ET
+  { h: 21, m: 30 },   // ~5:30pm ET
 ];
 
-// Returns true if this run should post. A run "belongs" to the slot whose time
-// is closest to the current UTC time (tolerates GitHub's cron delivery jitter).
-function shouldPostThisRun() {
-  if (process.env.FORCE_POST === 'true') return true;
-  const days = Math.floor(Date.now() / 86_400_000);
-  const todaysSlot = days % SLOTS_UTC.length;
-  const now = new Date();
-  const nowMin = now.getUTCHours() * 60 + now.getUTCMinutes();
-  let runSlot = 0, best = Infinity;
-  SLOTS_UTC.forEach((s, i) => {
-    const d = Math.abs((s.h * 60 + s.m) - nowMin);
-    if (d < best) { best = d; runSlot = i; }
-  });
-  if (runSlot !== todaysSlot) {
-    console.log(`This run maps to slot ${runSlot} (UTC ${SLOTS_UTC[runSlot].h}:${String(SLOTS_UTC[runSlot].m).padStart(2,'0')}); today's posting slot is ${todaysSlot}. Skipping.`);
-    return false;
+// All orderings of the three slots. Drawing one of these with a single random
+// value gives each slot an equal chance of being used, which sorting three
+// independently hashed keys did not.
+const SLOT_PERMUTATIONS = [
+  [0, 1, 2], [0, 2, 1], [1, 0, 2], [1, 2, 0], [2, 0, 1], [2, 1, 0],
+];
+
+// Ceiling on silence. Irregular is the goal; abandoned is not. Without this,
+// an unlucky run of the dice produces week-long gaps that read as a dead
+// account rather than a human one.
+const MAX_SILENT_DAYS = 4;
+
+// UTC day number when the irregular schedule started. Used only to count how
+// many posts have gone out, so each one draws the next tweet in the bank.
+// 20685 = 2026-08-20.
+const ANCHOR_DAY = 20685;
+
+const utcDay = (ms = Date.now()) => Math.floor(ms / 86_400_000);
+
+// FNV-1a. Not cryptographic, and does not need to be: this only has to spread
+// consecutive day numbers into unrelated-looking values.
+function hash32(str) {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
   }
-  return true;
+  return h >>> 0;
+}
+
+const rand = (day, salt) => hash32(`${SEED}:${day}:${salt}`) / 0x1_0000_0000;
+
+// How many posts a day would carry before the anti-silence rule is applied.
+function rawPostsOnDay(day) {
+  const r = rand(day, 'count');
+  if (r < 0.44) return 0;   // silent
+  if (r < 0.86) return 1;
+  return 2;                 // occasional double
+}
+
+// Posts on a given day, with the silence ceiling enforced. Replays a short
+// window so the rule can see how long it has been quiet without needing any
+// stored state.
+function postsOnDay(day) {
+  const n = rawPostsOnDay(day);
+  if (n > 0) return n;
+
+  // Length of the run of consecutive dice-silent days ending here.
+  let run = 0;
+  while (run < 60 && rawPostsOnDay(day - run) === 0) run++;
+
+  // Break the silence on every (MAX_SILENT_DAYS + 1)th day of a dry run. That
+  // caps a gap at exactly MAX_SILENT_DAYS without turning a long dry run into
+  // a post every single day, which is what a naive "was it quiet recently?"
+  // check does once the run is longer than the lookback.
+  return run % (MAX_SILENT_DAYS + 1) === 0 ? 1 : 0;
+}
+
+// Which of the three slots today's posts occupy. Two-post days get two
+// different slots, so the posts are hours apart rather than adjacent.
+function slotsForDay(day) {
+  const n = postsOnDay(day);
+  if (n === 0) return [];
+  const perm = SLOT_PERMUTATIONS[Math.floor(rand(day, 'perm') * SLOT_PERMUTATIONS.length)];
+  return perm.slice(0, n).sort((a, b) => a - b);
+}
+
+// Which slot the current run belongs to, tolerating GitHub's cron jitter.
+function currentSlot(now = new Date()) {
+  const nowMin = now.getUTCHours() * 60 + now.getUTCMinutes();
+  let best = Infinity;
+  let slot = 0;
+  SLOTS_UTC.forEach((s, i) => {
+    const d = Math.abs(s.h * 60 + s.m - nowMin);
+    if (d < best) { best = d; slot = i; }
+  });
+  return slot;
+}
+
+// Total posts before today, so each post draws the next tweet rather than
+// repeating the same one twice on a double day.
+function postsBefore(day) {
+  let count = 0;
+  for (let d = ANCHOR_DAY; d < day; d++) count += postsOnDay(d);
+  return count;
+}
+
+// Returns the tweet index this run should post, or null to stay quiet.
+function tweetIndexForThisRun() {
+  if (process.env.FORCE_POST === 'true') {
+    return postsBefore(utcDay()) % TWEETS.length;
+  }
+  const day = utcDay();
+  const todays = slotsForDay(day);
+  const slot = currentSlot();
+  const position = todays.indexOf(slot);
+
+  if (position === -1) {
+    const label = todays.length
+      ? `today posts at slot(s) ${todays.join(', ')}`
+      : 'today is a quiet day';
+    console.log(`This run is slot ${slot}; ${label}. Skipping.`);
+    return null;
+  }
+  return (postsBefore(day) + position) % TWEETS.length;
+}
+
+// Prints the upcoming cadence so it can be eyeballed before it happens:
+//   node scripts/daily-tweet.js --schedule 60
+function printSchedule(days = 45) {
+  const start = utcDay();
+  const time = (i) => `${String(SLOTS_UTC[i].h).padStart(2, '0')}:${String(SLOTS_UTC[i].m).padStart(2, '0')}`;
+  let total = 0;
+  let gap = 0;
+  let longestGap = 0;
+
+  console.log(`\n  Next ${days} days (UTC). ${TWEETS.length} tweets in the bank.\n`);
+  for (let d = start; d < start + days; d++) {
+    const slots = slotsForDay(d);
+    const date = new Date(d * 86_400_000).toISOString().slice(0, 10);
+    const dow = new Date(d * 86_400_000).toUTCString().slice(0, 3);
+    if (slots.length === 0) {
+      gap++;
+      longestGap = Math.max(longestGap, gap);
+      console.log(`  ${date} ${dow}   -`);
+    } else {
+      gap = 0;
+      total += slots.length;
+      const at = slots.map(time).join('  ');
+      const marks = slots.map((_, i) => `#${(postsBefore(d) + i) % TWEETS.length}`).join(' ');
+      console.log(`  ${date} ${dow}   ${slots.length} post${slots.length > 1 ? 's' : ''}  ${at}   ${marks}`);
+    }
+  }
+  console.log(`\n  ${total} posts over ${days} days (${(total / days).toFixed(2)}/day, ~${Math.round((total / days) * 30)}/month)`);
+  console.log(`  longest silent stretch: ${longestGap} day(s)\n`);
 }
 
 // ── OAuth 1.0a signing ────────────────────────────────────────────────────────
@@ -236,13 +358,22 @@ async function postTweet(text, secrets) {
     accessTokenSecret:  process.env.X_ACCESS_TOKEN_SECRET,
   };
 
+  // Preview the upcoming cadence. Deliberately before the credential check,
+  // since inspecting the schedule should not require X secrets:
+  //   node scripts/daily-tweet.js --schedule 60
+  const scheduleArg = process.argv.indexOf('--schedule');
+  if (scheduleArg !== -1) {
+    printSchedule(Number(process.argv[scheduleArg + 1]) || 45);
+    process.exit(0);
+  }
+
   for (const [k, v] of Object.entries(secrets)) {
     if (!v) { console.error(`Missing env var: ${k}`); process.exit(1); }
   }
 
   // Manual override: post a specific tweet by index (0-based). Set via the
-  // workflow_dispatch `tweet_index` input. When present, it bypasses the slot
-  // timer and the day-based rotation so you can post a chosen tweet on demand.
+  // workflow_dispatch `tweet_index` input. When present, it bypasses the
+  // schedule entirely so you can post a chosen tweet on demand.
   const override = process.env.TWEET_INDEX;
   let index;
   if (override !== undefined && override !== '') {
@@ -254,9 +385,10 @@ async function postTweet(text, secrets) {
     index = n;
     console.log(`Manual override: posting tweet index ${index}.`);
   } else {
-    // Only the run matching today's slot posts; the others exit 0 quietly.
-    if (!shouldPostThisRun()) process.exit(0);
-    index = Math.floor(Date.now() / 86_400_000) % TWEETS.length;
+    // The schedule decides whether this run posts at all. Most runs do not.
+    const picked = tweetIndexForThisRun();
+    if (picked === null) process.exit(0);
+    index = picked;
   }
 
   const text = withHashtags(TWEETS[index], index);
