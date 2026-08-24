@@ -8,6 +8,11 @@ name: Production health
 # with Supabase's real rejection. That proves the whole chain is alive:
 # Railway -> app -> Supabase Auth -> back again.
 #
+# It also renders the public proof page, because /healthz and the auth path
+# both stayed green through an outage where every shared record returned 500.
+# The HTML branch threw while ?format=json served the same record correctly,
+# so nothing that only checked an API would ever have noticed.
+#
 # This workflow also keeps itself switched on. GitHub disables scheduled
 # workflows after 60 days without repository activity, and any quiet stretch
 # can reach that. The failure mode is nasty rather than merely annoying: this
@@ -89,6 +94,38 @@ jobs:
               exit 1
               ;;
           esac
+
+      - name: Public proof page renders
+        run: |
+          set -uo pipefail
+          # The record the public demo advertises. If this stops rendering, the
+          # product's central claim is broken for every visitor.
+          id=ctx_1787544415723_bd78b91d9446
+
+          code=$(curl -sS -o /tmp/proof.html -w '%{http_code}' --max-time 30 \
+            "https://darkmatterhub.ai/r/$id")
+          echo "GET /r/$id -> HTTP $code"
+          if [ "$code" != "200" ]; then
+            echo "::error::Public proof page returned $code. The demo's verify link is dead."
+            exit 1
+          fi
+
+          # A 200 is not enough. The page once rendered "N steps" over an empty
+          # body, and a 500 here was invisible to a JSON-only check because
+          # ?format=json served the same record perfectly while the HTML branch
+          # threw. So assert the page actually contains its verdict.
+          if ! grep -q 'Record intact' /tmp/proof.html; then
+            echo "::error::Proof page rendered without an intact verdict. Chain may be broken, or the renderer failed."
+            exit 1
+          fi
+
+          # And that verification really ran, rather than the page asserting it.
+          json=$(curl -sS --max-time 30 "https://darkmatterhub.ai/r/$id?format=json")
+          echo "$json" | grep -q '"chain_intact":true' || {
+            echo "::error::chain_intact is not true for the advertised demo record."; exit 1; }
+          echo "$json" | grep -q '"payload_hash_verified":true' || {
+            echo "::error::payload_hash did not verify for the advertised demo record."; exit 1; }
+          echo "Public proof page renders and verifies."
 
       # Deliberately NO signup probe.
       #
