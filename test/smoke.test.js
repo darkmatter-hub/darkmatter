@@ -121,6 +121,52 @@ test('four view tabs',        function() { assert(rb.includes('view-conv') && rb
 test('YOU role label',        function() { assert(rb.includes('YOU') && rb.includes('platHint'), 'YOU label not found'); });
 test('copy link button',      function() { assert(rb.includes('copyLink()')); });
 
+// Object-valued payload fields must be coerced before any string method.
+//
+// This is a real outage, not a hypothetical. The timeline built its text as
+//     (p.text || p.output || p.summary || p.prompt || '').slice(0, 280)
+// and payload.output is very often an object, so .slice ran on an object and
+// threw. Every shared record 500ed on the HTML page while ?format=json served
+// the identical record perfectly, which is what made it survive: the JSON
+// path, the share gate and the hash verification were all fine.
+test('timeline coerces payload values before slicing', function() {
+  assert(rb.includes('function asText('), 'asText helper missing from /r/ handler');
+  // Strip comments before matching. The fix is documented in a comment that
+  // quotes the broken expression verbatim, and matching that would fail this
+  // test forever against correct code.
+  var rbCode = rb.split('\n').filter(function (l) {
+    return !/^\s*(\/\/|\*|\/\*)/.test(l);
+  }).join('\n');
+  assert(!/\(p\.text \|\| p\.output[^)]*\)\.slice\(/.test(rbCode),
+    'timeline slices a raw payload union; object-valued output will throw');
+});
+
+test('asText survives every payload shape the DB allows', function() {
+  // Mirror of the helper in src/server.js. If that changes, change this.
+  function asText(v) {
+    if (v === undefined || v === null) return '';
+    if (typeof v === 'string') return v;
+    if (typeof v === 'number' || typeof v === 'boolean') return String(v);
+    try { return JSON.stringify(v); } catch (_) { return String(v); }
+  }
+  var circular = {}; circular.self = circular;
+  var cases = [
+    undefined, null, '', 'plain',
+    0, 42, false, true,
+    { ok: true, nested: { v: 1 } },   // the shape that actually broke production
+    [1, 2, 3],
+    circular,                          // JSON.stringify throws; must not propagate
+  ];
+  cases.forEach(function(v) {
+    var out = asText(v);
+    assert(typeof out === 'string', 'asText returned ' + typeof out + ' for ' + String(v));
+    // The point of the helper: string methods must be safe afterwards.
+    out.slice(0, 10);
+  });
+  assert(asText({ ok: true }) === '{"ok":true}', 'objects should serialise, not stringify to [object Object]');
+  assert(asText(null) === '' && asText(undefined) === '', 'nullish must become empty string');
+});
+
 // 7. Dashboard JS
 console.log('\nDashboard JS');
 test('showView explicit flex', function() { assert(dashJS.includes("var dm={records:'flex'")); });

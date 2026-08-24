@@ -5145,6 +5145,16 @@ app.get('/r/:traceId', apiLimiter, async (req, res) => {
     }
 
     // Build HTML render
+    // Payload values are arbitrary JSON. Anything that reaches a string method
+    // has to be coerced first, or one object-valued field takes down the whole
+    // page.
+    function asText(v) {
+      if (v === undefined || v === null) return '';
+      if (typeof v === 'string') return v;
+      if (typeof v === 'number' || typeof v === 'boolean') return String(v);
+      try { return JSON.stringify(v); } catch (_) { return String(v); }
+    }
+
     function escH(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
     // Format a hex hash with middle-dot groups: sha256:a9c4·e18f·2b7d·…
@@ -5427,16 +5437,22 @@ app.get('/r/:traceId', apiLimiter, async (req, res) => {
           // Only use the alternating You/Agent pattern for chat-style records (payload.role / payload.text).
           var hasDecision = !!(p.input || p.output);
           var role = p.role || (i % 2 === 0 ? 'user' : 'assistant');
-          var input3 = (p.input  || '').slice(0, 140);
-          var text   = (p.text || p.output || p.summary || p.prompt || '').slice(0, 280);
+          // Coerce before slicing. payload.output is very often an object, and
+          // `(p.text || p.output || ...).slice(...)` then calls .slice on an
+          // object and throws, which took the whole page to a 500 while
+          // ?format=json rendered the same record perfectly. The bubble
+          // renderer above already stringifies; this timeline did not.
+          var input3 = asText(p.input).slice(0, 140);
+          var textFull = asText(p.text || p.output || p.summary || p.prompt);
+          var text   = textFull.slice(0, 280);
           var ts3 = c.client_timestamp || c.timestamp || '';
           var tsStr3 = ts3 ? new Date(ts3).toLocaleString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit',timeZone:'UTC',hour12:false})+' UTC' : '';
           var isUser3 = !hasDecision && role === 'user';
           var actor = isUser3 ? 'You' : (p.agentName || p.agent_name || 'Agent');
           return '<div class="tl-step"><div class="tl-line"><div class="tl-dot' + (isUser3?' user':'') + '"></div><div class="tl-conn"></div></div>'
             + '<div class="tl-info"><div class="tl-head"><span class="tl-step-n">Step ' + (i+1) + '</span><span class="tl-actor">' + escH(actor) + '</span><span class="tl-time">' + tsStr3 + '</span></div>'
-            + (input3 ? '<div class="tl-text" style="font-size:11px;opacity:.55;margin-bottom:3px;">IN: ' + escH(input3) + (p.input && p.input.length > 140 ? '\u2026' : '') + '</div>' : '')
-            + '<div class="tl-text">' + escH(text) + (text.length >= 280 ? '\u2026' : '') + '</div>'
+            + (input3 ? '<div class="tl-text" style="font-size:11px;opacity:.55;margin-bottom:3px;">IN: ' + escH(input3) + (asText(p.input).length > 140 ? '\u2026' : '') + '</div>' : '')
+            + '<div class="tl-text">' + escH(text) + (textFull.length > 280 ? '\u2026' : '') + '</div>'
             + (c.integrity_hash ? '<div class="tl-hash">' + c.integrity_hash.slice(0,16) + '\u2026</div>' : '')
             + '</div></div>';
         }).join('\n')
