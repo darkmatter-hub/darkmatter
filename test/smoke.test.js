@@ -346,6 +346,56 @@ test('demo has 4-step walkthrough', function() {
 test('demo has download proof bundle', function() {
   assert(demo.includes('downloadDemoBundle'), 'demo step 4 must have download bundle button');
 });
+
+// The demo must not claim a hash it cannot back up.
+//
+// The page shows a payload and, next to it, a payload_hash, then invites the
+// reader to verify the record themselves. If those two ever disagree, the
+// demo is lying about exactly the thing the product sells. This recomputes
+// the hash from the payload the page displays and compares it to the hash the
+// page claims, so any edit to either has to keep them consistent.
+test('demo payload hashes to the hash the demo claims', function() {
+  var hashPayload = require('../src/integrity').hashPayload;
+  var payload = {
+    input: 'Approve refund #84721? $284.00, 18 days old',
+    output: 'Customer within 30-day window. No prior refund history. Amount within auto-approval threshold ($500). Approve immediately.',
+    order_id: '84721',
+    amount: 284.00
+  };
+  var expected = hashPayload(payload);
+
+  // Every full-length hash on the page must be that one.
+  var found = demo.match(/\b[a-f0-9]{64}\b/g) || [];
+  assert(found.length > 0, 'demo shows no payload hash at all');
+  found.forEach(function(h) {
+    assert(h === expected,
+      'demo shows hash ' + h.slice(0, 16) + '... but its stated payload hashes to ' + expected.slice(0, 16) + '...');
+  });
+
+  // And the truncated display must be a prefix of the same hash.
+  (demo.match(/\b[a-f0-9]{32}\b/g) || []).forEach(function(h) {
+    assert(expected.indexOf(h) === 0,
+      'truncated hash ' + h.slice(0, 16) + '... is not a prefix of the real payload hash');
+  });
+});
+
+// A dead proof link is worse than no proof link, and the demo has shipped one
+// before: a record referenced here was removed by a data purge and the page
+// kept advertising it as a public verify link for anyone to check.
+test('demo references exactly one record id, consistently', function() {
+  var ids = demo.match(/ctx_[0-9]{10,}_[a-f0-9]{6,}/g) || [];
+  assert(ids.length > 0, 'demo references no record id');
+  // The canonical id is the longest form present; shorter matches are the
+  // truncated console-style displays of the same record.
+  var maxLen = Math.max.apply(null, ids.map(function(i) { return i.length; }));
+  var full = ids.filter(function(i) { return i.length === maxLen; });
+  var uniq = full.filter(function(v, i, a) { return a.indexOf(v) === i; });
+  assert(uniq.length === 1, 'demo references ' + uniq.length + ' different record ids: ' + uniq.join(', '));
+  // Truncated displays must be prefixes of the full id, not a different record.
+  ids.forEach(function(i) {
+    assert(uniq[0].indexOf(i) === 0, 'id ' + i + ' is not a prefix of ' + uniq[0]);
+  });
+});
 test('demo has hamburger nav', function() {
   assert(demo.includes('dm-ham'), 'demo must have mobile hamburger');
   assert(demo.includes('function dmHam'), 'demo must have dmHam function');

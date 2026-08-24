@@ -267,7 +267,7 @@ footer{border-top:1px solid hsl(var(--void-line));background:hsl(var(--void))}
             <span class="t-wht">client</span> <span class="t-dim">=</span> <span class="t-wht">Anthropic</span><span class="t-dim">(</span><span class="t-yel">dm_api_key</span><span class="t-dim">=</span><span class="t-grn">"dm_sk_..."</span><span class="t-dim">)</span><br><br>
             <span class="t-dim"># Agent calls Claude with policy context</span><br>
             <span class="t-wht">response</span> <span class="t-dim">=</span> <span class="t-wht">client.messages.create</span><span class="t-dim">(</span><br>
-            &nbsp;&nbsp;<span class="t-yel">model</span><span class="t-dim">=</span><span class="t-grn">"claude-sonnet-4-6"</span><span class="t-dim">,</span><br>
+            &nbsp;&nbsp;<span class="t-yel">model</span><span class="t-dim">=</span><span class="t-grn">"claude-sonnet-5"</span><span class="t-dim">,</span><br>
             &nbsp;&nbsp;<span class="t-yel">messages</span><span class="t-dim">=[{</span><span class="t-grn">"role"</span><span class="t-dim">:</span><span class="t-grn">"user"</span><span class="t-dim">,</span><br>
             &nbsp;&nbsp;&nbsp;&nbsp;<span class="t-grn">"content"</span><span class="t-dim">:</span><span class="t-grn">"Approve refund #84721? $284.00, 18 days old"</span><span class="t-dim">}]</span><br>
             <span class="t-dim">)</span><br>
@@ -294,7 +294,7 @@ footer{border-top:1px solid hsl(var(--void-line));background:hsl(var(--void))}
             <div class="dc-chip">order #84721</div>
             <div class="dc-chip">$284.00</div>
             <div class="dc-chip">18 days</div>
-            <div class="dc-chip">claude-sonnet-4-6</div>
+            <div class="dc-chip">claude-sonnet-5</div>
           </div>
         </div>
         <div class="term" style="margin-top:.25rem">
@@ -309,7 +309,7 @@ footer{border-top:1px solid hsl(var(--void-line));background:hsl(var(--void))}
           <div class="term-body">
             <span class="t-dim"># Intercepted, before response reaches your code</span><br>
             <span class="t-wht">payload_hash</span> <span class="t-dim">=</span> <span class="t-wht">sha256</span><span class="t-dim">(</span><span class="t-wht">canonical</span><span class="t-dim">(</span><span class="t-yel">input</span> <span class="t-dim">+</span> <span class="t-yel">output</span><span class="t-dim">))</span><br>
-            <span class="t-grn"># → e11466b0601e6ec30070a8091a0e0455...</span><br><br>
+            <span class="t-grn"># → 3b787cebdbf644abf880491b5389b63a...</span><br><br>
             <span class="t-wht">dm.commit</span><span class="t-dim">(</span><span class="t-wht">payload</span><span class="t-dim">,</span> <span class="t-wht">timestamp</span><span class="t-dim">=</span><span class="t-grn">"now"</span><span class="t-dim">)</span><br>
             <span class="t-dim"># Sending to DarkMatter...</span> <span class="loading-dots" id="seal-loader"><span></span><span></span><span></span></span>
           </div>
@@ -331,7 +331,7 @@ footer{border-top:1px solid hsl(var(--void-line));background:hsl(var(--void))}
             <span>receipt</span>
           </div>
           <div class="term-body">
-            <span class="t-grn">✓ Committed</span> <span class="t-dim">,</span> <span class="t-wht">ctx_1777407029545_d088f4</span><br><br>
+            <span class="t-grn">✓ Committed</span> <span class="t-dim">,</span> <span class="t-wht">ctx_1787544415723_bd78b9</span><br><br>
             <span class="t-yel">integrity_hash</span><span class="t-dim">:</span> <span class="t-grn">"e11466b0601e6ec3..."</span><br>
             <span class="t-yel">chain_position</span><span class="t-dim">:</span> <span class="t-wht">1 of 1</span><br>
             <span class="t-yel">chain_intact</span><span class="t-dim">:</span> <span class="t-grn">true</span><br>
@@ -424,7 +424,7 @@ footer{border-top:1px solid hsl(var(--void-line));background:hsl(var(--void))}
           <div class="proof-rows">
             <div class="proof-row">
               <div class="proof-key">ID</div>
-              <div class="proof-val">ctx_1777407029545_d088f43e983c</div>
+              <div class="proof-val">ctx_1787544415723_bd78b91d9446</div>
             </div>
             <div class="proof-row">
               <div class="proof-key">Input</div>
@@ -463,7 +463,7 @@ footer{border-top:1px solid hsl(var(--void-line));background:hsl(var(--void))}
           <div class="proof-rows">
             <div class="proof-row">
               <div class="proof-key">ID</div>
-              <div class="proof-val">ctx_1777407029545_d088f43e983c</div>
+              <div class="proof-val">ctx_1787544415723_bd78b91d9446</div>
             </div>
             <div class="proof-row">
               <div class="proof-key">Input</div>
@@ -475,7 +475,7 @@ footer{border-top:1px solid hsl(var(--void-line));background:hsl(var(--void))}
             </div>
             <div class="proof-row">
               <div class="proof-key">Hash</div>
-              <div class="proof-val green">e11466b0601e6ec30070a8091a0e0455f4d3e12faae8f46c806141624cedeace</div>
+              <div class="proof-val green">3b787cebdbf644abf880491b5389b63ad4fa64edba0acf9535cdbbabfad4d441</div>
             </div>
             <div class="proof-row">
               <div class="proof-key">Parent hash</div>
@@ -487,7 +487,7 @@ footer{border-top:1px solid hsl(var(--void-line));background:hsl(var(--void))}
             </div>
             <div class="proof-row">
               <div class="proof-key">Agent</div>
-              <div class="proof-val dim">refund-agent-v2 / anthropic / claude-sonnet-4-6</div>
+              <div class="proof-val dim">refund-agent-v2 / anthropic / claude-sonnet-5</div>
             </div>
             <div class="proof-row">
               <div class="proof-key">Assurance</div>
@@ -511,7 +511,7 @@ footer{border-top:1px solid hsl(var(--void-line));background:hsl(var(--void))}
           <div class="verify-body">
             <div class="verify-title">Public verify link, no account needed</div><div style="font-size:11px;font-family:'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:hsl(152,64%,34%);margin-top:.2rem;">Verification does not depend on DarkMatter.</div>
             <div class="verify-sub">Anyone with this link can view the full record, verify the hash chain, and download the proof bundle. Works offline.</div>
-            <div class="verify-url"><a href="https://darkmatterhub.ai/r/ctx_1777407029545_d088f43e983c" target="_blank" rel="noopener" style="color:hsl(152,64%,34%)">darkmatterhub.ai/r/ctx_1777407029545_d088f43e983c</a></div>
+            <div class="verify-url"><a href="https://darkmatterhub.ai/r/ctx_1787544415723_bd78b91d9446" target="_blank" rel="noopener" style="color:hsl(152,64%,34%)">darkmatterhub.ai/r/ctx_1787544415723_bd78b91d9446</a></div>
             <div style="font-size:12px;margin-top:.5rem;color:hsl(var(--trace-dim));font-family:'JetBrains Mono',monospace;">Download the bundle and verify it yourself, no DarkMatter required.</div>
           </div>
         </div>
@@ -658,16 +658,16 @@ function downloadDemoBundle() {
   var bundle = {
     darkmatter_proof_bundle: true,
     version: "1.0",
-    trace_id: "ctx_1777407029545_d088f43e983c",
+    trace_id: "ctx_1787544415723_bd78b91d9446",
     chain_intact: true,
     generated_at: new Date().toISOString(),
     note: "This bundle is derived from a real DarkMatter commit. Verification can be performed independently using the included hashes. No DarkMatter account required.",
     commits: [
       {
-        id: "ctx_1777407029545_d088f43e983c",
+        id: "ctx_1787544415723_bd78b91d9446",
         agent: "refund-agent-v2",
-        model: "claude-sonnet-4-6",
-        timestamp: "2026-04-28T15:24:03.390Z",
+        model: "claude-sonnet-5",
+        timestamp: "2026-08-24T04:06:55.000Z",
         payload: {
           input: "Approve refund #84721? $284.00, 18 days old",
           output: "Customer within 30-day window. No prior refund history. Amount within auto-approval threshold ($500). Approve immediately.",
@@ -675,13 +675,13 @@ function downloadDemoBundle() {
           amount: 284.00
         },
         integrity: {
-          payload_hash: "sha256:e11466b0601e6ec30070a8091a0e0455f4d3e12faae8f46c806141624cedeace",
+          payload_hash: "sha256:3b787cebdbf644abf880491b5389b63ad4fa64edba0acf9535cdbbabfad4d441",
           parent_hash: "root",
           chain_position: 1,
           chain_intact: true,
           assurance_level: "L2"
         },
-        verify_url: "https://darkmatterhub.ai/r/ctx_1777407029545_d088f43e983c"
+        verify_url: "https://darkmatterhub.ai/r/ctx_1787544415723_bd78b91d9446"
       }
     ],
     verification_instructions: "To verify offline: download verify_darkmatter_chain.py from darkmatterhub.ai and run: python verify_darkmatter_chain.py bundle.json"
@@ -699,7 +699,7 @@ function downloadDemoBundle() {
 
 
 function animateHash() {
-  var full = 'e11466b0601e6ec30070a8091a0e0455f4d3e12faae8f46c806141624cedeace';
+  var full = '3b787cebdbf644abf880491b5389b63ad4fa64edba0acf9535cdbbabfad4d441';
   var el = document.getElementById('hash-typing');
   var caret = document.getElementById('hash-caret');
   if (!el) return;
