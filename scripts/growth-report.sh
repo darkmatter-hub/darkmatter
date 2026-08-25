@@ -35,7 +35,18 @@ q() { "$PSQL" "$DB" -A -t -c "$1" 2>/dev/null | tr -d ' \r'; }
 
 BOTS="bot|crawl|spider|preview|fetch|curl|wget|python|headless|slurp|axios|node-fetch|okhttp|go-http|java/|libwww|httpclient|scrapy|monitor|uptime|facebookexternalhit|Twitterbot|Slackbot|Discordbot"
 HUMAN="user_agent ~ '^Mozilla/' AND user_agent !~* '$BOTS'"
-REAL="email NOT LIKE '%@healthcheck.invalid' AND email NOT LIKE '%@example.com' AND email NOT LIKE '%@example.invalid' AND email NOT LIKE 'probe%'"
+NOT_PROBE="email NOT LIKE '%@healthcheck.invalid' AND email NOT LIKE '%@example.com' AND email NOT LIKE '%@example.invalid' AND email NOT LIKE 'probe%'"
+
+# A signup that never confirmed its address and never signed in is not a
+# signup. On 2026-08-25 three accounts were created 6.4 seconds apart, none
+# confirmed, none ever signed in, with no agents, no commits and no page views
+# at all: a bot posting straight at /auth/signup. The address filter below did
+# not catch them, because the addresses looked ordinary, and the report duly
+# announced three new signups.
+#
+# So confirmation is now required. It is the cheapest available proof that a
+# person received mail at that address and acted on it.
+REAL="$NOT_PROBE AND email_confirmed_at IS NOT NULL"
 
 echo ""
 echo "  DarkMatter growth report — $(date -u '+%Y-%m-%d %H:%M UTC')"
@@ -51,6 +62,13 @@ echo "    by source, 30d (browser only):"
 printf "    signups, 7d  (excl. probes)  %s\n" "$(q "SELECT count(*) FROM auth.users WHERE created_at > now() - interval '7 days' AND $REAL;")"
 printf "    signups, 30d (excl. probes)  %s\n" "$(q "SELECT count(*) FROM auth.users WHERE created_at > now() - interval '30 days' AND $REAL;")"
 printf "    total accounts (excl. probes)%s\n" " $(q "SELECT count(*) FROM auth.users WHERE $REAL;")"
+printf "    unconfirmed, 7d              %s   (never confirmed or signed in)\n" \
+  "$(q "SELECT count(*) FROM auth.users WHERE created_at > now() - interval '7 days' AND $NOT_PROBE AND email_confirmed_at IS NULL AND last_sign_in_at IS NULL;")"
+# Bot signups arrive in tight bursts. A human filling in a form does not
+# produce three accounts inside ten seconds, so the tightest gap between
+# consecutive signups is a good tell.
+printf "    tightest signup gap, 7d      %s\n" \
+  "$(q "SELECT coalesce(min(gap)::text, 'n/a') FROM (SELECT created_at - lag(created_at) OVER (ORDER BY created_at) AS gap FROM auth.users WHERE created_at > now() - interval '7 days' AND $NOT_PROBE) t WHERE gap IS NOT NULL;")"
 
 echo ""
 echo "  USAGE"
@@ -77,6 +95,9 @@ done
 echo ""
 echo "  ────────────────────────────────────────────────────────────"
 echo "  Package pulls and raw click counts can look healthy while"
-echo "  nothing is happening. Browser clicks, non-probe signups and"
-echo "  repeat-week accounts are the three that cannot lie."
+echo "  nothing is happening. Browser clicks, confirmed signups and"
+echo "  repeat-week accounts are the three that are hardest to fake."
+echo ""
+echo "  A burst of unconfirmed signups with a tiny gap is a bot at"
+echo "  /auth/signup, not demand. It is shown, not counted."
 echo ""
