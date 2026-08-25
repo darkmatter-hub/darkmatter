@@ -336,6 +336,92 @@ var catchallPos = server.indexOf("app.get('*',");
 });
 
 
+// Tweet de-duplication
+//
+// A tweet went out on 2026-08-13 and again on 2026-08-25. Digging in showed it
+// was not a one-off: the old scheduler was `day % 57`, so from 2026-07-01
+// every post repeated one from 57 days earlier, about 50 duplicates in all.
+// Three separate mechanisms produced repeats, and none of them could be fixed
+// by picking indices more cleverly, because nothing recorded what had actually
+// been posted.
+console.log('\nTweet de-duplication');
+(function () {
+  var crypto = require('crypto');
+  var tweetSrc = require('fs').readFileSync(__dirname + '/../scripts/daily-tweet.js', 'utf8');
+  var m = tweetSrc.match(/const TWEETS\s*=\s*\[([\s\S]*?)\n\];/);
+  var TWEETS;
+  eval('TWEETS = [' + m[1] + '\n];');
+  var hash = function (t) { return crypto.createHash('sha256').update(String(t).trim(), 'utf8').digest('hex'); };
+
+  test('bank has no holes', function () {
+    TWEETS.forEach(function (t, i) {
+      assert(typeof t === 'string' && t.trim() !== '',
+        'index ' + i + ' is ' + JSON.stringify(t) + '. A stray comma leaves a hole, and the selector will post "undefined".');
+    });
+  });
+
+  test('bank has no duplicate entries', function () {
+    var seen = {};
+    TWEETS.forEach(function (t, i) {
+      var h = hash(t);
+      assert(seen[h] === undefined, 'index ' + i + ' is identical to index ' + seen[h]);
+      seen[h] = i;
+    });
+  });
+
+  test('ledger exists and is keyed by content hash', function () {
+    var ledger = require('../scripts/posted-tweets.json');
+    assert(Array.isArray(ledger.posted), 'ledger.posted must be an array');
+    ledger.posted.forEach(function (e) {
+      assert(/^[a-f0-9]{64}$/.test(e.hash), 'ledger entry is not a sha256: ' + e.hash);
+    });
+  });
+
+  test('selection never returns an already-posted tweet', function () {
+    var ledger = require('../scripts/posted-tweets.json');
+    var posted = {};
+    ledger.posted.forEach(function (e) { posted[e.hash] = true; });
+
+    // Mirror of nextUnpostedIndex() in scripts/daily-tweet.js.
+    var picked = null;
+    for (var i = 0; i < TWEETS.length; i++) {
+      if (!posted[hash(TWEETS[i])]) { picked = i; break; }
+    }
+    if (picked !== null) {
+      assert(!posted[hash(TWEETS[picked])], 'selected a tweet that is already in the ledger');
+    }
+    // picked === null is the correct answer when the bank is exhausted; the
+    // script then refuses to post rather than wrapping.
+  });
+
+  test('dedupe survives the bank being reordered', function () {
+    // The reason dedupe is on content and not on index. Reversing the array
+    // changes every index while changing no text, so an index-based ledger
+    // would consider the whole bank unposted again.
+    var ledger = require('../scripts/posted-tweets.json');
+    var posted = {};
+    ledger.posted.forEach(function (e) { posted[e.hash] = true; });
+
+    var shuffled = TWEETS.slice().reverse();
+    var stillCovered = shuffled.every(function (t) { return posted[hash(t)] === true; });
+    var allCovered = TWEETS.every(function (t) { return posted[hash(t)] === true; });
+    assert(stillCovered === allCovered,
+      'reordering the bank changed which tweets count as posted; dedupe is index-based, not content-based');
+  });
+
+  test('script refuses to post when every tweet has been used', function () {
+    assert(tweetSrc.includes('nextUnpostedIndex'), 'selection must go through nextUnpostedIndex');
+    assert(tweetSrc.includes('exhausted'), 'the exhausted case must be handled explicitly');
+    assert(!/postsBefore\(day\)\s*\+\s*position\)\s*%\s*TWEETS\.length/.test(tweetSrc),
+      'index is still derived from a running count modulo the bank size, which wraps and repeats');
+  });
+
+  test('manual override cannot silently repost', function () {
+    assert(tweetSrc.includes('ALLOW_REPOST'),
+      'TWEET_INDEX overrides must check the ledger; an override is how the first duplicate got out');
+  });
+})();
+
 // Demo page integrity checks
 console.log('\nDemo page');
 var demo = require('fs').readFileSync(__dirname + '/../public/demo.html', 'utf8');

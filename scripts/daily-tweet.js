@@ -16,6 +16,8 @@
 
 const https  = require('https');
 const crypto = require('crypto');
+const fs     = require('fs');
+const path   = require('path');
 
 // ── Content bank ──────────────────────────────────────────────────────────────
 // 60 posts, 2-month rotation. Covers: positioning, technical facts,
@@ -130,6 +132,107 @@ function withHashtags(text, dayIndex) {
   return tags.length ? text + '\n\n' + tags.join(' ') : text;
 }
 
+// -- Posted-tweet ledger ------------------------------------------------------
+// The schedule decides WHETHER to post. This decides WHAT, and its only rule
+// is that nothing goes out twice.
+//
+// Every earlier version derived the tweet from the date and kept no record of
+// what had been sent, which produced repeats three separate ways: day % 57
+// wrapped after 57 days, manual TWEET_INDEX runs left no trace for the
+// rotation to route around, and the irregular scheduler anchored its counter
+// at zero and replayed the bank from the start.
+//
+// Dedupe is on a hash of the text, not the index. An index only means anything
+// relative to one particular ordering of the bank, so reordering or editing the
+// array would quietly let a posted tweet through again. Readers recognise the
+// words, so the words are what is tracked.
+
+const LEDGER_PATH = path.join(__dirname, 'posted-tweets.json');
+
+const tweetHash = (t) => crypto.createHash('sha256').update(String(t).trim(), 'utf8').digest('hex');
+
+function loadLedger() {
+  try {
+    const raw = JSON.parse(fs.readFileSync(LEDGER_PATH, 'utf8'));
+    return Array.isArray(raw.posted) ? raw : { posted: [] };
+  } catch (e) {
+    // A missing ledger must not be treated as "nothing has been posted", or the
+    // first run after losing the file would repeat the whole bank.
+    console.error(`Cannot read ${LEDGER_PATH}: ${e.message}`);
+    console.error('Refusing to post without it. Restore the file, or regenerate it with scripts/backfill-posted-tweets.js.');
+    process.exit(1);
+  }
+}
+
+function postedHashes() {
+  return new Set(loadLedger().posted.map((e) => e.hash));
+}
+
+// The bank has to be sound before anything is chosen from it.
+//
+// Found by testing: adding a tweet with a stray trailing comma leaves a hole in
+// the array, and the selector happily picked the hole and prepared to post the
+// literal string "undefined" to X. Editing this array by hand is exactly how new
+// tweets get added, so that mistake is likely rather than theoretical.
+//
+// Duplicate entries are fatal for the same reason the ledger exists. The ledger
+// would catch them on the second attempt, but a bank containing the same words
+// twice is a mistake worth surfacing at the point it is made.
+function validateBank() {
+  const problems = [];
+
+  TWEETS.forEach((t, i) => {
+    if (typeof t !== 'string' || t.trim() === '') {
+      problems.push(`index ${i}: not a non-empty string (${JSON.stringify(t)}). A stray comma leaves a hole here.`);
+      return;
+    }
+    if (tweetLength(t) > 280) {
+      problems.push(`index ${i}: ${tweetLength(t)} characters before hashtags, over the 280 limit.`);
+    }
+  });
+
+  const byHash = new Map();
+  TWEETS.forEach((t, i) => {
+    if (typeof t !== 'string') return;
+    const h = tweetHash(t);
+    if (byHash.has(h)) problems.push(`index ${i} is identical to index ${byHash.get(h)}.`);
+    else byHash.set(h, i);
+  });
+
+  if (problems.length) {
+    console.error(`\nThe tweet bank is not usable (${problems.length} problem(s)):\n`);
+    problems.forEach((m) => console.error('  ' + m));
+    console.error('');
+    process.exit(1);
+  }
+  return true;
+}
+
+// The lowest-numbered tweet nobody has seen yet, or null when the bank is used up.
+function nextUnpostedIndex() {
+  const seen = postedHashes();
+  for (let i = 0; i < TWEETS.length; i++) {
+    if (!seen.has(tweetHash(TWEETS[i]))) return i;
+  }
+  return null;
+}
+
+function recordPost(index) {
+  const ledger = loadLedger();
+  const h = tweetHash(TWEETS[index]);
+  const today = new Date().toISOString().slice(0, 10);
+  let entry = ledger.posted.find((e) => e.hash === h);
+  if (!entry) {
+    entry = { hash: h, index_when_recorded: index, dates: [], sources: [] };
+    ledger.posted.push(entry);
+  }
+  if (!entry.dates.includes(today)) entry.dates.push(today);
+  if (!entry.sources.includes('live')) entry.sources.push('live');
+  ledger.bank_size_when_written = TWEETS.length;
+  fs.writeFileSync(LEDGER_PATH, JSON.stringify(ledger, null, 2) + '\n');
+  console.log(`Recorded in posted-tweets.json (${ledger.posted.length}/${TWEETS.length} of the bank used).`);
+}
+
 // ── Irregular posting schedule ────────────────────────────────────────────────
 // A post at exactly 24-hour intervals, day after day without a single gap, is
 // the most legible bot signature there is. No person posts that way. So the
@@ -242,24 +345,29 @@ function postsBefore(day) {
   return count;
 }
 
-// Returns the tweet index this run should post, or null to stay quiet.
-function tweetIndexForThisRun() {
-  if (process.env.FORCE_POST === 'true') {
-    return postsBefore(utcDay()) % TWEETS.length;
-  }
+// What this run should do. The schedule decides whether it is this run's turn;
+// the ledger decides which tweet, and refuses to repeat one.
+//
+// Returns { skip: true } to stay quiet, { exhausted: true } when every tweet
+// has been used, or { index } to post.
+function planThisRun() {
   const day = utcDay();
-  const todays = slotsForDay(day);
-  const slot = currentSlot();
-  const position = todays.indexOf(slot);
 
-  if (position === -1) {
-    const label = todays.length
-      ? `today posts at slot(s) ${todays.join(', ')}`
-      : 'today is a quiet day';
-    console.log(`This run is slot ${slot}; ${label}. Skipping.`);
-    return null;
+  if (process.env.FORCE_POST !== 'true') {
+    const todays = slotsForDay(day);
+    const slot = currentSlot();
+    if (todays.indexOf(slot) === -1) {
+      const label = todays.length
+        ? `today posts at slot(s) ${todays.join(', ')}`
+        : 'today is a quiet day';
+      console.log(`This run is slot ${slot}; ${label}. Skipping.`);
+      return { skip: true };
+    }
   }
-  return (postsBefore(day) + position) % TWEETS.length;
+
+  const index = nextUnpostedIndex();
+  if (index === null) return { exhausted: true };
+  return { index };
 }
 
 // Prints the upcoming cadence so it can be eyeballed before it happens:
@@ -284,12 +392,20 @@ function printSchedule(days = 45) {
       gap = 0;
       total += slots.length;
       const at = slots.map(time).join('  ');
-      const marks = slots.map((_, i) => `#${(postsBefore(d) + i) % TWEETS.length}`).join(' ');
-      console.log(`  ${date} ${dow}   ${slots.length} post${slots.length > 1 ? 's' : ''}  ${at}   ${marks}`);
+      console.log(`  ${date} ${dow}   ${slots.length} post${slots.length > 1 ? 's' : ''}  ${at}`);
     }
   }
   console.log(`\n  ${total} posts over ${days} days (${(total / days).toFixed(2)}/day, ~${Math.round((total / days) * 30)}/month)`);
-  console.log(`  longest silent stretch: ${longestGap} day(s)\n`);
+  console.log(`  longest silent stretch: ${longestGap} day(s)`);
+
+  const remaining = TWEETS.length - loadLedger().posted.length;
+  console.log(`  unposted tweets left:   ${remaining} of ${TWEETS.length}`);
+  if (remaining === 0) {
+    console.log('  the bank is used up; nothing will post until new tweets are added');
+  } else if (total > remaining) {
+    console.log(`  at this rate the bank runs out inside these ${days} days`);
+  }
+  console.log('');
 }
 
 // ── OAuth 1.0a signing ────────────────────────────────────────────────────────
@@ -361,6 +477,15 @@ async function postTweet(text, secrets) {
   // Preview the upcoming cadence. Deliberately before the credential check,
   // since inspecting the schedule should not require X secrets:
   //   node scripts/daily-tweet.js --schedule 60
+  // Validate the bank without needing credentials:
+  //   node scripts/daily-tweet.js --check
+  if (process.argv.includes('--check')) {
+    validateBank();
+    const remaining = TWEETS.length - loadLedger().posted.length;
+    console.log(`Bank OK: ${TWEETS.length} tweets, no holes, no duplicates. ${remaining} unposted.`);
+    process.exit(0);
+  }
+
   const scheduleArg = process.argv.indexOf('--schedule');
   if (scheduleArg !== -1) {
     printSchedule(Number(process.argv[scheduleArg + 1]) || 45);
@@ -370,6 +495,9 @@ async function postTweet(text, secrets) {
   for (const [k, v] of Object.entries(secrets)) {
     if (!v) { console.error(`Missing env var: ${k}`); process.exit(1); }
   }
+
+  // Before anything is selected, including a manual override.
+  validateBank();
 
   // Manual override: post a specific tweet by index (0-based). Set via the
   // workflow_dispatch `tweet_index` input. When present, it bypasses the
@@ -383,12 +511,29 @@ async function postTweet(text, secrets) {
       process.exit(1);
     }
     index = n;
+    if (postedHashes().has(tweetHash(TWEETS[index])) && process.env.ALLOW_REPOST !== 'true') {
+      console.error(`Tweet index ${index} has already been posted. Refusing.`);
+      console.error('A manual override is exactly how the first duplicate got out: it bypassed');
+      console.error('the rotation and left no record, so later runs could not route around it.');
+      console.error('Set ALLOW_REPOST=true if you genuinely intend to post it again.');
+      process.exit(1);
+    }
     console.log(`Manual override: posting tweet index ${index}.`);
   } else {
     // The schedule decides whether this run posts at all. Most runs do not.
-    const picked = tweetIndexForThisRun();
-    if (picked === null) process.exit(0);
-    index = picked;
+    const plan = planThisRun();
+    if (plan.skip) process.exit(0);
+    if (plan.exhausted) {
+      console.error('');
+      console.error(`Every one of the ${TWEETS.length} tweets in the bank has already been posted.`);
+      console.error('Refusing to repeat one. Add new entries to TWEETS in scripts/daily-tweet.js');
+      console.error('and posting resumes on the next scheduled slot.');
+      console.error('');
+      // Non-zero so GitHub emails the owner. Running out of things to say is a
+      // decision for a person, and silently recycling old posts is not it.
+      process.exit(1);
+    }
+    index = plan.index;
   }
 
   const text = withHashtags(TWEETS[index], index);
@@ -399,6 +544,9 @@ async function postTweet(text, secrets) {
   try {
     const result = await postTweet(text, secrets);
     console.log('Posted successfully. Tweet ID:', result?.data?.id);
+    // Only after X confirms. Recording before would mean a failed post burned
+    // a tweet that never actually went out.
+    recordPost(index);
   } catch (err) {
     console.error('Failed to post:', err.message);
     process.exit(1);

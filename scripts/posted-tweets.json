@@ -1,0 +1,634 @@
+{
+  "note": "Tweets already posted, keyed by a sha256 of the tweet text. Maintained by scripts/daily-tweet.js; created by scripts/backfill-posted-tweets.js. Never post a tweet whose hash appears here.",
+  "bank_size_when_written": 57,
+  "posted": [
+    {
+      "hash": "cc6860921ea6521daa8daf168f1d1ef17b8a87dd60a23dbeb3fda55ac3a15cb1",
+      "index_when_recorded": 0,
+      "dates": [
+        "2026-06-30",
+        "2026-08-22"
+      ],
+      "sources": [
+        "derived:day-modulo",
+        "log:irregular"
+      ]
+    },
+    {
+      "hash": "b8a4bed08904988a8f3ba6ad9a53fc0c0ef4a70bd073334a2df963396fd11cc3",
+      "index_when_recorded": 1,
+      "dates": [
+        "2026-05-05",
+        "2026-07-01",
+        "2026-08-22"
+      ],
+      "sources": [
+        "derived:day-modulo",
+        "log:irregular"
+      ]
+    },
+    {
+      "hash": "f04866151e8b71619127e7383b01b623a4cb0a5b8c5ecfaf766fadd2fb3e14d6",
+      "index_when_recorded": 2,
+      "dates": [
+        "2026-05-06",
+        "2026-07-02",
+        "2026-08-13",
+        "2026-08-25"
+      ],
+      "sources": [
+        "derived:day-modulo",
+        "log:manual-override",
+        "log:irregular"
+      ]
+    },
+    {
+      "hash": "9b963f5fbdded38bb04c3e53cb4a787e5b27839907e5aa9ca97b991614f65a61",
+      "index_when_recorded": 3,
+      "dates": [
+        "2026-05-07",
+        "2026-07-03"
+      ],
+      "sources": [
+        "derived:day-modulo"
+      ]
+    },
+    {
+      "hash": "b8c4c1ac4ed6259f154029d7e89b2da9728ccf40f9644cf5a0eca071f978addb",
+      "index_when_recorded": 4,
+      "dates": [
+        "2026-05-08",
+        "2026-07-04"
+      ],
+      "sources": [
+        "derived:day-modulo"
+      ]
+    },
+    {
+      "hash": "ce1aa39f53858f665b3209c4daae783ba4a70c92b4a8cf8b84d8549e7b6b87d8",
+      "index_when_recorded": 5,
+      "dates": [
+        "2026-05-09",
+        "2026-07-05"
+      ],
+      "sources": [
+        "derived:day-modulo"
+      ]
+    },
+    {
+      "hash": "a1f9433e0310ab451b8910dec7015d55a1b36e9e1f67f63829ab63bdb30fff33",
+      "index_when_recorded": 6,
+      "dates": [
+        "2026-05-10",
+        "2026-07-06"
+      ],
+      "sources": [
+        "derived:day-modulo"
+      ]
+    },
+    {
+      "hash": "ac15f8622adefbfb98e9e1db1561a16c7b45d889e9c057b7c21adb1114880240",
+      "index_when_recorded": 7,
+      "dates": [
+        "2026-05-11",
+        "2026-07-07"
+      ],
+      "sources": [
+        "derived:day-modulo"
+      ]
+    },
+    {
+      "hash": "8eb9514e4cc785cc0fafc1783ab401c3bdfa6c10cc908e69ffd8b3340b169391",
+      "index_when_recorded": 8,
+      "dates": [
+        "2026-05-12",
+        "2026-07-08"
+      ],
+      "sources": [
+        "derived:day-modulo"
+      ]
+    },
+    {
+      "hash": "f01a58de91652d1dad49df68f52a7c66c495b65f9b64211425c5ca3038fc7052",
+      "index_when_recorded": 9,
+      "dates": [
+        "2026-05-13",
+        "2026-07-09"
+      ],
+      "sources": [
+        "derived:day-modulo"
+      ]
+    },
+    {
+      "hash": "b901b5686a6de35d5f1f6239d53bfa34c53f14438bd22c233e0244cda47366de",
+      "index_when_recorded": 10,
+      "dates": [
+        "2026-05-14",
+        "2026-07-10"
+      ],
+      "sources": [
+        "derived:day-modulo"
+      ]
+    },
+    {
+      "hash": "96e416fa6303d3fb9bc6d4b014baa3f8c02eeeb596f3f175bf897f960cea1592",
+      "index_when_recorded": 11,
+      "dates": [
+        "2026-05-15",
+        "2026-07-11"
+      ],
+      "sources": [
+        "derived:day-modulo"
+      ]
+    },
+    {
+      "hash": "b8885909ae178582d7e64d7316c3ed8fd260106c3800f5e1999b30bbe2ac2e17",
+      "index_when_recorded": 12,
+      "dates": [
+        "2026-05-16",
+        "2026-07-12"
+      ],
+      "sources": [
+        "derived:day-modulo"
+      ]
+    },
+    {
+      "hash": "dbc3de7696898464ea2e66f40e566fd4dfa2ab5b1c61a9b123465f84aeb49a6a",
+      "index_when_recorded": 13,
+      "dates": [
+        "2026-05-17",
+        "2026-07-13"
+      ],
+      "sources": [
+        "derived:day-modulo"
+      ]
+    },
+    {
+      "hash": "72c4167d91ac4325c7a5dfb42b4b148cc0beb51ad2ca6cb30fab10eb21d0c6e7",
+      "index_when_recorded": 14,
+      "dates": [
+        "2026-05-18",
+        "2026-07-14"
+      ],
+      "sources": [
+        "derived:day-modulo"
+      ]
+    },
+    {
+      "hash": "ca4701bfdbfb22dd63ab08773081d3efae1ca58c5d2268c1cb03958d149602ef",
+      "index_when_recorded": 15,
+      "dates": [
+        "2026-05-19",
+        "2026-07-15"
+      ],
+      "sources": [
+        "derived:day-modulo"
+      ]
+    },
+    {
+      "hash": "e31e8c943d2d1ea58fbd3d6402f4624373b6f4606b5cde20d9957ad391f932d5",
+      "index_when_recorded": 16,
+      "dates": [
+        "2026-05-20",
+        "2026-07-16"
+      ],
+      "sources": [
+        "derived:day-modulo"
+      ]
+    },
+    {
+      "hash": "656003f4091f3e73d47dff1fcc8083af6bbeb9a6f6fadd5a7602f5d58fb04357",
+      "index_when_recorded": 17,
+      "dates": [
+        "2026-05-21",
+        "2026-07-17"
+      ],
+      "sources": [
+        "derived:day-modulo"
+      ]
+    },
+    {
+      "hash": "fa541dabd536ca9878392e169875b22b981e03ce4792e98ba6c0d36e919a44c4",
+      "index_when_recorded": 18,
+      "dates": [
+        "2026-05-22",
+        "2026-07-18"
+      ],
+      "sources": [
+        "derived:day-modulo"
+      ]
+    },
+    {
+      "hash": "acfb07aab846c7915a2dcc847d251a90dd4847adf5bed0923469735944cab104",
+      "index_when_recorded": 19,
+      "dates": [
+        "2026-05-23",
+        "2026-07-19"
+      ],
+      "sources": [
+        "derived:day-modulo"
+      ]
+    },
+    {
+      "hash": "85d6a4e44a8ce0d9d123142c6c7ea40a90bcf3d8c9d0363794cce13a7c366584",
+      "index_when_recorded": 20,
+      "dates": [
+        "2026-05-24",
+        "2026-07-20"
+      ],
+      "sources": [
+        "derived:day-modulo"
+      ]
+    },
+    {
+      "hash": "190c8841455b612d78ef63754b02d85e204a34f36051aeb0fd0ef99fcf1add27",
+      "index_when_recorded": 21,
+      "dates": [
+        "2026-05-25",
+        "2026-07-21"
+      ],
+      "sources": [
+        "derived:day-modulo"
+      ]
+    },
+    {
+      "hash": "bb37e882c6a3462df450c2bff4a2fad6ed11ffcc470716781b97ef757b2c6fec",
+      "index_when_recorded": 22,
+      "dates": [
+        "2026-05-26",
+        "2026-07-22"
+      ],
+      "sources": [
+        "derived:day-modulo"
+      ]
+    },
+    {
+      "hash": "c5b56572405c5407190f7bdf87ea6a4d0ec293bb3b519f3ab25f531bba9fd81a",
+      "index_when_recorded": 23,
+      "dates": [
+        "2026-05-27",
+        "2026-07-23"
+      ],
+      "sources": [
+        "derived:day-modulo"
+      ]
+    },
+    {
+      "hash": "3c4618391fae75a5030384485cb9e55d9efcad5819205488b802fd31e7b27cac",
+      "index_when_recorded": 24,
+      "dates": [
+        "2026-05-28",
+        "2026-07-24"
+      ],
+      "sources": [
+        "derived:day-modulo"
+      ]
+    },
+    {
+      "hash": "abbd7267f09f96c5c7740499cae10b6ffc5252f623edcc2ce16043822785ab59",
+      "index_when_recorded": 25,
+      "dates": [
+        "2026-05-29",
+        "2026-07-25"
+      ],
+      "sources": [
+        "derived:day-modulo"
+      ]
+    },
+    {
+      "hash": "96e1ce4df51cf516d31d5ad66a4f6c1850dc15c02bb3ebb2d740e22ccd8c824c",
+      "index_when_recorded": 26,
+      "dates": [
+        "2026-05-30",
+        "2026-07-26"
+      ],
+      "sources": [
+        "derived:day-modulo"
+      ]
+    },
+    {
+      "hash": "fdfe2805acbea9c02e4e9c9d04dec7916e6c12dc1e55870725bec2bb382232de",
+      "index_when_recorded": 27,
+      "dates": [
+        "2026-05-31",
+        "2026-07-27"
+      ],
+      "sources": [
+        "derived:day-modulo"
+      ]
+    },
+    {
+      "hash": "2011d480adb0b90dffe2ad593c6bdc37310bdf5e506c8753f1529b4267476bad",
+      "index_when_recorded": 28,
+      "dates": [
+        "2026-06-01",
+        "2026-07-28"
+      ],
+      "sources": [
+        "derived:day-modulo"
+      ]
+    },
+    {
+      "hash": "b9cbbfc502f223dfb78f62578ada66822028dfea9812e22063e31e279cf1abf3",
+      "index_when_recorded": 29,
+      "dates": [
+        "2026-06-02",
+        "2026-07-29"
+      ],
+      "sources": [
+        "derived:day-modulo"
+      ]
+    },
+    {
+      "hash": "dc58758e37149e0e45d8f173031ebcc904452e772103ef0f675daefe01da85a3",
+      "index_when_recorded": 30,
+      "dates": [
+        "2026-06-03",
+        "2026-07-30"
+      ],
+      "sources": [
+        "derived:day-modulo"
+      ]
+    },
+    {
+      "hash": "f14ca0b688b565b07cc3f9890c5db271d6b8256a8f0f941d8fcaa1e1a492b262",
+      "index_when_recorded": 31,
+      "dates": [
+        "2026-06-04",
+        "2026-07-31"
+      ],
+      "sources": [
+        "derived:day-modulo"
+      ]
+    },
+    {
+      "hash": "bf1dbb2dd327bf4f050b1236975989acb508f620c13c78d4695a6bcb715e9dc9",
+      "index_when_recorded": 32,
+      "dates": [
+        "2026-06-05",
+        "2026-08-01"
+      ],
+      "sources": [
+        "derived:day-modulo"
+      ]
+    },
+    {
+      "hash": "5355c476a00afd161eaa7d6dbadd210f2cd72030b7324fbad17636120dc5a16a",
+      "index_when_recorded": 33,
+      "dates": [
+        "2026-06-06",
+        "2026-08-02"
+      ],
+      "sources": [
+        "derived:day-modulo"
+      ]
+    },
+    {
+      "hash": "066a14506148232e066159caaf236188148b3440f5dc0134be74c92016afeef7",
+      "index_when_recorded": 34,
+      "dates": [
+        "2026-06-07",
+        "2026-08-03"
+      ],
+      "sources": [
+        "derived:day-modulo"
+      ]
+    },
+    {
+      "hash": "ff6da968ecfb72a967f8013446648f23c697667fc15ac39b095a5bfc97c5b754",
+      "index_when_recorded": 35,
+      "dates": [
+        "2026-06-08",
+        "2026-08-04"
+      ],
+      "sources": [
+        "derived:day-modulo"
+      ]
+    },
+    {
+      "hash": "c2a76fd45fae9798bf58d926a620ac133948e9ee9207f98daf583a401c1bf9ad",
+      "index_when_recorded": 36,
+      "dates": [
+        "2026-06-09",
+        "2026-08-05"
+      ],
+      "sources": [
+        "derived:day-modulo"
+      ]
+    },
+    {
+      "hash": "c3fa5196e225086c63806e20f506ff7dbd0fdba3358544727b72106e66e708ae",
+      "index_when_recorded": 37,
+      "dates": [
+        "2026-06-10",
+        "2026-08-06"
+      ],
+      "sources": [
+        "derived:day-modulo"
+      ]
+    },
+    {
+      "hash": "2e8cac001f19f0c4dbfabc85a83e317bcf0c083f13829c4ba6c2e86b09dcd5ff",
+      "index_when_recorded": 38,
+      "dates": [
+        "2026-06-11",
+        "2026-08-07"
+      ],
+      "sources": [
+        "derived:day-modulo"
+      ]
+    },
+    {
+      "hash": "09b21f9985de723227599b191f0e8b3c00ff1afa83b9ae596124a6536ee69cca",
+      "index_when_recorded": 39,
+      "dates": [
+        "2026-06-12",
+        "2026-08-08"
+      ],
+      "sources": [
+        "derived:day-modulo"
+      ]
+    },
+    {
+      "hash": "2d13fbe4acf5d85c5d48b7f72ce9eb6d7cd24c2995688281dd0047cc4dbbc295",
+      "index_when_recorded": 40,
+      "dates": [
+        "2026-06-13",
+        "2026-08-09"
+      ],
+      "sources": [
+        "derived:day-modulo"
+      ]
+    },
+    {
+      "hash": "c8959d2da651fe6893c1b79b38a52f0486bf1fdb94e484e42605822d3301de0e",
+      "index_when_recorded": 41,
+      "dates": [
+        "2026-06-14",
+        "2026-08-10"
+      ],
+      "sources": [
+        "derived:day-modulo"
+      ]
+    },
+    {
+      "hash": "72046e44fbb2cbe7fa11f4ad1ee798c5f6cb1906d965561356e7432eafcdc46a",
+      "index_when_recorded": 42,
+      "dates": [
+        "2026-06-15",
+        "2026-08-11"
+      ],
+      "sources": [
+        "derived:day-modulo"
+      ]
+    },
+    {
+      "hash": "3cd7d9c844d8a8f93ec2a77545efbde2b5c703c49d6ea772305eb83d8e8b1a7f",
+      "index_when_recorded": 43,
+      "dates": [
+        "2026-06-16",
+        "2026-08-12"
+      ],
+      "sources": [
+        "derived:day-modulo"
+      ]
+    },
+    {
+      "hash": "ceb6ded7a7154cfc6421d70522e66ca19e222be777446c385ae592bacc889c50",
+      "index_when_recorded": 44,
+      "dates": [
+        "2026-06-17",
+        "2026-08-13"
+      ],
+      "sources": [
+        "derived:day-modulo"
+      ]
+    },
+    {
+      "hash": "b87c6b7b46102e799dab56b0c5e14b61ad379b59e0e97f3ffeb265686355c488",
+      "index_when_recorded": 45,
+      "dates": [
+        "2026-06-18",
+        "2026-08-14"
+      ],
+      "sources": [
+        "derived:day-modulo"
+      ]
+    },
+    {
+      "hash": "d838c5cf58341bf5d0a5cbd3f3a266303825eaf47dd7ff6c8e905203822e426e",
+      "index_when_recorded": 46,
+      "dates": [
+        "2026-06-19",
+        "2026-08-15"
+      ],
+      "sources": [
+        "derived:day-modulo"
+      ]
+    },
+    {
+      "hash": "5d173e4e5fd773eca97c1dda6c3fce58e4d2fc684a38d731081d16a350c7804f",
+      "index_when_recorded": 47,
+      "dates": [
+        "2026-06-20",
+        "2026-08-16"
+      ],
+      "sources": [
+        "derived:day-modulo"
+      ]
+    },
+    {
+      "hash": "0824a8586ad6653a136b6995d439763b164c403cf883b26439c4296f5116e1b1",
+      "index_when_recorded": 48,
+      "dates": [
+        "2026-06-21",
+        "2026-08-17"
+      ],
+      "sources": [
+        "derived:day-modulo"
+      ]
+    },
+    {
+      "hash": "543e5315a56f8a80a1c27d3710dadaefc91be4b3275e451597af24ee8e6fc42c",
+      "index_when_recorded": 49,
+      "dates": [
+        "2026-06-22",
+        "2026-08-18"
+      ],
+      "sources": [
+        "derived:day-modulo"
+      ]
+    },
+    {
+      "hash": "136672477ddc6709cb96a4cb4371d755243a8054af4d463519d6e4948f829629",
+      "index_when_recorded": 50,
+      "dates": [
+        "2026-06-23",
+        "2026-08-19"
+      ],
+      "sources": [
+        "derived:day-modulo"
+      ]
+    },
+    {
+      "hash": "411f91f6be40211e82427a283ea25af227abff5a4bad1a45ce3bed94fd7ffedd",
+      "index_when_recorded": 51,
+      "dates": [
+        "2026-06-24"
+      ],
+      "sources": [
+        "derived:day-modulo"
+      ]
+    },
+    {
+      "hash": "768ec4981229aaf23293056a2db56417aaae25bb4d72227ce369b1b0032d703c",
+      "index_when_recorded": 52,
+      "dates": [
+        "2026-06-25"
+      ],
+      "sources": [
+        "derived:day-modulo"
+      ]
+    },
+    {
+      "hash": "b8cb1d5788c6f176d754afc9a21a072d28a096f01f6fc28d2c37ddb11d35e6f8",
+      "index_when_recorded": 53,
+      "dates": [
+        "2026-06-26"
+      ],
+      "sources": [
+        "derived:day-modulo"
+      ]
+    },
+    {
+      "hash": "47bb5536ba7a0f590c7b5c6a3cef9ee46af20ac19c9c84308d2655cb1c870903",
+      "index_when_recorded": 54,
+      "dates": [
+        "2026-06-27"
+      ],
+      "sources": [
+        "derived:day-modulo"
+      ]
+    },
+    {
+      "hash": "13752c3e9099ffd7e6c31823084b6179e32f625db1a22a36267925c08f538172",
+      "index_when_recorded": 55,
+      "dates": [
+        "2026-06-28"
+      ],
+      "sources": [
+        "derived:day-modulo"
+      ]
+    },
+    {
+      "hash": "0958b6352c8535c6a2dc0fcb15a849c6fbb220030f22fc8304f43f0c5e69a32f",
+      "index_when_recorded": 56,
+      "dates": [
+        "2026-06-29"
+      ],
+      "sources": [
+        "derived:day-modulo"
+      ]
+    }
+  ]
+}

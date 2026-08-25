@@ -16,6 +16,9 @@ on:
         required: false
         default: ''
 
+permissions:
+  contents: write
+
 jobs:
   tweet:
     name: Post daily tweet
@@ -40,3 +43,29 @@ jobs:
           # Optional: post a specific tweet by index (manual runs only).
           TWEET_INDEX: ${{ github.event.inputs.tweet_index }}
         run: node scripts/daily-tweet.js
+
+      # The ledger is the only thing preventing a repeat, so it has to outlive
+      # the runner. Without this commit every run would start from an empty
+      # ledger and cheerfully repost the whole bank, which is the failure this
+      # was built to end.
+      #
+      # always(), because a run that posted and then failed later must still
+      # record what went out. The alternative is a tweet that exists on X but
+      # not in the ledger, which is exactly how it gets sent twice.
+      - name: Record what was posted
+        if: always()
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- scripts/posted-tweets.json; then
+            echo "Nothing posted this run; ledger unchanged."
+            exit 0
+          fi
+          git config user.name  'darkmatter-tweet'
+          git config user.email 'actions@github.com'
+          git add scripts/posted-tweets.json
+          git commit -m "chore: record posted tweet"
+          # Another run may have pushed between checkout and here.
+          git pull --rebase --autostash origin main
+          git push
+          echo "Ledger updated."
+
