@@ -19,6 +19,19 @@ on:
 permissions:
   contents: write
 
+# Serialise runs. Selection reads the ledger, posts, then commits it, so two
+# runs executing at once would both read the same ledger, both pick the same
+# unposted tweet, and both post it. That is a duplicate arriving by a different
+# route than the ones already fixed.
+#
+# It is not hypothetical: a GitHub Actions outage on 2026-08-26 left runs
+# queued, and a backlog releasing together is exactly the condition that
+# triggers it. cancel-in-progress is false because a cancelled run might have
+# already posted without recording it.
+concurrency:
+  group: daily-tweet
+  cancel-in-progress: false
+
 jobs:
   tweet:
     name: Post daily tweet
