@@ -99,6 +99,174 @@ const TWEETS = [
   `The question isn't whether AI will make mistakes. It will.\n\nThe question is whether you'll be able to prove what happened when it does.\n\nDarkMatter: darkmatterhub.ai/go/x`,
   `Regulation is coming for AI. The teams that will handle it are the ones with verifiable records, not better excuses.\n\nDarkMatter: darkmatterhub.ai/go/x`,
   `One API call creates a tamper-evident, cryptographically signed record of any AI agent action.\n\nThat record can be verified by anyone, anywhere, without trusting DarkMatter.\n\ndarkmatterhub.ai/go/x`,
+
+  // ---------------------------------------------------------------
+  // Added 2026-08-25, after the bank ran dry. Every claim below is true
+  // of the shipped code and the live service as of that date.
+
+
+  // --- the connector, which is the lowest-friction way in -------------------
+  `Record what your agent decided, from inside Claude:
+
+claude mcp add darkmatter -- npx -y @darkmatterhub/mcp-server
+
+Five tools: commit, verify, replay, export, list. No account needed.
+
+darkmatterhub.ai/go/x`,
+
+  `The DarkMatter MCP server runs entirely on your machine by default.
+
+No account, no API key, no data leaving your laptop. The chain still verifies offline.
+
+Add a key only when you want a link someone else can check.
+
+darkmatterhub.ai/go/x`,
+
+  `DarkMatter is now in the official MCP registry.
+
+Any MCP client that reads the registry can find it and wire up verifiable agent records without knowing the package name.
+
+darkmatterhub.ai/go/x`,
+
+  // --- the standard --------------------------------------------------------
+  `Context Passport is CC0. Public domain, no licence to accept, no company to depend on.
+
+The format outlives whoever implements it. That is the point of a standard.
+
+github.com/contextpassport/spec`,
+
+  `Context Passport v2.0 uses RFC 8785 for canonical JSON.
+
+The Python and TypeScript implementations produce byte-identical hashes for the same record. A record sealed by one verifies in the other.
+
+darkmatterhub.ai/go/x`,
+
+  `Why canonicalization matters: if two implementations serialize the same JSON differently, they compute different hashes, and a valid record looks tampered.
+
+RFC 8785 removes the ambiguity. Same bytes, same hash, every time.
+
+darkmatterhub.ai/go/x`,
+
+  // --- compliance ----------------------------------------------------------
+  `Recording an erasure without breaking the audit trail:
+
+You cannot edit the old record. Changing a payload changes its hash and breaks every record chained after it.
+
+So erasure is a new event pointing at the old one.
+
+darkmatterhub.ai/go/x`,
+
+  `Context Passport has five compliance event types: consent, override, escalate, redact, audit.
+
+Worked examples for all of them, with real hashes, in the spec repo.
+
+github.com/contextpassport/spec`,
+
+  `An override only means something next to the decision it overrides.
+
+So the override record links to the original by hash: the model's call, the human's reversal, and the reason, in one chain.
+
+darkmatterhub.ai/go/x`,
+
+  `When a human overrules an AI decision, the interesting record is not the outcome. It is the reason, the authority, and the fact that the model was left unchanged.
+
+All three belong in the record.
+
+darkmatterhub.ai/go/x`,
+
+  // --- the mechanism -------------------------------------------------------
+  `Tamper evidence is not tamper prevention.
+
+DarkMatter cannot stop anyone editing a record. It makes the edit mathematically detectable by anyone holding the chain, including people who do not trust us.
+
+darkmatterhub.ai/go/x`,
+
+  `Verifying a DarkMatter chain needs the records and nothing else.
+
+No server. No network. No account. No permission from us.
+
+If verification needed our cooperation, it would not be worth much.
+
+darkmatterhub.ai/go/x`,
+
+  `Each record commits to the hash of the one before it.
+
+Edit step one and step two no longer matches. The break is detectable, and it points at exactly which step was altered.
+
+darkmatterhub.ai/go/x`,
+
+  `A hash of the payload is not enough on its own.
+
+Anyone can recompute a hash after editing the text. What makes it evidence is that the next record already committed to the old value.
+
+darkmatterhub.ai/go/x`,
+
+  // --- quickstart / proof --------------------------------------------------
+  `Five minutes from pip install to a verified chain, ending by editing a record on purpose so you watch verification fail.
+
+That last step is the only claim that matters, so the quickstart demonstrates it.
+
+github.com/contextpassport/spec`,
+
+  `Do not take our word for the tamper detection.
+
+pip install context-passport, chain two records, verify, then change one character and verify again.
+
+It returns False. That is the whole product.
+
+github.com/contextpassport/spec`,
+
+  // --- regulation ----------------------------------------------------------
+  `EU AI Act Article 12 requires automatic logging across a high risk system's lifetime.
+
+It applies from 2 December 2027 after the Digital Omnibus deferral.
+
+That is time to build records worth producing, not to retrofit them.
+
+darkmatterhub.ai/go/x`,
+
+  `"We have logs" and "we have evidence" are different claims.
+
+Logs are written by the system under question, held by the party being asked, and editable by whoever runs it. Evidence survives all three.
+
+darkmatterhub.ai/go/x`,
+
+  `The question after an AI decision goes wrong is never "what does the log say".
+
+It is "who could have changed the log, and would anyone know".
+
+darkmatterhub.ai/go/x`,
+
+  // --- practical -----------------------------------------------------------
+  `Agent handoffs lose context silently. Agent A finishes, agent B starts, and nothing records what was passed or why.
+
+A Context Passport record makes the handoff itself a first class event.
+
+darkmatterhub.ai/go/x`,
+
+  `Every DarkMatter record is private by default.
+
+A proof link only exists once you publish that record deliberately. Nothing is readable by URL guessing.
+
+darkmatterhub.ai/go/x`,
+
+  `Records carry the model and provider that produced them.
+
+Six months later, "which model decided this" is not a question anyone should have to reconstruct from deployment history.
+
+darkmatterhub.ai/go/x`,
+
+  `Confidence scores belong in the record.
+
+A decision made at 0.42 confidence and one made at 0.98 are different decisions, and only one of them should have been automatic.
+
+darkmatterhub.ai/go/x`,
+
+  `An audit trail nobody has ever verified is a folder, not a control.
+
+Verify a sample on the way in, not for the first time during an investigation.
+
+darkmatterhub.ai/go/x`,
 ];
 
 // ── Hashtags ──────────────────────────────────────────────────────────────────
