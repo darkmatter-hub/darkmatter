@@ -127,6 +127,16 @@ jobs:
             echo "::error::payload_hash did not verify for the advertised demo record."; exit 1; }
           echo "Public proof page renders and verifies."
 
+      - name: Public pages make no claim that has rotted
+        if: always()
+        run: |
+          set -uo pipefail
+          # Claims rot with time, not with commits. CI only runs on push, so a
+          # page can sit for months making a statement that quietly stopped
+          # being true. "80 days to August 2" survived exactly that way. This
+          # runs every six hours whether or not anyone touches the repository.
+          node scripts/content-audit.js
+
       # Deliberately NO signup probe.
       #
       # Hitting /auth/signup creates a real row in auth.users on every run,
