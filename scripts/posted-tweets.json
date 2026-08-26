@@ -1,6 +1,6 @@
 {
   "note": "Tweets already posted, keyed by a sha256 of the tweet text. Maintained by scripts/daily-tweet.js; created by scripts/backfill-posted-tweets.js. Never post a tweet whose hash appears here.",
-  "bank_size_when_written": 57,
+  "bank_size_when_written": 81,
   "posted": [
     {
       "hash": "cc6860921ea6521daa8daf168f1d1ef17b8a87dd60a23dbeb3fda55ac3a15cb1",
@@ -628,6 +628,16 @@
       ],
       "sources": [
         "derived:day-modulo"
+      ]
+    },
+    {
+      "hash": "366d599cfc13bb921bee2582fc54d796197d7c0245e368862075da443888fe75",
+      "index_when_recorded": 57,
+      "dates": [
+        "2026-08-26"
+      ],
+      "sources": [
+        "live"
       ]
     }
   ]
