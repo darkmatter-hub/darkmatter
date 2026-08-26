@@ -158,7 +158,7 @@ footer a{color:inherit}
 
 <section class="cta">
   <div class="wrap">
-    <h2>80 days to August 2.<br>Set up takes 15 minutes.</h2>
+    <h2 id="cta-heading">Applies from 2 December 2027.<br>Set up takes 15 minutes.</h2>
     <p>One line of code at decision time, one open-source verifier, one Witness Log entry that survives even if we don't. Start free, no card required.</p>
     <a href="/signup" class="primary">Start for free →</a>
   </div>
@@ -184,13 +184,32 @@ footer a{color:inherit}
   var now = new Date();
   var days = Math.ceil((deadline - now) / 86400000);
   var el = document.getElementById('countdown');
-  if (!el) return;
-  if (days > 0) {
-    el.textContent = 'Applies from 2 December 2027 — ' + days + ' day' + (days === 1 ? '' : 's') + ' away (deferred from 2 August 2026 by the Digital Omnibus).';
-  } else if (days === 0) {
-    el.textContent = 'Applies from today, 2 December 2027.';
-  } else {
-    el.textContent = 'Applicable since 2 December 2027.';
+  if (el) {
+    if (days > 0) {
+      el.textContent = 'Applies from 2 December 2027, ' + days + ' day' + (days === 1 ? '' : 's') + ' away (deferred from 2 August 2026 by the Digital Omnibus).';
+    } else if (days === 0) {
+      el.textContent = 'Applies from today, 2 December 2027.';
+    } else {
+      el.textContent = 'Applicable since 2 December 2027.';
+    }
+  }
+
+  // The call to action used to read "80 days to August 2", written by hand.
+  // A day count typed into markup is wrong the next morning and false within
+  // the week, and this one outlived the date it referred to. It is derived
+  // from the same deadline as the countdown above, so the two cannot disagree
+  // and neither can rot.
+  var cta = document.getElementById('cta-heading');
+  if (cta) {
+    var lead;
+    if (days > 0) {
+      lead = days + ' day' + (days === 1 ? '' : 's') + ' to 2 December 2027.';
+    } else if (days === 0) {
+      lead = 'Article 12 applies from today.';
+    } else {
+      lead = 'Article 12 is in force.';
+    }
+    cta.innerHTML = lead + '<br>Set up takes 15 minutes.';
   }
 })();
 </script>

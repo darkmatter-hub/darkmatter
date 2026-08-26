@@ -28,6 +28,16 @@ jobs:
       - name: Check server.js syntax
         run: node --check src/server.js
 
+      # Catches claims that rot. A hardcoded "80 days to August 2" sat on the
+      # EU AI Act page well past that date, beside a countdown that was
+      # dynamic and correct. Blocking here is the only way a marketing page
+      # gets the same scrutiny as code.
+      - name: Audit public pages for stale claims
+        run: node scripts/content-audit.js
+
+      - name: Check the tweet bank is sound
+        run: node scripts/daily-tweet.js --check
+
       - name: Check no duplicate routes
         run: |
           COUNT=$(grep -c "app.get('/dashboard/commits'" src/server.js || true)
