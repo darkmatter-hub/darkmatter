@@ -887,22 +887,18 @@ app.post('/auth/signup', authLimiter, async (req, res) => {
     if (data.session) setAuthCookies(res, data.session);
     res.json({ user: data.user });
 
-    // Fire-and-forget admin notification — do not await, never blocks signup response
-    if (process.env.RESEND_API_KEY && data.user) {
-      const signupUserId  = data.user.id || 'unknown';
-      const signupEmail   = data.user.email || email;
-      const signupTime    = new Date().toUTCString();
-      fetch('https://api.resend.com/emails', {
-        method:  'POST',
-        headers: { 'Authorization': `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          from:    'DarkMatter <hello@darkmatterhub.ai>',
-          to:      ['hello@darkmatterhub.ai'],
-          subject: `New signup: ${signupEmail}`,
-          text:    `New user signed up on DarkMatter.\n\nEmail: ${signupEmail}\nUser ID: ${signupUserId}\nTime: ${signupTime}\n\nhttps://darkmatterhub.ai/admindashboard\n`,
-        }),
-      }).catch(e => console.error('[signup] Admin notification email failed:', e.message));
-    }
+    // No notification here on purpose.
+    //
+    // This used to email on signup, which meant every abandoned or automated
+    // signup reached the inbox before anyone had proved they owned the address.
+    // Nine such accounts exist and not one of them ever confirmed. An alert
+    // that is mostly noise stops being read, and the first real customer is
+    // precisely the message that must not be ignored.
+    //
+    // notifyNewlyConfirmed() sends it once the address is confirmed instead.
+    // Unconfirmed signups are still visible: scripts/growth-report.sh counts
+    // them on their own line, and they cannot do anything until confirmed,
+    // because Supabase refuses to issue a session without it.
   } catch (err) {
     // Log the real cause server-side; never surface internal errors (e.g.
     // "fetch failed" when Supabase is unreachable) to the browser.
@@ -8385,6 +8381,77 @@ async function sendGrowthReport({ email = true } = {}) {
   }
 }
 
+// -- New confirmed user notification -----------------------------------------
+// Supabase confirms an address through a client-side token exchange in
+// /auth/callback, so the server never sees the moment it happens. This sweeps
+// for it instead, on the keepalive timer.
+//
+// The high-water mark lives in app_state rather than memory. In memory it
+// would either re-send after every deploy, or lose anyone who confirmed during
+// a restart. Missing the first real customer is the worse of the two, so it is
+// persisted.
+
+const SIGNUP_MARK_KEY = 'signup_notify_mark';
+
+async function notifyNewlyConfirmed() {
+  if (!process.env.RESEND_API_KEY) return;
+  try {
+    const { data: markRow } = await supabaseService
+      .from('app_state').select('value').eq('key', SIGNUP_MARK_KEY).maybeSingle();
+
+    const setMark = (iso) => supabaseService.from('app_state')
+      .upsert({ key: SIGNUP_MARK_KEY, value: iso, updated_at: new Date().toISOString() });
+
+    // First run: record where we are and send nothing. Otherwise the existing
+    // confirmed accounts would all arrive as "new" in one burst.
+    if (!markRow || !markRow.value) {
+      await setMark(new Date().toISOString());
+      console.log('[signup-notify] mark initialised; no backlog sent');
+      return;
+    }
+
+    const since = new Date(markRow.value);
+    const { data, error } = await supabaseService.auth.admin.listUsers({ page: 1, perPage: 200 });
+    if (error) throw new Error(error.message);
+
+    const fresh = (data && data.users ? data.users : [])
+      .filter((u) => u.email_confirmed_at && new Date(u.email_confirmed_at) > since)
+      .sort((a, b) => new Date(a.email_confirmed_at) - new Date(b.email_confirmed_at));
+
+    if (fresh.length === 0) return;
+
+    for (const u of fresh) {
+      await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          from: 'DarkMatter <hello@darkmatterhub.ai>',
+          to: ['hello@darkmatterhub.ai'],
+          subject: `Confirmed signup: ${u.email}`,
+          text: [
+            'Somebody confirmed their email address on DarkMatter.',
+            '',
+            `Email: ${u.email}`,
+            `User ID: ${u.id}`,
+            `Signed up: ${u.created_at}`,
+            `Confirmed: ${u.email_confirmed_at}`,
+            '',
+            'This only fires after confirmation, so it is a person who received',
+            'mail at that address and acted on it, not just a submitted form.',
+            '',
+            'https://darkmatterhub.ai/admindashboard',
+          ].join('\n'),
+        }),
+      }).catch((e) => console.error('[signup-notify] send failed:', e.message));
+    }
+
+    await setMark(fresh[fresh.length - 1].email_confirmed_at);
+    console.log(`[signup-notify] notified about ${fresh.length} confirmed signup(s)`);
+  } catch (e) {
+    console.error('[signup-notify] failed:', e.message);
+  }
+}
+
 const KEEPALIVE_INTERVAL_MS = 6 * 60 * 60 * 1000; // 6h, well inside the ~7 day window
 
 async function supabaseKeepalive() {
@@ -8410,7 +8477,8 @@ const server = app.listen(PORT, () => {
 
   if (process.env.KEEPALIVE_DISABLED !== 'true') {
     supabaseKeepalive();
-    const t = setInterval(supabaseKeepalive, KEEPALIVE_INTERVAL_MS);
+    notifyNewlyConfirmed();
+    const t = setInterval(() => { supabaseKeepalive(); notifyNewlyConfirmed(); }, KEEPALIVE_INTERVAL_MS);
     if (t.unref) t.unref(); // never hold the process open during shutdown
     console.log(`[keepalive] enabled, every ${KEEPALIVE_INTERVAL_MS / 3600000}h`);
   }
