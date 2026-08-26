@@ -422,6 +422,65 @@ console.log('\nTweet de-duplication');
   });
 })();
 
+// Hashtags
+//
+// Tags used to be seven fixed sets indexed by tweet number, so they repeated
+// every seventh post and had nothing to do with the content. A tweet whose
+// entire subject was "claude mcp add" went out under #AIgovernance #LLM
+// #AIagents: generic, and a wasted opportunity, since the people searching
+// #MCP are the ones who would install it.
+console.log('\nHashtags');
+(function () {
+  var src = require('fs').readFileSync(__dirname + '/../scripts/daily-tweet.js', 'utf8');
+  var tweetsSrc = src.match(/const TWEETS\s*=\s*\[([\s\S]*?)\n\];/)[0];
+  var tagSrc = src.slice(src.indexOf('const TOPIC_TAGS'), src.indexOf('// X counts an auto-linked URL'));
+  var mod = eval(tweetsSrc + '\n' + tagSrc + '\n({ TWEETS: TWEETS, uniqueTagsFor: uniqueTagsFor })');
+  var TWEETS = mod.TWEETS;
+  var tagsFor = mod.uniqueTagsFor;
+  var key = function (a) { return a.slice().sort().join(' '); };
+
+  test('every tweet gets three tags', function () {
+    TWEETS.forEach(function (_, i) {
+      assert(tagsFor(i).length === 3, 'tweet ' + i + ' got ' + tagsFor(i).length + ' tags');
+    });
+  });
+
+  test('no tag set repeats within six posts', function () {
+    for (var i = 0; i < TWEETS.length; i++) {
+      for (var j = Math.max(0, i - 6); j < i; j++) {
+        assert(key(tagsFor(j)) !== key(tagsFor(i)),
+          'tweets ' + j + ' and ' + i + ' share the same tags: ' + key(tagsFor(i)));
+      }
+    }
+  });
+
+  test('tags follow the content', function () {
+    // The specific failure that prompted this: a tweet about the MCP server
+    // tagged with generic AI-governance terms.
+    var cases = [
+      [/claude mcp add|mcp server|mcp registry/i, '#MCP'],
+      [/erasure|gdpr/i, '#GDPR'],
+      [/rfc 8785/i, '#RFC8785'],
+      [/eu ai act|article 12/i, '#EUAIAct'],
+    ];
+    TWEETS.forEach(function (t, i) {
+      cases.forEach(function (c) {
+        if (!c[0].test(t)) return;
+        assert(tagsFor(i).indexOf(c[1]) !== -1,
+          'tweet ' + i + ' matches ' + c[0] + ' but lacks ' + c[1] + ': ' + tagsFor(i).join(' '));
+      });
+    });
+  });
+
+  test('the tag vocabulary is wide enough to look human', function () {
+    var all = {};
+    TWEETS.forEach(function (_, i) { tagsFor(i).forEach(function (t) { all[t] = 1; }); });
+    var n = Object.keys(all).length;
+    // The old scheme used 13 tags across seven fixed sets.
+    assert(n >= 30, 'only ' + n + ' distinct tags in use across ' + TWEETS.length + ' tweets');
+  });
+})();
+
 // Demo page integrity checks
 console.log('\nDemo page');
 var demo = require('fs').readFileSync(__dirname + '/../public/demo.html', 'utf8');

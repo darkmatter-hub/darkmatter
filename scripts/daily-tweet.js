@@ -269,19 +269,121 @@ Verify a sample on the way in, not for the first time during an investigation.
 darkmatterhub.ai/go/x`,
 ];
 
-// ── Hashtags ──────────────────────────────────────────────────────────────────
-// Rotating sets, 3 tags per day, chosen deterministically by UTC day. Tags are
-// appended only if the result still fits in X's 280-char limit (URLs count as
-// 23 chars regardless of length).
-const HASHTAG_SETS = [
-  ['#AI', '#AIagents', '#AIsafety'],
-  ['#AIgovernance', '#LLM', '#AIagents'],
-  ['#responsibleAI', '#AIaudit', '#AI'],
-  ['#AIcompliance', '#AIagents', '#MLOps'],
-  ['#AIsafety', '#AIgovernance', '#LLMs'],
-  ['#AI', '#AIaudit', '#EUAIact'],
-  ['#AIagents', '#AItransparency', '#LLMOps'],
+// -- Hashtags ----------------------------------------------------------------
+// Tags are chosen from what the tweet actually says, not from a rotating list.
+//
+// The previous version indexed seven fixed sets by tweet number, so the tags
+// repeated every seventh post and had nothing to do with the content. A tweet
+// whose whole subject was "claude mcp add" went out under #AIgovernance #LLM
+// #AIagents, which is both generic and a wasted opportunity: the people
+// searching #MCP are exactly the ones who would install it.
+//
+// Topical tags come first, then the pool fills any remaining slots, offset by
+// the tweet index so two posts drawing on the same pool do not look alike.
+
+const TOPIC_TAGS = [
+  { match: /claude mcp add|\bmcp\b|mcp-server|mcp registry/i, tags: ['#MCP', '#ClaudeCode', '#Anthropic', '#AItooling', '#DevTools'] },
+  { match: /\bclaude\b|anthropic/i,                            tags: ['#Claude', '#Anthropic'] },
+  { match: /eu ai act|article 12|digital omnibus/i,            tags: ['#EUAIAct', '#AIRegulation', '#AIcompliance', '#TechPolicy', '#AIlaw'] },
+  { match: /gdpr|erasure|consent|redact/i,                     tags: ['#GDPR', '#DataPrivacy', '#AIcompliance', '#PrivacyEngineering', '#DataProtection'] },
+  { match: /rfc 8785|canonical|byte-identical|serriali|serializ/i, tags: ['#RFC8785', '#Cryptography', '#OpenStandards', '#JSON', '#Interop'] },
+  { match: /context passport|cc0|public domain|the spec\b/i,   tags: ['#OpenStandards', '#OpenSource', '#CC0', '#InteropStandards'] },
+  { match: /regulator|auditor|audit trail|\baudit\b|evidence/i, tags: ['#AIaudit', '#GRC', '#Compliance', '#RiskManagement', '#InternalAudit', '#Assurance'] },
+  { match: /override|human overrules|escalat|reviewer/i,       tags: ['#HumanInTheLoop', '#AIgovernance', '#AIoversight', '#AccountableAI'] },
+  { match: /\bhash(es|ed|ing)?\b|tamper|sha-?256|signature|ed25519|merkle|verif/i, tags: ['#Cryptography', '#AIsafety', '#Provenance', '#TamperEvident', '#DataIntegrity'] },
+  { match: /handoff|agent a\b|multi-?agent|agents are/i,       tags: ['#AIagents', '#MultiAgent', '#AgentOps', '#Orchestration'] },
+  { match: /langchain|langgraph|crewai/i,                      tags: ['#LangChain', '#AIagents'] },
+  { match: /pip install|python/i,                              tags: ['#Python'] },
+  { match: /typescript|npm install/i,                          tags: ['#TypeScript'] },
+  { match: /\blogs?\b|observab|post-?mortem/i,                tags: ['#Observability', '#SRE', '#IncidentResponse', '#Postmortem', '#Reliability'] },
+  { match: /confidence|threshold|decision/i,                   tags: ['#MLOps', '#AIagents'] },
+  { match: /openttimestamps|opentimestamps|anchor/i,           tags: ['#Provenance', '#Cryptography'] },
 ];
+
+// Used only to fill slots the content did not earn.
+const TAG_POOL = [
+  '#AI', '#AIagents', '#AIgovernance', '#LLM', '#AIsafety',
+  '#responsibleAI', '#AItransparency', '#LLMOps', '#MLOps', '#AIaudit',
+];
+
+const MAX_TAGS = 3;
+
+function tagsFor(text, index, shift = 0) {
+  const picked = [];
+  const add = (t) => { if (!picked.includes(t) && picked.length < MAX_TAGS) picked.push(t); };
+
+  for (const topic of TOPIC_TAGS) {
+    if (!topic.match.test(text)) continue;
+
+    // The first tag of a topic is its most searched, most on-the-nose term:
+    // #MCP for an MCP tweet, #GDPR for an erasure tweet. It is always used.
+    // Rotating everything, as an earlier version did, pushed #MCP off a tweet
+    // about the MCP server in favour of #AItooling, trading the whole point of
+    // content-aware tagging for variety.
+    add(topic.tags[0]);
+
+    // The rest rotate, so two tweets on the same subject differ.
+    const rest = topic.tags.slice(1);
+    if (rest.length) {
+      const offset = (index + shift) % rest.length;
+      for (let i = 0; i < rest.length; i++) add(rest[(offset + i) % rest.length]);
+    }
+    if (picked.length >= MAX_TAGS) break;
+  }
+
+  for (let i = 0; picked.length < MAX_TAGS && i < TAG_POOL.length; i++) {
+    add(TAG_POOL[(index * 3 + shift + i) % TAG_POOL.length]);
+  }
+  return picked;
+}
+
+const setKey = (tags) => tags.slice().sort().join(' ');
+
+// How many recent tweets a tag set must differ from.
+//
+// Not global uniqueness. Several tweets are genuinely about cryptography, and
+// tagging all of them #Cryptography is right rather than repetitive; forcing 81
+// distinct three-tag sets would mean inventing tags nobody searches. What reads
+// as lazy is two posts in the same week carrying the same three, and that is
+// what this prevents.
+const TAG_MEMORY = 6;
+
+// The assignment is computed once for the whole bank, in order, and cached.
+//
+// An earlier version recomputed the window on every lookup, so the set it
+// assigned to tweet 57 depended on which tweet was being asked about. That is
+// not a stable assignment, and it let repeats through: nine pairs inside the
+// window, including three consecutive posts sharing the same three tags.
+let _tagAssignment = null;
+
+function tagAssignment() {
+  if (_tagAssignment) return _tagAssignment;
+  const out = [];
+  const recent = [];
+  for (let i = 0; i < TWEETS.length; i++) {
+    let tags = [];
+    let settled = false;
+    for (let shift = 0; shift < TAG_POOL.length && !settled; shift++) {
+      tags = tagsFor(TWEETS[i], i, shift);
+      if (!recent.includes(setKey(tags))) settled = true;
+    }
+    // Rotation exhausted. Keep the two tags the content earned and substitute
+    // the third, rather than repeating a set seen in the last few posts.
+    for (let k = 0; k < TAG_POOL.length && !settled; k++) {
+      const candidate = TAG_POOL[(i + k) % TAG_POOL.length];
+      if (tags.includes(candidate)) continue;
+      const swapped = tags.slice(0, MAX_TAGS - 1).concat(candidate);
+      if (!recent.includes(setKey(swapped))) { tags = swapped; settled = true; }
+    }
+    out.push(tags);
+    recent.push(setKey(tags));
+    if (recent.length > TAG_MEMORY) recent.shift();
+  }
+  _tagAssignment = out;
+  return out;
+}
+
+const uniqueTagsFor = (index) => tagAssignment()[index] || [];
 
 // X counts an auto-linked URL as 23 characters. Substitute any URL with a
 // 23-char placeholder before measuring length.
@@ -292,7 +394,7 @@ function tweetLength(text) {
 }
 
 function withHashtags(text, dayIndex) {
-  const tags = [...HASHTAG_SETS[dayIndex % HASHTAG_SETS.length]];
+  const tags = uniqueTagsFor(dayIndex);
   // Drop trailing tags until the whole post fits in 280 chars.
   while (tags.length && tweetLength(text + '\n\n' + tags.join(' ')) > 280) {
     tags.pop();
