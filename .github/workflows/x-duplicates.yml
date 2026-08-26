@@ -1,0 +1,44 @@
+name: X duplicates
+
+# Finds tweets posted more than once on the DarkMatter account, and optionally
+# removes the later copies.
+#
+# Manual only. Deleting a tweet cannot be undone, so this never runs on a
+# schedule and never deletes unless the mode is set to "delete" deliberately.
+# The default mode lists what it would remove and changes nothing.
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'list = show duplicates only. delete = remove the later copies (irreversible).'
+        required: true
+        default: list
+        type: choice
+        options: [list, delete]
+
+permissions:
+  contents: read
+
+jobs:
+  duplicates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Find duplicates
+        env:
+          X_API_KEY:             ${{ secrets.X_API_KEY }}
+          X_API_SECRET:          ${{ secrets.X_API_SECRET }}
+          X_ACCESS_TOKEN:        ${{ secrets.X_ACCESS_TOKEN }}
+          X_ACCESS_TOKEN_SECRET: ${{ secrets.X_ACCESS_TOKEN_SECRET }}
+        run: |
+          if [ "${{ inputs.mode }}" = "delete" ]; then
+            node scripts/x-duplicates.js --delete
+          else
+            node scripts/x-duplicates.js
+          fi
