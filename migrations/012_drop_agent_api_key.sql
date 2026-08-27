@@ -1,0 +1,33 @@
+-- 012_drop_agent_api_key.sql
+--
+-- Phase 3 of removing plaintext API key storage (security finding F8), and the
+-- last of it. Phases 009 and 010 shipped on 2026-08-19; this ran on 2026-08-27.
+--
+--   009  added key_hint and backfilled it, so the dashboard had something to
+--        display that was not the credential itself
+--   010  dropped NOT NULL, so code that no longer writes the column could
+--        deploy in either order without an outage
+--   012  drops the column
+--
+-- Numbered 012 rather than the 011 that 010's comment promised, because 011
+-- was taken by app_state in the meantime.
+--
+-- What this removes: 58 live agent credentials stored in plaintext beside the
+-- hash that actually authenticates them. Every database backup, every replica,
+-- every leaked service-role key and every future injection carried all 58 in
+-- readable form. The column had no readers left: authentication matches
+-- api_key_hash, and the dashboard renders key_hint.
+--
+-- Verified immediately before running:
+--
+--   agents                     58
+--   with plaintext api_key     58
+--   with api_key_hash          58
+--   with key_hint              58
+--   agents with no hash         0   <- nobody loses access
+--
+-- This is irreversible, and deliberately so. Taking a backup of the column
+-- first would preserve exactly the thing the finding says should not exist.
+-- The credentials remain valid; only our redundant readable copy is gone.
+
+ALTER TABLE agents DROP COLUMN IF EXISTS api_key;

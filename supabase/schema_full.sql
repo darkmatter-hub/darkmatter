@@ -32,21 +32,6 @@ CREATE SCHEMA public;
 COMMENT ON SCHEMA public IS 'standard public schema';
 
 
---
--- Name: get_agent_by_api_key(text); Type: FUNCTION; Schema: public; Owner: -
---
-
-CREATE FUNCTION public.get_agent_by_api_key(p_api_key text) RETURNS TABLE(agent_id text, agent_name text, user_id uuid, public_key text)
-    LANGUAGE sql SECURITY DEFINER
-    SET search_path TO 'public'
-    AS $$
-  select agent_id, agent_name, user_id, public_key
-  from agents
-  where api_key = p_api_key
-    and api_key is not null;
-$$;
-
-
 SET default_tablespace = '';
 
 SET default_table_access_method = heap;
@@ -150,7 +135,6 @@ CREATE TABLE public.agents (
     agent_id text NOT NULL,
     agent_name text NOT NULL,
     user_id uuid,
-    api_key text NOT NULL,
     public_key text,
     created_at timestamp with time zone DEFAULT now(),
     last_active timestamp with time zone,
@@ -162,8 +146,34 @@ CREATE TABLE public.agents (
     encrypted boolean DEFAULT false,
     key_id text,
     slack_channel text,
-    api_key_hash text
+    api_key_hash text,
+    key_hint text
 );
+
+
+--
+-- Name: COLUMN agents.key_hint; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.agents.key_hint IS 'Masked display hint (e.g. dm_sk_ab12****cd34) for the dashboard. The plaintext api_key column it replaced was dropped in migration 012. Never used for authentication; that is api_key_hash.';
+
+
+--
+-- Name: app_state; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.app_state (
+    key text NOT NULL,
+    value text NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: TABLE app_state; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.app_state IS 'Small server-side key/value state that must survive restarts. Not user data.';
 
 
 --
@@ -220,6 +230,46 @@ CREATE SEQUENCE public.checkpoints_id_seq
 --
 
 ALTER SEQUENCE public.checkpoints_id_seq OWNED BY public.checkpoints.id;
+
+
+--
+-- Name: click_events; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.click_events (
+    id bigint NOT NULL,
+    source text NOT NULL,
+    path text,
+    user_agent text,
+    referer text,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: TABLE click_events; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.click_events IS 'Inbound marketing click attribution. Written by GET /go/:source. No PII stored.';
+
+
+--
+-- Name: click_events_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.click_events_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: click_events_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.click_events_id_seq OWNED BY public.click_events.id;
 
 
 --
@@ -955,6 +1005,13 @@ ALTER TABLE ONLY public.checkpoints ALTER COLUMN id SET DEFAULT nextval('public.
 
 
 --
+-- Name: click_events id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.click_events ALTER COLUMN id SET DEFAULT nextval('public.click_events_id_seq'::regclass);
+
+
+--
 -- Name: key_events id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1015,19 +1072,19 @@ ALTER TABLE ONLY public.agent_pubkeys
 
 
 --
--- Name: agents agents_api_key_key; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.agents
-    ADD CONSTRAINT agents_api_key_key UNIQUE (api_key);
-
-
---
 -- Name: agents agents_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.agents
     ADD CONSTRAINT agents_pkey PRIMARY KEY (agent_id);
+
+
+--
+-- Name: app_state app_state_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.app_state
+    ADD CONSTRAINT app_state_pkey PRIMARY KEY (key);
 
 
 --
@@ -1044,6 +1101,14 @@ ALTER TABLE ONLY public.checkpoints
 
 ALTER TABLE ONLY public.checkpoints
     ADD CONSTRAINT checkpoints_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: click_events click_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.click_events
+    ADD CONSTRAINT click_events_pkey PRIMARY KEY (id);
 
 
 --
@@ -1348,13 +1413,6 @@ CREATE INDEX agent_pubkeys_agent_time_idx ON public.agent_pubkeys USING btree (a
 
 
 --
--- Name: agents_api_key_idx; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX agents_api_key_idx ON public.agents USING btree (api_key);
-
-
---
 -- Name: agents_user_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1366,6 +1424,13 @@ CREATE INDEX agents_user_idx ON public.agents USING btree (user_id);
 --
 
 CREATE INDEX checkpoints_cp_id_idx ON public.checkpoints USING btree (checkpoint_id);
+
+
+--
+-- Name: click_events_source_created_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX click_events_source_created_idx ON public.click_events USING btree (source, created_at DESC);
 
 
 --
@@ -2226,6 +2291,12 @@ CREATE POLICY "agent_pubkeys: service role write" ON public.agent_pubkeys TO ser
 ALTER TABLE public.agents ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: app_state; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.app_state ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: checkpoints; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -2251,6 +2322,12 @@ CREATE POLICY "checkpoints: public read" ON public.checkpoints FOR SELECT USING 
 
 CREATE POLICY "checkpoints: update via service role" ON public.checkpoints FOR UPDATE TO service_role USING (true);
 
+
+--
+-- Name: click_events; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.click_events ENABLE ROW LEVEL SECURITY;
 
 --
 -- Name: commit_attachments; Type: ROW SECURITY; Schema: public; Owner: -

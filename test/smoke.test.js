@@ -94,7 +94,31 @@ test('verify uses flexAuth',   function() { assert(server.includes("app.get('/ap
 test('wsAuth token rotation',  function() { assert(server.includes('X-New-Access-Token')); });
 test('requireApiKey is async', function() { assert(server.includes('async function requireApiKey')); });
 test('requireApiKey no broken RPC', function() { assert(!server.includes("rpc('get_agent_by_api_key'"), 'Broken RPC call still present'); });
-test('requireApiKey direct query', function() { assert(server.includes(".eq('api_key', apiKey)")); });
+// This test used to assert the OPPOSITE of what security requires.
+//
+// It read `assert(server.includes(".eq('api_key', apiKey)"))`, demanding the
+// plaintext credential lookup be present. F8 removed that lookup: matching a
+// caller-supplied key against a plaintext column meant every agent credential
+// sat readable in the database, recoverable from any backup, replica or leaked
+// service-role key.
+//
+// The test kept passing anyway, because the only remaining occurrence of that
+// string is the comment in server.js explaining the removal. A test that
+// passes by matching a description of the code's absence is worse than no test:
+// it reports coverage of a property that is not merely unchecked but inverted.
+//
+// Comments are stripped before matching, so the explanation cannot satisfy the
+// assertion about the thing it explains.
+test('requireApiKey authenticates by hash, never by plaintext', function() {
+  var code = server
+    .replace(/\/\*[\s\S]*?\*\//g, ' ')
+    .split('\n').filter(function(l) { return !/^\s*\/\//.test(l); }).join('\n');
+
+  assert(code.includes(".eq('api_key_hash', keyHash)"),
+    'hash lookup missing: authentication must match a stored hash');
+  assert(!/\.eq\(\s*'api_key'\s*,/.test(code),
+    'plaintext api_key lookup is back in the code; F8 removed it deliberately');
+});
 
 // 5. /dashboard/commits flat fields
 console.log('\n/dashboard/commits');
