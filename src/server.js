@@ -5209,18 +5209,31 @@ app.get('/r/:traceId', apiLimiter, async (req, res) => {
         format_version: '1.0',
         spec:           'https://github.com/contextpassport/spec',
         record_schema:  CONTEXT_PASSPORT_SCHEMA_URL,
-        how_to_verify: {
-          summary: 'Each record commits to the hash of the one before it. Editing any record changes its hash and breaks verification of every record after it. You can confirm that offline, without trusting DarkMatter.',
-          python: [
-            'pip install context-passport',
-            'python -c "import json; from context_passport import verify_chain; print(verify_chain(json.load(open(\'bundle.json\'))[\'passports\']))"',
-          ],
-          typescript: [
-            'npm install @contextpassport/core',
-            'node -e "const {verifyChain}=require(\'@contextpassport/core\');console.log(verifyChain(require(\'./bundle.json\').passports))"',
-          ],
-          expect: 'true if the chain is intact. Change one character in any payload and run it again: it returns false.',
-        },
+        // No verify_chain instructions here yet, deliberately.
+        //
+        // They were added and then removed within the hour, because testing
+        // them against the live service showed they return false on an intact
+        // chain. Shipping a command that tells an auditor a good record is bad
+        // is worse than shipping no command at all.
+        //
+        // The cause is a real conformance gap, not a typo in the instructions.
+        // payload_hash matches SPEC.md 3.4 exactly. integrity_hash does not:
+        //
+        //   spec:        sha256( "sha256:" + payload_hex + parent_or_root )
+        //   darkmatter:  sha256(            payload_hex + parent_or_root )
+        //
+        // The prefix is omitted, so every integrity_hash this service has ever
+        // written differs from the value the reference SDKs compute, and
+        // verify_chain correctly reports the chain as broken. The records are
+        // self-consistent and this route's own verifier agrees with them; they
+        // simply are not what the published standard describes.
+        //
+        // Closing that gap is a decision, not a patch: changing the formula
+        // changes every future integrity_hash and leaves the existing records
+        // on the old rule. Until it is made, this bundle states what it is and
+        // does not claim third-party verifiability it cannot currently
+        // deliver.
+        conformance_note: 'payload_hash follows the Context Passport specification. integrity_hash currently differs from the specification formula, so the reference SDKs report these chains as broken. Verification against this service is available at verify_url. See https://github.com/contextpassport/spec for the format.',
         trace_id: traceId, chain_intact: chainIntact, step_count: commits.length,
         verification: verifyDetail,
         passports: passports,
