@@ -9,7 +9,8 @@ const { createClient } = require('@supabase/supabase-js');
 // F16: hashChain and verifySignature used to be destructured here, but
 // integrity.js exports neither, so both bindings were undefined — never
 // called, but a latent TypeError waiting for a first caller. Removed.
-const { canonicalize, hashPayload, validateClientHashes, verifyChain } = require('./integrity');
+const { canonicalize, hashPayload, validateClientHashes, verifyChain,
+        chainIntegrityHash, computeChain } = require('./integrity');
 const { appendToLog, getServerPublicKeyPem, verifyLogConsistency,
   generateProofForCommit, CHECKPOINT_SCHEMA_VERSION,
   verifyCheckpointConsistency,
@@ -1868,8 +1869,10 @@ app.post('/api/commit', apiLimiter, requireApiKey, async (req, res) => {
       if (parentCommit.integrity_hash) parentHash = parentCommit.integrity_hash;
     }
 
-    const serverChainInput   = serverPayloadHash + (parentHash || 'root');
-    const serverIntegrityHash = crypto.createHash('sha256').update(serverChainInput).digest('hex');
+    // SPEC.md 3.4. Concatenates the "sha256:"-prefixed forms, which is what
+    // the reference SDKs hash; this used to concatenate bare hex, so no record
+    // written here verified in them.
+    const serverIntegrityHash = chainIntegrityHash(serverPayloadHash, parentHash);
 
     // If client sent pre-computed hashes, cross-check them.
     // Store client hashes (they signed over those). Flag mismatch.
@@ -2473,8 +2476,7 @@ app.post('/api/fork/:ctxId', apiLimiter, requireApiKey, async (req, res) => {
     // missed when the other three were fixed because the pattern is split
     // across lines and a single-line search did not match it.
     const payloadHash = hashPayload(forkPayload);
-    const chainInput     = payloadHash + (forkCommit.integrity_hash || 'root');
-    const integrityHash  = crypto.createHash('sha256').update(chainInput).digest('hex');
+    const integrityHash  = chainIntegrityHash(payloadHash, forkCommit.integrity_hash);
     const resolvedBranch = branchKey || `fork-${forkId.slice(-6)}`;
 
     const { error } = await supabaseService.from('commits').insert({
@@ -4746,10 +4748,10 @@ app.post('/api/commit/rich', apiLimiter, requireApiKey, async (req, res) => {
     const userId      = agentRecord.user_id;
     const ctxId       = 'ctx_' + Date.now() + '_' + crypto.randomBytes(4).toString('hex');
 
-    // Compute hashes
-    const payloadHash = 'sha256:' + crypto.createHash('sha256')
-      .update(JSON.stringify(payload)).digest('hex');
-
+    // This path was wrong twice over. It hashed JSON.stringify(payload)
+    // rather than the RFC 8785 canonical form, and it folded ctxId into the
+    // chain input, which no verifier knows to do. Records from here could not
+    // be checked by anything, including our own other code paths.
     let parentHash = null;
     if (parentId) {
       const { data: parent } = await supabaseService
@@ -4757,8 +4759,9 @@ app.post('/api/commit/rich', apiLimiter, requireApiKey, async (req, res) => {
       parentHash = parent?.integrity_hash || null;
     }
 
-    const integrityHash = 'sha256:' + crypto.createHash('sha256')
-      .update(payloadHash + (parentHash || '') + ctxId).digest('hex');
+    const chain = computeChain(payload, parentHash);
+    const payloadHash = chain.payloadHash;
+    const integrityHash = chain.integrityHash;
 
     // Insert base commit
     const { data: commitData, error: commitError } = await supabaseService
@@ -5209,31 +5212,23 @@ app.get('/r/:traceId', apiLimiter, async (req, res) => {
         format_version: '1.0',
         spec:           'https://github.com/contextpassport/spec',
         record_schema:  CONTEXT_PASSPORT_SCHEMA_URL,
-        // No verify_chain instructions here yet, deliberately.
-        //
-        // They were added and then removed within the hour, because testing
-        // them against the live service showed they return false on an intact
-        // chain. Shipping a command that tells an auditor a good record is bad
-        // is worse than shipping no command at all.
-        //
-        // The cause is a real conformance gap, not a typo in the instructions.
-        // payload_hash matches SPEC.md 3.4 exactly. integrity_hash does not:
-        //
-        //   spec:        sha256( "sha256:" + payload_hex + parent_or_root )
-        //   darkmatter:  sha256(            payload_hex + parent_or_root )
-        //
-        // The prefix is omitted, so every integrity_hash this service has ever
-        // written differs from the value the reference SDKs compute, and
-        // verify_chain correctly reports the chain as broken. The records are
-        // self-consistent and this route's own verifier agrees with them; they
-        // simply are not what the published standard describes.
-        //
-        // Closing that gap is a decision, not a patch: changing the formula
-        // changes every future integrity_hash and leaves the existing records
-        // on the old rule. Until it is made, this bundle states what it is and
-        // does not claim third-party verifiability it cannot currently
-        // deliver.
-        conformance_note: 'payload_hash follows the Context Passport specification. integrity_hash currently differs from the specification formula, so the reference SDKs report these chains as broken. Verification against this service is available at verify_url. See https://github.com/contextpassport/spec for the format.',
+        // These instructions were added, found to return false on an intact
+        // chain, removed the same hour, and are back only now that the records
+        // actually conform. integrity_hash is computed per SPEC.md 3.4 by a
+        // single helper shared by every write path, and the output is verified
+        // byte for byte against the reference SDK in test/conformance.test.js.
+        how_to_verify: {
+          summary: 'Each record commits to the hash of the one before it. Editing any record changes its hash and breaks verification of every record after it. You can confirm that offline, with the open-source reference implementation, without trusting DarkMatter.',
+          python: [
+            'pip install context-passport',
+            'python -c "import json; from context_passport import verify_chain; print(verify_chain(json.load(open(\'bundle.json\'))[\'passports\']))"',
+          ],
+          typescript: [
+            'npm install @contextpassport/core',
+            'node -e "const {verifyChain}=require(\'@contextpassport/core\');console.log(verifyChain(require(\'./bundle.json\').passports))"',
+          ],
+          expect: 'true if the chain is intact. Change one character in any payload and run it again: it returns false.',
+        },
         trace_id: traceId, chain_intact: chainIntact, step_count: commits.length,
         verification: verifyDetail,
         passports: passports,
@@ -6085,8 +6080,11 @@ async function recordClaudeInteraction({ upstreamPath, requestBody, responseText
 
     const parentHash  = parentData?.integrity_hash || 'root';
     const crypto      = require('crypto');
-    const payloadHash = crypto.createHash('sha256').update(JSON.stringify(payload)).digest('hex');
-    const integrityH  = crypto.createHash('sha256').update(payloadHash + parentHash).digest('hex');
+    // Was JSON.stringify, which is not RFC 8785, so these payload hashes were
+    // not reproducible by any conformant verifier.
+    const proxyChain  = computeChain(payload, parentHash === 'root' ? null : parentHash);
+    const payloadHash = proxyChain.payloadHash;
+    const integrityH  = proxyChain.integrityHash;
     const traceId     = sessionId ? 'claude_' + sessionId : 'claude_' + Date.now();
 
     await supabaseService.from('commits').insert({
@@ -6827,8 +6825,8 @@ async function commitProxyInteraction({ provider, upstreamPath, requestBody, res
       .order('timestamp', { ascending: false }).limit(1).single();
 
     const parentHash = parentRes?.data?.integrity_hash || 'root';
-    const payloadHash = require('crypto').createHash('sha256')
-      .update(JSON.stringify(payload)).digest('hex');
+    const proxyChain2 = computeChain(payload, parentHash === 'root' ? null : parentHash);
+    const payloadHash = proxyChain2.payloadHash;
 
     await supabaseService.from('commits').insert({
       id:               'ctx_' + Date.now() + '_' + require('crypto').randomBytes(4).toString('hex'),
@@ -6839,8 +6837,7 @@ async function commitProxyInteraction({ provider, upstreamPath, requestBody, res
       payload,
       payload_hash:     payloadHash,
       parent_hash:      parentHash,
-      integrity_hash:   require('crypto').createHash('sha256')
-                          .update(payloadHash + parentHash).digest('hex'),
+      integrity_hash:   proxyChain2.integrityHash,
       timestamp:        clientTs,
       event_type:       'commit',
       branch_key:       'main',
@@ -7649,10 +7646,7 @@ async function commitWorkspaceChat({ userId, agentId, provider, model, messages,
       .single();
 
     const parentHash    = parentCommit?.integrity_hash || 'root';
-    const integrityHash = require('crypto')
-      .createHash('sha256')
-      .update(payloadHash + parentHash)
-      .digest('hex');
+    const integrityHash = chainIntegrityHash(payloadHash, parentHash === 'root' ? null : parentHash);
 
     await supabaseService.from('commits').insert({
       id:               commitId,

@@ -28,6 +28,13 @@ jobs:
       - name: Check server.js syntax
         run: node --check src/server.js
 
+      # Compares our hashing against values produced by the Python reference
+      # SDK. Every other test here checks this codebase against itself, which
+      # is how five write paths drifted away from the specification while
+      # everything stayed green.
+      - name: Conformance with the Context Passport specification
+        run: node test/conformance.test.js
+
       # Catches claims that rot. A hardcoded "80 days to August 2" sat on the
       # EU AI Act page well past that date, beside a countdown that was
       # dynamic and correct. Blocking here is the only way a marketing page

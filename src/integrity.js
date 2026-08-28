@@ -93,6 +93,81 @@ function hashPayload(payload) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// CONTEXT PASSPORT CHAIN HASHING (SPEC.md 3.4)
+//
+// One function, used by every write path, so a record produced anywhere in this
+// service verifies in the reference SDKs.
+//
+// It did not used to. Five write paths computed hashes five different ways:
+//
+//   /api/commit      JCS payload hash, chain input "payloadHex + parentHex"
+//   /api/fork        same, and the only one anyone had checked
+//   claude proxy     JSON.stringify payload hash, not JCS at all
+//   agent proxy      JSON.stringify payload hash, not JCS at all
+//   workspace chat   chain input "payloadHex + parentHex"
+//   one other path   chain input "payloadHex + parentHex + ctxId"
+//
+// Two problems ran through them. JSON.stringify is not RFC 8785, so three paths
+// produced payload hashes that no conformant verifier can reproduce. And every
+// path concatenated bare hex, while the specification concatenates the
+// "sha256:"-prefixed forms:
+//
+//   spec        integrity_hash = sha256( "sha256:"+payloadHex + parent_or_"root" )
+//   was         integrity_hash = sha256(           payloadHex + parent_or_"root" )
+//
+// The result was that every record this service had ever written failed
+// verify_chain in the SDKs we tell customers to verify with, while our own
+// verifier agreed with them. Self-consistent, and not the published standard.
+//
+// Storage stays bare hex, which is what the columns hold and what the rest of
+// the code expects. Only the bytes that get hashed changed, and the API adds
+// the prefix on the way out.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const HASH_PREFIX = 'sha256:';
+
+/** Add the prefix if it is not already there. Never double-prefix. */
+function prefixed(hex) {
+  if (!hex) return null;
+  const s = String(hex);
+  return s.startsWith(HASH_PREFIX) ? s : HASH_PREFIX + s;
+}
+
+/** Strip the prefix. Storage columns hold bare hex. */
+function bare(hash) {
+  if (!hash) return null;
+  const s = String(hash);
+  return s.startsWith(HASH_PREFIX) ? s.slice(HASH_PREFIX.length) : s;
+}
+
+/**
+ * integrity_hash per SPEC.md 3.4, returned as bare hex.
+ *
+ * @param {string} payloadHashHex        bare hex from hashPayload()
+ * @param {string|null} parentIntegrityHex bare hex of the parent, or null for a root
+ */
+function chainIntegrityHash(payloadHashHex, parentIntegrityHex) {
+  const parent = parentIntegrityHex ? prefixed(bare(parentIntegrityHex)) : 'root';
+  const chainInput = prefixed(bare(payloadHashHex)) + parent;
+  return crypto.createHash('sha256').update(chainInput, 'utf8').digest('hex');
+}
+
+/**
+ * The whole chain step for one record: canonical payload hash and the
+ * integrity hash that binds it to its parent. Both bare hex.
+ *
+ * Every write path calls this. Adding a sixth path and hashing it by hand is
+ * how the previous five drifted apart.
+ */
+function computeChain(payload, parentIntegrityHex) {
+  const payloadHash = hashPayload(payload);
+  return {
+    payloadHash,
+    integrityHash: chainIntegrityHash(payloadHash, parentIntegrityHex),
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // COMMIT ENVELOPE
 //
 // The envelope is what is hashed to produce integrity_hash,
@@ -282,6 +357,10 @@ module.exports = {
   SCHEMA_VERSION,
   canonicalize,
   hashPayload,
+  prefixed,
+  bare,
+  chainIntegrityHash,
+  computeChain,
   buildEnvelope,
   hashEnvelope,
   computeIntegrityHash,

@@ -1,0 +1,78 @@
+{
+  "parent_for_child_cases": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "vectors": [
+    {
+      "label": "ascii with integer",
+      "payload": {
+        "amount": 284,
+        "note": "ok"
+      },
+      "payload_hash": "sha256:184832e6199a81b4204f9dd4d54c171bf241479f87196b5f1b586454d4ca5124",
+      "integrity_root": "sha256:8bf7f3dbe6a0a1df47dbe33c6568ad9f8e8a9e345f9e45633c48115cd8b96d71",
+      "integrity_child": "sha256:23d24c75d2e9c01e41f1e8b6944a4e0d33f3633a8cae3091361e9e47352a41c8"
+    },
+    {
+      "label": "float value",
+      "payload": {
+        "amount": 284.5
+      },
+      "payload_hash": "sha256:01992b31de986384fbf601fd4e694a574952117f9fda01d55363d7775359a7a9",
+      "integrity_root": "sha256:2bb89a16810acc731823e8f298a0fecbacb1fbc724221f8bc8685c4f352510dd",
+      "integrity_child": "sha256:5779f144bbc731bc2f30c8f4be2f7757684bd869adb6165599a6da40edf3dbe7"
+    },
+    {
+      "label": "non-ascii text",
+      "payload": {
+        "city": "München"
+      },
+      "payload_hash": "sha256:cdd3aa0523831826b1b01c92a77962e83a80bd00144656d0761b55c5c5113965",
+      "integrity_root": "sha256:af0daaa574e31148fde23f7fd60edc6520c2c7b9b8729bc7eda64898da6b552a",
+      "integrity_child": "sha256:f65225a4e4f1192e9bbb0aed4a3d080e19b295e19da947b8779ffc37d44c83d5"
+    },
+    {
+      "label": "emoji",
+      "payload": {
+        "note": "approved ✅"
+      },
+      "payload_hash": "sha256:1d8ec3a6113502975260d8f53a634c75136870f0011368fc90a9448655a4cfdc",
+      "integrity_root": "sha256:5ea7ed893008982c3701e0f1ce3d9e1cfe283e558ffb1b7be30f6a524754e3f9",
+      "integrity_child": "sha256:393765b5fc8352c16e6f9e208e31e811023eb782004af9002d55fc145e22994a"
+    },
+    {
+      "label": "nested structures",
+      "payload": {
+        "a": {
+          "b": [
+            1,
+            2,
+            {
+              "c": true
+            }
+          ]
+        },
+        "z": null
+      },
+      "payload_hash": "sha256:4b15fc0cf48653bd4333f9996e833da99f14260833a40c6d60047ef890856b1b",
+      "integrity_root": "sha256:64533dc69773856c8de5079fff93fece704210b65ce0fd917a5195ee9e19a050",
+      "integrity_child": "sha256:b0df18b1f38260220f4bd537e0348f17cba5ea6ed6fbefc1a8e6b8a7099debe6"
+    },
+    {
+      "label": "keys out of order",
+      "payload": {
+        "z": 1,
+        "a": 2,
+        "m": 3
+      },
+      "payload_hash": "sha256:ebba85cfdc0a724b6cc327ecc545faeb38b9fe02eca603b430eb872f5cf75370",
+      "integrity_root": "sha256:60e1af84b1fd224373367153a158d1e3b84e5bed729fa0939a23b1283c3e7485",
+      "integrity_child": "sha256:8e92f2fdab0f3b6c383dedd5ae5d2d1751f65e3b1bfdf3bc72b6bcd8767ce3b9"
+    },
+    {
+      "label": "empty payload",
+      "payload": {},
+      "payload_hash": "sha256:44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "integrity_root": "sha256:a57947906b4408c47b7c6a4450b20d0162b5fd0571ca41f93e22c8cbd9084f26",
+      "integrity_child": "sha256:8bf29cadb41cc021458307b81436b254ceac3629084b9a7646e8e99098546fe2"
+    }
+  ]
+}
