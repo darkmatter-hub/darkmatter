@@ -136,8 +136,23 @@ test('no buildContext wrapping', function() {
 
 // 6. /r/ public page
 console.log('\n/r/ public record page');
+// Slice a route handler by finding where it ends, not by guessing a length.
+//
+// Several tests took a fixed number of characters from the start of the /r/
+// handler. Adding a few hundred characters to that handler pushed the L2 and
+// L3 badge assertions outside the window and failed them, while the code they
+// check was untouched. A test that fails because unrelated code grew is a test
+// that trains you to ignore it.
+function handlerSlice(src, startPattern) {
+  var i = src.indexOf(startPattern);
+  if (i === -1) return '';
+  // The next top-level route registration marks the end of this one.
+  var next = src.indexOf('\napp.', i + 1);
+  return src.slice(i, next === -1 ? src.length : next);
+}
+
 var ri = server.indexOf("app.get('/r/:traceId'");
-var rb = server.slice(ri, ri + 60000);
+var rb = handlerSlice(server, "app.get('/r/:traceId'");
 test('first-screen',          function() { assert(rb.includes('first-screen')); });
 test('chain integrity check', function() { assert(rb.includes('chainIntact')); });
 test('only real mismatch',    function() { assert(rb.includes('Missing parent_hash')); });
@@ -239,8 +254,7 @@ test('receipt.verify_url set',          function() { assert(server.includes('rec
 
 // 9. /r/ share page — L3 badge + completeness
 console.log('\n/r/ L3 display');
-var shareIdx = server.indexOf("app.get('/r/:traceId'");
-var shareSlice = server.slice(shareIdx, shareIdx + 35000);
+var shareSlice = handlerSlice(server, "app.get('/r/:traceId'");
 test('L3 badge shown on share page',   function() { assert(shareSlice.includes('L3 NON-REPUDIATION')); });
 test('L2 badge shown on share page',   function() { assert(shareSlice.includes('L2 VERIFIED')); });
 test('completeness shown on /r/',      function() { assert(shareSlice.includes('hasCompleteness')); });
