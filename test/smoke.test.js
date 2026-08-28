@@ -244,7 +244,7 @@ test('commit route enforces plan limit with 429', () => {
 // 9. L3 + assurance_level in commit route
 console.log('\nL3 non-repudiation');
 var commitIdx = server.indexOf("app.post('/api/commit'");
-var commitSlice = server.slice(commitIdx, commitIdx + 16000);
+var commitSlice = handlerSlice(server, "app.post('/api/commit'");
 test('completeness_claim destructured', function() { assert(commitSlice.includes('completeness_claim')); });
 test('client_attestation accepted',     function() { assert(commitSlice.includes('client_attestation')); });
 test('assurance_level computed',        function() { assert(commitSlice.includes('assuranceLevel')); });
@@ -747,7 +747,7 @@ test('/api/admin/flags POST has admin email guard', function() {
 
 test('client_attestation verified before assuranceLevel set to L3', function() {
   var commitIdx = server.indexOf("app.post('/api/commit'");
-  var slice     = server.slice(commitIdx, commitIdx + 16000);
+  var slice     = handlerSlice(server, "app.post('/api/commit'");
   var attIdx    = slice.indexOf('client_attestation &&');
   var l3Idx     = slice.indexOf("assuranceLevel = 'L3'");
   assert(attIdx > 0, 'client_attestation check not found in commit route');
