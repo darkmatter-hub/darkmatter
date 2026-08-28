@@ -5037,7 +5037,11 @@ app.get('/r/:traceId', apiLimiter, async (req, res) => {
       .eq('id', shareRow.id)
       .then(() => {}, () => {});
 
-    const rSel = 'id, trace_id, parent_id, from_agent, agent_id, agent_info, payload, timestamp, client_timestamp, event_type, integrity_hash, payload_hash, parent_hash, verified, assurance_level, completeness_claim';
+    // schema_version is selected because the export reports it per record and
+    // verify_chain dispatches on it. It was missing, so every exported passport
+    // fell back to '1.0' no matter what was stored, and a non-ASCII payload
+    // would have been verified with the wrong algorithm and reported broken.
+    const rSel = 'id, trace_id, parent_id, from_agent, agent_id, agent_info, payload, timestamp, client_timestamp, event_type, integrity_hash, payload_hash, parent_hash, verified, assurance_level, completeness_claim, schema_version';
     const [{ data: rById }, { data: rByTrace, error }] = await Promise.all([
       supabaseService.from('commits').select(rSel).eq('id', traceId).order('timestamp', { ascending: true }),
       supabaseService.from('commits').select(rSel).eq('trace_id', traceId).order('timestamp', { ascending: true }),

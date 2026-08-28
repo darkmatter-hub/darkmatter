@@ -100,7 +100,7 @@ jobs:
           set -uo pipefail
           # The record the public demo advertises. If this stops rendering, the
           # product's central claim is broken for every visitor.
-          id=ctx_1787544415723_bd78b91d9446
+          id=ctx_1787940693606_7c3e49a4a734
 
           code=$(curl -sS -o /tmp/proof.html -w '%{http_code}' --max-time 30 \
             "https://darkmatterhub.ai/r/$id")
