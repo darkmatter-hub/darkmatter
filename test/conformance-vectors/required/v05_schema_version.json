@@ -1,0 +1,26 @@
+{
+  "name": "v05_schema_version",
+  "description": "A passport missing the required schema_version field MUST be rejected at parse time.",
+  "operation": "parse_should_reject",
+  "input": {
+    "passport": {
+      "$schema": "https://contextpassport.com/schema/v1.json",
+      "id": "ctx_1700000000000_xxx000xxx000",
+      "parent_id": null,
+      "branch_key": "main",
+      "created_by": { "agent_id": "agent-1", "agent_name": "Test Agent" },
+      "event": { "type": "commit", "timestamp": "2026-01-01T00:00:00Z" },
+      "payload": { "input": "x", "output": "y" },
+      "integrity": {
+        "payload_hash":        "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+        "integrity_hash":      "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+        "verification_status": "unverified"
+      },
+      "created_at": "2026-01-01T00:00:00Z"
+    }
+  },
+  "expected": {
+    "result": "reject",
+    "reason": "missing required field: schema_version"
+  }
+}

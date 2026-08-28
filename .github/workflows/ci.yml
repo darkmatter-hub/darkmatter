@@ -35,6 +35,11 @@ jobs:
       - name: Conformance with the Context Passport specification
         run: node test/conformance.test.js
 
+      # The published CC0 vector suite, the same one every other implementation
+      # is graded on. Failing here means DarkMatter is wrong, never the vector.
+      - name: Published conformance vector suite
+        run: node test/conformance-suite.test.js
+
       # Catches claims that rot. A hardcoded "80 days to August 2" sat on the
       # EU AI Act page well past that date, beside a countdown that was
       # dynamic and correct. Blocking here is the only way a marketing page

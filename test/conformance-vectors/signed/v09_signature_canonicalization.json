@@ -1,0 +1,81 @@
+{
+  "name": "v09_signature_canonicalization",
+  "description": "Tests that an implementation computes the signature over the canonical envelope with signature.signature cleared. Two passports differ only in the key ordering of the signature block; both MUST verify successfully because canonicalization sorts keys at every level.",
+  "operation": "verify_signature_pair_consistency",
+  "input": {
+    "passport_a": {
+      "$schema": "https://contextpassport.com/schema/v1.json",
+      "schema_version": "1.0",
+      "id": "ctx_1700000000000_aaa111aaa111",
+      "parent_id": null,
+      "trace_id": null,
+      "branch_key": "main",
+      "created_by": {
+        "agent_id": "agent-1",
+        "agent_name": "Agent",
+        "role": null,
+        "provider": null,
+        "model": null
+      },
+      "event": {
+        "type": "commit",
+        "to_agent_id": null,
+        "timestamp": "2026-01-01T00:00:00Z"
+      },
+      "payload": { "input": "hello", "output": "world" },
+      "integrity": {
+        "payload_hash":        "sha256:835d9bdaa3b54bf66362a7d85ce9b4bef1c177ba77ab7d87c98d8ae72903177e",
+        "parent_hash":         null,
+        "integrity_hash":      "sha256:4dd235f0e5eb22441e8d6ac67e01b560a4db986bccb8d8aa117cbd00679ba691",
+        "verification_status": "valid"
+      },
+      "lineage": { "fork_of": null, "fork_point": null, "lineage_root": null },
+      "created_at": "2026-01-01T00:00:00Z",
+      "signature": {
+        "algorithm":  "ed25519",
+        "key_id":     "test-key-1",
+        "public_key": "A6EHv/POEL4dcN0Y50vAmWfk1jCbpQ1fHdyGZBJVMbg=",
+        "signature":  "gjdsVNbszyuNFB90E+6RqpPgb6z4EI8amN7o079nxu+TRni2EVbGDhPKgQPttRHSzUMI6aQ0r72R94bA9OyUBQ=="
+      }
+    },
+    "passport_b": {
+      "signature": {
+        "signature":  "gjdsVNbszyuNFB90E+6RqpPgb6z4EI8amN7o079nxu+TRni2EVbGDhPKgQPttRHSzUMI6aQ0r72R94bA9OyUBQ==",
+        "public_key": "A6EHv/POEL4dcN0Y50vAmWfk1jCbpQ1fHdyGZBJVMbg=",
+        "key_id":     "test-key-1",
+        "algorithm":  "ed25519"
+      },
+      "created_at": "2026-01-01T00:00:00Z",
+      "lineage": { "lineage_root": null, "fork_point": null, "fork_of": null },
+      "integrity": {
+        "verification_status": "valid",
+        "integrity_hash":      "sha256:4dd235f0e5eb22441e8d6ac67e01b560a4db986bccb8d8aa117cbd00679ba691",
+        "parent_hash":         null,
+        "payload_hash":        "sha256:835d9bdaa3b54bf66362a7d85ce9b4bef1c177ba77ab7d87c98d8ae72903177e"
+      },
+      "payload": { "output": "world", "input": "hello" },
+      "event": {
+        "timestamp":   "2026-01-01T00:00:00Z",
+        "to_agent_id": null,
+        "type":        "commit"
+      },
+      "created_by": {
+        "model":      null,
+        "provider":   null,
+        "role":       null,
+        "agent_name": "Agent",
+        "agent_id":   "agent-1"
+      },
+      "branch_key":     "main",
+      "trace_id":       null,
+      "parent_id":      null,
+      "id":             "ctx_1700000000000_aaa111aaa111",
+      "schema_version": "1.0",
+      "$schema":        "https://contextpassport.com/schema/v1.json"
+    }
+  },
+  "expected": {
+    "result": true,
+    "note": "Both passports represent the same logical object with different JSON key orderings. A conformant verifier that canonicalizes correctly MUST verify both with the same result (success). Implementations that fail this test are not canonicalizing properly and will be incompatible with other Context Passport implementations."
+  }
+}

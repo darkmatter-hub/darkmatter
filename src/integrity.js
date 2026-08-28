@@ -168,6 +168,68 @@ function computeChain(payload, parentIntegrityHex) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// PASSPORT PARSING
+//
+// Added to earn Core conformance rather than to claim it. The published
+// conformance suite requires that a record missing a required field be
+// rejected at parse time (vector v05_schema_version), and DarkMatter had no
+// parser at all: it validated on write, inside a route handler, with no
+// callable function a conformance runner could reach. Skipping that vector and
+// still calling ourselves Core conformant would have been marking our own
+// homework.
+//
+// The field lists are copied from schema/v2.json in contextpassport/spec, not
+// invented here. If the schema changes, these are wrong and the suite will say
+// so.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const REQUIRED_TOP = ['schema_version', 'id', 'branch_key', 'created_by', 'event', 'integrity', 'created_at'];
+const REQUIRED_NESTED = {
+  created_by: ['agent_id', 'agent_name'],
+  event:      ['type', 'timestamp'],
+  integrity:  ['payload_hash', 'integrity_hash', 'verification_status'],
+};
+
+/**
+ * Validate a Context Passport record's structure.
+ *
+ * Structure only. It does not recompute hashes; verifyChain does that. A record
+ * can be structurally valid and still have been tampered with, which is exactly
+ * why both checks exist.
+ *
+ * @returns {{ok: boolean, errors: string[]}}
+ */
+function parsePassport(record) {
+  const errors = [];
+
+  if (record === null || typeof record !== 'object' || Array.isArray(record)) {
+    return { ok: false, errors: ['not a JSON object'] };
+  }
+
+  for (const field of REQUIRED_TOP) {
+    if (record[field] === undefined || record[field] === null) {
+      errors.push('missing required field: ' + field);
+    }
+  }
+
+  for (const [parent, fields] of Object.entries(REQUIRED_NESTED)) {
+    const obj = record[parent];
+    if (obj === undefined || obj === null) continue; // already reported above
+    if (typeof obj !== 'object' || Array.isArray(obj)) {
+      errors.push(parent + ' must be an object');
+      continue;
+    }
+    for (const f of fields) {
+      if (obj[f] === undefined || obj[f] === null) {
+        errors.push('missing required field: ' + parent + '.' + f);
+      }
+    }
+  }
+
+  return { ok: errors.length === 0, errors };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // COMMIT ENVELOPE
 //
 // The envelope is what is hashed to produce integrity_hash,
@@ -361,6 +423,7 @@ module.exports = {
   bare,
   chainIntegrityHash,
   computeChain,
+  parsePassport,
   buildEnvelope,
   hashEnvelope,
   computeIntegrityHash,

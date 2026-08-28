@@ -1,0 +1,21 @@
+{
+  "name": "v03_canonical_payload",
+  "description": "Two payloads with identical content in different key orderings MUST produce identical payload_hash values. Tests canonical JSON serialization.",
+  "operation": "compare_payload_hashes",
+  "input": {
+    "payload_a": {
+      "alpha": 1,
+      "beta": 2,
+      "nested": { "x": 10, "y": 20 }
+    },
+    "payload_b": {
+      "nested": { "y": 20, "x": 10 },
+      "beta": 2,
+      "alpha": 1
+    }
+  },
+  "expected": {
+    "result": "equal",
+    "hash": "sha256:e1e47b67521f37f2db5b987519e8b43b262efe213805f9205cd5ce131bf5ad33"
+  }
+}
