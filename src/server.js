@@ -1533,7 +1533,11 @@ app.get('/dashboard/commits', requireAuth, async (req, res) => {
 //   "2"   — DarkMatter internal commit envelope (integrity.js, used for hashing/signing)
 //   "3"   — DarkMatter checkpoint envelope (append-log.js, used by the Witness Log)
 // ──────────────────────────────────────────────────────────────────────────────
-const CONTEXT_PASSPORT_SCHEMA_URL = 'https://contextpassport.com/schema/v1.json';
+// v2, because hashPayload() in src/integrity.js canonicalizes per RFC 8785
+// (JCS), which is the v2.0 algorithm. This constant said v1 while the code
+// hashed v2, so records advertised a schema they did not follow.
+const CONTEXT_PASSPORT_SCHEMA_URL = 'https://contextpassport.com/schema/v2.json';
+const CONTEXT_PASSPORT_SCHEMA_URL_V1 = 'https://contextpassport.com/schema/v1.json';
 
 function buildContext(c, agentMap = {}) {
   const ai = c.agent_info || {};
@@ -1784,7 +1788,34 @@ app.post('/api/commit', apiLimiter, requireApiKey, async (req, res) => {
     const commitId      = 'ctx_' + Date.now() + '_' + crypto.randomBytes(6).toString('hex');
     const acceptedAt    = new Date().toISOString().replace(/\.\d+Z$/, 'Z'); // server ledger time
     const timestamp     = acceptedAt; // kept for backwards compat
-    const schemaVersion = '1.0';
+    // 2.0, not 1.0.
+    //
+    // This said '1.0' while payload_hash was computed by hashPayload(), which
+    // canonicalizes per RFC 8785 (JCS): the 2.0 algorithm. verify_chain in the
+    // reference SDKs dispatches per record on schema_version, so a record
+    // labelled 1.0 gets checked with the v1.x rule (sorted-key json.dumps)
+    // against a hash produced by JCS.
+    //
+    // Every payload committed so far is ASCII with integer values, and for
+    // those two the algorithms agree byte for byte, so nothing has broken.
+    // They diverge on floats, non-ASCII text and emoji, verified directly
+    // against the reference SDK:
+    //
+    //   {"amount": 284, "note": "ok"}      same
+    //   {"amount": 284.0, "note": "ok"}    DIVERGES
+    //   {"city": "Munchen"}                DIVERGES
+    //   {"note": "approved [emoji]"}       DIVERGES
+    //
+    // So the first customer to record a monetary amount as a float, or a name
+    // with an accent, would have produced a record that fails verification in
+    // the very SDK we tell people to verify with. Labelling it correctly is
+    // the fix; the hashing was already right.
+    //
+    // Records already stored carry '1.0'. They are left alone: rewriting
+    // stored evidence is precisely what this product exists to make
+    // detectable, and they verify correctly under either algorithm because
+    // their payloads are ASCII with integer values.
+    const schemaVersion = '2.0';
     // client_timestamp: what the agent asserted in their envelope (may differ from accepted_at)
     const clientTimestamp = req.body.envelope?.timestamp || acceptedAt;
 
@@ -5117,9 +5148,82 @@ app.get('/r/:traceId', apiLimiter, async (req, res) => {
 
     if (req.query.format === 'json') {
       res.setHeader('Content-Disposition', 'attachment; filename="darkmatter-proof-' + traceId + '.json"');
+      // A downloaded proof goes to an auditor, a regulator or a counterparty
+      // who has never heard of this format, and the whole claim is that they
+      // can check it without trusting us. Two things were missing.
+      //
+      // Nothing said what the file was or how to verify it. And `commits`
+      // below is a flattened view, not a Context Passport envelope: it has no
+      // `integrity` block, so the reference SDK cannot read it. Anyone
+      // following the obvious instinct, `verify_chain(bundle["commits"])`,
+      // got `KeyError: 'integrity'`. The product told people they could verify
+      // independently and then handed them something only our own code could
+      // read.
+      //
+      // `passports` is the same records as conformant Context Passport
+      // envelopes, which `verify_chain` accepts directly. `commits` stays
+      // exactly as it was so nothing that already reads this breaks.
+      const passports = commits.map(function(c) {
+        const ai = c.agent_info || {};
+        const withPrefix = function(h) {
+          if (!h) return null;
+          return String(h).startsWith('sha256:') ? String(h) : 'sha256:' + h;
+        };
+        // Report the version the record actually carries. Records written
+        // before the label was corrected say '1.0'; claiming otherwise would
+        // make the bundle lie about its own contents, and verify_chain
+        // dispatches on this field.
+        const ver = c.schema_version || '1.0';
+        return {
+          $schema:        String(ver).startsWith('1.') ? CONTEXT_PASSPORT_SCHEMA_URL_V1 : CONTEXT_PASSPORT_SCHEMA_URL,
+          schema_version: ver,
+          id:             c.id,
+          parent_id:      c.parent_id || null,
+          trace_id:       c.trace_id  || null,
+          branch_key:     'main',
+          created_by: {
+            agent_id:   c.from_agent || ai.id || null,
+            agent_name: ai.name  || c.from_agent || null,
+            role:       ai.role  || null,
+            provider:   ai.provider || null,
+            model:      ai.model || null,
+          },
+          event: {
+            type:        c.event_type || 'commit',
+            to_agent_id: c.agent_id || null,
+            timestamp:   c.client_timestamp || c.timestamp,
+          },
+          payload: c.payload || {},
+          integrity: {
+            payload_hash:        withPrefix(c.payload_hash),
+            parent_hash:         withPrefix(c.parent_hash),
+            integrity_hash:      withPrefix(c.integrity_hash),
+            verification_status: chainIntact ? 'valid' : 'broken',
+          },
+          created_at: c.timestamp,
+        };
+      });
+
       return res.json({
+        format:         'context-passport-bundle',
+        format_version: '1.0',
+        spec:           'https://github.com/contextpassport/spec',
+        record_schema:  CONTEXT_PASSPORT_SCHEMA_URL,
+        how_to_verify: {
+          summary: 'Each record commits to the hash of the one before it. Editing any record changes its hash and breaks verification of every record after it. You can confirm that offline, without trusting DarkMatter.',
+          python: [
+            'pip install context-passport',
+            'python -c "import json; from context_passport import verify_chain; print(verify_chain(json.load(open(\'bundle.json\'))[\'passports\']))"',
+          ],
+          typescript: [
+            'npm install @contextpassport/core',
+            'node -e "const {verifyChain}=require(\'@contextpassport/core\');console.log(verifyChain(require(\'./bundle.json\').passports))"',
+          ],
+          expect: 'true if the chain is intact. Change one character in any payload and run it again: it returns false.',
+        },
         trace_id: traceId, chain_intact: chainIntact, step_count: commits.length,
         verification: verifyDetail,
+        passports: passports,
         commits: commits.map(function(c) { return {
           id: c.id, trace_id: c.trace_id,
           timestamp: c.client_timestamp || c.timestamp,
