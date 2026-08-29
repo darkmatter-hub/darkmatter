@@ -1381,6 +1381,40 @@ test('pages referencing the verifier match a real route', function() {
     refs.length + ' pages reference the verifier but it is not served: ' + refs.join(', '));
 });
 
+// The docs told readers to POST to /api/policies and described the condition
+// syntax for a policy engine in detail. That endpoint has never existed: it
+// answered 404 in production while /api/commit answered 401, which is how a
+// real-but-unauthenticated route replies. Documentation for a feature that was
+// never built is worse than none on a product selling verifiability.
+test('every API endpoint the docs teach actually has a route', function() {
+  var documented = {};
+  publicPages().forEach(function(pg) {
+    var html = fs.readFileSync(pg.abs, 'utf8');
+    var re = /darkmatterhub\.ai(\/api\/[a-z0-9/_-]+)/gi, m;
+    while ((m = re.exec(html)) !== null) {
+      // Trim a trailing path parameter placeholder such as /api/fork/ctx_...
+      var p = m[1].replace(/\/(ctx_|:)[a-z0-9_.-]*$/i, '').replace(/\/$/, '');
+      (documented[p] = documented[p] || []).push(pg.slug);
+    }
+  });
+
+  var missing = [];
+  var METHODS = ['get', 'post', 'put', 'patch', 'delete', 'all', 'use'];
+  Object.keys(documented).forEach(function(p) {
+    // Plain string search rather than a built regex: the path is data, and
+    // escaping it into a pattern is a good way to write a check that silently
+    // matches nothing. A route is registered either on the exact path or with
+    // a parameter appended, so both prefixes count.
+    var found = METHODS.some(function(m) {
+      return server.indexOf("app." + m + "('" + p + "'") !== -1 ||
+             server.indexOf("app." + m + "('" + p + "/") !== -1;
+    });
+    if (!found) missing.push(p + ' (documented on: ' + documented[p].join(', ') + ')');
+  });
+  assert(missing.length === 0,
+    'documented but not implemented: ' + missing.join('; '));
+});
+
 // Also runnable standalone: node test/security.test.js
 (function() {
   var sec = require('./security.test.js').run();

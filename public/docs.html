@@ -280,7 +280,6 @@ footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;gri
     <span class="docs-sb-label">Reference</span>
     <a class="docs-sb-link" href="#context-passport">Context Passport schema</a>
     <a class="docs-sb-link" href="#integrity">Integrity model</a>
-    <a class="docs-sb-link" href="#policies">Hooks and policies</a>
   </div>
   <div class="docs-sb-group">
     <span class="docs-sb-label">Guides</span>
@@ -932,11 +931,6 @@ curl -X POST https://darkmatterhub.ai/api/agents/keys/revoke   -H <span class="c
   </tbody>
 </table>
 <p>See the <a href="/integrity">integrity model page</a> for the full trust boundary documentation.</p>
-
-<h2 id="policies">Hooks and policies</h2>
-<p>Policies are rules that evaluate incoming commits before they are stored. Register them via API to enforce commit structure, flag patterns, or trigger webhooks.</p>
-<pre><code>curl -X POST https://darkmatterhub.ai/api/policies   -H <span class="cv">"Authorization: Bearer YOUR_API_KEY"</span>   -d '{"name": "require-model", "condition": "!payload.model", "action": "reject"}'<div class="lang-label">bash</div></code></pre>
-<p>The <code>condition</code> field is a JavaScript-style expression evaluated against the incoming commit. Use dot notation to access fields: <code>payload.model</code>, <code>payload.input</code>, <code>agent.role</code>. A truthy result triggers the action.</p>
 
 </article>
 </div>
