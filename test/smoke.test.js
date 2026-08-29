@@ -1251,6 +1251,35 @@ test('every sitemap-excluded page carries a noindex meta', function() {
     'excluded from the sitemap but still indexable: ' + missing.join(', '));
 });
 
+// Every page resolves at both /name and /name.html, because express.static
+// serves the file directly alongside the clean-URL route. That is two URLs for
+// one page, and without a canonical a search engine has to guess which to index
+// and splits whatever link equity exists between them. The sitemap lists the
+// clean URL, so the canonical must agree with it or the two signals conflict.
+test('every indexable page declares a canonical matching its sitemap URL', function() {
+  var m = server.match(/const SITEMAP_EXCLUDE = new Set\(\[([\s\S]*?)\]\)/);
+  assert(m, 'SITEMAP_EXCLUDE not found');
+  var excluded = (m[1].match(/'([a-z0-9-]+)'/g) || []).map(function(x) {
+    return x.replace(/'/g, '');
+  });
+
+  var problems = [];
+  fs.readdirSync(path.join(ROOT, 'public')).forEach(function(f) {
+    if (!/\.html$/.test(f)) return;
+    var slug = f.replace(/\.html$/, '');
+    if (excluded.indexOf(slug) !== -1) return;
+    var html = fs.readFileSync(path.join(ROOT, 'public', f), 'utf8');
+    var c = html.match(/<link rel="canonical" href="([^"]+)"/);
+    if (!c) { problems.push(slug + ' (none)'); return; }
+    var want = slug === 'index'
+      ? 'https://darkmatterhub.ai/'
+      : 'https://darkmatterhub.ai/' + slug;
+    if (c[1] !== want) problems.push(slug + ' (points at ' + c[1] + ')');
+  });
+  assert(problems.length === 0,
+    'canonical missing or wrong: ' + problems.join(', '));
+});
+
 // Also runnable standalone: node test/security.test.js
 (function() {
   var sec = require('./security.test.js').run();
