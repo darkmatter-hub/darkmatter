@@ -1160,6 +1160,25 @@ test('no supabaseService.auth.refreshSession anywhere in codebase', function() {
 // ── Section 22: Security regression suite ─────────────────────────────────
 // Locks in the F1-F5 fixes from the pre-launch security review.
 
+// Crawlability checks must walk subdirectories. The first version of these
+// tests read public/*.html only, which is exactly how /docs/quickstart and
+// /integrations/claude ended up missing from the sitemap and missing canonical
+// tags: the code and the test shared the same blind spot.
+function publicPages() {
+  var out = [];
+  (function walk(dir, prefix) {
+    fs.readdirSync(dir, { withFileTypes: true }).forEach(function(e) {
+      if (e.name.charAt(0) === '.') return;
+      var abs = path.join(dir, e.name);
+      if (e.isDirectory()) return walk(abs, prefix + e.name + '/');
+      if (/\.html$/.test(e.name)) {
+        out.push({ slug: prefix + e.name.replace(/\.html$/, ''), abs: abs });
+      }
+    });
+  })(path.join(ROOT, 'public'), '');
+  return out;
+}
+
 // ── Crawlability ──────────────────────────────────────
 // These guard a fix that is invisible when it breaks: nothing errors, the site
 // just stops being indexable and nobody notices for months.
@@ -1264,11 +1283,10 @@ test('every indexable page declares a canonical matching its sitemap URL', funct
   });
 
   var problems = [];
-  fs.readdirSync(path.join(ROOT, 'public')).forEach(function(f) {
-    if (!/\.html$/.test(f)) return;
-    var slug = f.replace(/\.html$/, '');
+  publicPages().forEach(function(pg) {
+    var slug = pg.slug;
     if (excluded.indexOf(slug) !== -1) return;
-    var html = fs.readFileSync(path.join(ROOT, 'public', f), 'utf8');
+    var html = fs.readFileSync(pg.abs, 'utf8');
     var c = html.match(/<link rel="canonical" href="([^"]+)"/);
     if (!c) { problems.push(slug + ' (none)'); return; }
     var want = slug === 'index'
@@ -1293,11 +1311,10 @@ test('every indexable page has a usable title and description', function() {
   });
 
   var problems = [];
-  fs.readdirSync(path.join(ROOT, 'public')).forEach(function(f) {
-    if (!/\.html$/.test(f)) return;
-    var slug = f.replace(/\.html$/, '');
+  publicPages().forEach(function(pg) {
+    var slug = pg.slug;
     if (excluded.indexOf(slug) !== -1) return;
-    var html = fs.readFileSync(path.join(ROOT, 'public', f), 'utf8');
+    var html = fs.readFileSync(pg.abs, 'utf8');
 
     var t = html.match(/<title>([\s\S]*?)<\/title>/);
     if (!t) { problems.push(slug + ': no title'); }
@@ -1340,6 +1357,28 @@ test('missing blog posts return 404 rather than the index', function() {
   assert(m, '/blog/:slug route not found');
   assert(/res\.status\(404\)/.test(m[0]),
     '/blog/:slug still answers 200 for posts that do not exist');
+});
+
+test('the offline verifier is actually served', function() {
+  assert(server.includes("app.get('/verify_darkmatter_chain.py'"),
+    'the script five pages tell readers to download has no route');
+  assert(fs.existsSync(path.join(ROOT, 'examples/verify_darkmatter_chain.py')),
+    'the route serves a file that does not exist');
+});
+
+// Every page that tells a reader to run the verifier depends on it being
+// reachable. The instruction and the route are edited in different files, so
+// this pins them together.
+test('pages referencing the verifier match a real route', function() {
+  var refs = [];
+  publicPages().forEach(function(pg) {
+    if (/verify_darkmatter_chain\.py/.test(fs.readFileSync(pg.abs, 'utf8'))) {
+      refs.push(pg.slug);
+    }
+  });
+  assert(refs.length > 0, 'expected some page to reference the verifier');
+  assert(server.includes("app.get('/verify_darkmatter_chain.py'"),
+    refs.length + ' pages reference the verifier but it is not served: ' + refs.join(', '));
 });
 
 // Also runnable standalone: node test/security.test.js

@@ -47,6 +47,21 @@ jobs:
       - name: Audit public pages for stale claims
         run: node scripts/content-audit.js
 
+      # The verifier five public pages tell readers to download and run. It was
+      # unserved and crashing on our own demo bundle for a long time, and
+      # nothing noticed because nothing ran it. This runs it, against both
+      # bundle shapes and against deliberately tampered copies of each.
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install the reference SDK for the cross-check
+        run: pip install "context-passport>=2.0,<3.0"
+
+      - name: The offline verifier actually verifies
+        run: python test/verify_script.test.py
+
       - name: Check the tweet bank is sound
         run: node scripts/daily-tweet.js --check
 

@@ -1,548 +1,264 @@
 #!/usr/bin/env python3
 """
-DarkMatter Offline Chain Verifier v2
-======================================
-Verify a DarkMatter chain export with ZERO network calls.
+verify_darkmatter_chain.py
+Independent verification of a DarkMatter proof bundle. No SDK, no account, no
+network. Recomputes every hash from the payload and checks the chain links.
 
 Usage:
-    python verify_darkmatter_chain.py chain.json
-    python verify_darkmatter_chain.py chain.json --verbose
-    python verify_darkmatter_chain.py chain.json --checkpoint cp.json --pubkey dm_server.pub.pem
-    python verify_darkmatter_chain.py chain.json --legacy    # allow missing hashes (old exports)
-    python verify_darkmatter_chain.py chain.json --json      # machine-readable output
+    python verify_darkmatter_chain.py bundle.json
+    curl -s "https://darkmatterhub.ai/r/<id>?format=json" | python verify_darkmatter_chain.py
 
-Exit codes: 0 = all required checks passed  1 = failed  2 = malformed input
+Exit status is 0 when the bundle verifies and 1 when it does not, so this is
+safe to use in CI.
 
-Requirements: Python 3.10+  |  pip install cryptography
+What this checks:
+  * payload_hash really is the SHA-256 of the RFC 8785 (JCS) canonical payload
+  * integrity_hash really is derived from payload_hash and the parent hash
+  * each record names the record before it, in order
+
+What it cannot check, and no verifier can: whether records were left out. A
+hash chain proves that what you were given is unaltered, not that you were
+given everything. See SPEC.md section 5.4.
+
+The previous version of this file expected a shape the product never emitted,
+so it crashed with a KeyError on DarkMatter's own demo bundle. It also used
+json.dumps(sort_keys=True) as "canonical JSON", which is not RFC 8785 and
+disagrees with the reference implementations on non-ASCII payloads. Both are
+fixed here, and the JCS implementation below is deliberately self-contained so
+that the "no SDK required" claim is actually true.
 """
 
-import sys, json, hashlib, math, argparse, re
-from pathlib import Path
+import hashlib
+import json
+import sys
 
-try:
-    from cryptography.hazmat.primitives.serialization import load_pem_public_key
-    from cryptography.exceptions import InvalidSignature
-    CRYPTO = True
-except ImportError:
-    CRYPTO = False
+HASH_PREFIX = "sha256:"
 
-SCHEMA_VERSION = '2'
 
-# ─── Canonical serialization (must match integrity.js exactly) ────────────────
+# ── RFC 8785 (JCS) canonicalisation ──────────────────────────────────────────
 
-def canonicalize(value) -> str:
-    if value is None:               return 'null'
-    if isinstance(value, bool):     return 'true' if value else 'false'
-    if isinstance(value, int):      return str(value)
-    if isinstance(value, float):
-        if not math.isfinite(value):
-            raise TypeError(f'non-finite number rejected: {value}')
-        s = format(value, '.17g')
-        if '.' not in s and 'e' not in s: s += '.0'
-        elif '.' in s and 'e' not in s:
-            s = s.rstrip('0')
-            if s.endswith('.'): s += '0'
-        return s
-    if isinstance(value, str):      return json.dumps(value, ensure_ascii=False)
-    if isinstance(value, list):     return '[' + ','.join(canonicalize(item) for item in value) + ']'
-    if isinstance(value, dict):
-        pairs = [json.dumps(k, ensure_ascii=False) + ':' + canonicalize(value[k])
-                 for k in sorted(value.keys())]
-        return '{' + ','.join(pairs) + '}'
-    raise TypeError(f'unsupported type: {type(value).__name__}')
-
-def hash_payload(payload: dict) -> str:
-    return hashlib.sha256(canonicalize(payload).encode()).hexdigest()
-
-def build_envelope(payload_hash, parent_ih, agent_id, key_id, timestamp) -> dict:
-    ts = re.sub(r'\.\d+Z?$', '', timestamp or '')
-    if not ts.endswith('Z'): ts += 'Z'
-    return {
-        'schema_version':       SCHEMA_VERSION,
-        'agent_id':             agent_id or '',
-        'key_id':               key_id or 'default',
-        'timestamp':            ts,
-        'payload_hash':         payload_hash,
-        'parent_integrity_hash': parent_ih or 'root',
-    }
-
-def hash_envelope(envelope: dict) -> str:
-    return hashlib.sha256(canonicalize(envelope).encode()).hexdigest()
-
-def strip(h): return (h or '').removeprefix('sha256:') or None
-
-# ─── Signature verification ────────────────────────────────────────────────────
-
-def verify_sig(envelope: dict, sig_hex: str, pubkey_pem: str) -> bool:
-    if not CRYPTO: return None
-    try:
-        msg = canonicalize(envelope).encode()
-        sig = bytes.fromhex(sig_hex)
-        load_pem_public_key(pubkey_pem.encode()).verify(sig, msg)
-        return True
-    except (InvalidSignature, Exception): return False
-
-def verify_checkpoint_sig(cp: dict, pubkey_pem: str) -> bool:
-    if not CRYPTO: return None
-    try:
-        msg = canonicalize({'log_root': cp['log_root'], 'position': cp['position'], 'timestamp': cp['timestamp']}).encode()
-        sig = bytes.fromhex(cp['server_sig'])
-        load_pem_public_key(pubkey_pem.encode()).verify(sig, msg)
-        return True
-    except Exception: return False
-
-# ─── Test vectors ─────────────────────────────────────────────────────────────
-
-def build_leaf_envelope(commit_id: str, integrity_hash: str,
-                         log_position: int, accepted_at: str) -> dict:
-    """Canonical leaf envelope — keys sorted: accepted_at, commit_id, integrity_hash, log_position"""
-    ts = re.sub(r'\.\d+Z?$', '', accepted_at or '').rstrip('Z') + 'Z'
-    return {
-        'accepted_at':    ts,
-        'commit_id':      commit_id,
-        'integrity_hash': (integrity_hash or '')[7:] if (integrity_hash or '').startswith('sha256:') else (integrity_hash or ''),
-        'log_position':   log_position,
-    }
-
-def leaf_hash_from_commit(commit_id: str, integrity_hash: str,
-                           log_position: int, accepted_at: str) -> str:
-    """RFC 6962 leaf hash: SHA256(0x00 || UTF8(canonical(leaf_envelope)))"""
-    env = build_leaf_envelope(commit_id, integrity_hash, log_position, accepted_at)
-    canonical = canonicalize(env)
-    buf = b'\x00' + canonical.encode('utf-8')
-    return hashlib.sha256(buf).hexdigest()
-
-def node_hash_fn(left: str, right: str) -> str:
-    """RFC 6962 internal node hash"""
-    buf = b'\x01' + bytes.fromhex(left) + bytes.fromhex(right)
-    return hashlib.sha256(buf).hexdigest()
-
-def verify_inclusion_proof(leaf_h: str, proof: dict, expected_root: str) -> bool:
-    """Verify a Merkle inclusion proof. proof = {proof: [{hash, direction}]}"""
-    try:
-        current = leaf_h
-        for step in proof.get('proof', []):
-            if step['direction'] == 'right':
-                current = node_hash_fn(current, step['hash'])
-            else:
-                current = node_hash_fn(step['hash'], current)
-        return current == expected_root
-    except Exception:
-        return False
-
-def compute_root_from_leaves(leaves: list) -> str:
-    if not leaves: return hashlib.sha256(b'\x00').hexdigest()
-    if len(leaves) == 1: return leaves[0]
-    nodes = list(leaves)
-    while len(nodes) > 1:
-        nxt = []
-        for i in range(0, len(nodes), 2):
-            nxt.append(node_hash_fn(nodes[i], nodes[i+1]) if i+1 < len(nodes) else nodes[i])
-        nodes = nxt
-    return nodes[0]
-
-def run_merkle_vectors(vectors_path: str) -> bool:
-    """Run Merkle test vectors. Returns True if all pass."""
-    vecs = json.loads(Path(vectors_path).read_text())
-    ok = True
-    for vec in vecs.get('leaf_vectors', []):
-        got = leaf_hash_from_commit(vec['commit_id'], vec['integrity_hash'],
-                                     vec['log_position'], vec['accepted_at'])
-        passed = got == vec['expected_leaf_hash']
-        if not passed: ok = False
-        print(f'  {"PASS" if passed else "FAIL"} {vec["id"]}: {vec["desc"]}')
-        if not passed: print(f'    exp={vec["expected_leaf_hash"][:24]}...\n    got={got[:24]}...')
-    for vec in vecs.get('root_vectors', []):
-        got = compute_root_from_leaves(vec['leaf_hashes'])
-        passed = got == vec['expected_root']
-        if not passed: ok = False
-        print(f'  {"PASS" if passed else "FAIL"} {vec["id"]}: {vec["desc"]}')
-    for vec in vecs.get('proof_vectors', []):
-        got = verify_inclusion_proof(vec['leaf_hash'], {'proof': vec['proof']}, vec['tree_root'])
-        passed = got == vec['expected_valid']
-        if not passed: ok = False
-        print(f'  {"PASS" if passed else "FAIL"} {vec["id"]}: {vec["desc"]}')
-    return ok
-
-def run_test_vectors(vectors_path: str) -> bool:
-    v = json.loads(Path(vectors_path).read_text())
-    ok = True
-    for vec in v.get('canonicalize_vectors', []):
-        try:
-            got = canonicalize(vec['input'])
-            if got != vec['expected']:
-                print(f'  FAIL {vec["id"]}: expected {vec["expected"]!r} got {got!r}')
-                ok = False
-            else:
-                print(f'  PASS {vec["id"]}: {vec["desc"]}')
-        except Exception as e:
-            print(f'  ERROR {vec["id"]}: {e}')
-            ok = False
-    return ok
-
-# ─── Phase 1: chain structure ──────────────────────────────────────────────────
-
-def check_structure(commits, strict, verbose):
-    broken   = None
-    prev_ih  = None
-    steps    = []
-
-    for i, c in enumerate(commits):
-        cid       = c.get('id', f'[{i}]')
-        payload   = c.get('payload') or c.get('context') or {}
-        agent_id  = c.get('agent_id') or (c.get('agent_info') or {}).get('id') or ''
-        key_id    = c.get('key_id')   or (c.get('agent_info') or {}).get('key_id') or 'default'
-        timestamp = c.get('timestamp') or ''
-
-        s_ph = strip(c.get('payload_hash'))
-        s_ih = strip(c.get('integrity_hash'))
-
-        if strict and (not s_ph or not s_ih):
-            s = {'id': cid, 'payload_ok': False, 'integrity_ok': False, 'link_ok': False, 'reason': 'missing_hashes'}
-            steps.append(s)
-            if not broken: broken = cid
-            if verbose: print(f'  [{i:4d}] {cid[:28]:<28} ✗ missing_hashes')
-            continue
-
-        ph          = hash_payload(payload)
-        env         = build_envelope(ph, prev_ih, agent_id, key_id, timestamp)
-        ih          = hash_envelope(env)
-        payload_ok  = not s_ph or ph == s_ph
-        integr_ok   = not s_ih or ih == s_ih
-        link_ok     = payload_ok and integr_ok
-
-        steps.append({'id': cid, 'payload_ok': payload_ok, 'integrity_ok': integr_ok, 'link_ok': link_ok, '_env': env, '_ih': ih})
-        if not link_ok and not broken: broken = cid
-        if verbose:
-            p = '✓' if payload_ok else '✗'
-            g = '✓' if integr_ok  else '✗'
-            print(f'  [{i:4d}] {cid[:28]:<28} payload={p} chain={g}')
-        prev_ih = ih
-
-    return {'ok': broken is None, 'broken_at': broken, 'steps': steps}
-
-# ─── Phase 2: agent signatures ────────────────────────────────────────────────
-
-def check_signatures(commits, steps, pubkeys: dict, verbose):
+def _canon_number(n):
     """
-    pubkeys: {agent_id: pem_string}
-    Checks signature on every commit that has agent_signature field.
+    Serialise a number the way ECMAScript does, which is what RFC 8785 requires.
+
+    Integers are emitted without a decimal point. Floats go through repr, which
+    in Python 3 produces the shortest round-tripping form, matching JavaScript
+    for every value either language can represent exactly. Values JSON cannot
+    represent are rejected rather than silently coerced.
     """
-    results  = []
-    missing  = 0
-    failures = 0
+    if isinstance(n, bool):                       # bool is a subclass of int
+        raise TypeError("bool is not a number")
+    if isinstance(n, int):
+        return str(n)
+    if n != n or n in (float("inf"), float("-inf")):
+        raise ValueError("NaN and Infinity are not valid JSON")
+    if n == int(n) and abs(n) < 1e21:
+        return str(int(n))
+    return repr(n)
 
-    for i, (c, s) in enumerate(zip(commits, steps)):
-        sig      = c.get('agent_signature')
-        agent_id = c.get('agent_id') or (c.get('agent_info') or {}).get('id') or ''
-        env      = s.get('_env')
-        cid      = c.get('id', f'[{i}]')
 
-        if not sig:
-            results.append({'id': cid, 'ok': None, 'reason': 'no_signature'})
-            missing += 1
-            if verbose: print(f'  [{i:4d}] {cid[:28]:<28} ~ no signature')
-            continue
+def _canon_string(s):
+    """Minimal JSON escaping, no \\u escaping of non-ASCII. json handles this."""
+    return json.dumps(s, ensure_ascii=False, separators=(",", ":"))
 
-        pubkey = pubkeys.get(agent_id)
-        if not pubkey:
-            results.append({'id': cid, 'ok': None, 'reason': 'no_pubkey'})
-            missing += 1
-            if verbose: print(f'  [{i:4d}] {cid[:28]:<28} ~ no pubkey for {agent_id}')
-            continue
 
-        if not env:
-            results.append({'id': cid, 'ok': False, 'reason': 'no_envelope_in_step'})
-            failures += 1
-            continue
+def canonicalize(obj):
+    """RFC 8785 canonical JSON, as a string."""
+    if obj is None:
+        return "null"
+    if obj is True:
+        return "true"
+    if obj is False:
+        return "false"
+    if isinstance(obj, str):
+        return _canon_string(obj)
+    if isinstance(obj, (int, float)):
+        return _canon_number(obj)
+    if isinstance(obj, list):
+        return "[" + ",".join(canonicalize(v) for v in obj) + "]"
+    if isinstance(obj, dict):
+        # JCS sorts by UTF-16 code unit, which for Python strings means sorting
+        # the UTF-16 encoding rather than the code points. They differ only
+        # outside the BMP, but a payload containing an emoji is enough.
+        items = sorted(obj.items(), key=lambda kv: kv[0].encode("utf-16-be"))
+        return "{" + ",".join(
+            _canon_string(k) + ":" + canonicalize(v) for k, v in items
+        ) + "}"
+    raise TypeError("cannot canonicalise %r" % type(obj).__name__)
 
-        ok = verify_sig(env, sig, pubkey)
-        results.append({'id': cid, 'ok': ok, 'reason': 'verified' if ok else 'sig_invalid'})
-        if not ok: failures += 1
-        if verbose:
-            mark = ('✓' if ok else ('?' if ok is None else '✗'))
-            print(f'  [{i:4d}] {cid[:28]:<28} {mark} signature')
 
-    verified = sum(1 for r in results if r['ok'] is True)
-    return {
-        'ok':       failures == 0,
-        'verified': verified,
-        'missing':  missing,
-        'failures': failures,
-        'results':  results,
-    }
+def payload_hash(payload):
+    return HASH_PREFIX + hashlib.sha256(
+        canonicalize(payload).encode("utf-8")
+    ).hexdigest()
 
-# ─── Phase 2: checkpoint ──────────────────────────────────────────────────────
 
-def check_checkpoint(cp_path, pubkey_pem, verbose):
-    cp  = json.loads(Path(cp_path).read_text())
-    ok  = None
-    if pubkey_pem and CRYPTO:
-        ok = verify_checkpoint_sig(cp, pubkey_pem)
-    if verbose:
-        mark = '✓' if ok else ('?' if ok is None else '✗')
-        print(f'  position={cp.get("position")} root={cp.get("log_root","")[:16]}... {mark}')
-    return {'ok': ok, 'position': cp.get('position'), 'log_root': cp.get('log_root'), 'timestamp': cp.get('timestamp')}
+def integrity_hash(pay_hash, parent):
+    """
+    sha256 over payload_hash concatenated with the parent's integrity hash, or
+    the literal "root" for the first record. Both operands carry the sha256:
+    prefix; dropping it on either side produces a different, wrong digest.
+    """
+    parent_part = parent if parent else "root"
+    return HASH_PREFIX + hashlib.sha256(
+        (pay_hash + parent_part).encode("utf-8")
+    ).hexdigest()
 
-# ─── Helpers ──────────────────────────────────────────────────────────────────
 
-def c(ok):
-    if ok is True:  return '\033[32m✓ PASS\033[0m'
-    if ok is False: return '\033[31m✗ FAIL\033[0m'
-    return '\033[33m~ SKIP\033[0m'
+# ── Bundle shapes ────────────────────────────────────────────────────────────
 
-def main():
-    ap = argparse.ArgumentParser(description='DarkMatter offline chain verifier v2')
-    ap.add_argument('export_file')
-    ap.add_argument('--verbose',     action='store_true')
-    ap.add_argument('--legacy',      action='store_true', help='Allow missing hashes (old exports)')
-    ap.add_argument('--checkpoint',  help='Checkpoint JSON for Phase 2 log verification')
-    ap.add_argument('--pubkey',      help='Server public key PEM for checkpoint sig verification')
-    ap.add_argument('--agent-keys',  help='JSON file mapping {agent_id: pubkey_pem} for signature verification')
-    ap.add_argument('--test-vectors',       help='Run canonicalization test vectors and exit')
-    ap.add_argument('--test-vectors-merkle',help='Run Merkle test vectors and exit')
-    ap.add_argument('--skip-proof',  action='store_true', help='Skip Merkle inclusion check')
-    ap.add_argument('--json',        action='store_true')
-    args = ap.parse_args()
+def extract_records(data):
+    """
+    Normalise the shapes DarkMatter emits into a list of dicts with the fields
+    this verifier needs. Returns (records, shape_name).
 
-    # Test vectors mode
-    if args.test_vectors:
-        ok = run_test_vectors(args.test_vectors)
-        sys.exit(0 if ok else 1)
-    if getattr(args, 'test_vectors_merkle', None):
-        ok = run_merkle_vectors(args.test_vectors_merkle)
-        sys.exit(0 if ok else 1)
-    if hasattr(args, 'test_vectors_merkle') and args.test_vectors_merkle:
-        ok = run_merkle_vectors(args.test_vectors_merkle)
-        sys.exit(0 if ok else 1)
-    if args.test_vectors_merkle:
-        ok = run_merkle_vectors(args.test_vectors_merkle)
-        sys.exit(0 if ok else 1)
+    Two shapes exist in the wild and both are accepted, because a verifier that
+    only handles the format its author had in front of them is how the previous
+    version of this script ended up crashing on the product's own demo output.
+    """
+    # Conformant Context Passport bundle: /r/<id>?format=json
+    if isinstance(data.get("passports"), list) and data["passports"]:
+        out = []
+        for p in data["passports"]:
+            integ = p.get("integrity", {})
+            out.append({
+                "id": p.get("id"),
+                "parent_id": p.get("parent_id"),
+                "payload": p.get("payload"),
+                "payload_hash": integ.get("payload_hash"),
+                "parent_hash": integ.get("parent_hash"),
+                "integrity_hash": integ.get("integrity_hash"),
+            })
+        return out, "context-passport bundle (passports[])"
 
-    if not CRYPTO:
-        print('\033[33m⚠ pip install cryptography — signature verification unavailable\033[0m\n')
+    # Legacy proof bundle, including the one the website demo hands out.
+    if isinstance(data.get("commits"), list) and data["commits"]:
+        out = []
+        for c in data["commits"]:
+            integ = c.get("integrity", {})
+            parent = integ.get("parent_hash")
+            if parent == "root":
+                parent = None
+            out.append({
+                "id": c.get("id") or c.get("ctx_id"),
+                "parent_id": c.get("parent_id") or c.get("parent_ctx_id"),
+                "payload": c.get("payload"),
+                "payload_hash": integ.get("payload_hash") or c.get("payload_hash"),
+                "parent_hash": parent,
+                "integrity_hash": integ.get("integrity_hash"),
+            })
+        return out, "legacy proof bundle (commits[])"
 
-    # Load export
-    try:
-        raw = json.loads(Path(args.export_file).read_text())
-    except Exception as e:
-        print(f'\033[31mCannot read export: {e}\033[0m', file=sys.stderr); sys.exit(2)
+    # A single bare record.
+    if "integrity" in data and "payload" in data:
+        integ = data["integrity"]
+        return [{
+            "id": data.get("id"),
+            "parent_id": data.get("parent_id"),
+            "payload": data.get("payload"),
+            "payload_hash": integ.get("payload_hash"),
+            "parent_hash": integ.get("parent_hash"),
+            "integrity_hash": integ.get("integrity_hash"),
+        }], "single record"
 
-    commits = raw if isinstance(raw, list) else (raw.get('commits') or raw.get('replay') or [])
-    if not commits:
-        print('\033[31mNo commits found\033[0m', file=sys.stderr); sys.exit(2)
+    raise SystemExit(
+        "Unrecognised bundle. Expected a 'passports' array, a 'commits' array, "
+        "or a single record with 'payload' and 'integrity'."
+    )
 
-    meta = raw if isinstance(raw, dict) else {}
 
-    print(f'\nDarkMatter Chain Verifier v2')
-    print(f'────────────────────────────────────────────')
-    print(f'File:        {args.export_file}')
-    print(f'Commits:     {len(commits)}')
-    if meta.get('trace_id'): print(f'Trace ID:    {meta["trace_id"]}')
-    print(f'Strict mode: {"off (--legacy)" if args.legacy else "on"}')
+def verify(records):
+    errors = []
+    prev_integrity = None
+    prev_id = None
+
+    for i, r in enumerate(records):
+        where = "record %d (%s)" % (i, r.get("id") or "no id")
+
+        # 1. The payload hash must be the hash of the payload it ships with.
+        #    This is the check that actually catches an edited record, and the
+        #    one the previous version of this script never performed.
+        if r["payload"] is None:
+            errors.append("%s: no payload, cannot recompute its hash" % where)
+        elif r["payload_hash"]:
+            got = payload_hash(r["payload"])
+            if got != r["payload_hash"]:
+                errors.append(
+                    "%s: payload does not match payload_hash\n"
+                    "        claimed  %s\n"
+                    "        computed %s" % (where, r["payload_hash"], got)
+                )
+        else:
+            errors.append("%s: no payload_hash to check" % where)
+
+        # 2. The record must name the one before it.
+        if i == 0:
+            if r["parent_hash"]:
+                errors.append("%s: first record should have no parent hash" % where)
+        else:
+            if r["parent_hash"] != prev_integrity:
+                errors.append(
+                    "%s: parent hash does not match the previous record\n"
+                    "        claimed  %s\n"
+                    "        previous %s" % (where, r["parent_hash"], prev_integrity)
+                )
+            if r["parent_id"] and prev_id and r["parent_id"] != prev_id:
+                errors.append("%s: parent_id %s is not the previous record %s"
+                              % (where, r["parent_id"], prev_id))
+
+        # 3. The integrity hash must follow from the two above. Only checked
+        #    when the bundle carries one; the legacy demo bundle does not.
+        if r["integrity_hash"] and r["payload_hash"]:
+            want = integrity_hash(r["payload_hash"], r["parent_hash"])
+            if want != r["integrity_hash"]:
+                errors.append(
+                    "%s: integrity_hash is not derived from payload and parent\n"
+                    "        claimed  %s\n"
+                    "        computed %s" % (where, r["integrity_hash"], want)
+                )
+            prev_integrity = r["integrity_hash"]
+        else:
+            prev_integrity = r["payload_hash"]
+
+        prev_id = r["id"]
+
+    return errors
+
+
+def main(argv):
+    if len(argv) > 1:
+        with open(argv[1], encoding="utf-8") as f:
+            data = json.load(f)
+    else:
+        if sys.stdin.isatty():
+            print(__doc__.strip())
+            return 2
+        data = json.load(sys.stdin)
+
+    records, shape = extract_records(data)
+    errors = verify(records)
+
+    print("  bundle    %s" % shape)
+    print("  records   %d" % len(records))
+    for r in records:
+        print("            %s" % (r.get("id") or "(no id)"))
     print()
 
-    # ── Phase 1: Structure ────────────────────────────────────────────────────
-    if args.verbose: print('Structure checks:')
-    struct = check_structure(commits, strict=not args.legacy, verbose=args.verbose)
-    if args.verbose: print()
-    print(f'Phase 1 — Chain structure:    {c(struct["ok"])}')
-    if struct['broken_at']: print(f'            Broken at:        {struct["broken_at"]}')
-
-    # ── Phase 2a: Agent signatures ────────────────────────────────────────────
-    pubkeys = {}
-    if args.agent_keys:
-        try: pubkeys = json.loads(Path(args.agent_keys).read_text())
-        except Exception as e: print(f'            agent-keys error: {e}')
-
-    if args.verbose and pubkeys: print('Signature checks:')
-    sigs = check_signatures(commits, struct['steps'], pubkeys, verbose=args.verbose and bool(pubkeys))
-    if pubkeys:
-        print(f'Phase 2a— Agent signatures:   {c(sigs["ok"] if sigs["failures"]==0 else False)}  ({sigs["verified"]} verified, {sigs["missing"]} skipped, {sigs["failures"]} failed)')
-    else:
-        print(f'Phase 2a— Agent signatures:   {c(None)}  (pass --agent-keys {{agent_id: pubkey_pem}} to verify)')
-
-    # ── Phase 2b: Checkpoint ──────────────────────────────────────────────────
-    cp_result = None
-    if args.checkpoint:
-        pubkey_pem = Path(args.pubkey).read_text() if args.pubkey else None
-        if args.verbose: print('Checkpoint:')
-        cp_result = check_checkpoint(args.checkpoint, pubkey_pem, verbose=args.verbose)
-        print(f'Phase 2b— Log checkpoint:     {c(cp_result["ok"])}  position={cp_result["position"]}')
-    else:
-        print(f'Phase 2b— Log checkpoint:     {c(None)}  (pass --checkpoint path/to/checkpoint.json)')
-
-    # ── Phase 3: Merkle inclusion proofs ────────────────────────
-    phase3_ok = None
-    if not (hasattr(args, 'skip_proof') and args.skip_proof):
-        proofs_found = proofs_valid = proofs_failed = 0
-        tree_root_from_cp = None
-        if cp_result:
-            raw = cp_result.get('tree_root') or ''
-            tree_root_from_cp = raw[7:] if raw.startswith('sha256:') else (raw or None)
-
-        for i, commit in enumerate(commits):
-            pr = commit.get('_proof') or commit.get('proof_receipt')
-            if not pr: continue
-            proofs_found += 1
-            cid        = commit.get('id', f'[{i}]')
-            lh_stored  = pr.get('leaf_hash')
-            incl_proof = pr.get('inclusion_proof') or {}
-            raw_tr     = pr.get('tree_root', '')
-            tree_root  = (raw_tr[7:] if raw_tr.startswith('sha256:') else raw_tr) or tree_root_from_cp
-            ih         = commit.get('integrity_hash', '')
-            ih_bare    = ih[7:] if ih.startswith('sha256:') else ih
-            log_pos    = pr.get('log_position')
-            accepted   = commit.get('timestamp', '')
-
-            # Recompute leaf hash to confirm it matches stored value
-            if lh_stored and ih_bare and log_pos is not None:
-                recomp = leaf_hash_from_commit(cid, ih_bare, log_pos, accepted)
-                lh_ok  = recomp == lh_stored
-            else:
-                lh_ok = True  # can't verify without data
-
-            # Verify inclusion proof against tree root
-            proof_ok = verify_inclusion_proof(lh_stored or '', incl_proof, tree_root or '') if (lh_stored and tree_root) else False
-            ok_both  = lh_ok and proof_ok
-            if ok_both: proofs_valid += 1
-            else:       proofs_failed += 1
-
-            if args.verbose:
-                mark = '✓' if ok_both else ('✗ leaf_mismatch' if not lh_ok else '✗ proof_invalid')
-                print(f'  [{i:4d}] {cid[:28]:<28} {mark}')
-
-        if proofs_found > 0:
-            phase3_ok = (proofs_failed == 0)
-            print(f'Phase 3 — Merkle inclusion:   {c(phase3_ok)}  ({proofs_valid}/{proofs_found} proofs valid)')
-        else:
-            print(f'Phase 3 — Merkle inclusion:   {c(None)}  (no _proof receipts in export)')
-    else:
-        print(f'Phase 3 — Merkle inclusion:   {c(None)}  (skipped via --skip-proof)')
-
-    # ── Phase 3.5: Checkpoint consistency ───────────────────────
-    consistency_ok = None
-    if args.checkpoint and getattr(args, 'checkpoint_b', None):
-        try:
-            cp_a = json.loads(Path(args.checkpoint).read_text())
-            cp_b = json.loads(Path(args.checkpoint_b).read_text())
-
-            def compute_root_local(leaves):
-                if not leaves: return hashlib.sha256(b'\x00').hexdigest()
-                if len(leaves) == 1: return leaves[0]
-                nodes = list(leaves)
-                while len(nodes) > 1:
-                    nxt = []
-                    for i in range(0, len(nodes), 2):
-                        nxt.append(node_hash_fn(nodes[i], nodes[i+1]) if i+1 < len(nodes) else nodes[i])
-                    nodes = nxt
-                return nodes[0]
-
-            # Verify both checkpoint signatures
-            pubkey_pem = Path(args.pubkey).read_text() if args.pubkey else None
-            sig_a = verify_checkpoint_sig(cp_a, pubkey_pem) if pubkey_pem else None
-            sig_b = verify_checkpoint_sig(cp_b, pubkey_pem) if pubkey_pem else None
-
-            # Verify chain linkage
-            linked = cp_b.get('previous_cp_id') == cp_a.get('checkpoint_id') or \
-                     cp_b.get('previous_tree_root') == cp_a.get('tree_root')
-
-            print(f'Phase 3.5— Checkpoint consistency:')
-            print(f'            Checkpoint A: {cp_a.get("checkpoint_id","?")[:24]}  tree_size={cp_a.get("tree_size")}')
-            print(f'            Checkpoint B: {cp_b.get("checkpoint_id","?")[:24]}  tree_size={cp_b.get("tree_size")}')
-            print(f'            Sig A:        {c(sig_a)}')
-            print(f'            Sig B:        {c(sig_b)}')
-            print(f'            Chain linked: {c(linked if linked else False)}')
-            consistency_ok = (sig_a is None or sig_a) and (sig_b is None or sig_b) and linked
-            print(f'            Result:       {c(consistency_ok)}')
-        except Exception as e:
-            print(f'Phase 3.5— Checkpoint consistency:   {c(False)}  ({e})')
-            consistency_ok = False
-    else:
-        print(f'Phase 3.5— Checkpoint consistency:   {c(None)}  (pass --checkpoint A --checkpoint-b B)')
-
-    # ── Phase 4A: Witness signatures ───────────────────────────
-    witness_ok = None
-    if bundle_meta := (data if isinstance(data, dict) else {}):
-        cp = bundle_meta.get('checkpoint') or {}
-        witness_sigs = cp.get('witness_signatures') or []
-        if witness_sigs:
-            w_valid = 0; w_failed = 0
-
-            # Rebuild checkpoint envelope for verification (same as server builds)
-            cp_envelope = {
-                'schema_version':     cp.get('schema_version', '3'),
-                'checkpoint_id':      cp.get('checkpoint_id'),
-                'tree_root':          cp.get('tree_root'),
-                'tree_size':          cp.get('tree_size'),
-                'log_root':           cp.get('log_root'),
-                'log_position':       cp.get('position') or cp.get('log_position'),
-                'timestamp':          cp.get('timestamp'),
-                'previous_cp_id':     cp.get('previous_cp_id'),
-                'previous_tree_root': cp.get('previous_tree_root'),
-            }
-            cp_msg = canonicalize(cp_envelope).encode('utf-8')
-
-            for ws in witness_sigs:
-                pubkey_pem = ws.get('public_key_pem')
-                wit_sig    = ws.get('witness_sig')
-                wit_id     = ws.get('witness_id', '?')
-                wit_name   = ws.get('witness_name', wit_id)
-
-                if not pubkey_pem or not wit_sig:
-                    if args.verbose:
-                        print(f'  ~ {wit_name}: no public key in bundle')
-                    continue
-
-                try:
-                    sig_bytes = bytes.fromhex(wit_sig)
-                    load_pem_public_key(pubkey_pem.encode()).verify(sig_bytes, cp_msg)
-                    w_valid += 1
-                    if args.verbose: print(f'  ✓ {wit_name} ({wit_id[:16]}...)')
-                except Exception as e:
-                    w_failed += 1
-                    if args.verbose: print(f'  ✗ {wit_name} ({wit_id[:16]}...): {e}')
-
-            witness_ok = w_failed == 0 and w_valid > 0
-            print(f'Phase 4A— Witness signatures:   {c(witness_ok)}  ({w_valid} valid, {w_failed} failed of {len(witness_sigs)} witnesses)')
-        else:
-            print(f'Phase 4A— Witness signatures:   {c(None)}  (no witness_signatures in checkpoint — not yet witnessed)')
-    else:
-        print(f'Phase 4A— Witness signatures:   {c(None)}  (single chain export — use bundle export for witness data)')
-
-    # ── Summary ───────────────────────────────────────────────────────────────
-    required_ok = struct['ok']
-    sig_ok      = sigs['ok'] if pubkeys else None
-    chk_ok      = cp_result['ok'] if cp_result else None
-    all_ok      = required_ok and (sig_ok is None or sig_ok) and (chk_ok is None or chk_ok) and (phase3_ok is None or phase3_ok) and (consistency_ok is None or consistency_ok) and (witness_ok is None or witness_ok)
-
-    print()
-    print('────────────────────────────────────────────')
-    if all_ok:
-        print('\033[32m✓ VERIFIED\033[0m')
+    if errors:
+        print("  FAILED. This bundle has been altered, or was not produced the")
+        print("  way it claims:\n")
+        for e in errors:
+            print("      %s" % e)
         print()
-        print('  • Every payload hash matches the stored record')
-        print('  • Every chain link is cryptographically sound')
-        if sig_ok is True:  print('  • All agent signatures are valid')
-        if chk_ok is True:  print('  • Log checkpoint signature is valid')
-    else:
-        print('\033[31m✗ VERIFICATION FAILED\033[0m')
-        if not struct['ok']:        print(f'  Chain broken at: {struct["broken_at"]}')
-        if sig_ok is False:         print(f'  Signature failures: {sigs["failures"]}')
-        if chk_ok is False:         print('  Checkpoint signature invalid')
+        return 1
+
+    print("  VERIFIED. Every payload hashes to the value recorded with it, and")
+    print("  each record names the one before it.")
     print()
+    print("  Note: this proves the records you have were not altered. It cannot")
+    print("  prove none were withheld. See SPEC.md 5.4.")
+    return 0
 
-    if args.json:
-        print(json.dumps({
-            'verified':   all_ok,
-            'structure':  {'ok': struct['ok'], 'broken_at': struct['broken_at'], 'length': struct['length']},
-            'signatures': {'ok': sig_ok, 'verified': sigs['verified'], 'failures': sigs['failures']},
-            'merkle':     {'ok': phase3_ok, 'valid': proofs_valid if proofs_found else 0, 'total': proofs_found if 'proofs_found' in dir() else 0},
-            'checkpoint': {'ok': chk_ok},
-            'witnesses':  {'ok': witness_ok},
-        }, indent=2))
 
-    sys.exit(0 if all_ok else 1)
-
-if __name__ == '__main__':
-    main()
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))

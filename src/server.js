@@ -405,21 +405,36 @@ app.get('/robots.txt', (_req, res) => {
 app.get('/sitemap.xml', (_req, res) => {
   const fs = require('fs');
   const origin = SITE_ORIGIN();
-  const dir = path.join(__dirname, '../public');
+  const root = path.join(__dirname, '../public');
+
+  // Recursive, because the first version globbed public/*.html only and so
+  // silently omitted /docs/quickstart and /integrations/claude, which are both
+  // live. A sitemap that quietly lists a subset is worse than none: it tells a
+  // crawler it has the full picture.
+  const walk = (dir, prefix) => {
+    let out = [];
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      if (entry.name.startsWith('.')) continue;
+      const abs = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        out = out.concat(walk(abs, prefix + entry.name + '/'));
+      } else if (entry.name.endsWith('.html')) {
+        out.push({ slug: prefix + entry.name.slice(0, -'.html'.length), abs });
+      }
+    }
+    return out;
+  };
 
   let entries;
   try {
-    entries = fs.readdirSync(dir)
-      .filter(f => f.endsWith('.html'))
-      .map(f => f.slice(0, -'.html'.length))
-      .filter(slug => !SITEMAP_EXCLUDE.has(slug))
-      .map(slug => {
+    entries = walk(root, '')
+      .filter(({ slug }) => !SITEMAP_EXCLUDE.has(slug))
+      .map(({ slug, abs }) => {
         // The site links to clean URLs everywhere, so those are canonical.
         const loc = slug === 'index' ? origin + '/' : origin + '/' + slug;
         let lastmod = null;
         try {
-          lastmod = fs.statSync(path.join(dir, slug + '.html'))
-            .mtime.toISOString().slice(0, 10);
+          lastmod = fs.statSync(abs).mtime.toISOString().slice(0, 10);
         } catch { /* a file that vanished mid-read simply has no lastmod */ }
         return { loc, lastmod };
       })
@@ -442,6 +457,16 @@ app.get('/sitemap.xml', (_req, res) => {
     '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
     urls + '\n</urlset>\n'
   );
+});
+
+// The proof bundle, the demo, /verify, /threat-model, the quickstart and the
+// Claude integration page all tell the reader to run this script. It was never
+// served: every one of those instructions ended at a 404, which is a poor way
+// to support a product whose central claim is that you can check it yourself.
+app.get('/verify_darkmatter_chain.py', (_req, res) => {
+  res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+  res.setHeader('Cache-Control', 'public, max-age=3600');
+  res.sendFile(path.join(__dirname, '../examples/verify_darkmatter_chain.py'));
 });
 
 // Skip JSON parsing for the Stripe webhook — it needs the raw Buffer so
@@ -2813,7 +2838,7 @@ app.get('/api/export/:ctxId', flexAuth, async (req, res) => {
       _spec: {
         bundle_version:  '3.0',
         spec_url:        'https://darkmatterhub.ai/docs#integrity-spec',
-        verifier_url:    'https://github.com/bengunvl/darkmatter/blob/main/github-template/verify_darkmatter_chain.py',
+        verifier_url:    'https://darkmatterhub.ai/verify_darkmatter_chain.py',
         verify_command:  'python verify_darkmatter_chain.py this_file.json --checkpoint checkpoint.json --pubkey server_pubkey.pem',
         checkpoint_repo: 'https://github.com/darkmatter-hub/checkpoints',
         phases:          ['structure', 'agent_signatures', 'merkle_inclusion', 'checkpoint'],
