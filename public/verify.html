@@ -632,11 +632,11 @@ function verifyStep1() {
     status: pass ? 'pass' : 'fail',
     label: pass ? 'Record intact' : 'Record integrity failed',
     desc: pass
-      ? 'This record matches the file that was verified.'
+      ? 'Every payload in this bundle hashes to the value recorded with it.'
       : 'Something in this record no longer matches. It may have been modified.',
     detail: pass
-      ? 'The payload hash matches the stored record. No changes detected.'
-      : 'The payload hash does not match. The record may have been altered after it was created.',
+      ? 'Recomputed in your browser from the payload itself, using RFC 8785 canonicalisation and SHA-256. Nothing was fetched and nothing was trusted.'
+      : 'A recomputed hash does not match the one recorded with it, so that record has been altered since it was written.',
     technical: [
       { key: 'Record ID', val: (VERIFY_RESULT.display || {}).recordId || '—' },
       { key: 'Records checked', val: String(VERIFY_RESULT.count || 0) + ' (' + (VERIFY_RESULT.shape || 'unknown shape') + ')' },
