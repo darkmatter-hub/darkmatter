@@ -15,3 +15,7 @@ instagram_post_*/
 # and the park record. These were briefly committed to a public repo; see
 # private/PARK.md for what that means and what is still in git history.
 private/
+
+# Python bytecode from running the verifier and its tests
+__pycache__/
+*.pyc
