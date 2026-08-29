@@ -2314,6 +2314,41 @@ test('the covering checkpoint selects every field the envelope needs', () => {
   });
 });
 
+// 42. The repository is public and must not carry the owner's identity
+// npm and PyPI metadata named a person and pointed at a personal GitHub
+// account, so both published packages carried it to anyone who ran `npm view`.
+// The instruction on this is unambiguous and predates all of it. private/ is
+// gitignored and excluded; node_modules is not ours.
+console.log('\nNo personal identifiers in a public repo');
+test('no tracked file names the owner or their personal account', () => {
+  // Split so this file does not match its own list. Writing them whole here
+  // made the guard fail on itself, which is funny once and useless after.
+  var banned = ['ben' + 'gunvl', 'Ben' + ' Gunvl', 'cullaj' + '07'];
+  var SKIP = ['node_modules', '.git', 'private'];
+  var offenders = [];
+  (function walk(dir) {
+    var entries;
+    try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch (e) { return; }
+    entries.forEach(function(e) {
+      if (SKIP.indexOf(e.name) !== -1) return;
+      var abs = path.join(dir, e.name);
+      if (e.isDirectory()) return walk(abs);
+      if (!/\.(js|json|md|py|html|toml|cfg|yml|yaml|txt|sh)$/.test(e.name)) return;
+      var text;
+      try { text = fs.readFileSync(abs, 'utf8'); } catch (err) { return; }
+      banned.forEach(function(b) {
+        if (text.indexOf(b) !== -1) {
+          var rel = path.relative(ROOT, abs).split(path.sep).join('/');
+          offenders.push(rel + ' contains "' + b + '"');
+        }
+      });
+    });
+  })(ROOT);
+  var SEP = String.fromCharCode(10) + '       ';
+  assert(offenders.length === 0,
+    'personal identifier in a public repository:' + SEP + offenders.join(SEP));
+});
+
 // Also runnable standalone: node test/security.test.js
 (function() {
   var sec = require('./security.test.js').run();
