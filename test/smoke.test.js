@@ -1476,6 +1476,41 @@ test('the pricing page matches the plan table the server enforces', function() {
   assert(problems.length === 0, problems.join('; '));
 });
 
+// Six public pages, including a comparison table that named three competitors,
+// claimed records were anchored via OpenTimestamps to the Bitcoin blockchain.
+// The string appeared nowhere in src/ except one line of display text: nothing
+// created a .ots file or contacted a calendar server, and the proof page told
+// auditors to verify a file the bundle did not contain.
+//
+// A marketing page can name a technology the product does not use and no test
+// notices, because nothing links the claim to the code. This links them.
+test('the site does not claim a technology the code does not implement', function() {
+  // Each entry: the term a page might claim, and what src/ must contain for
+  // that claim to be honest.
+  var CLAIMS = [
+    { term: 'OpenTimestamps', evidence: ['opentimestamps', '.ots'] },
+    { term: 'blockchain',     evidence: ['opentimestamps', 'blockchain'] },
+  ];
+  var srcAll = '';
+  fs.readdirSync(path.join(ROOT, 'src')).forEach(function(f) {
+    if (/\.js$/.test(f)) srcAll += fs.readFileSync(path.join(ROOT, 'src', f), 'utf8');
+  });
+  srcAll = srcAll.toLowerCase();
+
+  var problems = [];
+  CLAIMS.forEach(function(c) {
+    var implemented = c.evidence.some(function(e) { return srcAll.indexOf(e) !== -1; });
+    if (implemented) return;
+    publicPages().forEach(function(pg) {
+      var html = fs.readFileSync(pg.abs, 'utf8');
+      if (html.toLowerCase().indexOf(c.term.toLowerCase()) !== -1) {
+        problems.push(pg.slug + ' claims ' + c.term + ', which src/ does not implement');
+      }
+    });
+  });
+  assert(problems.length === 0, problems.join('; '));
+});
+
 // Also runnable standalone: node test/security.test.js
 (function() {
   var sec = require('./security.test.js').run();

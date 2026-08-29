@@ -164,7 +164,7 @@ footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;gri
     <div class="eyebrow" style="margin-bottom:3rem"><span class="rule"></span><span>Three properties &#183; non-negotiable</span></div>
     <div class="props-grid">
       <div class="prop" style="border-top:2px solid hsl(var(--signal)/.25)"><div class="top"><span class="tag">L1</span><span class="idx">01 / 03</span></div><h3>Tamper-evident hash chain</h3><p>Every commit is SHA-256 hashed client-side and linked to its parent. Modifying any record breaks every downstream hash, detectable by anyone, offline, with no DarkMatter dependency.</p></div>
-      <div class="prop" style="border-top:2px solid hsl(var(--signal)/.55)"><div class="top"><span class="tag">L2</span><span class="idx">02 / 03</span></div><h3>Independent timestamp anchor</h3><p>Checkpoint bundles are anchored via OpenTimestamps. The timestamp proof lives entirely outside DarkMatter&#8217;s infrastructure and is independently verifiable.</p></div>
+      <div class="prop" style="border-top:2px solid hsl(var(--signal)/.55)"><div class="top"><span class="tag">L2</span><span class="idx">02 / 03</span></div><h3>Independent timestamp anchor</h3><p>Checkpoints sign the Merkle root of the log and are co-signed by registered external witnesses, so the attestation can be checked without trusting DarkMatter. Checkpoint publishing is not enabled yet.</p></div>
       <div class="prop" style="border-top:2px solid hsl(var(--signal))"><div class="top"><span class="tag">L3</span><span class="idx">03 / 03</span></div><h3>Non-repudiation</h3><p>Commits are signed with a key only you hold before they reach our servers. DarkMatter cannot forge a record on your behalf. Non-repudiation by construction, not by policy.</p></div>
     </div>
   </div>
@@ -184,7 +184,7 @@ footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;gri
       <div class="level-row">
         <div class="level-c-tag"><span class="tag">L2</span><span class="level-num">02</span></div>
         <div class="level-c-name"><div class="level-name">Independent verification</div></div>
-        <div class="level-c-means level-means">Signed checkpoint bundles anchored via OpenTimestamps. Timestamp proof lives outside DarkMatter&#8217;s infrastructure entirely.</div>
+        <div class="level-c-means level-means">Signed checkpoints co-signed by external witnesses. Not enabled yet, so no checkpoint has been produced.</div>
         <div class="level-c-how level-how">Automatic. Every checkpoint batch is anchored and signed.</div>
       </div>
       <div class="level-row">
@@ -202,7 +202,7 @@ footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;gri
     <div class="eyebrow" style="margin-bottom:3rem"><span class="rule"></span><span>What we claim &#183; and what we don&#8217;t</span></div>
     <div class="int-grid">
       <div class="int-cell"><div class="label">We claim</div><h3>Payload wasn&#8217;t altered after commit</h3><p>The SHA-256 hash is computed client-side before transmission. Any modification breaks the hash. Verifiable offline.</p></div>
-      <div class="int-cell"><div class="label">We claim</div><h3>Record predates any dispute</h3><p>OpenTimestamps anchors checkpoint bundles independently. OpenTimestamps creates a cryptographic proof that a piece of data existed at a specific point in time, verified by an independent infrastructure outside DarkMatter. The timestamp proof is external and independently verifiable.</p></div>
+      <div class="int-cell"><div class="label">We claim</div><h3>Records are sealed when they happen</h3><p>Each record commits to the hash of the one before it, so a record cannot be altered, reordered or inserted after the fact without breaking every record that follows. This is what the offline verifier checks. It establishes ordering and integrity, not an independent time source: proving a record predates a dispute needs a witnessed checkpoint, which is not enabled yet.</p></div>
       <div class="int-cell"><div class="label">We claim &#40;L3&#41;</div><h3>DarkMatter cannot forge a record</h3><p>Customer-held Ed25519 keys sign the envelope before it reaches our servers. We never see the private key. We cannot produce a valid signature.</p></div>
       <div class="int-cell"><div class="label">We do not claim</div><h3>Payload confidentiality</h3><p>Payloads are stored in plaintext by default. DarkMatter personnel with database access can read them. To keep payloads private, encrypt client-side before calling <code class="cmd">dm.commit()</code>. This works on any plan. DarkMatter stores whatever you send.</p></div>
     </div>
@@ -223,7 +223,7 @@ footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;gri
       </div>
       <div class="spec-row">
         <div style="grid-column:span 4"><div class="spec-lbl">Timestamp anchor</div></div>
-        <div style="grid-column:span 8"><div class="spec-val">OpenTimestamps</div></div>
+        <div style="grid-column:span 8"><div class="spec-val">Witnessed checkpoint (not enabled)</div></div>
       </div>
       <div class="spec-row">
         <div style="grid-column:span 4"><div class="spec-lbl">Key management</div></div>

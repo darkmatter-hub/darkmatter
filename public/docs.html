@@ -435,7 +435,7 @@ const proof = await verify(ctx.id);<div class="lang-label">javascript</div></cod
 <p>DarkMatter uses assurance levels (L1, L2, L3) to describe how strongly a record can be verified. Higher levels add stronger cryptographic guarantees and are additive. L3 includes all L2 and L1 guarantees.</p>
 <ul style="margin:.75rem 0 1.5rem 1.25rem;font-size:14px;line-height:1.8;color:hsl(var(--foreground))">
   <li><strong>L1.</strong> Hash chain integrity. The record was not altered after it was committed.</li>
-  <li><strong>L2.</strong> OpenTimestamps anchor. The record's existence is anchored via OpenTimestamps, an open standard for timestamp proofs that operates independently of DarkMatter's infrastructure.</li>
+  <li><strong>L2.</strong> Witnessed checkpoint. The Merkle root of the log is signed and co-signed by registered external witnesses, so the attestation can be checked without trusting DarkMatter. Not enabled yet: every record in production today is L1.</li>
   <li><strong>L3.</strong> Customer signing key. Signed by a key only you hold, before reaching DarkMatter's servers. DarkMatter cannot forge or alter it.</li>
 </ul>
 <h3>Commit</h3>
@@ -921,12 +921,12 @@ curl -X POST https://darkmatterhub.ai/api/agents/keys/revoke   -H <span class="c
 <p>For the full specification including all event types, integrity computation rules, signature canonicalization, and the extension model, see <a href="https://github.com/contextpassport/spec" target="_blank" rel="noopener">contextpassport/spec</a>. The conformance test suite that validates implementations is at <a href="https://github.com/contextpassport/conformance-tests" target="_blank" rel="noopener">contextpassport/conformance-tests</a>.</p>
 
 <h2 id="integrity">Integrity model</h2>
-<p>Every commit starts at L1. L2 is applied automatically via OpenTimestamps anchoring on checkpoints. L3 requires a customer-held signing key.</p>
+<p>Every commit starts at L1. L2 comes from witnessed checkpoints, which are not currently being published. L3 requires a customer-held signing key.</p>
 <table>
   <thead><tr><th>Level</th><th>Name</th><th>What it proves</th><th>How</th></tr></thead>
   <tbody>
     <tr><td><code>L1</code></td><td>Verifiable record</td><td>Payload wasn&#8217;t altered after commit</td><td>SHA-256 hash chain. Default with every commit.</td></tr>
-    <tr><td><code>L2</code></td><td>Independent verification</td><td>Record predates any dispute</td><td>OpenTimestamps anchor. Automatic.</td></tr>
+    <tr><td><code>L2</code></td><td>Independent verification</td><td>Record predates any dispute</td><td>Witnessed checkpoint. Not enabled yet.</td></tr>
     <tr><td><code>L3</code></td><td>Non-repudiation</td><td>DarkMatter cannot forge this record</td><td>Customer Ed25519 key signs envelope before transmission.</td></tr>
   </tbody>
 </table>
