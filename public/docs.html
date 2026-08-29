@@ -291,7 +291,7 @@ footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;gri
 <article class="docs-content">
 
 <h1>DarkMatter Documentation</h1>
-<p class="lead">DarkMatter records every AI agent action as a verifiable, independently auditable record. Every commit is hashed client-side, optionally signed with your own key, and stored outside your infrastructure. Works with any language, any model, any framework.</p>
+<p class="lead">DarkMatter records every AI agent action as a verifiable, independently auditable record. Every commit is hashed, on your machine with the Python SDK or by the server otherwise, optionally signed with your own key, and stored outside your infrastructure. Works with any language, any model, any framework.</p>
 <div style="border-left:2px solid hsl(var(--signal));background:hsl(var(--void-elevated));padding:.75rem 1rem;margin-bottom:1.5rem;display:flex;flex-direction:column;gap:.5rem">
   <div style="font-size:13px;line-height:1.6"><strong style="font-family:'JetBrains Mono',monospace;font-size:12px">Commit</strong> &nbsp;A sealed, timestamped record of one AI agent action, stored outside your system and independently verifiable.</div>
   <div style="font-size:13px;line-height:1.6"><strong style="font-family:'JetBrains Mono',monospace;font-size:12px">Agent &nbsp;</strong> A named entity you register in DarkMatter, with its own ID (<code>dm_agent_...</code>) and API key. Every commit is attributed to it.</div>
@@ -435,7 +435,7 @@ const proof = await verify(ctx.id);<div class="lang-label">javascript</div></cod
 <p>DarkMatter uses assurance levels (L1, L2, L3) to describe how strongly a record can be verified. Higher levels add stronger cryptographic guarantees and are additive. L3 includes all L2 and L1 guarantees.</p>
 <ul style="margin:.75rem 0 1.5rem 1.25rem;font-size:14px;line-height:1.8;color:hsl(var(--foreground))">
   <li><strong>L1.</strong> Hash chain integrity. The record was not altered after it was committed.</li>
-  <li><strong>L2.</strong> Witnessed checkpoint. The Merkle root of the log is signed and co-signed by registered external witnesses, so the attestation can be checked without trusting DarkMatter. Not enabled yet: every record in production today is L1.</li>
+  <li><strong>L2.</strong> Witnessed checkpoint. The Merkle root of the log is signed and co-signed by registered external witnesses, so the attestation can be checked without trusting DarkMatter alone.</li>
   <li><strong>L3.</strong> Customer signing key. Signed by a key only you hold, before reaching DarkMatter's servers. DarkMatter cannot forge or alter it.</li>
 </ul>
 <h3>Commit</h3>
@@ -921,12 +921,12 @@ curl -X POST https://darkmatterhub.ai/api/agents/keys/revoke   -H <span class="c
 <p>For the full specification including all event types, integrity computation rules, signature canonicalization, and the extension model, see <a href="https://github.com/contextpassport/spec" target="_blank" rel="noopener">contextpassport/spec</a>. The conformance test suite that validates implementations is at <a href="https://github.com/contextpassport/conformance-tests" target="_blank" rel="noopener">contextpassport/conformance-tests</a>.</p>
 
 <h2 id="integrity">Integrity model</h2>
-<p>Every commit starts at L1. L2 comes from witnessed checkpoints, which are not currently being published. L3 requires a customer-held signing key.</p>
+<p>Every commit starts at L1. L2 comes from witnessed checkpoints, which are published on a ten-minute cycle and co-signed by registered witnesses. L3 requires a customer-held signing key.</p>
 <table>
   <thead><tr><th>Level</th><th>Name</th><th>What it proves</th><th>How</th></tr></thead>
   <tbody>
     <tr><td><code>L1</code></td><td>Verifiable record</td><td>Payload wasn&#8217;t altered after commit</td><td>SHA-256 hash chain. Default with every commit.</td></tr>
-    <tr><td><code>L2</code></td><td>Independent verification</td><td>Record predates any dispute</td><td>Witnessed checkpoint. Not enabled yet.</td></tr>
+    <tr><td><code>L2</code></td><td>Independent verification</td><td>Record predates any dispute</td><td>Witnessed checkpoint. Automatic.</td></tr>
     <tr><td><code>L3</code></td><td>Non-repudiation</td><td>DarkMatter cannot forge this record</td><td>Customer Ed25519 key signs envelope before transmission.</td></tr>
   </tbody>
 </table>

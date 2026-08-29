@@ -1721,6 +1721,33 @@ test('the commit route accepts both spellings of the client verification fields'
   });
 });
 
+// Five pages said payloads are hashed client-side, without qualification. That
+// is true through the Python SDK, which computes the hash and posts it, and
+// false through the JavaScript SDK, which posts the payload and lets the server
+// hash it. A reader using the JS SDK was told their hash was computed locally
+// when it was not.
+//
+// So the claim has to name which path it applies to. This fails if an
+// unqualified version comes back.
+test('client-side hashing is not claimed without naming the SDK', function() {
+  var unqualified = [];
+  publicPages().forEach(function(pg) {
+    var html = fs.readFileSync(pg.abs, 'utf8');
+    var re = /[^.<>]{0,120}(hashed?[^.<>]{0,20}client-side|client-side hash[^.<>]{0,20})[^.<>]{0,120}/gi;
+    var m;
+    while ((m = re.exec(html)) !== null) {
+      var sentence = m[0];
+      // Qualified if it names the SDK the claim holds for, or says the server
+      // does it. Bare "hashed client-side" is the form that misleads.
+      if (!/python sdk|javascript sdk|js sdk|by the server|server hashes/i.test(sentence)) {
+        unqualified.push(pg.slug + ': "' + sentence.trim().slice(0, 70) + '"');
+      }
+    }
+  });
+  assert(unqualified.length === 0,
+    'unqualified client-side hashing claims: ' + unqualified.join('; '));
+});
+
 // Also runnable standalone: node test/security.test.js
 (function() {
   var sec = require('./security.test.js').run();
