@@ -209,11 +209,11 @@ footer{border-top:1px solid var(--rule);padding:28px 48px;}
     </div>
     <div style="background:var(--paper);padding:16px 18px;">
       <div class="h3">Access control</div>
-      <p>API key authentication per agent. JWT session authentication for dashboard. Supabase RLS (row-level security) enforces account isolation at the database layer. Superuser access logged and auditable.</p>
+      <p>API key authentication per agent. JWT session authentication for dashboard. Account isolation is enforced in application code, not by database row-level security: queries run through a service role that bypasses RLS, so every route taking a record id checks ownership before returning anything. Superuser access logged and auditable.</p>
     </div>
     <div style="background:var(--paper);padding:16px 18px;">
       <div class="h3">Data isolation</div>
-      <p>Every agent's commit records are isolated to the owning account via RLS. No cross-account data access is possible through the API. Self-hosting (MIT license) available for full infrastructure control.</p>
+      <p>Every agent's commit records are isolated to the owning account by an ownership check on every read, covered by a regression test that fails the build if any such route drops it. No cross-account data access is possible through the API. Self-hosting (MIT license) available for full infrastructure control.</p>
     </div>
     <div style="background:var(--paper);padding:16px 18px;">
       <div class="h3">Cryptographic integrity</div>

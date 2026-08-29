@@ -1538,6 +1538,33 @@ test('an open-source claim is backed by an actual licence', function() {
     'the standalone verifier carries no SPDX licence header');
 });
 
+// The security page told readers "row-level security enforces account isolation
+// at the database layer", and the compliance page said records are isolated
+// "via RLS". server.js says the opposite in a comment above the ownership
+// helpers: every route queries through the service role, which bypasses RLS, so
+// the policies in the schema are inert and authorization is enforced in
+// application code.
+//
+// Claiming a database-layer control you do not rely on overstates the posture
+// to the one reader who is checking. The real mechanism is stronger than it
+// sounds, because a regression test fails the build when a route stops checking
+// ownership, but it is a different mechanism and must be described as one.
+test('no page credits RLS with isolation that application code enforces', function() {
+  var bypassed = /bypasses RLS/i.test(server) || /RLS policies[\s\S]{0,80}inert/i.test(server);
+  if (!bypassed) return;   // if RLS is ever actually relied on, this stops applying
+
+  var problems = [];
+  publicPages().forEach(function(pg) {
+    var text = fs.readFileSync(pg.abs, 'utf8');
+    if (/(row-level security|RLS)[^.<]{0,60}(enforc|isolat)/i.test(text) ||
+        /(isolat)[^.<]{0,40}via RLS/i.test(text)) {
+      problems.push(pg.slug);
+    }
+  });
+  assert(problems.length === 0,
+    'these pages credit RLS with isolation the service role bypasses: ' + problems.join(', '));
+});
+
 // Also runnable standalone: node test/security.test.js
 (function() {
   var sec = require('./security.test.js').run();
