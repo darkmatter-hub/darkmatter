@@ -1280,6 +1280,42 @@ test('every indexable page declares a canonical matching its sitemap URL', funct
     'canonical missing or wrong: ' + problems.join(', '));
 });
 
+// The title is the highest-value ranking field and the line a searcher reads
+// before deciding to click. Every one of these used to lead with the brand
+// ("Compliance: DarkMatter"), which spends that space on a term at least four
+// other companies also rank for. These bounds are the objective part: present,
+// long enough to say something, short enough not to be cut off in a result.
+test('every indexable page has a usable title and description', function() {
+  var m = server.match(/const SITEMAP_EXCLUDE = new Set\(\[([\s\S]*?)\]\)/);
+  assert(m, 'SITEMAP_EXCLUDE not found');
+  var excluded = (m[1].match(/'([a-z0-9-]+)'/g) || []).map(function(x) {
+    return x.replace(/'/g, '');
+  });
+
+  var problems = [];
+  fs.readdirSync(path.join(ROOT, 'public')).forEach(function(f) {
+    if (!/\.html$/.test(f)) return;
+    var slug = f.replace(/\.html$/, '');
+    if (excluded.indexOf(slug) !== -1) return;
+    var html = fs.readFileSync(path.join(ROOT, 'public', f), 'utf8');
+
+    var t = html.match(/<title>([\s\S]*?)<\/title>/);
+    if (!t) { problems.push(slug + ': no title'); }
+    else {
+      var title = t[1].trim();
+      if (title.length < 15)  problems.push(slug + ': title too short (' + title.length + ')');
+      if (title.length > 60)  problems.push(slug + ': title truncated in results (' + title.length + ')');
+    }
+
+    var d = html.match(/<meta name="description" content="([\s\S]*?)"/);
+    if (!d) { problems.push(slug + ': no meta description'); }
+    else if (d[1].length > 160) {
+      problems.push(slug + ': description truncated (' + d[1].length + ')');
+    }
+  });
+  assert(problems.length === 0, problems.join('; '));
+});
+
 // Also runnable standalone: node test/security.test.js
 (function() {
   var sec = require('./security.test.js').run();
