@@ -124,7 +124,7 @@ async function makeBundle(n) {
   check('signature is never reported as verified', r.signatureOk !== true, String(r.signatureOk));
 
   // The example the page ships must be one that actually verifies.
-  const example = (html.match(/const EXAMPLE_BUNDLE = ([\s\S]*?);\n/) || [])[1];
+  const example = (html.match(/const EXAMPLE_BUNDLE = ([\s\S]*?);\r?\n/) || [])[1];
   check('the shipped example bundle parses', !!example);
   if (example) {
     const parsed = JSON.parse(example);

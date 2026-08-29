@@ -2064,6 +2064,108 @@ test('surviving a DarkMatter compromise is not claimed without an independent wi
     'our trust domain:' + SEP + offenders.join(SEP));
 });
 
+// Read the sitemap exclusion list out of server.js so the two cannot drift.
+function sitemapExcluded() {
+  var m = server.match(/SITEMAP_EXCLUDE = new Set\(\[([\s\S]*?)\]\)/);
+  var out = m ? (m[1].match(/'[^']+'/g) || []).map(function(q) { return q.slice(1, -1); }) : [];
+  assert(out.length > 0, 'could not read SITEMAP_EXCLUDE from server.js');
+  return out;
+}
+
+// 38. Social cards: every shared link rendered as a bare URL
+// Only chain.html carried og tags, and its card was broken three ways: og:url
+// shipped empty, og:image pointed at og-chain.png and og-default.png, neither
+// of which exists, and the real image came from client JS that no scraper runs.
+// The onerror on the <meta> tag never fired either - meta elements have no
+// error event. Every other page had nothing, so a link posted to X, LinkedIn
+// or Slack showed a naked URL. The daily tweet posts one of those links.
+console.log('\nSocial cards');
+
+function ogTag(html, prop) {
+  // Plain string scanning rather than a constructed RegExp: the first version
+  // built the pattern from a string and its escapes did not survive being
+  // written to disk, so it matched nothing and reported every page as missing
+  // every tag. String search needs no escapes and cannot fail that way.
+  var key = '"' + prop + '"';
+  var i = html.indexOf(key);
+  while (i !== -1) {
+    var open = html.lastIndexOf('<', i);
+    var close = html.indexOf('>', i);
+    if (open !== -1 && close !== -1) {
+      var tag = html.slice(open, close);
+      var c = tag.indexOf('content="');
+      if (c !== -1) {
+        var rest = tag.slice(c + 'content="'.length);
+        var q = rest.indexOf('"');
+        if (q !== -1) return rest.slice(0, q).trim();
+      }
+    }
+    i = html.indexOf(key, i + 1);
+  }
+  return null;
+}
+
+test('every indexable page carries og and twitter metadata', () => {
+  var missing = [];
+  publicPages().forEach(function(pg) {
+    if (sitemapExcluded().indexOf(pg.slug) !== -1) return;
+    var html = fs.readFileSync(pg.abs, 'utf8');
+    ['og:title', 'og:description', 'og:url', 'twitter:card', 'twitter:title']
+      .forEach(function(prop) {
+        if (!ogTag(html, prop)) missing.push(pg.slug + ' has no ' + prop);
+      });
+  });
+  var SEP = String.fromCharCode(10) + '       ';
+  assert(missing.length === 0,
+    'pages that would share as a bare URL:' + SEP + missing.join(SEP));
+});
+
+test('og metadata matches the page it describes', () => {
+  // Derived from <title>, description and canonical, so they cannot drift into
+  // saying different things on the same page.
+  var wrong = [];
+  publicPages().forEach(function(pg) {
+    var html = fs.readFileSync(pg.abs, 'utf8');
+    if (!ogTag(html, 'og:title')) return;
+    var t = (html.match(/<title>([\s\S]*?)<\/title>/) || [])[1];
+    var d = ogTag(html, 'description');
+    var c = (html.match(/<link\s+rel="canonical"\s+href="([^"]*)"/) || [])[1];
+    if (t && ogTag(html, 'og:title') !== t.trim() && pg.slug !== 'chain') {
+      wrong.push(pg.slug + ': og:title differs from <title>');
+    }
+    if (d && ogTag(html, 'og:description') !== d && pg.slug !== 'chain') {
+      wrong.push(pg.slug + ': og:description differs from meta description');
+    }
+    if (c && ogTag(html, 'og:url') !== c && pg.slug !== 'chain') {
+      wrong.push(pg.slug + ': og:url differs from canonical');
+    }
+  });
+  var SEP = String.fromCharCode(10) + '       ';
+  assert(wrong.length === 0, 'og metadata contradicts the page:' + SEP + wrong.join(SEP));
+});
+
+test('no card image is missing or in a format no scraper renders', () => {
+  var bad = [];
+  publicPages().forEach(function(pg) {
+    var html = fs.readFileSync(pg.abs, 'utf8');
+    ['og:image', 'twitter:image'].forEach(function(prop) {
+      var src = ogTag(html, prop);
+      if (!src) return;
+      var p = src.replace(/^https?:\/\/[^/]+/, '');
+      if (/\.svg($|\?)/i.test(p)) {
+        bad.push(pg.slug + ': ' + prop + ' is SVG, which X, LinkedIn and Slack do not render');
+      }
+      // A same-origin static path must actually be a file in public/.
+      if (/^\/[^/]/.test(p) && !/^\/api\//.test(p) &&
+          !fs.existsSync(path.join(ROOT, 'public', p.replace(/^\//, '')))) {
+        bad.push(pg.slug + ': ' + prop + ' points at ' + p + ', which does not exist');
+      }
+    });
+  });
+  var SEP = String.fromCharCode(10) + '       ';
+  assert(bad.length === 0, 'broken card images:' + SEP + bad.join(SEP));
+});
+
 // Also runnable standalone: node test/security.test.js
 (function() {
   var sec = require('./security.test.js').run();
