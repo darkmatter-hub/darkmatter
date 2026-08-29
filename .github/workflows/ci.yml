@@ -47,6 +47,14 @@ jobs:
       - name: Audit public pages for stale claims
         run: node scripts/content-audit.js
 
+      # The /verify page verified nothing for a long time: its checks tested
+      # whether fields were present and it reported "no changes detected"
+      # without hashing anything. This runs the shipped browser logic against
+      # intact and tampered bundles, and cross-checks its RFC 8785
+      # implementation against src/integrity.js.
+      - name: The browser verifier actually verifies
+        run: node test/verify_page.test.js
+
       # The verifier five public pages tell readers to download and run. It was
       # unserved and crashing on our own demo bundle for a long time, and
       # nothing noticed because nothing ran it. This runs it, against both

@@ -197,8 +197,8 @@ nav { position: sticky; top: 0; z-index: 100; background: rgba(255,255,255,0.96)
 <div class="page-header">
   <div class="page-eyebrow">Independent verification</div>
   <h1>Verify a record.</h1>
-  <p>Upload a proof bundle to confirm that a record is intact, still fits into its history, and has not been changed since signing. Runs entirely in your browser. No account required.</p>
-  <p style="margin-top:10px;font-size:13.5px;color:var(--t3);font-family:var(--mono);">The proof bundle contains an Ed25519 signature and SHA-256 hash chain. Any standard cryptography library can verify these, DarkMatter does not need to exist for the math to work.</p>
+  <p>Upload a proof bundle and every hash in it is recomputed here, in your browser, and compared. If a payload was edited, a link was rewritten, or records were reordered, it fails. Runs entirely in your browser. No account required.</p>
+  <p style="margin-top:10px;font-size:13.5px;color:var(--t3);font-family:var(--mono);">The bundle contains a SHA-256 hash chain over RFC 8785 canonical payloads. Any standard cryptography library can verify these, DarkMatter does not need to exist for the math to work.</p>
 </div>
 
 <div class="verify-main">
@@ -238,8 +238,9 @@ nav { position: sticky; top: 0; z-index: 100; background: rgba(255,255,255,0.96)
     <div class="ow-grid">
       <div class="ow-item">
         <div class="ow-num">Python script</div>
-        <div class="ow-body">Run the verifier locally. Works offline. Written by DarkMatter, open source.</div>
-        <div class="ow-code">python verify_darkmatter_chain.py proof_bundle.json</div>
+        <div class="ow-body">Run the same checks locally, with no browser involved. MIT licensed.</div>
+        <div class="ow-code">curl -O https://darkmatterhub.ai/verify_darkmatter_chain.py
+python verify_darkmatter_chain.py proof_bundle.json</div>
       </div>
       <div class="ow-item ow-item-independent">
         <div class="ow-num">Any cryptography library</div>
@@ -274,19 +275,232 @@ nav { position: sticky; top: 0; z-index: 100; background: rgba(255,255,255,0.96)
 <script>
 // ── Example bundle ──
 const EXAMPLE_BUNDLE = {
-  darkmatter_version: '1.0',
-  record_id: 'rec_4c2f8a1e93b7',
-  agent: 'Code Review Agent',
-  action: 'Review pull request #412',
-  proof_level: 'signed',
-  timestamp: '2026-04-13T14:32:17Z',
-  payload_hash: 'sha256:4c2f8a1e93b7a8f3c2e1b9d0472c8d1f',
-  integrity_hash: 'sha256:4c2f8a1e93b7f4b1e9d78c3a205134a2',
-  parent_id: 'rec_3b1e7a0d82c6',
-  parent_hash: 'sha256:3b1e7a0d82c6f9e4a2c8b0d7e3f1a5c9',
-  signature: 'ed25519:4c2f8a1e93b7b2d4f6a8c0e1f3a5b7c9d2e4f6a8c0e1b2d4f6a8c0e1f3a5b7',
-  agent_public_key: 'ed25519-pub:4c2f8a1e93b7a1b2c3d4e5f6a7b8c9d0',
+  "format": "context-passport-bundle",
+  "format_version": "2.0",
+  "trace_id": "ctx_1790000000_a1b2c3d4e5f6",
+  "passports": [
+    {
+      "id": "ctx_1790000000_a1b2c3d4e5f6",
+      "parent_id": null,
+      "created_by": {
+        "agent_id": "code-review-agent",
+        "agent_name": "Code Review Agent"
+      },
+      "event": {
+        "type": "commit",
+        "timestamp": "2026-04-13T14:32:17Z"
+      },
+      "payload": {
+        "input": "Review pull request #412",
+        "output": "Approved. No blocking issues; two style suggestions left as comments.",
+        "pr": 412
+      },
+      "integrity": {
+        "payload_hash": "sha256:8a646afa235328609cc975d525dd6406427544782f4f11ea8a6ec8764487a46e",
+        "parent_hash": null,
+        "integrity_hash": "sha256:a1859847149bb7bf5b899e290e6309e437fb13175b4d745e51f73ad25b224a65"
+      }
+    },
+    {
+      "id": "ctx_1790000001_a1b2c3d4e5f6",
+      "parent_id": "ctx_1790000000_a1b2c3d4e5f6",
+      "created_by": {
+        "agent_id": "code-review-agent",
+        "agent_name": "Code Review Agent"
+      },
+      "event": {
+        "type": "commit",
+        "timestamp": "2026-04-13T14:33:17Z"
+      },
+      "payload": {
+        "input": "Merge pull request #412",
+        "output": "Merged to main after approval.",
+        "pr": 412
+      },
+      "integrity": {
+        "payload_hash": "sha256:222cbeb7c889764754b80ec2a71fcd70dae8548004c17e3a3d5b4e87f1764f81",
+        "parent_hash": "sha256:a1859847149bb7bf5b899e290e6309e437fb13175b4d745e51f73ad25b224a65",
+        "integrity_hash": "sha256:3a90290fd7be8fe8b4a18bf93c58db85a70139d53d02ebdab08b06dd74292d8b"
+      }
+    }
+  ]
 };
+
+// ── Real verification ────────────────────────────────────────────────────────
+//
+// What used to be here checked that fields were present and reported "the
+// payload hash matches the stored record". It never hashed anything, so a
+// bundle carrying an invented payload_hash passed, and so did one whose payload
+// had been edited. On a page whose whole purpose is detecting exactly that, a
+// check that cannot fail is worse than no check.
+//
+// This recomputes every hash in the browser with WebCrypto and compares. It
+// agrees with examples/verify_darkmatter_chain.py and with the published
+// context-passport SDKs, because all three implement RFC 8785 the same way.
+
+// RFC 8785 (JCS). Shorter in JavaScript than elsewhere because the language
+// already does most of it: Array.prototype.sort orders strings by UTF-16 code
+// unit, which is the order JCS specifies, String(number) is the ECMAScript
+// number format JCS requires, and JSON.stringify escapes strings minimally
+// without escaping non-ASCII.
+function jcs(v) {
+  if (v === null) return 'null';
+  const t = typeof v;
+  if (t === 'boolean') return v ? 'true' : 'false';
+  if (t === 'number') {
+    if (!isFinite(v)) throw new Error('NaN and Infinity are not valid JSON');
+    return String(v);
+  }
+  if (t === 'string') return JSON.stringify(v);
+  if (Array.isArray(v)) return '[' + v.map(jcs).join(',') + ']';
+  if (t === 'object') {
+    return '{' + Object.keys(v).sort()
+      .map(k => JSON.stringify(k) + ':' + jcs(v[k])).join(',') + '}';
+  }
+  throw new Error('cannot canonicalise ' + t);
+}
+
+async function sha256Hex(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function payloadHashOf(payload) { return 'sha256:' + await sha256Hex(jcs(payload)); }
+
+// sha256 over payload_hash concatenated with the parent's integrity hash, or the
+// literal "root" for the first record. Both operands keep the sha256: prefix.
+async function integrityHashOf(payloadHash, parentHash) {
+  return 'sha256:' + await sha256Hex(payloadHash + (parentHash || 'root'));
+}
+
+// Accepts the shapes DarkMatter actually emits. The old code invented its own,
+// which is why its example bundle had a 32-character "sha256" and no payload.
+function extractRecords(data) {
+  if (data && Array.isArray(data.passports) && data.passports.length) {
+    return {
+      shape: 'Context Passport bundle',
+      records: data.passports.map(p => ({
+        id: p.id, parentId: p.parent_id, payload: p.payload,
+        payloadHash: (p.integrity || {}).payload_hash,
+        parentHash: (p.integrity || {}).parent_hash,
+        integrityHash: (p.integrity || {}).integrity_hash,
+        agent: (p.created_by || {}).agent_name || (p.created_by || {}).agent_id || null,
+        signature: p.signature || null,
+      })),
+    };
+  }
+  if (data && Array.isArray(data.commits) && data.commits.length) {
+    return {
+      shape: 'proof bundle',
+      records: data.commits.map(c => {
+        const integ = c.integrity || {};
+        const parent = integ.parent_hash === 'root' ? null : integ.parent_hash;
+        return {
+          id: c.id || c.ctx_id, parentId: c.parent_id || c.parent_ctx_id || null,
+          payload: c.payload,
+          payloadHash: integ.payload_hash || c.payload_hash,
+          parentHash: parent, integrityHash: integ.integrity_hash,
+          agent: c.agent || null, signature: c.signature || null,
+        };
+      }),
+    };
+  }
+  if (data && data.integrity && data.payload) {
+    const integ = data.integrity;
+    return {
+      shape: 'single record',
+      records: [{
+        id: data.id, parentId: data.parent_id, payload: data.payload,
+        payloadHash: integ.payload_hash, parentHash: integ.parent_hash,
+        integrityHash: integ.integrity_hash,
+        agent: (data.created_by || {}).agent_name || null,
+        signature: data.signature || null,
+      }],
+    };
+  }
+  return null;
+}
+
+// Recomputes everything and records what actually failed. Nothing below reports
+// a pass it did not compute.
+async function computeVerification(bundle) {
+  const extracted = extractRecords(bundle);
+  if (!extracted) {
+    return { usable: false, integrityOk: false, lineageOk: false,
+             signatureOk: null, errors: ['Unrecognised bundle. Expected a passports or commits array, or a single record with payload and integrity.'],
+             display: {}, shape: null, count: 0 };
+  }
+
+  const recs = extracted.records;
+  const errors = [];
+  let integrityOk = true, lineageOk = true;
+  let prevIntegrity = null, prevId = null;
+
+  for (let i = 0; i < recs.length; i++) {
+    const r = recs[i];
+    const where = 'record ' + i + (r.id ? ' (' + r.id + ')' : '');
+
+    if (r.payload === undefined || r.payload === null) {
+      integrityOk = false; errors.push(where + ': no payload, so its hash cannot be recomputed');
+    } else if (!r.payloadHash) {
+      integrityOk = false; errors.push(where + ': no payload_hash to check against');
+    } else {
+      const got = await payloadHashOf(r.payload);
+      if (got !== r.payloadHash) {
+        integrityOk = false;
+        errors.push(where + ': payload does not match payload_hash (claimed ' +
+                    r.payloadHash.slice(0, 23) + '…, computed ' + got.slice(0, 23) + '…)');
+      }
+    }
+
+    if (i === 0) {
+      if (r.parentHash) { lineageOk = false; errors.push(where + ': first record should have no parent hash'); }
+    } else {
+      if (r.parentHash !== prevIntegrity) {
+        lineageOk = false; errors.push(where + ': parent hash does not match the previous record');
+      }
+      if (r.parentId && prevId && r.parentId !== prevId) {
+        lineageOk = false; errors.push(where + ': parent id is not the previous record');
+      }
+    }
+
+    if (r.integrityHash && r.payloadHash) {
+      const want = await integrityHashOf(r.payloadHash, r.parentHash);
+      if (want !== r.integrityHash) {
+        integrityOk = false;
+        errors.push(where + ': integrity_hash is not derived from this payload and parent');
+      }
+      prevIntegrity = r.integrityHash;
+    } else {
+      prevIntegrity = r.payloadHash;
+    }
+    prevId = r.id;
+  }
+
+  const signed = recs.some(r => r.signature);
+  const first = recs[0] || {};
+  return {
+    usable: true, shape: extracted.shape, count: recs.length,
+    integrityOk, lineageOk,
+    // No signature verification is performed, so this reports absence rather
+    // than claiming a pass. Saying "not signed" is a fact; saying "signature
+    // valid" without checking is what this page used to do.
+    signatureOk: signed ? null : false,
+    errors,
+    display: {
+      recordId: first.id || '—',
+      agent: first.agent || '—',
+      payloadHash: first.payloadHash || '—',
+      integrityHash: first.integrityHash || '—',
+      parentId: first.parentId || 'none (root record)',
+      parentHash: first.parentHash || 'n/a',
+      signature: first.signature || null,
+    },
+  };
+}
+
+let VERIFY_RESULT = null;
+
 
 let loadedBundle = null;
 let verifyDone = false;
@@ -356,12 +570,22 @@ function showError(msg) {
 }
 
 // ── Single record verification ──
-function runVerify() {
+async function runVerify() {
   if (!loadedBundle || verifyDone) return;
 
   const btn = document.getElementById('run-btn');
   btn.disabled = true;
   btn.textContent = 'Verifying…';
+
+  // Recompute every hash before a single result is displayed. The steps below
+  // read what this produced; none of them decides anything on its own.
+  try {
+    VERIFY_RESULT = await computeVerification(loadedBundle);
+  } catch (e) {
+    VERIFY_RESULT = { usable: false, integrityOk: false, lineageOk: false,
+                      signatureOk: null, errors: ['Verification failed: ' + e.message],
+                      display: {}, shape: null, count: 0 };
+  }
   document.getElementById('verify-hint').textContent = '';
 
   // Show verbose log, stays visible throughout
@@ -414,10 +638,10 @@ function verifyStep1() {
       ? 'The payload hash matches the stored record. No changes detected.'
       : 'The payload hash does not match. The record may have been altered after it was created.',
     technical: [
-      { key: 'Record ID', val: loadedBundle.record_id || ',' },
-      { key: 'Proof level', val: loadedBundle.proof_level || ',' },
-      { key: 'Payload hash', val: loadedBundle.payload_hash || ',', highlight: pass },
-      { key: 'Integrity hash', val: loadedBundle.integrity_hash || ',', highlight: pass },
+      { key: 'Record ID', val: (VERIFY_RESULT.display || {}).recordId || '—' },
+      { key: 'Records checked', val: String(VERIFY_RESULT.count || 0) + ' (' + (VERIFY_RESULT.shape || 'unknown shape') + ')' },
+      { key: 'Payload hash', val: (VERIFY_RESULT.display || {}).payloadHash || '—', highlight: pass },
+      { key: 'Integrity hash', val: (VERIFY_RESULT.display || {}).integrityHash || '—', highlight: pass },
     ],
     delay: 0,
   });
@@ -425,7 +649,7 @@ function verifyStep1() {
 }
 
 function verifyStep2(step1Pass) {
-  const hasParent = !!loadedBundle.parent_id;
+  const hasParent = (VERIFY_RESULT.count || 0) > 1;
   const pass = hasParent ? checkLineage(loadedBundle) : true;
   const label = pass ? 'History intact' : 'History check failed';
 
@@ -442,8 +666,8 @@ function verifyStep2(step1Pass) {
           : 'This is a root record, it has no parent. History is intact by definition.')
       : 'The parent record reference does not match. Something may have been inserted or removed.',
     technical: [
-      { key: 'Parent ID', val: loadedBundle.parent_id || 'none (root record)' },
-      { key: 'Parent hash', val: loadedBundle.parent_hash || 'n/a', highlight: pass },
+      { key: 'Parent ID', val: (VERIFY_RESULT.display || {}).parentId || 'none (root record)' },
+      { key: 'Parent hash', val: (VERIFY_RESULT.display || {}).parentHash || 'n/a', highlight: pass },
     ],
     delay: 0,
   });
@@ -451,34 +675,35 @@ function verifyStep2(step1Pass) {
 }
 
 function verifyStep3(step1Pass, step2Pass) {
-  const signaturePass = checkSignature(loadedBundle);
-  const recordedLevel = loadedBundle.proof_level === 'recorded';
-  const originOkForVerdict = recordedLevel ? true : signaturePass;
+  // This page does not verify Ed25519 signatures. It used to report "origin
+  // confirmed" whenever a signature field merely existed, which was a pass it
+  // never computed. Reporting a failure instead would be the same mistake in
+  // the other direction: not checked is not the same as invalid, and an
+  // unsigned but intact chain must not be shown as broken.
+  const anySignature = !!(VERIFY_RESULT && VERIFY_RESULT.usable &&
+                          (VERIFY_RESULT.display || {}).signature);
 
   addResult({
     id: 'r3',
-    status: signaturePass ? 'pass' : (recordedLevel ? 'warn' : 'fail'),
-    label: signaturePass ? 'Origin confirmed' : (recordedLevel ? 'No signature, Recorded level' : 'Signature check failed'),
-    desc: signaturePass
-      ? 'This record still matches the signer that created it.'
-      : (recordedLevel
-          ? 'This record is Recorded level, it was captured by DarkMatter but not signed by the agent.'
-          : 'The signature does not match. This record may have been changed after it was signed.'),
-    detail: signaturePass
-      ? 'It does not appear to have been changed after signing.'
-      : (recordedLevel
-          ? 'Recorded level does not include an agent signature by design. Upgrade to Signed level using the SDK for a verifiable signature.'
-          : 'Check that the agent public key matches the key registered at record creation.'),
+    status: 'warn',
+    label: anySignature ? 'Signature present, not checked here' : 'No signature in this bundle',
+    desc: anySignature
+      ? 'This bundle carries a signature. Checking it needs the signer’s public key, which this page does not do.'
+      : 'This bundle carries no agent signature, so there is nothing to check against a key.',
+    detail: 'Hash and chain checks above are complete and were computed in your browser. '
+      + 'For signature verification, run the offline verifier, which is the same code this page uses for hashing.',
     technical: [
-      { key: 'Proof level', val: loadedBundle.proof_level || ',' },
-      { key: 'Signature', val: loadedBundle.signature ? loadedBundle.signature.slice(0, 40) + '…' : 'none' },
-      { key: 'Agent public key', val: loadedBundle.agent_public_key ? loadedBundle.agent_public_key.slice(0, 36) + '…' : 'none' },
-      { key: 'Verified at', val: new Date().toISOString(), highlight: true },
+      { key: 'Records checked', val: String((VERIFY_RESULT && VERIFY_RESULT.count) || 0) },
+      { key: 'Signature present', val: anySignature ? 'yes' : 'no' },
+      { key: 'Signature verified', val: 'not performed on this page' },
+      { key: 'Checked at', val: new Date().toISOString(), highlight: true },
     ],
     delay: 0,
   });
 
-  setTimeout(() => showVerdict(step1Pass, step2Pass, originOkForVerdict), 600);
+  // An unsigned chain whose hashes all recompute is intact. The verdict turns
+  // on the checks that actually ran.
+  setTimeout(() => showVerdict(step1Pass, step2Pass, true), 600);
 }
 
 function showVerdict(r1, r2, r3) {
@@ -542,41 +767,47 @@ function toggleTechnical(id) {
 
 // ── Verification logic (demo, uses bundle fields) ──
 function checkIntegrity(b) {
-  // In production: recompute payload hash and compare
-  // Demo: pass if required fields present
-  return !!(b.record_id && b.payload_hash && b.integrity_hash && b.timestamp);
+  return !!(VERIFY_RESULT && VERIFY_RESULT.usable && VERIFY_RESULT.integrityOk);
 }
 
 function checkLineage(b) {
-  // In production: verify parent hash matches fetched parent record
-  // Demo: pass if parent fields are consistent
-  return !!(b.parent_id && b.parent_hash);
+  return !!(VERIFY_RESULT && VERIFY_RESULT.usable && VERIFY_RESULT.lineageOk);
 }
 
 function checkSignature(b) {
-  // In production: verify Ed25519 signature against agent public key
-  // Demo: pass if signature and public key present and proof_level is signed/sealed
-  if (b.proof_level === 'recorded') return false; // recorded = no signature to check
-  return !!(b.signature && b.agent_public_key);
+  // Signature verification is not implemented here. This returns false rather
+  // than reporting a pass it did not compute.
+  return false;
 }
 
 function downloadResult(passed) {
+  // This file can end up in front of an auditor, so it states only what was
+  // actually computed. It previously reported origin_confirmed from a check
+  // that tested whether a field existed.
+  const v = VERIFY_RESULT || {};
   const result = {
     verified_at: new Date().toISOString(),
-    record_id: loadedBundle?.record_id || 'unknown',
-    proof_level: loadedBundle?.proof_level || 'unknown',
+    record_id: (v.display || {}).recordId || 'unknown',
+    bundle_shape: v.shape || 'unknown',
+    records_checked: v.count || 0,
     result: passed ? 'pass' : 'fail',
     checks: {
-      record_intact: checkIntegrity(loadedBundle),
-      history_intact: loadedBundle?.parent_id ? checkLineage(loadedBundle) : true,
-      origin_confirmed: loadedBundle?.proof_level === 'recorded' ? null : checkSignature(loadedBundle),
+      payload_hashes_recomputed: v.integrityOk === true,
+      chain_links_verified: v.lineageOk === true,
+      signature_verified: null,
     },
+    notes: [
+      'Payload and integrity hashes were recomputed in the browser using RFC 8785 canonicalisation and SHA-256.',
+      'Ed25519 signatures are not verified by this page.',
+      'This proves the records shown were not altered. It cannot prove none were withheld.',
+    ],
+    failures: v.errors && v.errors.length ? v.errors : undefined,
     verified_by: 'DarkMatter browser verifier · darkmatterhub.ai/verify',
   };
   const blob = new Blob([JSON.stringify(result, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `verification_result_${loadedBundle?.record_id || 'unknown'}.json`;
+  a.download = `verification_result_${(VERIFY_RESULT?.display || {}).recordId || 'unknown'}.json`;
   a.click();
 }
 
@@ -642,18 +873,23 @@ function processMultiFiles(files) {
 
   jsonFiles.forEach((file, i) => {
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
         const bundle = JSON.parse(e.target.result);
-        const integrityPass = checkIntegrity(bundle);
-        const historyPass = bundle.parent_id ? checkLineage(bundle) : true;
-        const originPass = bundle.proof_level === 'recorded' ? true : checkSignature(bundle);
-        const pass = integrityPass && historyPass && originPass;
-        const status = (bundle.proof_level === 'recorded' && integrityPass && historyPass)
-          ? 'warn' : (pass ? 'pass' : 'fail');
-        results[i] = { name: file.name, id: bundle.record_id || ',', pass, status, proofLevel: bundle.proof_level || ',' };
+        // Each file is verified on its own. The single-file checks read a
+        // shared result, so calling them here would have graded every file
+        // against whichever bundle was verified last.
+        const v = await computeVerification(bundle);
+        const pass = v.usable && v.integrityOk && v.lineageOk;
+        results[i] = {
+          name: file.name,
+          id: (v.display || {}).recordId || '—',
+          pass,
+          status: pass ? 'pass' : 'fail',
+          proofLevel: v.usable ? (v.count + ' record' + (v.count === 1 ? '' : 's')) : 'unreadable',
+        };
       } catch {
-        results[i] = { name: file.name, id: ',', pass: false, status: 'fail', error: true };
+        results[i] = { name: file.name, id: '—', pass: false, status: 'fail', error: true };
       }
       loaded++;
       if (loaded === jsonFiles.length) renderMultiResults(results);
