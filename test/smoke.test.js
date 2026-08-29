@@ -1415,6 +1415,34 @@ test('every API endpoint the docs teach actually has a route', function() {
     'documented but not implemented: ' + missing.join('; '));
 });
 
+// compliance.html and threat-model.html were truncated in production for
+// months. Both ended mid-footer, and threat-model.html stopped mid-attribute at
+// "https://github.com/be" — the exact point where a personal handle began in
+// the URL, so a pass that stripped the handle deleted from there to end of
+// file and took </footer>, </body> and </html> with it.
+//
+// Browsers render a page missing its closing tags, so nothing looked wrong.
+// Every test passed. This is the check that was missing, and it also covers the
+// same mistake made by hand: bounding a section removal by a heading that does
+// not exist and deleting through to the end of the file.
+test('every page is structurally complete', function() {
+  var broken = [];
+  publicPages().forEach(function(pg) {
+    var html = fs.readFileSync(pg.abs, 'utf8');
+    var closeHtml = (html.match(/<\/html>/gi) || []).length;
+    var closeBody = (html.match(/<\/body>/gi) || []).length;
+    if (!/^\s*<!doctype/i.test(html)) broken.push(pg.slug + ': no doctype');
+    if (closeHtml !== 1) broken.push(pg.slug + ': ' + closeHtml + ' closing html tags');
+    if (closeBody !== 1) broken.push(pg.slug + ': ' + closeBody + ' closing body tags');
+    // A file ending inside a tag is truncated even if the counts happen to work.
+    var tail = html.slice(-400);
+    var lastOpen = tail.lastIndexOf('<');
+    var lastClose = tail.lastIndexOf('>');
+    if (lastOpen > lastClose) broken.push(pg.slug + ': ends inside an unclosed tag');
+  });
+  assert(broken.length === 0, 'structurally incomplete pages: ' + broken.join('; '));
+});
+
 // Also runnable standalone: node test/security.test.js
 (function() {
   var sec = require('./security.test.js').run();
