@@ -1443,6 +1443,39 @@ test('every page is structurally complete', function() {
   assert(broken.length === 0, 'structurally incomplete pages: ' + broken.join('; '));
 });
 
+// The pricing page and PLAN_META are edited in different files by different
+// kinds of change, and a mismatch is a promise the product does not keep. This
+// found src/billing.js carrying a second, contradictory plan table ($19 Pro,
+// 500-commit free tier) that nothing imported.
+test('the pricing page matches the plan table the server enforces', function() {
+  var m = server.match(/const PLAN_META = \{([\s\S]*?)\n\};/);
+  assert(m, 'PLAN_META not found');
+  var meta = {};
+  m[1].split('\n').forEach(function(line) {
+    var r = line.match(/(\w+):\s*\{\s*commitLimit:\s*(\d+|null)[^}]*price:\s*(\d+|null)/);
+    if (r) meta[r[1]] = { limit: r[2], price: r[3] };
+  });
+  assert(Object.keys(meta).length >= 3, 'could not parse PLAN_META');
+
+  var pricing = fs.readFileSync(path.join(ROOT, 'public/pricing.html'), 'utf8');
+  var problems = [];
+
+  Object.keys(meta).forEach(function(plan) {
+    var limit = meta[plan].limit, price = meta[plan].price;
+    if (limit !== 'null') {
+      // The page writes limits with thousands separators.
+      var pretty = Number(limit).toLocaleString('en-US');
+      if (pricing.indexOf(pretty) === -1) {
+        problems.push(plan + ': server enforces ' + pretty + ' commits, not on the pricing page');
+      }
+    }
+    if (price !== 'null' && pricing.indexOf('$' + price) === -1) {
+      problems.push(plan + ': server says $' + price + ', not on the pricing page');
+    }
+  });
+  assert(problems.length === 0, problems.join('; '));
+});
+
 // Also runnable standalone: node test/security.test.js
 (function() {
   var sec = require('./security.test.js').run();
