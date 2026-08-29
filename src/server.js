@@ -469,6 +469,14 @@ app.get('/verify_darkmatter_chain.py', (_req, res) => {
   res.sendFile(path.join(__dirname, '../examples/verify_darkmatter_chain.py'));
 });
 
+// Registered before express.static on purpose. A public/docs/ directory
+// exists for the quickstart, so express.static sees /docs as a directory and
+// 301s to /docs/ before any route is consulted. That worked, because Express
+// matches /docs/ to this handler anyway, but it meant the canonical URL and
+// the sitemap both advertised a URL that redirects. Serving it here removes
+// the hop. /docs/quickstart is unaffected: this route does not match it.
+app.get('/docs', (_req, res) => res.sendFile(path.join(__dirname, '../public/docs.html')));
+
 // Skip JSON parsing for the Stripe webhook — it needs the raw Buffer so
 // stripe.webhooks.constructEvent() can verify the HMAC signature.
 // Route-level express.raw() on that route handles the body instead.
@@ -4021,7 +4029,6 @@ app.get('/security',      (req, res) => res.sendFile(path.join(__dirname, '../pu
 app.get('/pricing',       (req, res) => res.sendFile(path.join(__dirname, '../public/pricing.html')));
 app.get('/why',           (req, res) => res.sendFile(path.join(__dirname, '../public/why.html')));
 app.get('/about',         (req, res) => res.sendFile(path.join(__dirname, '../public/why.html')));
-app.get('/docs',          (req, res) => res.sendFile(path.join(__dirname, '../public/docs.html')));
 app.get('/enterprise',    (req, res) => res.sendFile(path.join(__dirname, '../public/enterprise.html')));
 app.get('/organizations', (req, res) => res.sendFile(path.join(__dirname, '../public/organizations.html')));
 
@@ -7608,11 +7615,16 @@ app.get('*', (req, res, next) => {
   if (req.path.startsWith('/api/') || req.path.startsWith('/proxy/')) {
     return next();
   }
-  // Serve the requested HTML file if it exists, else 404
-  let filePath = path.join(publicDir, req.path === '/' ? 'index.html' : req.path);
-  // If path has no extension, try .html
-  if (!path.extname(filePath)) filePath = filePath + '.html';
-  res.sendFile(filePath, err => {
+  // Serve the requested HTML file if it exists, else 404.
+  //
+  // sendFile is given a relative path and an explicit root, so it refuses
+  // anything that escapes public/ instead of resolving it. Probing shows
+  // Express already normalises ../ out of req.path before this runs, so this
+  // is not fixing a live hole; it makes the confinement a property of this
+  // code rather than something inherited from the framework's URL parsing.
+  let rel = req.path === '/' ? 'index.html' : req.path.replace(/^\/+/, '');
+  if (!path.extname(rel)) rel += '.html';
+  res.sendFile(rel, { root: publicDir }, err => {
     if (err) res.status(404).send('Not found');
   });
 });
