@@ -1565,6 +1565,34 @@ test('no page credits RLS with isolation that application code enforces', functi
     'these pages credit RLS with isolation the service role bypasses: ' + problems.join(', '));
 });
 
+// server.js had seven chain-integrity checks and only one of them recomputed a
+// payload hash. The other six compared the stored parent_hash against the
+// stored integrity_hash and nothing more, which answers whether two stored
+// values point at each other rather than whether the record is still what it
+// says it is. A payload edited in place, hashes untouched, passed all six,
+// including the compliance report a regulated customer hands to an auditor.
+//
+// They drifted because there were seven copies. There is one now, and this
+// fails if an eighth is written by hand.
+test('chain integrity is checked in exactly one place', function() {
+  var handRolled = (server.match(/let chainIntact = true;/g) || []).length;
+  assert(handRolled === 0,
+    handRolled + ' hand-rolled chain check(s) in server.js — use verifyCommitChain()');
+
+  assert(server.indexOf('verifyCommitChain') !== -1,
+    'server.js does not use verifyCommitChain at all');
+
+  var integrity = fs.readFileSync(path.join(ROOT, 'src/integrity.js'), 'utf8');
+  assert(/function verifyCommitChain\s*\(/.test(integrity),
+    'verifyCommitChain is gone from integrity.js');
+  // It is only worth anything if it rehashes. A version that just compares
+  // stored values would pass every other assertion here.
+  var body = integrity.slice(integrity.indexOf('function verifyCommitChain'));
+  body = body.slice(0, body.indexOf('\nfunction ', 1));
+  assert(/hashPayload\s*\(/.test(body),
+    'verifyCommitChain no longer recomputes payload hashes, which is its whole purpose');
+});
+
 // Also runnable standalone: node test/security.test.js
 (function() {
   var sec = require('./security.test.js').run();

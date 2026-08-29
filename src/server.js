@@ -10,7 +10,7 @@ const { createClient } = require('@supabase/supabase-js');
 // integrity.js exports neither, so both bindings were undefined — never
 // called, but a latent TypeError waiting for a first caller. Removed.
 const { canonicalize, hashPayload, validateClientHashes, verifyChain,
-        chainIntegrityHash, computeChain } = require('./integrity');
+        chainIntegrityHash, computeChain, verifyCommitChain } = require('./integrity');
 const { appendToLog, getServerPublicKeyPem, verifyLogConsistency,
   generateProofForCommit, CHECKPOINT_SCHEMA_VERSION,
   verifyCheckpointConsistency,
@@ -2450,15 +2450,14 @@ app.get('/api/replay/:ctxId', requireApiKey, async (req, res) => {
     steps.reverse();
 
     // Verify integrity chain root → tip
-    let chainIntact = true;
-    for (let i = 1; i < steps.length; i++) {
-      const expected = steps[i].parent_hash;
-      const actual   = steps[i - 1].integrity_hash;
-      if (expected && actual && expected !== actual) {
-        chainIntact = false;
-        steps[i]._chainBroken = true;
-      }
-    }
+    // Rehashes each payload as well as checking the links. This used to compare
+    // stored hashes against each other only, which a payload edited in place
+    // would have passed. See verifyCommitChain in integrity.js.
+    const _replayCheck = verifyCommitChain(steps);
+    const chainIntact = _replayCheck.intact;
+    _replayCheck.steps.forEach((r, i) => {
+      if (r.payload_hash_verified === false || !r.parent_link_verified) steps[i]._chainBroken = true;
+    });
 
     // Build replay response
     const mode = req.query.mode; // 'summary' = no payloads, 'full' = default
@@ -2819,14 +2818,10 @@ app.get('/api/export/:ctxId', flexAuth, async (req, res) => {
     const tip        = chain[chain.length - 1];
     const exportedAt = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
 
-    let chainIntact = true;
-    for (let i = 1; i < chain.length; i++) {
-      const cur = chain[i]; const prev = chain[i - 1];
-      if (cur.parent_hash && prev.integrity_hash &&
-          cur.parent_hash.replace('sha256:', '') !== prev.integrity_hash.replace('sha256:', '')) {
-        chainIntact = false; break;
-      }
-    }
+    // Rehashes each payload as well as checking the links. This used to compare
+    // stored hashes against each other only, which a payload edited in place
+    // would have passed. See verifyCommitChain in integrity.js.
+    const chainIntact = verifyCommitChain(chain).intact;
 
     const stableData = {
       ctx_id:       ctxId,
@@ -3942,13 +3937,10 @@ app.get('/enterprise/report/:traceId', requireApiKey, requireEnterprise, async (
     if (!commits?.length) return res.status(404).json({ error: 'No commits found for this trace ID' });
 
     // Verify chain integrity
-    let chainIntact = true;
-    for (let i = 1; i < commits.length; i++) {
-      if (commits[i].parent_hash && commits[i-1].integrity_hash &&
-          commits[i].parent_hash !== commits[i-1].integrity_hash) {
-        chainIntact = false; break;
-      }
-    }
+    // Rehashes each payload as well as checking the links. This used to compare
+    // stored hashes against each other only, which a payload edited in place
+    // would have passed. See verifyCommitChain in integrity.js.
+    const chainIntact = verifyCommitChain(commits).intact;
 
     const agents    = [...new Set(commits.map(c => c.agent_info?.name || c.from_agent).filter(Boolean))];
     const models    = [...new Set(commits.map(c => c.agent_info?.model).filter(Boolean))];
@@ -4317,14 +4309,14 @@ app.get('/api/chain/:shareId', async (req, res) => {
     steps.reverse();
 
     // Verify chain
-    let chainIntact = true;
-    for (let i = 1; i < steps.length; i++) {
-      if (steps[i].parent_hash && steps[i - 1].integrity_hash &&
-          steps[i].parent_hash !== steps[i - 1].integrity_hash) {
-        chainIntact = false;
-        steps[i]._chainBroken = true;
-      }
-    }
+    // Rehashes each payload as well as checking the links. This used to compare
+    // stored hashes against each other only, which a payload edited in place
+    // would have passed. See verifyCommitChain in integrity.js.
+    const _exportCheck = verifyCommitChain(steps);
+    const chainIntact = _exportCheck.intact;
+    _exportCheck.steps.forEach((r, i) => {
+      if (r.payload_hash_verified === false || !r.parent_link_verified) steps[i]._chainBroken = true;
+    });
 
     const models = [...new Set(steps.map(s => s.agent_info?.model).filter(Boolean))];
     const agents = [...new Set(steps.map(s => s.agent_info?.name || s.from_agent).filter(Boolean))];
@@ -4558,13 +4550,10 @@ app.get('/api/bundle/:ctxId', requireApiKey, async (req, res) => {
     if (!steps.length) return res.status(404).json({ error: 'Context not found' });
 
     // Verify chain
-    let chainIntact = true;
-    for (let i = 1; i < steps.length; i++) {
-      if (steps[i].parent_hash && steps[i - 1].integrity_hash &&
-          steps[i].parent_hash !== steps[i - 1].integrity_hash) {
-        chainIntact = false;
-      }
-    }
+    // Rehashes each payload as well as checking the links. This used to compare
+    // stored hashes against each other only, which a payload edited in place
+    // would have passed. See verifyCommitChain in integrity.js.
+    const chainIntact = verifyCommitChain(steps).intact;
 
     const root = steps[0];
     const tip  = steps[steps.length - 1];
@@ -5249,32 +5238,13 @@ app.get('/r/:traceId', apiLimiter, async (req, res) => {
     //
     // Each commit records a per-step result so the page can point at the
     // failing step instead of only saying the chain is broken.
-    let chainIntact = true;
-    const verifyDetail = [];
-    for (let i = 0; i < commits.length; i++) {
-      const c = commits[i];
-      let payloadOk = null;   // null = cannot check (payload not stored)
-      let linkOk    = true;
-
-      if (c.payload && typeof c.payload === 'object') {
-        try {
-          const recomputed = hashPayload(c.payload);
-          const stored = String(c.payload_hash || '').replace(/^sha256:/, '');
-          payloadOk = stored ? recomputed === stored : null;
-        } catch (_) {
-          payloadOk = false; // non-canonicalisable payload cannot be verified
-        }
-      }
-
-      if (i > 0) {
-        const prevHash   = commits[i-1].integrity_hash;
-        const thisParent = c.parent_hash;
-        if (thisParent && prevHash) linkOk = thisParent === prevHash;
-      }
-
-      if (payloadOk === false || !linkOk) chainIntact = false;
-      verifyDetail.push({ id: c.id, payload_hash_verified: payloadOk, parent_link_verified: linkOk });
-    }
+    // The one implementation, shared with the export, replay, transcript and
+    // compliance paths. Those five compared stored hashes against each other
+    // and never rehashed, so a payload edited in place passed them while this
+    // page caught it. Six near-copies is how they drifted apart.
+    const _pageCheck  = verifyCommitChain(commits);
+    const chainIntact = _pageCheck.intact;
+    const verifyDetail = _pageCheck.steps;
 
     if (req.query.format === 'json') {
       res.setHeader('Content-Disposition', 'attachment; filename="darkmatter-proof-' + traceId + '.json"');
@@ -8435,14 +8405,9 @@ app.get('/api/workspace/conversation/:traceId', requireAuth, async (req, res) =>
       };
     });
 
-    // Verify chain integrity
-    let chainIntact = true;
-    for (let i = 1; i < commits.length; i++) {
-      if (commits[i].parent_hash && commits[i-1].integrity_hash &&
-          commits[i].parent_hash !== commits[i-1].integrity_hash) {
-        chainIntact = false; break;
-      }
-    }
+    // Rehashes each payload as well as checking the links. See
+    // verifyCommitChain in integrity.js.
+    const chainIntact = verifyCommitChain(commits).intact;
 
     res.json({
       traceId,

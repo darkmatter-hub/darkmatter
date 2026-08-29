@@ -168,6 +168,68 @@ function computeChain(payload, parentIntegrityHex) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// CHAIN VERIFICATION
+//
+// There were six chain checks in server.js and only one of them recomputed a
+// payload hash. The other five compared the stored parent_hash against the
+// stored integrity_hash and nothing else, which answers "do these stored values
+// point at each other" rather than "is this record still what it says it is".
+// A payload edited in place, with the hashes left alone, passed all five: the
+// replay endpoint, three export paths, and the compliance report, which is the
+// artifact a regulated customer hands to an auditor.
+//
+// Six copies is why they drifted. One function now, used by all of them.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Verify an ordered list of stored commits.
+ *
+ * Rehashes each payload and checks each link. Rows are expected in
+ * chronological order, root first, with the shape stored in the commits table.
+ *
+ * payload_hash_verified is null, not false, when the payload is absent: a
+ * summary view that omits payloads cannot check them, and reporting that as a
+ * failure would cry wolf. Only an actual mismatch fails the chain.
+ *
+ * @returns {{intact: boolean, steps: Array<{id, payload_hash_verified, parent_link_verified}>}}
+ */
+function verifyCommitChain(commits) {
+  let intact = true;
+  const steps = [];
+
+  for (let i = 0; i < commits.length; i++) {
+    const c = commits[i];
+    let payloadOk = null;
+    let linkOk = true;
+
+    if (c && c.payload && typeof c.payload === 'object') {
+      try {
+        const recomputed = hashPayload(c.payload);
+        const stored = bare(c.payload_hash);
+        payloadOk = stored ? recomputed === stored : null;
+      } catch (_) {
+        payloadOk = false;   // a payload that cannot be canonicalised cannot be verified
+      }
+    }
+
+    if (i > 0) {
+      const prevHash = commits[i - 1] && commits[i - 1].integrity_hash;
+      const thisParent = c && c.parent_hash;
+      if (thisParent && prevHash) linkOk = bare(thisParent) === bare(prevHash);
+    }
+
+    if (payloadOk === false || !linkOk) intact = false;
+    steps.push({
+      id: c && c.id,
+      payload_hash_verified: payloadOk,
+      parent_link_verified: linkOk,
+    });
+  }
+
+  return { intact, steps };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // PASSPORT PARSING
 //
 // Added to earn Core conformance rather than to claim it. The published
@@ -424,6 +486,7 @@ module.exports = {
   chainIntegrityHash,
   computeChain,
   parsePassport,
+  verifyCommitChain,
   buildEnvelope,
   hashEnvelope,
   computeIntegrityHash,
