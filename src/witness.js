@@ -45,6 +45,7 @@
 const crypto = require('crypto');
 const https  = require('https');
 const { canonicalize } = require('./integrity');
+const { envelopeFromCheckpointRow } = require('./append-log');
 
 // Whether a witness NOT operated by DarkMatter has been registered.
 //
@@ -212,18 +213,10 @@ async function acceptWitnessSignature(supabaseService, checkpointId, witnessId, 
   const { published, published_url, witness_count, witness_status, ...cpFields } = checkpoint;
   const { server_sig, ...envelopeWithoutSig } = cpFields;
 
-  // Remove any non-spec fields before verifying
-  const envelope = {
-    schema_version:      envelopeWithoutSig.schema_version || '3',
-    checkpoint_id:       envelopeWithoutSig.checkpoint_id,
-    tree_root:           envelopeWithoutSig.tree_root,
-    tree_size:           envelopeWithoutSig.tree_size,
-    log_root:            envelopeWithoutSig.log_root,
-    log_position:        envelopeWithoutSig.position,  // DB uses 'position', envelope uses 'log_position'
-    timestamp:           envelopeWithoutSig.timestamp,
-    previous_cp_id:      envelopeWithoutSig.previous_cp_id   || null,
-    previous_tree_root:  envelopeWithoutSig.previous_tree_root || null,
-  };
+  // One shared reconstruction, because the witness must verify the same bytes
+  // we signed. Rebuilding inline is what broke this: the DB timestamp comes
+  // back as +00:00 and the signature is over the Z form.
+  const envelope = envelopeFromCheckpointRow(envelopeWithoutSig);
 
   // Verify the witness signature
   const message = Buffer.from(canonicalize(envelope), 'utf8');

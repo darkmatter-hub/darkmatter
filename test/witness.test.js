@@ -19,6 +19,7 @@
 
 const crypto = require('crypto');
 const { acceptWitnessSignature, verifyWitnessSignature } = require('../src/witness');
+const { envelopeFromCheckpointRow } = require('../src/append-log');
 const { canonicalize } = require('../src/integrity');
 
 let passed = 0, failed = 0;
@@ -52,18 +53,10 @@ const CP = {
   schema_version: '3',
 };
 
-// The envelope acceptWitnessSignature rebuilds and verifies against.
-const ENVELOPE = {
-  schema_version: '3',
-  checkpoint_id: CP.checkpoint_id,
-  tree_root: CP.tree_root,
-  tree_size: CP.tree_size,
-  log_root: CP.log_root,
-  log_position: CP.position,
-  timestamp: CP.timestamp,
-  previous_cp_id: null,
-  previous_tree_root: null,
-};
+// The envelope acceptWitnessSignature rebuilds and verifies against. Built by
+// the same helper the code uses, because a hand-written copy here would only
+// prove the test and the code agree with each other.
+const ENVELOPE = envelopeFromCheckpointRow(CP);
 
 function signEnvelope(privateKey) {
   return crypto.sign(null, Buffer.from(canonicalize(ENVELOPE), 'utf8'), privateKey)
@@ -157,6 +150,38 @@ function makeDb(registeredPem, registeredId) {
       verifyWitnessSignature(ENVELOPE, signEnvelope(w.privateKey), w.pem) === true);
     check('offline verifier rejects a signature from another key',
       verifyWitnessSignature(ENVELOPE, signEnvelope(other.privateKey), w.pem) === false);
+  }
+
+
+  // 5. The timestamp format is the whole reason witnessing could not work.
+  //    Postgres returns "2026-08-29T19:41:35+00:00"; the signature is over
+  //    "2026-08-29T19:41:35Z". Same instant, different string, and canonical
+  //    JSON hashes the string. Rebuilding from the row without converting
+  //    produced a message nobody had signed.
+  {
+    const zForm  = envelopeFromCheckpointRow({ ...CP, timestamp: '2026-08-29T12:00:00Z' });
+    const pgForm = envelopeFromCheckpointRow({ ...CP, timestamp: '2026-08-29T12:00:00+00:00' });
+    const subsec = envelopeFromCheckpointRow({ ...CP, timestamp: '2026-08-29T12:00:00.000Z' });
+    check('the database timestamp form rebuilds to the signed form',
+      pgForm.timestamp === '2026-08-29T12:00:00Z', pgForm.timestamp);
+    check('an already-normalised timestamp is unchanged',
+      zForm.timestamp === '2026-08-29T12:00:00Z', zForm.timestamp);
+    check('fractional seconds are stripped, as they are before signing',
+      subsec.timestamp === '2026-08-29T12:00:00Z', subsec.timestamp);
+    check('all three forms produce the identical envelope',
+      JSON.stringify(zForm) === JSON.stringify(pgForm) &&
+      JSON.stringify(zForm) === JSON.stringify(subsec));
+
+    // The end of the story: a witness signing what we sent must be accepted
+    // even though the row comes back in the other format.
+    const w = newKey();
+    const db = makeDb(w.pem, w.id);
+    const sig = crypto.sign(null,
+      Buffer.from(canonicalize(envelopeFromCheckpointRow(CP)), 'utf8'), w.privateKey).toString('hex');
+    const r = await acceptWitnessSignature(
+      { ...db, from: (t) => db.from(t) }, CP.checkpoint_id, w.id, sig, CP.timestamp);
+    check('a witness signature survives the round trip through the database',
+      r.sig_valid === true, 'sig_valid=' + r.sig_valid);
   }
 
   console.log('\nPassed: ' + passed + '  Failed: ' + failed);

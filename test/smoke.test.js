@@ -2214,6 +2214,106 @@ test('no public page names a competitor product', () => {
     'competitor named on a public page:' + SEP + offenders.join(SEP));
 });
 
+// 40. Detecting OUR tampering needs a reference we do not currently provide
+// The site's core promise is that a record cannot be altered without detection.
+// Against the customer that is unconditionally true: there is no edit path, and
+// DELETE on a commit returns 405 pointing at a redaction commit. Against
+// DarkMatter it is conditional, and the site did not say so.
+//
+// A hash chain does not stop the operator rewriting history. We hold the
+// database, so we could alter a record, recompute every downstream hash, re-sign
+// every checkpoint with our own key, and re-sign the witness, which also runs on
+// our infrastructure. The result is internally consistent. What catches it is an
+// independent reference: a proof bundle the customer exported beforehand,
+// checkpoints published where we cannot reach them, or a witness signature from
+// outside our trust domain. Only the first exists today.
+//
+// So a sentence claiming our own tampering is detectable has to say what it is
+// detectable against. "Anyone can check" does not, and was on the homepage.
+console.log('\nDetection of our own tampering');
+test('a claim that our tampering is detectable names the reference', () => {
+  var ABOUT_US = /(?:we|darkmatter) cannot (?:modify|alter|change|tamper)|change made by darkmatter|without trusting (?:us|darkmatter)|tampering is detectable|modification to a committed record is detectable/i;
+  // What a verifier compares against. Naming any of these makes the claim true.
+  var REFERENCE = /export|bundle|\bcopy\b|offline|your public key|your own|beforehand|retain|witness/i;
+  var offenders = [];
+  publicPages().forEach(function(pg) {
+    // Titles are not claims, and og/twitter tags repeat the title three more
+    // times. Strip the title and do not expand meta content for this check.
+    var text = fs.readFileSync(pg.abs, 'utf8')
+      .replace(/<title>[\s\S]*?<\/title>/gi, ' ')
+      .replace(/<[^>]+>/g, ' ');
+    text.split(/(?<=[.!?])\s+/).forEach(function(sentence) {
+      // A sentence disclosing that we cannot yet offer something is the
+      // opposite of the claim being guarded against.
+      if (/not yet|does not|do not|cannot yet/i.test(sentence)) return;
+      if (ABOUT_US.test(sentence) && !REFERENCE.test(sentence)) {
+        offenders.push(pg.slug + ': "' + sentence.trim().slice(0, 110) + '"');
+      }
+    });
+  });
+  var SEP = String.fromCharCode(10) + '       ';
+  assert(offenders.length === 0,
+    'claims our own tampering is detectable without saying against what:' +
+    SEP + offenders.join(SEP));
+});
+
+test('the terms disclose that detection depends on a customer-held export', () => {
+  var tos = fs.readFileSync(path.join(ROOT, 'public/tos.html'), 'utf8');
+  assert(/Detection of a modification made by DarkMatter depends on you retaining/.test(tos),
+    'tos.html must state that detecting our own modification depends on a proof ' +
+    'bundle the customer exported, because we publish no independent reference');
+});
+
+// 41. A published checkpoint has to be verifiable by whoever we published it to
+// GET /api/log/checkpoint served the stored row. Postgres returns the timestamp
+// as "2026-08-29T19:41:35+00:00"; the signature was computed over
+// "2026-08-29T19:41:35Z". Same instant, different string, and canonical JSON
+// hashes the string, so anyone rebuilding the envelope from the row got a
+// message we had never signed and concluded the signature was bad. Publishing a
+// checkpoint nobody can check is worse than publishing none.
+//
+// The same reconstruction runs in acceptWitnessSignature, so a witness signing
+// exactly the bytes we sent it was recorded as invalid. That was a second,
+// independent cause of witnessing failing, on top of the stale key.
+console.log('\nSigned checkpoint is verifiable as served');
+
+test('one function rebuilds the signed envelope, and everything uses it', () => {
+  var log = fs.readFileSync(path.join(ROOT, 'src/append-log.js'), 'utf8');
+  assert(log.indexOf('function envelopeFromCheckpointRow') !== -1,
+    'envelopeFromCheckpointRow is the single reconstruction; it must exist');
+  var wit = fs.readFileSync(path.join(ROOT, 'src/witness.js'), 'utf8');
+  assert(wit.indexOf('envelopeFromCheckpointRow(') !== -1,
+    'witness.js must not rebuild the envelope inline: it has to match byte for byte');
+  assert(server.indexOf('envelopeFromCheckpointRow(') !== -1,
+    'the log routes must serve the envelope that was actually signed');
+});
+
+test('the checkpoint route serves the signed envelope, not just the row', () => {
+  var i = server.indexOf("app.get('/api/log/checkpoint'");
+  var block = server.slice(i, i + 2000);
+  // Match the assignment, not the word. The first version of this checked for
+  // 'signed_envelope' anywhere in the block and passed on the comment above
+  // the route explaining why the field exists, so deleting the field itself
+  // was invisible.
+  assert(/signed_envelope:\s*envelopeFromCheckpointRow\(/.test(block),
+    'the route must assign signed_envelope from the shared reconstruction');
+  assert(block.indexOf('JCS of signed_envelope') !== -1,
+    'say what the signature is over, or the caller has to reverse-engineer it');
+});
+
+test('the covering checkpoint selects every field the envelope needs', () => {
+  // An envelope missing log_root or log_position hashes to something else, so
+  // a short select silently produces an unverifiable proof.
+  var i = server.indexOf("app.get('/api/log/proof/:commitId'");
+  var block = server.slice(i, i + 2000);
+  var sel = block.slice(block.indexOf(".select('"), block.indexOf(')', block.indexOf(".select('")));
+  ['checkpoint_id', 'position', 'log_root', 'tree_root', 'tree_size',
+   'server_sig', 'timestamp', 'previous_cp_id', 'previous_tree_root'].forEach(function(f) {
+    assert(sel.indexOf(f) !== -1,
+      'covering checkpoint select is missing ' + f + ', so its envelope cannot verify');
+  });
+});
+
 // Also runnable standalone: node test/security.test.js
 (function() {
   var sec = require('./security.test.js').run();

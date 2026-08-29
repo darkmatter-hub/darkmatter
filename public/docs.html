@@ -280,7 +280,7 @@ footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;gri
     <a class="docs-sb-link" href="#api-fork">POST /api/fork</a>
     <a class="docs-sb-link" href="#api-verify">GET /api/verify</a>
     <a class="docs-sb-link" href="#api-export">GET /api/export</a>
-    <a class="docs-sb-link" href="#api-lineage">GET /api/lineage</a>
+    <a class="docs-sb-link" href="#api-log-pubkey">GET /api/log/pubkey</a><a class="docs-sb-link" href="#api-log-checkpoint">GET /api/log/checkpoint</a><a class="docs-sb-link" href="#api-log-proof">GET /api/log/proof</a><a class="docs-sb-link" href="#pinning">Pin a checkpoint</a><a class="docs-sb-link" href="#api-lineage">GET /api/lineage</a>
     <a class="docs-sb-link" href="#api-me">GET /api/me</a>
     <a class="docs-sb-link" href="#api-register">POST /api/agents/register</a>
   </div>
@@ -855,6 +855,25 @@ curl -X POST https://darkmatterhub.ai/api/agents/keys/revoke   -H <span class="c
 <div class="endpoint"><div class="endpoint-title"><span class="badge-get">GET</span> https://darkmatterhub.ai/api/export/:ctxId</div></div>
 <p>Downloads a portable JSON proof artifact. Verifiable offline with no DarkMatter dependency.</p>
 <div class="callout info"><span class="callout-title">Share links are on-demand</span>Clicking <em>Share</em> or <em>Verify &#8594;</em> in the dashboard generates a signed URL valid for 30 days. Records are not publicly accessible until you explicitly share them.</div>
+
+<h2 id="api-log-pubkey">GET /api/log/pubkey</h2>
+<div class="endpoint"><div class="endpoint-title"><span class="badge-get">GET</span> https://darkmatterhub.ai/api/log/pubkey</div></div>
+<p>The Ed25519 public key that signs checkpoints, as PEM. No authentication. <code>persistent</code> reports whether the key survives a restart; an ephemeral key would mean the signatures only hold until the next deploy, and there is no other way to tell from outside.</p>
+
+<h2 id="api-log-checkpoint">GET /api/log/checkpoint</h2>
+<div class="endpoint"><div class="endpoint-title"><span class="badge-get">GET</span> https://darkmatterhub.ai/api/log/checkpoint</div></div>
+<p>The most recent signed checkpoint, with the witness state as <code>witness_count</code> and <code>witness_status</code>. No authentication.</p><p>Verify it against <code>signed_envelope</code>, which is the exact object <code>server_sig</code> was computed over: canonicalise it with RFC 8785 and check the Ed25519 signature using the key from <code>/api/log/pubkey</code>. Do not rebuild the envelope from the <code>checkpoint</code> row - the stored timestamp comes back as <code>+00:00</code> and the signature is over the <code>Z</code> form, which is the same instant but a different string, and canonical JSON hashes strings.</p>
+
+<h2 id="api-log-proof">GET /api/log/proof/:commitId</h2>
+<div class="endpoint"><div class="endpoint-title"><span class="badge-get">GET</span> https://darkmatterhub.ai/api/log/proof/:commitId</div></div>
+<p>The Merkle inclusion proof for one record: its leaf hash, leaf index, tree size, the sibling path, and the earliest checkpoint whose tree covers it. Hashes only, never payloads, and no authentication. Recompute the root from the leaf and the path, compare it to the checkpoint&#8217;s <code>tree_root</code>, then check <code>server_sig</code>. That walks record to root to signed checkpoint without asking us to vouch for any step.</p>
+
+<h2 id="pinning">Pin a checkpoint</h2>
+<p>A hash chain proves a record has not been edited in isolation. It does not, on its own, stop the party holding the database from rewriting history: recompute every downstream hash and re-sign the checkpoints, and the result is internally consistent. Catching that needs a reference point we do not control.</p>
+<p>Today the only one that exists is a copy you keep. A full proof bundle from <code>/api/export/:ctxId</code> is the thorough version, but the cheap version is one small JSON file:</p>
+<pre><code>curl -s https://darkmatterhub.ai/api/log/checkpoint &gt; checkpoint-$(date +%F).json</code></pre>
+<p>Store that on a schedule. Each file pins our entire log as it stood at that moment: a tree root, a size, and our signature over the <code>signed_envelope</code> it contains. If a record you hold a proof for stops matching a root you already saved, the log was rewritten after you saved it, and you can demonstrate that with files we never touched.</p>
+<div class="callout info"><span class="callout-title">What this does not cover yet</span>Checkpoints are not published outside our infrastructure, and the only registered witness is operated by DarkMatter, so a co-signature is not yet an independent attestation. Until one of those changes, retaining your own copy is what makes tampering by us detectable.</div>
 
 <h2 id="api-lineage">GET /api/lineage/:ctxId</h2>
 <div class="endpoint"><div class="endpoint-title"><span class="badge-get">GET</span> https://darkmatterhub.ai/api/lineage/:ctxId</div></div>

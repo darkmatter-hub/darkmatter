@@ -13,7 +13,7 @@ const { canonicalize, hashPayload, validateClientHashes, verifyChain,
         chainIntegrityHash, computeChain, verifyCommitChain } = require('./integrity');
 const { appendToLog, getServerPublicKeyPem, verifyLogConsistency,
   generateProofForCommit, CHECKPOINT_SCHEMA_VERSION,
-  verifyCheckpointConsistency, isPersistentSigningKey,
+  verifyCheckpointConsistency, isPersistentSigningKey, envelopeFromCheckpointRow,
 } = require('./append-log');
 const {
   leafHash, buildLeafEnvelope, computeRoot,
@@ -3062,11 +3062,18 @@ app.get('/api/log/checkpoint', apiLimiter, async (req, res) => {
     if (error) throw error;
     if (!cp) return res.status(404).json({ error: 'No checkpoint has been published yet' });
 
+    // signed_envelope is the exact object server_sig was computed over.
+    // Serving only the row would be useless to an outside verifier: Postgres
+    // returns the timestamp as +00:00 and the signature is over the Z form, so
+    // anyone rebuilding the envelope from the row got a message that was never
+    // signed and concluded the signature was bad.
     res.json({
-      schema_version: CHECKPOINT_SCHEMA_VERSION,
-      checkpoint:     cp,
-      pubkey_url:     'https://darkmatterhub.ai/api/log/pubkey',
-      witnesses_url:  'https://darkmatterhub.ai/api/log/checkpoint/' + cp.checkpoint_id + '/witnesses',
+      schema_version:  CHECKPOINT_SCHEMA_VERSION,
+      checkpoint:      cp,
+      signed_envelope: envelopeFromCheckpointRow(cp),
+      signature:       { alg: 'Ed25519', value: cp.server_sig, over: 'RFC 8785 JCS of signed_envelope' },
+      pubkey_url:      'https://darkmatterhub.ai/api/log/pubkey',
+      witnesses_url:   'https://darkmatterhub.ai/api/log/checkpoint/' + cp.checkpoint_id + '/witnesses',
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -3086,7 +3093,7 @@ app.get('/api/log/proof/:commitId', apiLimiter, async (req, res) => {
     // tightest bound on when the record demonstrably existed.
     const { data: covering } = await supabaseService
       .from('checkpoints')
-      .select('checkpoint_id, tree_root, tree_size, server_sig, timestamp, witness_count, witness_status')
+      .select('checkpoint_id, position, log_root, tree_root, tree_size, server_sig, timestamp, previous_cp_id, previous_tree_root, witness_count, witness_status')
       .gte('tree_size', proof.tree_size)
       .order('tree_size', { ascending: true })
       .limit(1)
@@ -3095,6 +3102,7 @@ app.get('/api/log/proof/:commitId', apiLimiter, async (req, res) => {
     res.json({
       ...proof,
       covering_checkpoint: covering || null,
+      covering_signed_envelope: covering ? envelopeFromCheckpointRow(covering) : null,
       verified_by:         covering ? 'checkpoint' : 'inclusion_proof_only',
       pubkey_url:          'https://darkmatterhub.ai/api/log/pubkey',
       checkpoint_url:      'https://darkmatterhub.ai/api/log/checkpoint',

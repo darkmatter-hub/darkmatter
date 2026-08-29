@@ -216,10 +216,11 @@ footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;gri
 <p>You are responsible for ensuring you have the right to submit any Customer Data to the Service, including any data relating to third parties or your users.</p>
 
 <h2>7. Record Integrity and Verification</h2>
-<p>DarkMatter commits your Records to a cryptographic hash chain stored on our infrastructure. This provides tamper-evidence: any modification to a committed Record is detectable. However:</p>
+<p>DarkMatter commits your Records to a cryptographic hash chain stored on our infrastructure. This provides tamper-evidence: any modification to a committed Record is detectable by comparison against a proof bundle exported before the change. However:</p>
 <ul>
   <li>We do not guarantee the accuracy, completeness, or truthfulness of the payload content you submit</li>
   <li>We do not provide legal certification of any Record</li>
+  <li>Detection of a modification made by DarkMatter depends on you retaining a proof bundle exported beforehand; we do not currently publish checkpoints to an independent third party, so we are not able to offer a reference copy outside our own infrastructure</li>
   <li>Record availability is subject to our infrastructure uptime; we target 99.9% availability but do not guarantee it</li>
   <li>Records on the Free plan are subject to the stated retention window; we may delete Records beyond the retention window without additional notice</li>
 </ul>

@@ -112,6 +112,43 @@ function buildCheckpointEnvelope(treeRoot, treeSize, logRoot, logPosition, times
 
 
 /**
+ * Rebuild the exact envelope that was signed, from a stored checkpoint row.
+ *
+ * This has to be one function, because three places need it and they have to
+ * agree byte for byte or every signature over the checkpoint fails.
+ *
+ * The trap is the timestamp. buildCheckpointEnvelope signs an ISO string with
+ * fractional seconds stripped and a trailing Z. Postgres hands the row back as
+ * "2026-08-29T19:41:35+00:00", a different string for the same instant, and
+ * canonical JSON hashes strings, not instants. Rebuilding from the row without
+ * converting produced a message the signature was never over, so:
+ *
+ *   - GET /api/log/checkpoint served a checkpoint nobody outside could verify,
+ *     which is the whole point of publishing it, and
+ *   - acceptWitnessSignature verified the witness against the wrong message, so
+ *     a witness signing exactly what we sent it was recorded as invalid.
+ *
+ * Applying buildCheckpointEnvelope's own normalisation here would not work
+ * either: its second replace appends Z to a string already ending in +00:00.
+ * Parsing and re-emitting is the only form that is idempotent across both.
+ */
+function envelopeFromCheckpointRow(row) {
+  const iso = new Date(row.timestamp).toISOString().replace(/\.\d+Z$/, 'Z');
+  return {
+    schema_version:      String(row.schema_version || CHECKPOINT_SCHEMA_VERSION),
+    checkpoint_id:       row.checkpoint_id,
+    tree_root:           row.tree_root,
+    tree_size:           row.tree_size,
+    log_root:            row.log_root,
+    log_position:        row.position != null ? row.position : row.log_position,
+    timestamp:           iso,
+    previous_cp_id:      row.previous_cp_id || null,
+    previous_tree_root:  row.previous_tree_root || null,
+  };
+}
+
+
+/**
  * Whether the signing key came from DM_LOG_SIGNING_KEY_PEM or was generated at
  * boot as a fallback.
  *
@@ -294,6 +331,7 @@ function verifyLogConsistency(entries, pubKeyPem) {
 
 module.exports = {
   isPersistentSigningKey,
+  envelopeFromCheckpointRow,
   getServerPublicKeyPem,
   computeLogRoot,
   buildCheckpointEnvelope,
