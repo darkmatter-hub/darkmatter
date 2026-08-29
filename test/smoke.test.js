@@ -1231,6 +1231,26 @@ test('no unlisted admin/auth-looking page would be published', function() {
     'these look like app/auth pages but are not excluded: ' + suspicious.join(', '));
 });
 
+// Cloudflare replaces /robots.txt at the edge with its own content-signals
+// block, so the Disallow rules the origin serves never reach a crawler. A
+// noindex meta tag travels with the page itself and cannot be overridden that
+// way, so every page excluded from the sitemap must also carry one. Without
+// this test the two lists drift and an app page quietly becomes indexable.
+test('every sitemap-excluded page carries a noindex meta', function() {
+  var m = server.match(/const SITEMAP_EXCLUDE = new Set\(\[([\s\S]*?)\]\)/);
+  assert(m, 'SITEMAP_EXCLUDE not found');
+  var excluded = (m[1].match(/'([a-z0-9-]+)'/g) || []).map(function(x) {
+    return x.replace(/'/g, '');
+  });
+  var missing = excluded.filter(function(slug) {
+    var f = path.join(ROOT, 'public', slug + '.html');
+    if (!fs.existsSync(f)) return false;   // excluded but no such page is fine
+    return !/name="robots"[^>]*noindex/i.test(fs.readFileSync(f, 'utf8'));
+  });
+  assert(missing.length === 0,
+    'excluded from the sitemap but still indexable: ' + missing.join(', '));
+});
+
 // Also runnable standalone: node test/security.test.js
 (function() {
   var sec = require('./security.test.js').run();
