@@ -185,7 +185,7 @@ footer{border-top:1px solid var(--rule);padding:28px 48px;}
 
   <div class="threat-card">
     <div class="threat-title">Loss of execution history when a run is deleted or overwritten</div>
-    <div class="threat-ans">Committed records are immutable. You can export a proof bundle at any time. The bundle is self-contained and verifiable offline with no ongoing DarkMatter dependency.</div>
+    <div class="threat-ans">Committed records are tamper-evident: altering one breaks verification for it and every record after it, so an overwrite cannot pass unnoticed. It is evidence of change, not prevention of it. You can export a proof bundle at any time. The bundle is self-contained and verifiable offline with no ongoing DarkMatter dependency.</div>
   </div>
 
   <hr class="rule"/>

@@ -1593,6 +1593,26 @@ test('chain integrity is checked in exactly one place', function() {
     'verifyCommitChain no longer recomputes payload hashes, which is its whole purpose');
 });
 
+// Six places called records "immutable", including the threat model page,
+// which offered immutability as the mitigation for a record being overwritten.
+// The specification says the opposite in section 5.1: this is tamper evidence,
+// not tamper prevention. Records live in Postgres and can be changed; the chain
+// makes a change detectable. They are not even permanent, since deleting an
+// account deletes them.
+//
+// The distinction is the product. Claiming prevention where only detection
+// exists is the single most damaging thing this site could get wrong.
+test('records are not described as immutable', function() {
+  var offenders = [];
+  publicPages().forEach(function(pg) {
+    var text = fs.readFileSync(pg.abs, 'utf8');
+    if (/immutab/i.test(text)) offenders.push(pg.slug);
+  });
+  assert(offenders.length === 0,
+    'these pages claim immutability, which is tamper prevention rather than ' +
+    'tamper evidence: ' + offenders.join(', '));
+});
+
 // Also runnable standalone: node test/security.test.js
 (function() {
   var sec = require('./security.test.js').run();

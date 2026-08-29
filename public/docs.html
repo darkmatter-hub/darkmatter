@@ -299,11 +299,11 @@ footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;gri
 <div class="callout info" style="margin-bottom:2.5rem"><span class="callout-title">Where to start</span><strong>New to DarkMatter?</strong> Follow the <a href="#quickstart">Python quickstart</a>. 2 minutes to your first record.<br><strong>Integrating an existing agent?</strong> Jump to <a href="#integrations">SDK wrappers</a> for Anthropic, OpenAI, LangGraph, and more.<br><strong>Need non-repudiation?</strong> Go directly to <a href="#l3-setup">L3 setup</a> to configure customer signing keys.</div>
 
 <h2 id="overview">Overview</h2>
-<p>DarkMatter is the independent verification and audit layer for AI agent decisions. Every agent action becomes a <strong>commit</strong>: an immutable node chained to its parent via SHA-256 hash linkage. The chain is independently verifiable and can be replayed, forked, or exported as a proof bundle.</p>
+<p>DarkMatter is the independent verification and audit layer for AI agent decisions. Every agent action becomes a <strong>commit</strong>: a tamper-evident node chained to its parent via SHA-256 hash linkage. The chain is independently verifiable and can be replayed, forked, or exported as a proof bundle.</p>
 <table>
   <thead><tr><th>Operation</th><th>What it does</th><th>Endpoint</th></tr></thead>
   <tbody>
-    <tr><td><strong>Commit</strong></td><td>Record an agent decision as an immutable, verifiable record</td><td><code>POST /api/commit</code></td></tr>
+    <tr><td><strong>Commit</strong></td><td>Record an agent decision as a tamper-evident, verifiable record</td><td><code>POST /api/commit</code></td></tr>
     <tr><td><strong>Verify</strong></td><td>Prove the chain was never tampered with</td><td><code>GET /api/verify/:id</code></td></tr>
     <tr><td><strong>Export</strong></td><td>Download a portable proof bundle for offline verification</td><td><code>GET /api/export/:id</code></td></tr>
     <tr><td><strong>Replay</strong></td><td>Walk the full decision chain root to tip</td><td><code>GET /api/replay/:id</code></td></tr>
@@ -439,7 +439,7 @@ const proof = await verify(ctx.id);<div class="lang-label">javascript</div></cod
   <li><strong>L3.</strong> Customer signing key. Signed by a key only you hold, before reaching DarkMatter's servers. DarkMatter cannot forge or alter it.</li>
 </ul>
 <h3>Commit</h3>
-<p>An immutable node containing a structured payload, agent attribution, a parent reference, and an integrity hash. Once stored, it cannot be modified or deleted. Every commit gets a globally unique <code>ctx_</code> ID and a <code>verify_url</code> that anyone can open.</p>
+<p>A tamper-evident node containing a structured payload, agent attribution, a parent reference, and an integrity hash. Once stored, it cannot be modified or deleted. Every commit gets a globally unique <code>ctx_</code> ID and a <code>verify_url</code> that anyone can open.</p>
 <p><strong>Commits are permanent by design.</strong> The tamper-evident guarantee depends on every record remaining in the chain. There is no delete API. If you need to correct a record, submit a follow-up commit with <code>redacts: "&lt;ctx_id&gt;"</code> in the payload: the redaction commit becomes the authoritative note of correction while the original remains verifiable.</p>
 <h3>Parent linkage</h3>
 <p>Pass <code>parent_id</code> in each commit to link it to the previous step. This builds a lineage graph. Each node stores <code>parent_hash</code> which chains integrity hashes together. Tampering at any node breaks every downstream hash.</p>
