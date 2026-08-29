@@ -26,7 +26,32 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
-sys.path.insert(0, os.path.join(ROOT, "sdk", "python"))
+# The SDK that actually ships, which lives in its own repository beside this
+# one. This used to import ROOT/sdk/python, a stale copy bundled here. The
+# UTF-16 key-order fix was applied to that copy, this test went green, and the
+# published package kept sorting by code point - so the test proving the SDK
+# and the server agree was proving it about software nobody installs.
+# Walk up rather than assuming a sibling: inside a git worktree, ROOT/.. is
+# the worktrees directory, so a plain sibling path silently misses and the
+# check skips without anyone noticing.
+def _find_sdk(start):
+    d = os.path.abspath(start)
+    while True:
+        cand = os.path.join(d, "darkmatter-sdk-python")
+        if os.path.isdir(cand):
+            return cand
+        parent = os.path.dirname(d)
+        if parent == d:
+            return None
+        d = parent
+
+SDK = os.environ.get("DARKMATTER_SDK_PY") or _find_sdk(ROOT)
+if not SDK or not os.path.isdir(SDK):
+    print("")
+    print("  - darkmatter-sdk-python not checked out beside this repo;")
+    print("    SDK parity not verified. Clone it to run this.")
+    sys.exit(0)
+sys.path.insert(0, SDK)
 
 from darkmatter.client import hash_payload as sdk_hash   # noqa: E402
 
@@ -96,5 +121,11 @@ b = {"！": "y", "\U0001F600": "x", "a": 1}
 check("input key order does not affect the SDK hash", sdk_hash(a) == sdk_hash(b))
 check("input key order does not affect the server hash", server_hash(a) == server_hash(b))
 
+if failed:
+    print("")
+    print("  The published SDK disagrees with the server on these payloads, so a")
+    print("  commit carrying one is flagged as a hash mismatch by the service that")
+    print("  told the client to compute it. The fix is darkmatter-sdk-python PR #1,")
+    print("  which sorts keys by UTF-16 code unit. This stays red until it merges.")
 print("\nPassed: %d  Failed: %d" % (passed, failed))
 sys.exit(1 if failed else 0)

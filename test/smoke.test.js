@@ -819,7 +819,20 @@ test('429 limit response includes upgrade_url', function() {
 // Skipped in CI when sibling repo is not checked out alongside this one.
 console.log('\nPython SDK integrations');
 
-var SDK_PY     = path.join(ROOT, '../darkmatter-sdk-python/darkmatter');
+// Locate the shipping Python SDK. Walking up rather than assuming a sibling:
+// inside a git worktree ROOT/.. is the worktrees directory, so the old sibling
+// path silently missed and every check below skipped without saying so.
+var SDK_PY = (function () {
+  if (process.env.DARKMATTER_SDK_PY) return path.join(process.env.DARKMATTER_SDK_PY, 'darkmatter');
+  var d = path.resolve(ROOT);
+  for (;;) {
+    var cand = path.join(d, 'darkmatter-sdk-python', 'darkmatter');
+    if (fs.existsSync(cand)) return cand;
+    var parent = path.dirname(d);
+    if (parent === d) return path.join(ROOT, '../darkmatter-sdk-python/darkmatter');
+    d = parent;
+  }
+})();
 var SDK_EXISTS = fs.existsSync(SDK_PY);
 
 if (!SDK_EXISTS) {
@@ -2347,6 +2360,37 @@ test('no tracked file names the owner or their personal account', () => {
   var SEP = String.fromCharCode(10) + '       ';
   assert(offenders.length === 0,
     'personal identifier in a public repository:' + SEP + offenders.join(SEP));
+});
+
+// 43. No SDK source lives in this repository
+// sdk/python and sdk/typescript were stale forks of the SDKs that actually
+// ship. Two fixes went into them by mistake and neither reached a customer.
+// Worse, test/sdk_parity.test.py imported sdk/python, so the test proving the
+// Python SDK and the server hash identically was proving it about software
+// nobody installs, and stayed green while the published package sorted keys by
+// code point and disagreed with the server on any payload with an emoji key.
+//
+// The SDKs live in darkmatter-sdk-python and darkmatter-sdk-js. A copy here is
+// a copy that will drift, and the drift is invisible because the tests follow
+// the copy.
+console.log('\nNo bundled SDK copies');
+test('the repository contains no SDK source', () => {
+  var banned = ['sdk/python', 'sdk/typescript', 'sdk/js', 'sdk/javascript'];
+  var found = banned.filter(function (rel) {
+    return fs.existsSync(path.join(ROOT, rel));
+  });
+  assert(found.length === 0,
+    'bundled SDK copy is back: ' + found.join(', ') +
+    '. The SDKs live in their own repositories; a copy here drifts and the ' +
+    'tests follow the copy instead of what ships.');
+});
+
+test('the parity test reads the SDK that ships, not a local copy', () => {
+  var parity = fs.readFileSync(path.join(ROOT, 'test/sdk_parity.test.py'), 'utf8');
+  assert(parity.indexOf('darkmatter-sdk-python') !== -1,
+    'sdk_parity must resolve the published SDK repository');
+  assert(!/ROOT,\s*["']sdk["']/.test(parity),
+    'sdk_parity must not import a copy bundled in this repository');
 });
 
 // Also runnable standalone: node test/security.test.js
