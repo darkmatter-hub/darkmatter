@@ -1355,7 +1355,11 @@ test('no page links to a blog post that does not exist', function() {
 test('missing blog posts return 404 rather than the index', function() {
   var m = server.match(/app\.get\('\/blog\/:slug'[\s\S]*?\n\}\);/);
   assert(m, '/blog/:slug route not found');
-  assert(/res\.status\(404\)/.test(m[0]),
+  // The fallback specifically, not any 404 in the route. The slug validation
+  // above also returns 404, so searching the whole block passed even with the
+  // fallback reverted to a bare sendFile: the guard matched a different line
+  // than the one it protects.
+  assert(/res\.status\(404\)\.sendFile\([^)]*blog\.html/.test(m[0]),
     '/blog/:slug still answers 200 for posts that do not exist');
 });
 
