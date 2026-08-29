@@ -2003,6 +2003,67 @@ test('no two sitemap URLs serve the same file', () => {
   assert(dupes.length === 0, 'sitemap lists the same page under two URLs:' + SEP + dupes.join(SEP));
 });
 
+// 36. Nothing survives us that we have not already handed over
+// The homepage meta description - the line that appears in every search result
+// - said records are "verifiable by anyone, even if we disappear". If
+// DarkMatter disappears, so does the database holding the records, the API
+// serving inclusion proofs, and the witness, which runs on our own Railway
+// account. Checkpoints have never been published anywhere outside it:
+// darkmatter-hub/checkpoints holds two commits, both README.
+//
+// What genuinely outlives us is an export bundle somebody already downloaded.
+// It carries its own proofs and verifies offline. So the claim is allowed only
+// where the sentence is actually about that.
+console.log('\nSurvivability claims');
+test('a claim that records outlive DarkMatter mentions the export', () => {
+  var DISAPPEARS = /even if we (?:disappear|vanish|shut down|are gone|don't|do not)|if (?:we|DarkMatter) (?:disappears?|vanish|shuts? down|goes? away|cease)|survives? (?:us|DarkMatter)|outlives? (?:us|DarkMatter)/i;
+  var PORTABLE   = /export|bundle|download|offline|on your machine|in your hands/i;
+  var offenders = [];
+  publicPages().forEach(function(pg) {
+    var text = fs.readFileSync(pg.abs, 'utf8')
+      .replace(/<meta[^>]*content="([^"]*)"[^>]*>/gi, ' $1 ')
+      .replace(/<[^>]+>/g, ' ');
+    text.split(/(?<=[.!?])\s+/).forEach(function(sentence) {
+      if (DISAPPEARS.test(sentence) && !PORTABLE.test(sentence)) {
+        offenders.push(pg.slug + ': "' + sentence.trim().slice(0, 100) + '"');
+      }
+    });
+  });
+  var SEP = String.fromCharCode(10) + '       ';
+  assert(offenders.length === 0,
+    'claims the record outlives us, which is true only of an exported bundle:' +
+    SEP + offenders.join(SEP));
+});
+
+// 37. "Verifiable even if DarkMatter is compromised" needs a witness we do not have
+// eu-ai-act.html told regulators: "Even if DarkMatter were compromised, your
+// records remain verifiable independently." An attacker holding our database
+// also holds the API that serves inclusion proofs, the checkpoint signing key,
+// and the only registered witness, which runs on our own infrastructure. They
+// could re-sign a consistent alternate history and nothing outside would
+// contradict it. Surviving that is exactly what an independent witness buys,
+// so this claim is licensed by the same flag as the independence wording.
+test('surviving a DarkMatter compromise is not claimed without an independent witness', () => {
+  if (independentWitnesses) return;
+  var COMPROMISE = /(?:even )?if (?:we|DarkMatter)(?:'s| is| were| are| was| gets?| got|) (?:compromised|breached|hacked|malicious|subverted|seized|coerced)|we (?:were|are) compromised/i;
+  var PORTABLE   = /export|bundle|download|offline|already hold|in your hands|on your machine/i;
+  var offenders = [];
+  publicPages().forEach(function(pg) {
+    var text = fs.readFileSync(pg.abs, 'utf8')
+      .replace(/<meta[^>]*content="([^"]*)"[^>]*>/gi, ' $1 ')
+      .replace(/<[^>]+>/g, ' ');
+    text.split(/(?<=[.!?])\s+/).forEach(function(sentence) {
+      if (COMPROMISE.test(sentence) && !PORTABLE.test(sentence)) {
+        offenders.push(pg.slug + ': "' + sentence.trim().slice(0, 100) + '"');
+      }
+    });
+  });
+  var SEP = String.fromCharCode(10) + '       ';
+  assert(offenders.length === 0,
+    'claims records survive our own compromise, which needs a witness outside ' +
+    'our trust domain:' + SEP + offenders.join(SEP));
+});
+
 // Also runnable standalone: node test/security.test.js
 (function() {
   var sec = require('./security.test.js').run();
