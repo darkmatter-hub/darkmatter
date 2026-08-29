@@ -47,6 +47,13 @@ jobs:
       - name: Audit public pages for stale claims
         run: node scripts/content-audit.js
 
+      # The SDK hashes payloads on the client and the server re-hashes to verify.
+      # They disagreed above the BMP: the SDK sorted keys by code point, the
+      # server by UTF-16, so a payload with an emoji key was flagged as a hash
+      # mismatch. Every test payload had ASCII keys, so nothing noticed.
+      - name: Python SDK and server hash identically
+        run: python test/sdk_parity.test.py
+
       # Retention is the only code in the product that destroys customer data,
       # and the property that matters most is that redacting a payload does not
       # break verification for the records after it.

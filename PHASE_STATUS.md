@@ -17,7 +17,7 @@
 
 **Key files:**
 - `src/integrity.js` — canonical serialization, envelope hashing, chain verify
-- `client/darkmatter.py` — Python SDK with client-side hashing
+- `sdk/python/darkmatter/client.py` — Python SDK with client-side hashing
 - `sdk/typescript/src/integrity.ts` — TypeScript port
 - `github-template/verify_darkmatter_chain.py` — offline verifier
 - `github-template/integrity_test_vectors.json` — 18 cross-language test vectors (all pass)

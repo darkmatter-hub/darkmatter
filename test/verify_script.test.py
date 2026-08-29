@@ -152,9 +152,23 @@ try:
     tricky = {"z": 1.5, "a": None, "s": "café 中文 😀",
               "n": 284, "nested": {"b": [1, 2, {"c": True}]},
               "😀": "astral key", "！": "bmp key"}
-    check("standalone JCS matches the context-passport reference SDK",
-          vdc.payload_hash(tricky) == ref_hash(tricky),
-          "%s vs %s" % (vdc.payload_hash(tricky), ref_hash(tricky)))
+    # Three implementations agree on this value: @contextpassport/core as
+    # published, DarkMatter's own JavaScript, and context-passport with
+    # contextpassport/python#15 applied. Pinning it means this asserts our
+    # verifier is right rather than merely consistent with whatever is
+    # installed, which is the broken side today.
+    EXPECTED = "sha256:5b8bc78db724a62b61d4714d58e23a105eeb2158ceedae249d78b0c21bd0c3bf"
+    check("standalone JCS produces the UTF-16 canonical hash",
+          vdc.payload_hash(tricky) == EXPECTED, vdc.payload_hash(tricky))
+
+    # The installed SDK sorts by code point and disagrees above the BMP. That
+    # is contextpassport/python#15, not a fault in this repo, so it is reported
+    # rather than failed: this suite grades our verifier, not the dependency.
+    if ref_hash(tricky) != EXPECTED:
+        print("  note  installed context-passport disagrees on astral keys, "
+              "see contextpassport/python#15")
+    else:
+        print("  ok   installed context-passport agrees on astral key ordering")
 except ImportError:
     print("  - reference SDK not installed, cross-check skipped")
 

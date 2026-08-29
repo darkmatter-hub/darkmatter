@@ -22,7 +22,10 @@ const crypto = require('crypto');
 // CANONICAL SERIALIZATION v1
 //
 // Rules (formally specified — all SDKs must match exactly):
-//   1. Object keys are sorted lexicographically (Unicode codepoint order)
+//   1. Object keys are sorted by UTF-16 code unit, which is what
+//      Array.prototype.sort does on strings and what RFC 8785 3.2.3
+//      requires. Not code point: the two differ above the BMP, where an
+//      astral key sorts below a BMP one because its surrogate is lower.
 //   2. null values in objects are kept and serialized as "null"
 //      (unlike undefined, which is omitted — null is explicit data)
 //   3. Arrays preserve element order

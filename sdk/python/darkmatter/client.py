@@ -82,7 +82,17 @@ def canonicalize(value) -> str:
 
     if isinstance(value, dict):
         pairs = []
-        for k in sorted(value.keys()):
+        # RFC 8785 3.2.3 orders keys by UTF-16 code unit, not code point. The two
+        # agree across the BMP and disagree above it, because an astral character
+        # encodes to a surrogate pair: U+1F600 becomes D83D DE00, sorting below
+        # U+FF01 in UTF-16 and above it by code point.
+        #
+        # This used to be plain sorted(), which is code point. The server hashes
+        # with JavaScript's Array.prototype.sort, which is UTF-16, so a payload
+        # with an emoji key hashed one way here and another way there and the
+        # commit was flagged as a hash mismatch. Client-side hashing is the whole
+        # claim, so the two have to agree exactly.
+        for k in sorted(value.keys(), key=lambda s: s.encode('utf-16-be')):
             v = value[k]
             # Keep None (null) — drop nothing
             # (In Python there is no 'undefined' — only None which maps to JSON null)
