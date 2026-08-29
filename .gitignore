@@ -19,3 +19,7 @@ private/
 # Python bytecode from running the verifier and its tests
 __pycache__/
 *.pyc
+
+# scratch commit-message files
+.msg
+.msg.tmp
