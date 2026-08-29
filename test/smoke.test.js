@@ -1159,6 +1159,78 @@ test('no supabaseService.auth.refreshSession anywhere in codebase', function() {
 
 // ── Section 22: Security regression suite ─────────────────────────────────
 // Locks in the F1-F5 fixes from the pre-launch security review.
+
+// ── Crawlability ──────────────────────────────────────
+// These guard a fix that is invisible when it breaks: nothing errors, the site
+// just stops being indexable and nobody notices for months.
+
+test('robots.txt route registered', function() {
+  assert(server.includes("app.get('/robots.txt'"), 'no /robots.txt route');
+});
+
+test('sitemap.xml route registered', function() {
+  assert(server.includes("app.get('/sitemap.xml'"), 'no /sitemap.xml route');
+});
+
+test('robots.txt declares the sitemap', function() {
+  assert(/Sitemap: ' \+ SITE_ORIGIN\(\) \+ '\/sitemap\.xml/.test(server),
+    'robots.txt does not point at the sitemap');
+});
+
+test('robots.txt allows crawling', function() {
+  assert(server.includes("'User-agent: *'") && server.includes("'Allow: /'"),
+    'robots.txt missing User-agent/Allow');
+});
+
+// Route ordering is load-bearing here. express.static serves public/*.html
+// directly, so a /sitemap.xml or /robots.txt route registered after it would
+// still work today only because neither file exists in public/ — and would
+// silently stop working the day somebody adds one.
+test('crawl routes precede express.static', function() {
+  var robots  = server.indexOf("app.get('/robots.txt'");
+  var sitemap = server.indexOf("app.get('/sitemap.xml'");
+  var stat    = server.indexOf('app.use(express.static');
+  assert(stat > -1, 'express.static not found');
+  assert(robots  > -1 && robots  < stat, '/robots.txt registered after express.static');
+  assert(sitemap > -1 && sitemap < stat, '/sitemap.xml registered after express.static');
+});
+
+// The sitemap is generated from public/, so a new page is listed automatically.
+// That is the point, and also the risk: an admin or auth page added later gets
+// published to search engines unless it is excluded. This asserts the pages we
+// know must never be listed are in the exclude set.
+test('sitemap excludes every admin and auth surface', function() {
+  var m = server.match(/const SITEMAP_EXCLUDE = new Set\(\[([\s\S]*?)\]\)/);
+  assert(m, 'SITEMAP_EXCLUDE not found');
+  var listed = (m[1].match(/'([a-z0-9-]+)'/g) || []).map(function(s) {
+    return s.replace(/'/g, '');
+  });
+  ['admin', 'admindashboard', 'dashboard', 'login', 'reset-password',
+   'organizations'].forEach(function(slug) {
+    assert(listed.indexOf(slug) !== -1, slug + ' is not excluded from the sitemap');
+  });
+});
+
+// A page whose name says it is an app or auth surface but which nobody added to
+// the exclude list. Catches the realistic regression: someone adds
+// public/admin-billing.html and it turns up in Google.
+test('no unlisted admin/auth-looking page would be published', function() {
+  var m = server.match(/const SITEMAP_EXCLUDE = new Set\(\[([\s\S]*?)\]\)/);
+  assert(m, 'SITEMAP_EXCLUDE not found');
+  var excluded = (m[1].match(/'([a-z0-9-]+)'/g) || []).map(function(s) {
+    return s.replace(/'/g, '');
+  });
+  var suspicious = fs.readdirSync(path.join(ROOT, 'public'))
+    .filter(function(f) { return /\.html$/.test(f); })
+    .map(function(f) { return f.replace(/\.html$/, ''); })
+    .filter(function(slug) {
+      return /^(admin|dashboard)|(dashboard|admin)$|^(login|signin|signup-complete|reset)/.test(slug);
+    })
+    .filter(function(slug) { return excluded.indexOf(slug) === -1; });
+  assert(suspicious.length === 0,
+    'these look like app/auth pages but are not excluded: ' + suspicious.join(', '));
+});
+
 // Also runnable standalone: node test/security.test.js
 (function() {
   var sec = require('./security.test.js').run();

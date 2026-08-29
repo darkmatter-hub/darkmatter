@@ -359,6 +359,91 @@ app.get('/INTEGRITY_SPEC_V1.md', (_req, res) => {
   res.sendFile('INTEGRITY_SPEC_V1.md', { root: path.join(__dirname, '..') });
 });
 
+// ── Crawlability ──────────────────────────────────────
+//
+// Neither of these existed. The origin served no robots.txt, so Cloudflare
+// supplied its own: a block of explanatory comments with no User-agent, Allow,
+// Disallow or Sitemap line in it. And /sitemap.xml was a 404 across 31 public
+// pages, leaving search engines to discover everything by following links from
+// the homepage. The three blog posts are linked only from /blog, so they were
+// the least reachable pages on the site.
+//
+// The sitemap is generated from the directory rather than hardcoded, because a
+// hand-kept list of 22 URLs rots the first time somebody adds a page and
+// forgets to update it. Adding a file to public/ is enough to list it.
+
+// App surfaces, auth flows and invite links. None belongs in search results,
+// and several would be a poor first impression from a cold search.
+const SITEMAP_EXCLUDE = new Set([
+  'admin', 'admindashboard', 'dashboard', 'login', 'reset-password',
+  'organizations', 'chat', 'join', 'chain',
+]);
+
+const SITE_ORIGIN = () =>
+  (process.env.BASE_URL || 'https://darkmatterhub.ai').replace(/\/+$/, '');
+
+app.get('/robots.txt', (_req, res) => {
+  res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+  res.setHeader('Cache-Control', 'public, max-age=86400');
+  res.send([
+    'User-agent: *',
+    'Allow: /',
+    '',
+    '# App and auth surfaces, excluded from the sitemap for the same reason.',
+    'Disallow: /admin',
+    'Disallow: /admindashboard',
+    'Disallow: /dashboard',
+    'Disallow: /reset-password',
+    'Disallow: /organizations',
+    'Disallow: /api/',
+    '',
+    'Sitemap: ' + SITE_ORIGIN() + '/sitemap.xml',
+    '',
+  ].join('\n'));
+});
+
+app.get('/sitemap.xml', (_req, res) => {
+  const fs = require('fs');
+  const origin = SITE_ORIGIN();
+  const dir = path.join(__dirname, '../public');
+
+  let entries;
+  try {
+    entries = fs.readdirSync(dir)
+      .filter(f => f.endsWith('.html'))
+      .map(f => f.slice(0, -'.html'.length))
+      .filter(slug => !SITEMAP_EXCLUDE.has(slug))
+      .map(slug => {
+        // The site links to clean URLs everywhere, so those are canonical.
+        const loc = slug === 'index' ? origin + '/' : origin + '/' + slug;
+        let lastmod = null;
+        try {
+          lastmod = fs.statSync(path.join(dir, slug + '.html'))
+            .mtime.toISOString().slice(0, 10);
+        } catch { /* a file that vanished mid-read simply has no lastmod */ }
+        return { loc, lastmod };
+      })
+      .sort((a, b) => a.loc.localeCompare(b.loc));
+  } catch (e) {
+    console.error('[sitemap] could not read public/:', e.message);
+    return res.status(500).type('text/plain').send('sitemap unavailable');
+  }
+
+  const urls = entries.map(({ loc, lastmod }) =>
+    '  <url><loc>' + loc + '</loc>' +
+    (lastmod ? '<lastmod>' + lastmod + '</lastmod>' : '') +
+    '</url>'
+  ).join('\n');
+
+  res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+  res.setHeader('Cache-Control', 'public, max-age=3600');
+  res.send(
+    '<?xml version="1.0" encoding="UTF-8"?>\n' +
+    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
+    urls + '\n</urlset>\n'
+  );
+});
+
 // Skip JSON parsing for the Stripe webhook — it needs the raw Buffer so
 // stripe.webhooks.constructEvent() can verify the HMAC signature.
 // Route-level express.raw() on that route handles the body instead.
