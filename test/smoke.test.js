@@ -1610,11 +1610,34 @@ test('records are not described as immutable', function() {
   var offenders = [];
   publicPages().forEach(function(pg) {
     var text = fs.readFileSync(pg.abs, 'utf8');
-    if (/immutab/i.test(text)) offenders.push(pg.slug);
+    if (/immutab|tamper.?proof|unalterable|unchangeable/i.test(text)) offenders.push(pg.slug);
   });
   assert(offenders.length === 0,
     'these pages claim immutability, which is tamper prevention rather than ' +
     'tamper evidence: ' + offenders.join(', '));
+});
+
+// Pinning the word was not enough. about.html said "The record cannot be
+// altered after the fact by anyone, including DarkMatter" - the same
+// prevention claim without the word immutable, on a page the suite had been
+// green over for months. What matters is whether the sentence qualifies the
+// claim: docs, integrity and tos all say a record cannot be changed *without
+// breaking verification*, which is true. Unqualified, it is not.
+test('a record is never said to be unchangeable without a qualifier', function() {
+  var VERB = /\b(?:cannot|can not|can't|could not|couldn't|impossible to)\s+(?:be\s+)?(?:alter|change|modif|edit|overwrit|rewrit|tamper)/i;
+  var QUALIFIED = /without (?:breaking|detection|being detected)|undetect|breaks? verification|without invalidat/i;
+  var offenders = [];
+  publicPages().forEach(function(pg) {
+    var text = fs.readFileSync(pg.abs, 'utf8').replace(/<[^>]+>/g, ' ');
+    text.split(/(?<=[.!?])\s+/).forEach(function(sentence) {
+      if (VERB.test(sentence) && !QUALIFIED.test(sentence)) {
+        offenders.push(pg.slug + ': "' + sentence.trim().slice(0, 90) + '"');
+      }
+    });
+  });
+  var SEP = String.fromCharCode(10) + '       ';
+  assert(offenders.length === 0,
+    'prevention claimed where only detection exists:' + SEP + offenders.join(SEP));
 });
 
 // The checkpoint scheduler refuses to publish when the signing key is
@@ -1904,6 +1927,80 @@ test('pages that mention witnesses say who operates them', () => {
   assert(offenders.length === 0,
     'mentions witnesses without disclosing that DarkMatter operates them: ' +
     offenders.join(', '));
+});
+
+
+// 35. A page's canonical URL must actually serve that page
+// about.html declared <link rel="canonical" href="/about"> and was titled
+// "About DarkMatter". /about served why.html, whose canonical is /why. So a
+// crawler following the sitemap to /about got a page telling it to prefer
+// /why, and about.html was indexed nowhere. Nine pages linked "About" there.
+// Nothing failed; the About page was simply invisible for its whole life.
+console.log('\nCanonical URLs resolve to their own page');
+
+// route -> file, for every explicit sendFile route in server.js
+function routeTable() {
+  var t = {};
+  var re = /app\.get\(\s*'([^']+)'[\s\S]{0,600}?sendFile\(\s*path\.join\([^)]*?public\/([a-z0-9_.-]+\.html)'\s*\)/gi;
+  var m;
+  while ((m = re.exec(server)) !== null) {
+    if (!(m[1] in t)) t[m[1]] = m[2];   // first registration wins, as in Express
+  }
+  return t;
+}
+
+// What the server actually serves for a URL path: an explicit route if one is
+// registered, otherwise the static/catch-all mapping of /foo -> public/foo.html
+function servedFile(urlPath, routes) {
+  if (routes[urlPath]) return routes[urlPath];
+  if (urlPath === '/') return 'index.html';
+  var rel = urlPath.replace(/^\/+/, '');
+  return /\.html$/.test(rel) ? rel : rel + '.html';
+}
+
+test('every page canonicalises to a URL that serves that same page', () => {
+  var routes = routeTable();
+  var offenders = [];
+  publicPages().forEach(function(pg) {
+    var html = fs.readFileSync(pg.abs, 'utf8');
+    var m = html.match(/rel=["']canonical["'][^>]*href=["']([^"']+)["']/i) ||
+            html.match(/href=["']([^"']+)["'][^>]*rel=["']canonical["']/i);
+    if (!m) return;                       // no canonical declared: nothing to check
+    var urlPath = m[1].replace(/^https?:\/\/[^/]+/, '') || '/';
+    urlPath = urlPath.replace(/\/$/, '') || '/';
+    var served = servedFile(urlPath, routes);
+    var self   = pg.slug + '.html';
+    if (served !== self) {
+      offenders.push(pg.slug + '.html canonicalises to ' + urlPath +
+                     ', which serves ' + served);
+    }
+  });
+  var SEP = String.fromCharCode(10) + '       ';
+  assert(offenders.length === 0,
+    'a page points search engines at a URL that returns different content:' +
+    SEP + offenders.join(SEP));
+});
+
+test('no two sitemap URLs serve the same file', () => {
+  // /about and /why both served why.html, so the sitemap offered the same page
+  // twice under different URLs. One of them was always going to be discarded.
+  var routes = routeTable();
+  // Read the exclusion list out of server.js so the two cannot drift apart.
+  var exBlock  = server.match(/SITEMAP_EXCLUDE = new Set\(\[([\s\S]*?)\]\)/);
+  var excluded = exBlock ? (exBlock[1].match(/'[^']+'/g) || []).map(function(q) {
+    return q.slice(1, -1);
+  }) : [];
+  assert(excluded.length > 0, 'could not read SITEMAP_EXCLUDE from server.js');
+  var seen = {}, dupes = [];
+  publicPages().forEach(function(pg) {
+    if (excluded.indexOf(pg.slug) !== -1) return;
+    var urlPath = '/' + pg.slug;
+    var served  = servedFile(urlPath, routes);
+    if (seen[served]) dupes.push(urlPath + ' and ' + seen[served] + ' both serve ' + served);
+    else seen[served] = urlPath;
+  });
+  var SEP = String.fromCharCode(10) + '       ';
+  assert(dupes.length === 0, 'sitemap lists the same page under two URLs:' + SEP + dupes.join(SEP));
 });
 
 // Also runnable standalone: node test/security.test.js

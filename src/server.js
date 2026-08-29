@@ -4155,7 +4155,13 @@ app.get('/enterprise/report/:traceId', requireApiKey, requireEnterprise, async (
 app.get('/security',      (req, res) => res.sendFile(path.join(__dirname, '../public/security.html')));
 app.get('/pricing',       (req, res) => res.sendFile(path.join(__dirname, '../public/pricing.html')));
 app.get('/why',           (req, res) => res.sendFile(path.join(__dirname, '../public/why.html')));
-app.get('/about',         (req, res) => res.sendFile(path.join(__dirname, '../public/why.html')));
+// /about serves about.html, which is what about.html has always said it is: it declares
+// <link rel=canonical href=/about> and is titled "About DarkMatter". It was added as a
+// file and never given a route, so /about kept serving why.html - the "Why DarkMatter"
+// page, which has its own URL at /why. Nine pages link "About" here, the sitemap
+// listed /about, and what came back canonicalised to /why, so the About page was
+// indexed nowhere and reachable only by typing /about.html.
+app.get('/about',         (req, res) => res.sendFile(path.join(__dirname, '../public/about.html')));
 app.get('/enterprise',    (req, res) => res.sendFile(path.join(__dirname, '../public/enterprise.html')));
 app.get('/organizations', (req, res) => res.sendFile(path.join(__dirname, '../public/organizations.html')));
 

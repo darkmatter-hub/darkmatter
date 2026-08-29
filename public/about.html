@@ -94,7 +94,7 @@ footer .top{max-width:80rem;margin:0 auto;padding:4rem 1.5rem;display:grid;grid-
   <div class="wrap section-pad" style="position:relative">
     <div class="eyebrow" style="margin-bottom:1.5rem"><span class="rule"></span><span>About</span></div>
     <h1 style="font-size:34px;line-height:1.05;letter-spacing:-.022em;font-weight:500;max-width:42rem">A proof engine for AI agents.</h1>
-    <p style="margin-top:1.5rem;max-width:36rem;font-size:16px;line-height:1.7;color:hsl(var(--trace))">DarkMatter creates an independent, tamper-evident record of every consequential AI agent action. Each commit is sealed at the moment it happens using a cryptographic hash chain anchored outside your system. The record cannot be altered after the fact by anyone, including DarkMatter.</p>
+    <p style="margin-top:1.5rem;max-width:36rem;font-size:16px;line-height:1.7;color:hsl(var(--trace))">DarkMatter creates an independent, tamper-evident record of every consequential AI agent action. Each commit is sealed at the moment it happens using a cryptographic hash chain held outside your system. Altering a record after the fact breaks verification for it and for every record that follows, so the change is detectable by anyone who checks - including a change made by DarkMatter.</p>
     <p style="margin-top:1.25rem;max-width:36rem;font-size:16px;line-height:1.7;color:hsl(var(--trace))">We built DarkMatter because AI agents are now making consequential decisions, and the records of those decisions live inside the same infrastructure that made them. When something goes wrong, the record is controlled by the party being investigated. That is the problem we solve.</p>
     <div style="margin-top:2.5rem;display:flex;flex-wrap:wrap;gap:.75rem">
       <a href="/docs" class="btn-primary">Read the docs &#8594;</a>
@@ -114,7 +114,7 @@ footer .top{max-width:80rem;margin:0 auto;padding:4rem 1.5rem;display:grid;grid-
       </div>
       <div>
         <div style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:hsl(var(--signal));margin-bottom:.75rem">L2</div>
-        <h3 style="font-size:15px;font-weight:500;margin-bottom:.625rem">Independent timestamp anchor</h3>
+        <h3 style="font-size:15px;font-weight:500;margin-bottom:.625rem">Timestamp anchor</h3>
         <p style="font-size:13px;line-height:1.65;color:hsl(var(--trace))">Checkpoints sign the Merkle root of the log with an Ed25519 key and are delivered to registered witnesses for co-signature. The only witness running today is operated by DarkMatter, so a co-signature does not yet mean the attestation has been checked by anyone else.</p>
       </div>
       <div>
