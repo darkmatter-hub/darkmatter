@@ -142,8 +142,16 @@ check("rejects an unrecognised bundle rather than passing it",
 # since the whole point is that a third party can reproduce our hashes.
 try:
     from context_passport import payload_hash as ref_hash
-    tricky = {"z": 1.5, "a": None, "s": "café 中文 \U0001F600",
-              "n": 284, "nested": {"b": [1, 2, {"c": True}]}}
+    # The keys matter more than the values. RFC 8785 orders keys by UTF-16 code
+    # unit, not code point, and the two disagree only when a key lies outside
+    # the BMP: an astral character encodes to a surrogate pair beginning 0xD83D,
+    # which sorts below a BMP character such as 0xFF01, while by code point it
+    # sorts above. The earlier payload here put non-ASCII in values only, so
+    # removing the UTF-16 sort from the canonicaliser changed nothing this test
+    # looked at and it kept passing.
+    tricky = {"z": 1.5, "a": None, "s": "café 中文 😀",
+              "n": 284, "nested": {"b": [1, 2, {"c": True}]},
+              "😀": "astral key", "！": "bmp key"}
     check("standalone JCS matches the context-passport reference SDK",
           vdc.payload_hash(tricky) == ref_hash(tricky),
           "%s vs %s" % (vdc.payload_hash(tricky), ref_hash(tricky)))
