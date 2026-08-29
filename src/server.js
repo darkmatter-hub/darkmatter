@@ -3940,7 +3940,9 @@ app.get('/enterprise/report/:traceId', requireApiKey, requireEnterprise, async (
     // Rehashes each payload as well as checking the links. This used to compare
     // stored hashes against each other only, which a payload edited in place
     // would have passed. See verifyCommitChain in integrity.js.
-    const chainIntact = verifyCommitChain(commits).intact;
+    const _report      = verifyCommitChain(commits);
+    const chainIntact  = _report.intact;
+    const verifyDetail = _report.steps;
 
     const agents    = [...new Set(commits.map(c => c.agent_info?.name || c.from_agent).filter(Boolean))];
     const models    = [...new Set(commits.map(c => c.agent_info?.model).filter(Boolean))];
@@ -3972,8 +3974,19 @@ app.get('/enterprise/report/:traceId', requireApiKey, requireEnterprise, async (
         tip_hash:     commits[commits.length-1]?.integrity_hash
                         ? 'sha256:' + commits[commits.length-1].integrity_hash : null,
         verification_statement: chainIntact
-          ? 'All commits in this trace have been cryptographically verified. The chain is intact and no tampering has been detected.'
-          : 'WARNING: Chain integrity check failed. One or more commits may have been tampered with.',
+          ? 'Every commit in this report was re-hashed from its payload and matched the hash recorded with it, and each links to the one before it. Nothing shown here has been altered since it was written.'
+          : 'WARNING: verification failed. At least one commit no longer matches its recorded hash, or a link in the chain is broken. See per_step.',
+        // An auditor reading this needs to know what it does not cover.
+        // Specification section 5.4: integrity is not completeness. This proves
+        // the records present are unaltered and cannot prove none were withheld.
+        // Leaving that out is how a hash chain gets oversold.
+        scope_and_limits: [
+          'Covers only the commits listed in this report.',
+          'Proves these records were not altered after they were written.',
+          'Does not prove every relevant decision was recorded. A party that controls record creation can omit records, and no hash chain reveals an omission.',
+          'Signatures are not verified here. Where present, check them separately against the agent public key.',
+        ],
+        per_step: verifyDetail,
       },
 
       agent_registry: agents.map(name => {
