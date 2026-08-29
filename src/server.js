@@ -20,6 +20,7 @@ const {
   generateInclusionProof, verifyInclusionProof,
 } = require('./merkle');
 const { publishCheckpoint, startCheckpointScheduler } = require('./checkpoint');
+const { startRetentionScheduler } = require('./retention');
 const {
   registerKey, rotateKey, revokeKey,
   getKeyAtTime, getKeyHistory, verifyCommitSignature,
@@ -120,6 +121,34 @@ const PLAN_META = {
   enterprise: { commitLimit: null,   retentionDays: null, price: 499 }, // display only — contact sales
 };
 
+// Stripe does not always return current_period_end on the subscription object,
+// which is why the dashboard sometimes had no renewal date. A fix for this was
+// written in src/billing.js and never ran, because nothing imported that file;
+// it has since been deleted. This is that fallback, in the path that executes.
+//
+// billing_cycle_anchor is the start of the cycle, so it is only used to derive
+// an end when the interval is known. Returning null is correct when neither is
+// available: a wrong date on a billing page is worse than none.
+function stripePeriodEnd(sub) {
+  if (!sub) return null;
+  if (typeof sub.current_period_end === 'number') {
+    return new Date(sub.current_period_end * 1000).toISOString();
+  }
+  const anchor = sub.billing_cycle_anchor;
+  const interval = sub.plan?.interval || sub.items?.data?.[0]?.price?.recurring?.interval;
+  const count = sub.plan?.interval_count || sub.items?.data?.[0]?.price?.recurring?.interval_count || 1;
+  if (typeof anchor === 'number' && interval) {
+    const d = new Date(anchor * 1000);
+    if (interval === 'month') d.setUTCMonth(d.getUTCMonth() + count);
+    else if (interval === 'year') d.setUTCFullYear(d.getUTCFullYear() + count);
+    else if (interval === 'week') d.setUTCDate(d.getUTCDate() + 7 * count);
+    else if (interval === 'day') d.setUTCDate(d.getUTCDate() + count);
+    else return null;
+    return d.toISOString();
+  }
+  return null;
+}
+
 // ── Admin check helper — only SUPERUSER_EMAIL has access ─────────────────────
 function isAdminEmail(email) {
   return (process.env.SUPERUSER_EMAIL || '')
@@ -174,7 +203,7 @@ async function upsertSubscription(userId, email, sub, customerId) {
     status:                 sub.status,
     stripe_customer_id:     customerId,
     stripe_subscription_id: sub.id,
-    current_period_end:     sub.current_period_end ? new Date(sub.current_period_end * 1000).toISOString() : null,
+    current_period_end:     stripePeriodEnd(sub),
     cancel_at_period_end:   sub.cancel_at_period_end || false,
     commit_limit:           meta.commitLimit,
     retention_days:         meta.retentionDays,
@@ -3780,7 +3809,7 @@ app.get('/api/billing/subscription', wsAuth, async (req, res) => {
               commitLimit:       meta.commitLimit,
               bytesUsed,
               retention_days:    meta.retentionDays,
-              currentPeriodEnd:  sub.current_period_end ? new Date(sub.current_period_end * 1000).toISOString() : null,
+              currentPeriodEnd:  stripePeriodEnd(sub),
               cancelAtPeriodEnd: sub.cancel_at_period_end,
               stripeCustomerId:  customer.id,
               stripeSubId:       sub.id,
@@ -8706,6 +8735,27 @@ const server = app.listen(PORT, () => {
     if (t.unref) t.unref(); // never hold the process open during shutdown
     console.log(`[keepalive] enabled, every ${KEEPALIVE_INTERVAL_MS / 3600000}h`);
   }
+
+  // Retention. The pricing page has always said free-tier records are deleted
+  // after 30 days and nothing ever deleted them. This redacts payloads past
+  // their window rather than deleting rows, because removing a row from the
+  // middle of a chain would break verification for everything after it. The
+  // hashes stay, so the record remains provable and the content is gone.
+  //
+  // RETENTION_DRY_RUN=true reports without changing anything.
+  // RETENTION_DISABLED=true turns it off.
+  startRetentionScheduler(supabaseService, PLAN_META);
+
+  // Checkpoint publishing. This was imported and never called, which is why the
+  // checkpoints table is empty, the one registered witness has never been asked
+  // to co-sign anything, and every record in production sits at L1 while the
+  // site described an L2 tier.
+  //
+  // It declines to start when the signing key is ephemeral, so turning this on
+  // cannot produce checkpoints that stop verifying after the next redeploy.
+  // With DM_LOG_SIGNING_KEY_PEM set, L2 becomes real: the Merkle root is signed
+  // and broadcast to registered witnesses for independent co-signature.
+  startCheckpointScheduler(supabaseService);
 
   if (process.env.GROWTH_REPORT_DISABLED !== 'true') {
     // Log only. Emailing is opt-in via GROWTH_REPORT_EMAIL=true.

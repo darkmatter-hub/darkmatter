@@ -31,6 +31,7 @@ const {
   CHECKPOINT_SCHEMA_VERSION,
 } = require('./append-log');
 const { broadcastToWitnesses }   = require('./witness');
+const { isPersistentSigningKey } = require('./append-log');
 const { getServerPublicKeyPem }  = require('./append-log');
 
 const INTERVAL_MS = 10 * 60 * 1000; // 10 minutes
@@ -188,9 +189,25 @@ async function publishCheckpoint(supabaseService) {
 }
 
 function startCheckpointScheduler(supabaseService) {
+  // Refuse to publish under a key nobody can pin.
+  //
+  // append-log.js generates an ephemeral Ed25519 key when
+  // DM_LOG_SIGNING_KEY_PEM is unset, and this host redeploys often, so that key
+  // changes constantly. A checkpoint signed with it cannot be verified after
+  // the next restart by anyone, including us. It would look like evidence and
+  // be worth nothing, which is worse than publishing nothing: the L2 claim on
+  // the site would then be backed by artifacts that fail verification.
+  if (!isPersistentSigningKey()) {
+    console.warn('[checkpoint] NOT started: DM_LOG_SIGNING_KEY_PEM is not set, so the ' +
+                 'signing key is ephemeral and any checkpoint published now would be ' +
+                 'unverifiable after the next restart. Set that variable to enable L2.');
+    return { started: false, reason: 'ephemeral_signing_key' };
+  }
+
   setTimeout(() => publishCheckpoint(supabaseService), 8000);
   setInterval(()  => publishCheckpoint(supabaseService), INTERVAL_MS);
   console.log(`[checkpoint] Scheduler started — interval ${INTERVAL_MS / 1000}s`);
+  return { started: true };
 }
 
 module.exports = { publishCheckpoint, startCheckpointScheduler, publishToGitHub };

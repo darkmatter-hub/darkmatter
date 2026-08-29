@@ -47,6 +47,12 @@ jobs:
       - name: Audit public pages for stale claims
         run: node scripts/content-audit.js
 
+      # Retention is the only code in the product that destroys customer data,
+      # and the property that matters most is that redacting a payload does not
+      # break verification for the records after it.
+      - name: Retention redacts without breaking chains
+        run: node test/retention.test.js
+
       # The /verify page verified nothing for a long time: its checks tested
       # whether fields were present and it reported "no changes detected"
       # without hashing anything. This runs the shipped browser logic against

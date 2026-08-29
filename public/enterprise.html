@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <link rel="canonical" href="https://darkmatterhub.ai/enterprise"/>
 <title>Independent execution records at scale | DarkMatter</title>
-<meta name="description" content="Independent AI execution records at organizational scale. BYOK encryption, long-term retention, compliance alignment."/>
+<meta name="description" content="Independent AI execution records at organizational scale. Customer-held signing keys, long-term retention, compliance alignment."/>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
 
 <style>
@@ -187,7 +187,7 @@ textarea.form-input{resize:vertical}
     <div class="ent-grid">
       <div class="ent-left">
         <div class="eyebrow" style="margin-bottom:2rem"><span class="rule"></span><span>What Enterprise adds</span></div>
-        <div class="ent-feature"><div class="ent-icon">&#9679;</div><div><div class="ent-feature-title">BYOK encryption</div><div class="ent-feature-body">AES-256-GCM with a key you provide. DarkMatter stores only ciphertext. Your key never leaves your system.</div></div></div>
+        <div class="ent-feature"><div class="ent-icon">&#9679;</div><div><div class="ent-feature-title">Customer-held signing keys (L3)</div><div class="ent-feature-body">Your Ed25519 private key signs each record on your infrastructure before it reaches us, and never leaves it. We verify the signature and reject anything that fails. DarkMatter cannot produce a record in your name. Sensitive values we do store, such as webhook secrets, are encrypted at rest with AES-256-GCM using a key we hold.</div></div></div>
         <div class="ent-feature"><div class="ent-icon">&#9679;</div><div><div class="ent-feature-title">Long-term audit retention</div><div class="ent-feature-body">Custom retention periods up to 1 year and beyond. Export proof bundles at any time, verifiable offline without DarkMatter dependency.</div></div></div>
         <div class="ent-feature"><div class="ent-icon">&#9679;</div><div><div class="ent-feature-title">SOC 2 in progress</div><div class="ent-feature-body">Audit period expected Q1 2027. Security questionnaires and current controls documentation available on request.</div></div></div>
         <div class="ent-feature"><div class="ent-icon">&#9679;</div><div><div class="ent-feature-title">EU AI Act / compliance alignment</div><div class="ent-feature-body">Provides tamper-evident timestamped records of AI system decisions, relevant to Art. 12 and 19 logging requirements. Legal review required for full compliance mapping. GDPR data export and deletion available. HIPAA BAA on request.</div></div></div>

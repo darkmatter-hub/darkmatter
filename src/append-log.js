@@ -29,6 +29,7 @@ const { leafHash, computeRoot,
 
 let _serverKey    = null;
 let _serverPubPem = null;
+let _keyIsPersistent = false;
 
 function _initKey() {
   if (_serverKey) return;
@@ -106,6 +107,22 @@ function buildCheckpointEnvelope(treeRoot, treeSize, logRoot, logPosition, times
     previous_cp_id:      prevCpId   || null,
     previous_tree_root:  prevTreeRoot || null,
   };
+}
+
+
+/**
+ * Whether the signing key came from DM_LOG_SIGNING_KEY_PEM or was generated at
+ * boot as a fallback.
+ *
+ * This matters for anything published outside the process. An ephemeral key is
+ * regenerated on every restart, and Railway restarts on every deploy, so a
+ * signature made with one cannot be checked afterwards by anybody, including
+ * us. A checkpoint signed that way looks like evidence and is worth nothing,
+ * which is worse than publishing no checkpoint at all.
+ */
+function isPersistentSigningKey() {
+  _initKey();
+  return _keyIsPersistent;
 }
 
 function signCheckpointEnvelope(envelope) {
@@ -275,6 +292,7 @@ function verifyLogConsistency(entries, pubKeyPem) {
 }
 
 module.exports = {
+  isPersistentSigningKey,
   getServerPublicKeyPem,
   computeLogRoot,
   buildCheckpointEnvelope,
