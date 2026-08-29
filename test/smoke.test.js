@@ -1645,6 +1645,50 @@ test('the signing key is reported as persistent only when it is', function() {
     'a generated fallback key is reported as persistent, so unverifiable checkpoints could be published');
 });
 
+// The compliance report is enterprise-gated, so it cannot be exercised from
+// outside without a paid key. These are static checks and honest about that:
+// they catch the report losing the qualifications that were added to it, not a
+// runtime fault inside the handler.
+test('the compliance report still states its limits and per-step results', function() {
+  var i = server.indexOf("report_type:    'DarkMatter Compliance Report'");
+  assert(i !== -1, 'compliance report builder not found');
+  var body = server.slice(i, i + 4000);
+
+  assert(body.indexOf('scope_and_limits') !== -1,
+    'the report no longer states what it does not cover');
+  assert(/cannot prove/i.test(body),
+    'the report no longer says it cannot prove records were not withheld');
+  // The field, not the word: 'per_step' also appears in the report's own prose,
+  // so searching for the bare word passed even with the field deleted.
+  assert(/per_step\s*:/.test(body),
+    'the report no longer carries a per_step field naming which record failed');
+
+  // The three locals it depends on must be declared before the object literal.
+  var head = server.slice(server.lastIndexOf("app.get('", i), i);
+  ['const _report', 'const chainIntact', 'const verifyDetail'].forEach(function (d) {
+    assert(head.indexOf(d) !== -1, 'compliance handler is missing ' + d);
+  });
+});
+
+// stripePeriodEnd replaced a fix that lived in a file nothing imported. It is
+// billing code that cannot be exercised against Stripe from here, so the shape
+// is pinned instead.
+test('stripePeriodEnd falls back and refuses to guess', function() {
+  var i = server.indexOf('function stripePeriodEnd');
+  assert(i !== -1, 'stripePeriodEnd is gone');
+  var end = server.indexOf('\n}\n', i) + 3;
+  var fn = new Function(server.slice(i, end) + '; return stripePeriodEnd;')();
+
+  assert(fn({ current_period_end: 1790000000 }) === '2026-09-21T14:13:20.000Z',
+    'the direct field is no longer used');
+  assert(fn({ billing_cycle_anchor: 1790000000, plan: { interval: 'month', interval_count: 1 } })
+    === '2026-10-21T14:13:20.000Z', 'the billing_cycle_anchor fallback is gone');
+  // Guessing a renewal date is worse than showing none.
+  assert(fn({ billing_cycle_anchor: 1790000000 }) === null,
+    'it invents a date when the interval is unknown');
+  assert(fn({}) === null && fn(null) === null, 'it does not handle missing input');
+});
+
 // Also runnable standalone: node test/security.test.js
 (function() {
   var sec = require('./security.test.js').run();
