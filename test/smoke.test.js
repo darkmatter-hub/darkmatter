@@ -1748,6 +1748,97 @@ test('client-side hashing is not claimed without naming the SDK', function() {
     'unqualified client-side hashing claims: ' + unqualified.join('; '));
 });
 
+
+// 33. Every verification URL the server hands out must be a route it serves
+// Commit receipts embed pubkey_url / checkpoint_url / verify_url so a customer
+// can verify a record without an account. All three pointed at /api/log/*
+// routes that were never registered, so every one returned 404 and the
+// documented verification path was a dead end. The receipt is a contract:
+// if we print a URL in it, the route has to exist.
+console.log('\nSelf-referential URLs');
+test('every darkmatterhub.ai/api URL in a receipt has a matching route', () => {
+  // URLs the server prints into responses, e.g. 'https://darkmatterhub.ai/api/log/pubkey'
+  var urls = new Set();
+  var re = /['"`]https:\/\/darkmatterhub\.ai(\/api\/[^'"`\s?]*)['"`]/g;
+  var m;
+  while ((m = re.exec(server)) !== null) urls.add(m[1]);
+  // Template-literal forms: `https://darkmatterhub.ai/api/log/proof/${commitId}`
+  var re2 = /`https:\/\/darkmatterhub\.ai(\/api\/[^`]*)`/g;
+  while ((m = re2.exec(server)) !== null) {
+    urls.add(m[1].replace(/\$\{[^}]*\}/g, ':param'));
+  }
+  // String-concatenation forms:
+  //   'https://darkmatterhub.ai/api/log/checkpoint/' + id + '/witnesses'
+  // The trailing literal matters. Stopping at the first '+' would yield
+  // '/api/log/checkpoint/:param', which is a real route, so a genuinely dead
+  // URL built this way would be reported as served. Consume the whole
+  // concatenation and substitute :param only for the non-literal parts.
+  var re3 = /'https:\/\/darkmatterhub\.ai(\/api\/[^']*)'((?:\s*\+\s*(?:'[^']*'|[A-Za-z_$][\w$.?\[\]]*))+)/g;
+  while ((m = re3.exec(server)) !== null) {
+    var built = m[1];
+    var tail  = /\s*\+\s*('[^']*'|[A-Za-z_$][\w$.?\[\]]*)/g;
+    var t;
+    while ((t = tail.exec(m[2])) !== null) {
+      built += t[1].charAt(0) === "'" ? t[1].slice(1, -1) : ':param';
+    }
+    urls.add(built);
+  }
+
+  assert(urls.size > 0, 'found no self-referential API URLs — the extractor broke');
+
+  // Registered routes, with :params normalised so they compare structurally.
+  var routes = [];
+  var rre = /app\.(?:get|post|put|delete)\(\s*['"`](\/api\/[^'"`]*)['"`]/g;
+  while ((m = rre.exec(server)) !== null) routes.push(m[1]);
+
+  function served(url) {
+    var u = url.replace(/\/$/, '').split('/').filter(Boolean);
+    return routes.some(function(r) {
+      var p = r.replace(/\/$/, '').split('/').filter(Boolean);
+      if (p.length !== u.length) return false;
+      return p.every(function(seg, i) {
+        return seg.charAt(0) === ':' || u[i] === ':param' || seg === u[i];
+      });
+    });
+  }
+
+  var dead = Array.from(urls).filter(function(u) { return !served(u); });
+  assert(dead.length === 0,
+    'receipt points at routes that do not exist: ' + dead.join(', '));
+});
+
+// The three that were actually dead, named individually so a regression on any
+// one of them reads clearly instead of as a generic list.
+['/api/log/pubkey', '/api/log/checkpoint', '/api/log/proof/:commitId'].forEach(function(r) {
+  test('route ' + r + ' is registered', function() {
+    assert(server.indexOf("app.get('" + r + "'") !== -1,
+      r + ' is handed out in every commit receipt but not registered');
+  });
+});
+
+test('log verification routes require no auth', () => {
+  // The claim is "verify independently, no account required". These carry only
+  // hashes, never payloads, so they are safe to serve unauthenticated — and
+  // they are useless to a third-party verifier if they are not.
+  ['/api/log/pubkey', '/api/log/checkpoint', '/api/log/proof/:commitId'].forEach(function(r) {
+    var line = server.slice(server.indexOf("app.get('" + r + "'"));
+    line = line.slice(0, line.indexOf('\n'));
+    assert(!/requireApiKey|requireAuth|requireSession/.test(line),
+      r + ' requires auth, which defeats independent verification');
+  });
+});
+
+test('log verification routes never return a payload', () => {
+  // A proof is hashes. If these ever select payload columns they turn a public
+  // verification endpoint into a public data leak.
+  var start = server.indexOf("app.get('/api/log/pubkey'");
+  var end   = server.indexOf("app.get('/api/admin/witnesses'");
+  if (end === -1) end = start + 6000;
+  var block = server.slice(start, end);
+  assert(!/\bpayload\b/.test(block),
+    'a /api/log/* handler references payload — proofs must be hashes only');
+});
+
 // Also runnable standalone: node test/security.test.js
 (function() {
   var sec = require('./security.test.js').run();

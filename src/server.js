@@ -13,7 +13,7 @@ const { canonicalize, hashPayload, validateClientHashes, verifyChain,
         chainIntegrityHash, computeChain, verifyCommitChain } = require('./integrity');
 const { appendToLog, getServerPublicKeyPem, verifyLogConsistency,
   generateProofForCommit, CHECKPOINT_SCHEMA_VERSION,
-  verifyCheckpointConsistency,
+  verifyCheckpointConsistency, isPersistentSigningKey,
 } = require('./append-log');
 const {
   leafHash, buildLeafEnvelope, computeRoot,
@@ -3020,6 +3020,90 @@ app.post('/api/witness/sign', async (req, res) => {
     res.json(result);
   } catch (err) {
     res.status(400).json({ error: err.message });
+  }
+});
+
+// ── Independent log verification — GET /api/log/{pubkey,checkpoint,proof/:id} ─
+// Every commit receipt hands the caller these three URLs under `_proof` and
+// `_log`, as the way to verify a record without trusting DarkMatter and without
+// an account. None of the three routes existed, so all three returned 404 and
+// the receipt's verification path was a dead end for every record ever written.
+// No auth, matching /api/log/checkpoint/:checkpointId/witnesses below: the
+// point is that a third party can check the log. Hashes only — never payloads.
+
+// The Ed25519 key that signs checkpoints. `persistent` is disclosed because an
+// ephemeral key means the signatures verify only until the next restart, which
+// a verifier has no other way to find out.
+app.get('/api/log/pubkey', apiLimiter, (req, res) => {
+  try {
+    res.json({
+      algorithm:      'Ed25519',
+      public_key_pem: getServerPublicKeyPem(),
+      persistent:     isPersistentSigningKey(),
+      purpose:        'Signs checkpoint envelopes (schema version ' + CHECKPOINT_SCHEMA_VERSION + ')',
+      checkpoint_url: 'https://darkmatterhub.ai/api/log/checkpoint',
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// The most recent signed checkpoint. A verifier compares tree_root against a
+// root it recomputed from inclusion proofs, then checks server_sig with the key
+// from /api/log/pubkey.
+app.get('/api/log/checkpoint', apiLimiter, async (req, res) => {
+  try {
+    const { data: cp, error } = await supabaseService
+      .from('checkpoints')
+      .select('checkpoint_id, position, tree_root, tree_size, log_root, server_sig, timestamp, previous_cp_id, previous_tree_root, witness_count, witness_status')
+      .order('position', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error) throw error;
+    if (!cp) return res.status(404).json({ error: 'No checkpoint has been published yet' });
+
+    res.json({
+      schema_version: CHECKPOINT_SCHEMA_VERSION,
+      checkpoint:     cp,
+      pubkey_url:     'https://darkmatterhub.ai/api/log/pubkey',
+      witnesses_url:  'https://darkmatterhub.ai/api/log/checkpoint/' + cp.checkpoint_id + '/witnesses',
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Inclusion proof for one record, plus the earliest checkpoint that covers it.
+// Together those let a third party verify, from hashes alone, that this record
+// was in the log at a time DarkMatter had already signed and published.
+app.get('/api/log/proof/:commitId', apiLimiter, async (req, res) => {
+  try {
+    const proof = await generateProofForCommit(supabaseService, req.params.commitId);
+    if (!proof) return res.status(404).json({ error: 'No log entry for that record' });
+
+    // A checkpoint covers this leaf once its tree is at least as large as the
+    // tree was when the leaf was appended. Earliest such checkpoint is the
+    // tightest bound on when the record demonstrably existed.
+    const { data: covering } = await supabaseService
+      .from('checkpoints')
+      .select('checkpoint_id, tree_root, tree_size, server_sig, timestamp, witness_count, witness_status')
+      .gte('tree_size', proof.tree_size)
+      .order('tree_size', { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    res.json({
+      ...proof,
+      covering_checkpoint: covering || null,
+      verified_by:         covering ? 'checkpoint' : 'inclusion_proof_only',
+      pubkey_url:          'https://darkmatterhub.ai/api/log/pubkey',
+      checkpoint_url:      'https://darkmatterhub.ai/api/log/checkpoint',
+      witnesses_url:       covering
+        ? 'https://darkmatterhub.ai/api/log/checkpoint/' + covering.checkpoint_id + '/witnesses'
+        : null,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
