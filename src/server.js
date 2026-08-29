@@ -8327,7 +8327,11 @@ app.get('/api/workspace/stats', requireAuth, async (req, res) => {
       conversations,
       peopleActive,
       aiServices,
-      exports: 0, // TODO: track export events
+      // Export events are not tracked yet. Reporting 0 tells the account
+      // owner they have never exported, which is a different statement from
+      // not knowing. null lets the dashboard say so.
+      exports: null,
+      verifications: null,
       period: '30d',
     });
   } catch(err) {

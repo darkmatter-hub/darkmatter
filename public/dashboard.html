@@ -2671,8 +2671,11 @@ async function loadStats() {
     const chains   = document.getElementById('stat-chains');
     if (commits) commits.textContent = d.conversations ?? d.commits ?? '--';
     if (people)  people.textContent  = d.peopleActive  ?? '--';
-    if (exports) exports.textContent = d.exports       ?? '0';
-    if (chains)  chains.textContent  = d.verifications ?? d.exports ?? '0';
+    // '--' rather than '0', matching the two stats above. Zero is a claim
+    // that nothing happened; these are simply not tracked. chains also fell
+    // through to the export count, so it always read zero regardless.
+    if (exports) exports.textContent = d.exports       ?? '--';
+    if (chains)  chains.textContent  = d.verifications ?? '--';
   } catch(e) { /* silent */ }
 }
 
