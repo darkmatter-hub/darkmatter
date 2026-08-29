@@ -1981,10 +1981,19 @@ app.post('/api/commit', apiLimiter, requireApiKey, async (req, res) => {
     //
     // Canonical serialisation: keys sorted recursively, compact JSON, UTF-8.
     // This matches darkmatter.crypto.canonical_json() in the Python SDK.
-    const clientPayloadHash    = req.body.clientPayloadHash    || null;
-    const clientIntegrityHash  = req.body.clientIntegrityHash  || null;
-    const agentSignature       = req.body.agentSignature       || null;
-    const agentPublicKey       = req.body.agentPublicKey       || null;
+    // Accept both spellings. The server read only camelCase while the Python
+    // SDK has always sent snake_case, so every hash and signature it computed
+    // was silently dropped: clientPayloadHash was always null, hashMismatch was
+    // always false, and the stored hash was always the server's own. The dumb
+    // notary property described above never engaged for any caller, which is
+    // why no record in production carries a client hash.
+    //
+    // Fixing it here rather than in the SDK repairs every version already
+    // installed, rather than only those that upgrade.
+    const clientPayloadHash    = req.body.clientPayloadHash   || req.body.payload_hash     || null;
+    const clientIntegrityHash  = req.body.clientIntegrityHash || req.body.integrity_hash   || null;
+    const agentSignature       = req.body.agentSignature      || req.body.agent_signature  || null;
+    const agentPublicKey       = req.body.agentPublicKey      || req.body.agent_public_key || null;
 
     // Server always computes independently (for cross-check and legacy clients)
     //

@@ -1693,6 +1693,34 @@ test('stripePeriodEnd falls back and refuses to guess', function() {
   assert(fn({}) === null && fn(null) === null, 'it does not handle missing input');
 });
 
+// The Python SDK computes a payload hash and an Ed25519 signature on the client
+// and posts them as payload_hash, integrity_hash, agent_signature and
+// agent_public_key. The server read only clientPayloadHash, clientIntegrityHash,
+// agentSignature and agentPublicKey, so every one of them was silently dropped.
+//
+// The consequence was the whole trust model: clientPayloadHash was always null,
+// so hashMismatch was always false and the stored hash was always the server's
+// own. "Hashed client-side before transmission, DarkMatter cannot alter it" did
+// not hold for any caller. Production agrees: zero records carry a client hash.
+//
+// A field-name mismatch fails silently by construction, so it needs a test.
+test('the commit route accepts both spellings of the client verification fields', function() {
+  var route = server.slice(server.indexOf("app.post('/api/commit'"));
+  route = route.slice(0, 12000);
+
+  [['clientPayloadHash',   'payload_hash'],
+   ['clientIntegrityHash', 'integrity_hash'],
+   ['agentSignature',      'agent_signature'],
+   ['agentPublicKey',      'agent_public_key']].forEach(function (pair) {
+    var camel = pair[0], snake = pair[1];
+    assert(route.indexOf('req.body.' + camel) !== -1,
+      'commit route no longer reads req.body.' + camel);
+    assert(route.indexOf('req.body.' + snake) !== -1,
+      'commit route does not read req.body.' + snake + ', which is what the ' +
+      'Python SDK sends — its client-side hash would be silently discarded');
+  });
+});
+
 // Also runnable standalone: node test/security.test.js
 (function() {
   var sec = require('./security.test.js').run();
