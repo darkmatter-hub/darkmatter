@@ -48,6 +48,7 @@ function _initKey() {
         console.log('[append-log] Signing key: loaded from PEM');
       }
       _serverKey = crypto.createPrivateKey(keyMaterial);
+      _keyIsPersistent = true;   // came from the env var, not generated at boot
       console.log('[append-log] ✓ Key loaded successfully');
     } catch (err) {
       console.error('[append-log] ✗ Failed to load key:', err.message);

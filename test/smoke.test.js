@@ -1613,6 +1613,38 @@ test('records are not described as immutable', function() {
     'tamper evidence: ' + offenders.join(', '));
 });
 
+// The checkpoint scheduler refuses to publish when the signing key is
+// ephemeral, because a checkpoint signed with a key that dies on the next
+// redeploy is an artifact shaped like evidence and worth nothing.
+//
+// That guard shipped broken: _keyIsPersistent was declared and read but never
+// assigned, so it was always false and setting DM_LOG_SIGNING_KEY_PEM would not
+// have enabled L2. It failed safe, which is why nothing caught it. Both
+// directions are checked here, in a child process so the env var and the
+// module's cached key do not leak between cases.
+test('the signing key is reported as persistent only when it is', function() {
+  function persistentWith(env) {
+    var out = execSync(
+      'node -e "const a=require(\'./src/append-log\');console.log(\'RESULT:\'+a.isPersistentSigningKey())"',
+      { cwd: ROOT, env: Object.assign({}, process.env, env), stdio: 'pipe' }
+    ).toString();
+    var m = out.match(/RESULT:(true|false)/);
+    assert(m, 'could not read result from child process: ' + out.slice(-200));
+    return m[1] === 'true';
+  }
+
+  var key = (function () {
+    var crypto = require('crypto');
+    var kp = crypto.generateKeyPairSync('ed25519');
+    return Buffer.from(kp.privateKey.export({ type: 'pkcs8', format: 'pem' })).toString('base64');
+  })();
+
+  assert(persistentWith({ DM_LOG_SIGNING_KEY_PEM: key }) === true,
+    'a configured signing key is reported as ephemeral, so L2 can never be enabled');
+  assert(persistentWith({ DM_LOG_SIGNING_KEY_PEM: '' }) === false,
+    'a generated fallback key is reported as persistent, so unverifiable checkpoints could be published');
+});
+
 // Also runnable standalone: node test/security.test.js
 (function() {
   var sec = require('./security.test.js').run();
