@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 DarkMatter
 """
 verify_darkmatter_chain.py
 Independent verification of a DarkMatter proof bundle. No SDK, no account, no

@@ -1511,6 +1511,33 @@ test('the site does not claim a technology the code does not implement', functio
   assert(problems.length === 0, problems.join('; '));
 });
 
+// compare.html claims an open-source offline verifier as a capability three
+// named competitors lack. package.json declared MIT but no LICENSE file
+// existed, and a public repository without one is all-rights-reserved by
+// default, so the claim was not true in the sense that matters.
+test('an open-source claim is backed by an actual licence', function() {
+  var claims = publicPages().some(function(pg) {
+    return /open[- ]source/i.test(fs.readFileSync(pg.abs, 'utf8'));
+  });
+  if (!claims) return;   // nothing to back
+
+  var licensePath = path.join(ROOT, 'LICENSE');
+  assert(fs.existsSync(licensePath),
+    'the site claims open source but the repository has no LICENSE file');
+
+  var declared = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8')).license;
+  var text = fs.readFileSync(licensePath, 'utf8');
+  assert(declared, 'package.json declares no license');
+  assert(text.toLowerCase().indexOf(String(declared).toLowerCase()) !== -1,
+    'LICENSE does not match the ' + declared + ' declared in package.json');
+
+  // The verifier is served standalone over HTTP, so a reader who downloads
+  // only that file needs the terms in the file itself.
+  var verifier = fs.readFileSync(path.join(ROOT, 'examples/verify_darkmatter_chain.py'), 'utf8');
+  assert(/SPDX-License-Identifier/.test(verifier),
+    'the standalone verifier carries no SPDX licence header');
+});
+
 // Also runnable standalone: node test/security.test.js
 (function() {
   var sec = require('./security.test.js').run();
