@@ -1316,6 +1316,32 @@ test('every indexable page has a usable title and description', function() {
   assert(problems.length === 0, problems.join('; '));
 });
 
+// /blog/:slug used to fall back to the blog index when the post file was
+// missing, so three links advertised on /blog answered 200 with the wrong page
+// for months. A reader who clicked "Introducing DarkMatter" landed back on the
+// listing with no error. This asserts every /blog/ link on the site resolves to
+// a file that exists, which is the check that would have caught it.
+test('no page links to a blog post that does not exist', function() {
+  var dead = [];
+  fs.readdirSync(path.join(ROOT, 'public')).forEach(function(f) {
+    if (!/\.html$/.test(f)) return;
+    var html = fs.readFileSync(path.join(ROOT, 'public', f), 'utf8');
+    var re = /href="\/blog\/([a-z0-9-]+)"/g, m;
+    while ((m = re.exec(html)) !== null) {
+      var post = path.join(ROOT, 'public', 'blog-' + m[1] + '.html');
+      if (!fs.existsSync(post)) dead.push(f + ' -> /blog/' + m[1]);
+    }
+  });
+  assert(dead.length === 0, 'links to nonexistent posts: ' + dead.join(', '));
+});
+
+test('missing blog posts return 404 rather than the index', function() {
+  var m = server.match(/app\.get\('\/blog\/:slug'[\s\S]*?\n\}\);/);
+  assert(m, '/blog/:slug route not found');
+  assert(/res\.status\(404\)/.test(m[0]),
+    '/blog/:slug still answers 200 for posts that do not exist');
+});
+
 // Also runnable standalone: node test/security.test.js
 (function() {
   var sec = require('./security.test.js').run();

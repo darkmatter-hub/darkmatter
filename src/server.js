@@ -929,15 +929,21 @@ app.get('/blog', (req, res) => {
 
 // ── GET /blog/:slug ── individual blog posts
 app.get('/blog/:slug', (req, res) => {
-  // Check if a specific post HTML file exists, otherwise fall back to blog index
   const slug     = req.params.slug;
+  // A slug is a filename component. Reject anything that could climb out of
+  // public/ before it reaches the filesystem.
+  if (!/^[a-z0-9][a-z0-9-]*$/.test(slug)) return res.status(404).send('Not found');
+
   const postFile = path.join(__dirname, '../public', `blog-${slug}.html`);
   const fs       = require('fs');
-  if (fs.existsSync(postFile)) {
-    res.sendFile(postFile);
-  } else {
-    res.sendFile(path.join(__dirname, '../public/blog.html'));
-  }
+  if (fs.existsSync(postFile)) return res.sendFile(postFile);
+
+  // Previously this fell back to the blog index, which meant a URL for a post
+  // that does not exist answered 200 with the wrong page. Three such links were
+  // live on /blog for months: a reader who clicked "Introducing DarkMatter"
+  // silently landed back on the listing, and search engines index that as a
+  // soft 404. Saying "not found" is both truthful and better for the site.
+  res.status(404).sendFile(path.join(__dirname, '../public/blog.html'));
 });
 
 // ── Direct named blog post routes ────────────────────────────────────────────
