@@ -60,6 +60,13 @@ jobs:
       - name: Retention redacts without breaking chains
         run: node test/retention.test.js
 
+      # A witness co-signature is only worth anything if it verifies against
+      # the key registered for that witness. In production it did not: the
+      # witness had regenerated its key, so every signature was stored with
+      # sig_valid false and every checkpoint came out unwitnessed, quietly.
+      - name: A signature from the wrong key never counts as witnessed
+        run: node test/witness.test.js
+
       # The /verify page verified nothing for a long time: its checks tested
       # whether fields were present and it reported "no changes detected"
       # without hashing anything. This runs the shipped browser logic against

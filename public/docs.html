@@ -921,7 +921,7 @@ curl -X POST https://darkmatterhub.ai/api/agents/keys/revoke   -H <span class="c
 <p>For the full specification including all event types, integrity computation rules, signature canonicalization, and the extension model, see <a href="https://github.com/contextpassport/spec" target="_blank" rel="noopener">contextpassport/spec</a>. The conformance test suite that validates implementations is at <a href="https://github.com/contextpassport/conformance-tests" target="_blank" rel="noopener">contextpassport/conformance-tests</a>.</p>
 
 <h2 id="integrity">Integrity model</h2>
-<p>Every commit starts at L1. L2 comes from witnessed checkpoints, which are published on a ten-minute cycle and co-signed by registered witnesses. Those witnesses are all operated by DarkMatter at present, so L2 does not yet add third-party corroboration. L3 requires a customer-held signing key.</p>
+<p>Every commit starts at L1. L2 comes from witnessed checkpoints, which are signed on a ten-minute cycle and delivered to registered witnesses for co-signature. Whether a given checkpoint actually carries witness signatures is reported as <code>witness_count</code> and <code>witness_status</code> at <code>/api/log/checkpoint</code>; do not assume it, check it. Those witnesses are all operated by DarkMatter at present, so L2 does not yet add third-party corroboration. L3 requires a customer-held signing key.</p>
 <table>
   <thead><tr><th>Level</th><th>Name</th><th>What it proves</th><th>How</th></tr></thead>
   <tbody>

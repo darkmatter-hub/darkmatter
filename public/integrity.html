@@ -184,7 +184,7 @@ footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;gri
       <div class="level-row">
         <div class="level-c-tag"><span class="tag">L2</span><span class="level-num">02</span></div>
         <div class="level-c-name"><div class="level-name">Independent verification</div></div>
-        <div class="level-c-means level-means">Signed checkpoints, co-signed by registered witnesses (all currently operated by DarkMatter).</div>
+        <div class="level-c-means level-means">Signed checkpoints, delivered to registered witnesses for co-signature (all witnesses currently operated by DarkMatter). Live status at /api/log/checkpoint.</div>
         <div class="level-c-how level-how">Automatic. Every checkpoint batch is anchored and signed.</div>
       </div>
       <div class="level-row">
@@ -202,7 +202,7 @@ footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;gri
     <div class="eyebrow" style="margin-bottom:3rem"><span class="rule"></span><span>What we claim &#183; and what we don&#8217;t</span></div>
     <div class="int-grid">
       <div class="int-cell"><div class="label">We claim</div><h3>Payload wasn&#8217;t altered after commit</h3><p>The SHA-256 hash is computed on your machine before transmission when you use the Python SDK, and by the server otherwise. Any modification breaks the hash. Verifiable offline in both cases.</p></div>
-      <div class="int-cell"><div class="label">We claim</div><h3>Records are sealed when they happen</h3><p>Each record commits to the hash of the one before it, so a record cannot be altered, reordered or inserted after the fact without breaking every record that follows. This is what the offline verifier checks. It establishes ordering and integrity. For a time reference, a witnessed checkpoint signs the log root on a ten-minute cycle and registered witnesses co-sign it. Every witness running today is operated by DarkMatter, so that co-signature is not yet attestation by a party other than us.</p></div>
+      <div class="int-cell"><div class="label">We claim</div><h3>Records are sealed when they happen</h3><p>Each record commits to the hash of the one before it, so a record cannot be altered, reordered or inserted after the fact without breaking every record that follows. This is what the offline verifier checks. It establishes ordering and integrity. For a time reference, a checkpoint signs the log root on a ten-minute cycle and is delivered to registered witnesses for co-signature, with the result published as witness_count and witness_status at /api/log/checkpoint. Every witness running today is operated by DarkMatter, so that co-signature is not yet attestation by a party other than us.</p></div>
       <div class="int-cell"><div class="label">We claim &#40;L3&#41;</div><h3>DarkMatter cannot forge a record</h3><p>Customer-held Ed25519 keys sign the envelope before it reaches our servers. We never see the private key. We cannot produce a valid signature.</p></div>
       <div class="int-cell"><div class="label">We do not claim</div><h3>Payload confidentiality</h3><p>Payloads are stored in plaintext by default. DarkMatter personnel with database access can read them. To keep payloads private, encrypt client-side before calling <code class="cmd">dm.commit()</code>. This works on any plan. DarkMatter stores whatever you send.</p></div>
     </div>

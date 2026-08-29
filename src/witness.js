@@ -269,7 +269,19 @@ async function acceptWitnessSignature(supabaseService, checkpointId, witnessId, 
     .in('proof_status', ['checkpointed', 'checkpointed_published']);
   }
 
-  console.log(`[witness] ${witness.name} (${witnessId}) signed ${checkpointId}: valid=${sigValid}`);
+  // An invalid signature is stored so the failure is auditable, but it counts
+  // for nothing: witness_count only ever counts sig_valid rows. Log it as an
+  // error, because a run of these means witnessing is not working at all and
+  // the only other trace is a witness_status column nobody reads.
+  if (sigValid) {
+    console.log(`[witness] ${witness.name} (${witnessId}) signed ${checkpointId}`);
+  } else {
+    console.error(
+      `[witness] INVALID SIGNATURE from ${witness.name} (${witnessId}) on ${checkpointId}. ` +
+      `It does not verify against the public key registered for that id, so this ` +
+      `checkpoint stays unwitnessed. Usual cause: the witness regenerated its key.`
+    );
+  }
 
   return {
     checkpoint_id: checkpointId,
@@ -306,6 +318,19 @@ async function broadcastToWitnesses(supabaseService, checkpoint, serverPubKeyPem
   const results = await Promise.allSettled(
     witnesses.map(async (w) => {
       const result = await deliverToWitness(w, checkpoint, serverPubKeyPem);
+      // A witness id is sha256 of its public key, so an id that differs from
+      // the one we registered means the witness is signing with a different
+      // key and every signature it sends will fail to verify. That is a stale
+      // registration, not a bad signature, and it is silent otherwise: the
+      // checkpoint just comes out witness_failed with no reason attached.
+      const reportedId = result.response?.witness_id;
+      if (reportedId && reportedId !== w.witness_id) {
+        console.error(
+          `[witness] STALE REGISTRATION: ${w.name} answers as ${reportedId} but is ` +
+          `registered as ${w.witness_id}. Its key changed, so co-signature has been ` +
+          `failing for every checkpoint. Re-register it via POST /api/admin/witnesses.`
+        );
+      }
       if (result.delivered && result.response?.witness_sig) {
         // Accept the signature if witness responded synchronously
         try {
