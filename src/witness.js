@@ -29,6 +29,13 @@
  * What it does NOT prove (yet — Phase 4B):
  *   - That the witness independently computed the tree from raw leaves
  *   - That witnesses cross-verify each other
+ *   - That anyone other than DarkMatter attested to anything. Every witness
+ *     registered today is operated by DarkMatter, and DarkMatter holds its
+ *     signing key. A witness you run yourself gives no protection against a
+ *     split view: whoever can rewrite the log can re-sign the witness line
+ *     too. Until a third party runs one, a witness co-signature is a second
+ *     signature from the same trust domain, and no public page may describe
+ *     it as external or independent. See INDEPENDENT_WITNESSES_REGISTERED.
  *
  * Phase 4B adds: witnesses run their own log mirrors and cross-verify.
  */
@@ -38,6 +45,15 @@
 const crypto = require('crypto');
 const https  = require('https');
 const { canonicalize } = require('./integrity');
+
+// Whether a witness NOT operated by DarkMatter has been registered.
+//
+// This gates public copy, not code. While it is false, no page may call the
+// witnesses external or independent, or say a co-signature lets a reader check
+// the log without trusting DarkMatter - because it does not. test/smoke.test.js
+// enforces that. Flip it to true in the same commit that registers a witness
+// run by someone else, and the stronger wording becomes available again.
+const INDEPENDENT_WITNESSES_REGISTERED = false;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // WITNESS REGISTRATION
@@ -411,6 +427,7 @@ function processCheckpointAsWitness(body, privateKeyPem) {
 }
 
 module.exports = {
+  INDEPENDENT_WITNESSES_REGISTERED,
   registerWitness,
   deliverToWitness,
   acceptWitnessSignature,

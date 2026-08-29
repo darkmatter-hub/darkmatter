@@ -1839,6 +1839,73 @@ test('log verification routes never return a payload', () => {
     'a /api/log/* handler references payload — proofs must be hashes only');
 });
 
+
+// 34. Witness independence must be claimed only if a witness is independent
+// The site said checkpoints were "co-signed by registered external witnesses,
+// so the attestation can be checked without trusting DarkMatter alone", and
+// that the root was "attested by a party other than us". There is one
+// registered witness. It is named DarkMatter Witness Node 1, it runs on our
+// Railway account and we hold its private key. A witness in the same trust
+// domain gives no split-view protection: whoever can rewrite the log can
+// re-sign the witness line. The claim was the whole value of L2 and it was not
+// true. These tests tie that wording to a declared fact instead of a memory.
+console.log('\nWitness independence');
+var witnessSrc = fs.readFileSync(path.join(ROOT, 'src/witness.js'), 'utf8');
+var independentWitnesses = require('../src/witness.js').INDEPENDENT_WITNESSES_REGISTERED;
+
+test('witness.js declares whether an independent witness exists', () => {
+  assert(/const INDEPENDENT_WITNESSES_REGISTERED = (true|false);/.test(witnessSrc),
+    'INDEPENDENT_WITNESSES_REGISTERED is the flag the copy guard reads — it must exist');
+  assert(typeof independentWitnesses === 'boolean',
+    'INDEPENDENT_WITNESSES_REGISTERED must be exported as a boolean');
+});
+
+test('no page claims witness independence while none is registered', () => {
+  if (independentWitnesses) return; // the stronger wording is earned; nothing to check
+  var banned = [
+    /external witness/i,
+    /independent co-signature/i,
+    /witnesses[^.]{0,40}\bindependent(ly)?\b/i,
+    /without trusting DarkMatter alone/i,
+    /does not depend on trusting DarkMatter alone/i,
+    // Only the affirmative form. The corrected copy says a co-signature is
+    // "not yet attestation by a party other than us", which must not trip this.
+    /(?<!not yet )attest(ed|ation) by a party other than us/i,
+  ];
+  var offenders = [];
+  fs.readdirSync(path.join(ROOT, 'public'))
+    .filter(function(f) { return f.endsWith('.html'); })
+    .forEach(function(f) {
+      var text = fs.readFileSync(path.join(ROOT, 'public', f), 'utf8');
+      banned.forEach(function(re) {
+        var m = text.match(re);
+        if (m) offenders.push(f + ': "' + m[0].slice(0, 60) + '"');
+      });
+    });
+  assert(offenders.length === 0,
+    'independence claimed with no independent witness registered:\n       ' +
+    offenders.join('\n       '));
+});
+
+test('pages that mention witnesses say who operates them', () => {
+  if (independentWitnesses) return;
+  var offenders = [];
+  fs.readdirSync(path.join(ROOT, 'public'))
+    .filter(function(f) { return f.endsWith('.html'); })
+    .forEach(function(f) {
+      var text = fs.readFileSync(path.join(ROOT, 'public', f), 'utf8');
+      if (!/witness/i.test(text)) return;
+      // Saying "co-signed by witnesses" without saying they are ours invites
+      // exactly the reading the wording above made explicit.
+      if (!/operated by DarkMatter|run by DarkMatter/i.test(text)) {
+        offenders.push(f);
+      }
+    });
+  assert(offenders.length === 0,
+    'mentions witnesses without disclosing that DarkMatter operates them: ' +
+    offenders.join(', '));
+});
+
 // Also runnable standalone: node test/security.test.js
 (function() {
   var sec = require('./security.test.js').run();

@@ -133,7 +133,7 @@ footer a{color:inherit}
       </div>
       <div class="match-cell signal">
         <div class="label">DarkMatter provides</div>
-        <div class="text">Records are anchored to a public Witness Log. Tampering at any point breaks the cryptographic chain and is detectable by anyone, including the regulator, without our involvement.</div>
+        <div class="text">Every record commits to the hash of the one before it and to a Merkle log, and an export bundle carries the inclusion proofs with it. Tampering at any point breaks the chain, and a regulator can detect it from the bundle alone using the open-source verifier, without our involvement.</div>
       </div>
       <div class="match-cell">
         <div class="label">Article 12 implies</div>
@@ -153,14 +153,14 @@ footer a{color:inherit}
     <h2>The traceability problem</h2>
     <p>A standard Postgres audit table records what your application says happened. The regulator's question is whether that record can be trusted. If the record lives inside the system being audited, the answer is no, that's a self-report, not an audit trail.</p>
     <p>Article 12 does not say "log events." It says <strong>"automatic recording of events"</strong> with traceability. The European Commission and notified bodies are interpreting "traceability" as a structural property: <strong>tamper-evidence, independence, and external verifiability</strong>. A row in your own database does not satisfy any of those.</p>
-    <p>DarkMatter's records are signed at the moment of action with keys you control. The chain is anchored to a public Witness Log every ten minutes. The verifier is open source. A regulator can take a single Context Passport, run the verifier offline, and confirm independently that the record has not been altered since the moment it was created. That is what "traceability" actually means.</p>
+    <p>DarkMatter's records are hashed at the moment of action, on your machine before transmission when you use the Python SDK, and signed with a key you hold at L3. The log root is signed on a ten-minute cycle. The verifier is open source. A regulator can take a single Context Passport, run the verifier offline, and confirm that the record has not been altered since the moment it was created. That is what "traceability" actually means.</p>
   </div>
 </section>
 
 <section class="cta">
   <div class="wrap">
     <h2 id="cta-heading">Applies from 2 December 2027.<br>Set up takes 15 minutes.</h2>
-    <p>One line of code at decision time, one open-source verifier, one Witness Log entry that survives even if we don't. Start free, no card required.</p>
+    <p>One line of code at decision time, one open-source verifier, one export bundle that still verifies without us. Start free, no card required.</p>
     <a href="/signup" class="primary">Start for free →</a>
   </div>
 </section>

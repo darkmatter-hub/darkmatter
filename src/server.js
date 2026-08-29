@@ -8847,7 +8847,9 @@ const server = app.listen(PORT, () => {
   // It declines to start when the signing key is ephemeral, so turning this on
   // cannot produce checkpoints that stop verifying after the next redeploy.
   // With DM_LOG_SIGNING_KEY_PEM set, L2 becomes real: the Merkle root is signed
-  // and broadcast to registered witnesses for independent co-signature.
+  // and broadcast to registered witnesses for co-signature. Every witness
+  // registered today is run by DarkMatter, so that co-signature is not yet
+  // independent corroboration — see the witness independence note in witness.js.
   startCheckpointScheduler(supabaseService);
 
   if (process.env.GROWTH_REPORT_DISABLED !== 'true') {
