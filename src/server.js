@@ -4162,6 +4162,14 @@ app.get('/why',           (req, res) => res.sendFile(path.join(__dirname, '../pu
 // listed /about, and what came back canonicalised to /why, so the About page was
 // indexed nowhere and reachable only by typing /about.html.
 app.get('/about',         (req, res) => res.sendFile(path.join(__dirname, '../public/about.html')));
+
+// /compare is gone. It carried a feature matrix asserting what LangSmith,
+// MLflow and Datadog do and do not do, and one row was false for two of them:
+// both are hosted services, so they do store records outside the customer's
+// system. Comparative claims about named products have to be defended cell by
+// cell, and we would rather make the argument from what DarkMatter is.
+// Redirected rather than 404'd so existing inbound links still land somewhere.
+app.get('/compare',       (req, res) => res.redirect(301, '/why'));
 app.get('/enterprise',    (req, res) => res.sendFile(path.join(__dirname, '../public/enterprise.html')));
 app.get('/organizations', (req, res) => res.sendFile(path.join(__dirname, '../public/organizations.html')));
 
@@ -5730,7 +5738,7 @@ app.get('/r/:traceId', apiLimiter, async (req, res) => {
       + '<span class="sigil" aria-hidden="true"><svg viewBox="0 0 32 32" width="32" height="32" fill="none"><circle cx="16" cy="16" r="10" stroke="#0a0e1a" stroke-opacity="0.45" stroke-width="0.8"/><path d="M 16 6 L 24.66 21 L 7.34 21 Z" stroke="#0a0e1a" stroke-opacity="0.18" stroke-width="0.5" stroke-dasharray="1 1.5"/><circle cx="16" cy="16" r="0.8" fill="#0a0e1a" fill-opacity="0.55"/><circle cx="16" cy="6" r="2.1" fill="hsl(152,64%,34%)"/><circle cx="16" cy="6" r="3.4" stroke="hsl(152,64%,34%)" stroke-opacity="0.3" stroke-width="0.45"/><circle cx="24.66" cy="21" r="1.5" fill="#0a0e1a"/><circle cx="7.34" cy="21" r="1.5" fill="#0a0e1a" fill-opacity="0.85"/></svg></span>'
       + '<span class="name"><span class="d">DARK</span><span class="m">MATTER</span></span>'
       + '</a>'
-      + '<nav class="nav-links"><a href="/demo">Demo</a><a href="/docs">Docs</a><a href="/pricing">Pricing</a><a href="/compare">Compare</a><a href="/integrity">Integrity</a></nav>'
+      + '<nav class="nav-links"><a href="/demo">Demo</a><a href="/docs">Docs</a><a href="/pricing">Pricing</a><a href="/integrity">Integrity</a></nav>'
       + '<div class="nav-cta">'
       + '<a href="/login" class="nav-signin">Sign in</a>'
       + '<a href="/signup" class="nav-try">Try it free</a>'

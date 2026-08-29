@@ -1515,8 +1515,9 @@ test('the site does not claim a technology the code does not implement', functio
   assert(problems.length === 0, problems.join('; '));
 });
 
-// compare.html claims an open-source offline verifier as a capability three
-// named competitors lack. package.json declared MIT but no LICENSE file
+// The site claims an open-source offline verifier.
+// (compare.html used to claim it against three named competitors; that page
+// is gone, but the claim itself is still made elsewhere.) package.json declared MIT but no LICENSE file
 // existed, and a public repository without one is all-rights-reserved by
 // default, so the claim was not true in the sense that matters.
 test('an open-source claim is backed by an actual licence', function() {
@@ -2164,6 +2165,53 @@ test('no card image is missing or in a format no scraper renders', () => {
   });
   var SEP = String.fromCharCode(10) + '       ';
   assert(bad.length === 0, 'broken card images:' + SEP + bad.join(SEP));
+});
+
+// 39. We do not make claims about other companies in public
+// public/compare.html carried a feature matrix asserting what LangSmith,
+// MLflow and Datadog do and do not do. That is comparative advertising about
+// identifiable products: every cell has to be defensible, and one was not.
+// "Stored outside your system" was marked Yes for DarkMatter and No for all
+// three, but LangSmith and Datadog are hosted services, so records sent to
+// them are stored outside the customer's system by definition. It also claimed
+// a difference DarkMatter does not have over a hosted competitor.
+//
+// The page is gone. Competitors are still worth tracking; that belongs in
+// private/, which is gitignored, not on the site. The argument the site makes
+// is about what DarkMatter is: a hash chain, customer-held keys, an offline
+// verifier anyone can run.
+console.log('\nNo public competitor claims');
+
+test('the comparison page stays deleted', () => {
+  assert(!fs.existsSync(path.join(ROOT, 'public/compare.html')),
+    'compare.html is back. Comparative claims about named products have to be ' +
+    'defended cell by cell; keep the analysis in private/ instead.');
+});
+
+test('/compare redirects rather than 404s', () => {
+  assert(server.indexOf("app.get('/compare'") !== -1,
+    'no /compare route: inbound links to the old page would 404');
+  var line = server.slice(server.indexOf("app.get('/compare'"));
+  line = line.slice(0, line.indexOf('\n'));
+  assert(line.indexOf('redirect') !== -1, '/compare should redirect, not serve a page');
+});
+
+test('no public page names a competitor product', () => {
+  // LangChain and LangGraph stay: they are integrations we ship an SDK for,
+  // not products we compare ourselves against.
+  var named = ['LangSmith', 'MLflow', 'Langfuse', 'Helicone', 'Arize',
+               'Braintrust', 'Weights & Biases', 'Datadog', 'Splunk',
+               'Honeycomb', 'New Relic', 'Traceloop', 'Humanloop', 'Logfire'];
+  var offenders = [];
+  publicPages().forEach(function(pg) {
+    var text = fs.readFileSync(pg.abs, 'utf8');
+    named.forEach(function(n) {
+      if (text.indexOf(n) !== -1) offenders.push(pg.slug + ' names ' + n);
+    });
+  });
+  var SEP = String.fromCharCode(10) + '       ';
+  assert(offenders.length === 0,
+    'competitor named on a public page:' + SEP + offenders.join(SEP));
 });
 
 // Also runnable standalone: node test/security.test.js

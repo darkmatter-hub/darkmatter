@@ -133,7 +133,7 @@ a{color:inherit;text-decoration:none;}
     <li><a href="/demo">Demo</a></li>
     <li><a href="/docs">Docs</a></li>
     <li><a href="/pricing">Pricing</a></li>
-    <li><a href="/compare">Compare</a></li>
+    <li></li>
     <li><a href="/integrity">Integrity</a></li>
   </ul>
   <div class="dm-nav-right">
@@ -243,7 +243,7 @@ a{color:inherit;text-decoration:none;}
 
     <p><strong>Their incentives run the other way.</strong> AWS, Anthropic, and Google profit when you use more of their services. A tool that makes it easy to swap Claude for GPT-4o, fork a run, compare models, and diff outputs is architecturally against their lock-in interest. DarkMatter has no model allegiance. We commit what you ran, regardless of which model or framework you used.</p>
 
-    <p><strong>Platform logs aren't lineage.</strong> CloudWatch, Datadog, LangSmith, these solve observability: what happened, when, on which service, with what latency. DarkMatter solves lineage: what did Agent A pass to Agent B, what was the hash-chained sequence of decisions that produced this output, and can I branch from step 3 and replay it? These are different questions requiring different infrastructure. LangSmith is the closest competitor and it does tracing well, but it lives inside your LangSmith account (tamper risk remains), is scoped to LangChain/LangGraph, and doesn't produce offline-verifiable proof artifacts.</p>
+    <p><strong>Platform logs aren't lineage.</strong> Observability and tracing tools answer what happened, when, on which service, with what latency, and they answer it well. DarkMatter answers a different question: what did Agent A pass to Agent B, what was the hash-chained sequence of decisions that produced this output, and can I branch from step 3 and replay it? Different questions, different infrastructure. The distinction that matters is not which tool traces better, it is whether the record sits inside the system being asked about, and whether you can verify it offline without the vendor.</p>
 
     <p><strong>The compliance pressure is accelerating.</strong> EU AI Act Article 12 requires high-risk AI systems to maintain logs enabling post-hoc verification. Financial regulators are beginning to ask for explainability records on algorithmic decisions. Healthcare AI is heading toward audit requirements modelled on drug trial documentation. None of the platform players have built a neutral audit infrastructure product specifically because building it credibly requires being independent of both you and the model provider. That's a position only a purpose-built third party can occupy.</p>
 
@@ -251,7 +251,7 @@ a{color:inherit;text-decoration:none;}
 
     <h2>The honest version of what DarkMatter is and isn't</h2>
 
-    <p>DarkMatter is not an observability platform. It doesn't replace your logs, your Datadog, your LangSmith. It is a narrow, specific thing: an independent execution record for agent pipelines, with replay, fork, and offline verification built on top.</p>
+    <p>DarkMatter is not an observability platform. It doesn't replace your logs, your dashboards or your tracing. It is a narrow, specific thing: an independent execution record for agent pipelines, with replay, fork, and offline verification built on top.</p>
 
     <p>It's the layer that answers: <em>"Can you prove what your agent actually did?"</em>, in a way that doesn't rely on trusting you, the model provider, or us.</p>
 
@@ -288,7 +288,6 @@ a{color:inherit;text-decoration:none;}
       <a href="/demo">Demo</a>
       <a href="/docs">Docs</a>
       <a href="/pricing">Pricing</a>
-      <a href="/compare">Compare</a>
     </div>
     <div class="dm-footer-group">
       <div class="dm-footer-group-label">Trust</div>
