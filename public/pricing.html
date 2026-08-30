@@ -251,7 +251,7 @@ footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;gri
       </div>
       <div class="faq-item">
         <div class="faq-q">Can DarkMatter read my commit payloads?</div>
-        <div class="faq-a">Yes. Payloads are stored in plaintext by default, same as any cloud service. BYOK encryption (Enterprise) lets you encrypt before committing so only you can read the content. The hash chain and signature verification work on the encrypted payload.</div>
+        <div class="faq-a">Yes. Payloads are stored exactly as you send them, in plaintext unless you encrypt them first. There is no server-side encryption feature to buy: encrypt a payload before you commit it and we hash and store the ciphertext, the chain and signature verification work the same, and only you can read the content.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q">What happens if DarkMatter goes down?</div>

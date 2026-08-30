@@ -3352,7 +3352,7 @@ async function requireEnterprise(req, res, next) {
     if (!userId) {
       return res.status(403).json({
         error: 'Enterprise plan required',
-        hint:  'BYOK encryption, W3C DID, and compliance reports require an Enterprise plan. See darkmatterhub.ai/pricing',
+        hint:  'W3C DID and compliance reports require an Enterprise plan. See darkmatterhub.ai/pricing',
       });
     }
 
@@ -3377,34 +3377,13 @@ async function requireEnterprise(req, res, next) {
   }
 }
 
-// ── Encryption helpers (AES-256-GCM) ─────────────
-function encryptPayload(plaintext, keyHex) {
-  const key = Buffer.from(keyHex, 'hex');
-  const iv  = crypto.randomBytes(12);
-  const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
-  const encrypted = Buffer.concat([
-    cipher.update(JSON.stringify(plaintext), 'utf8'),
-    cipher.final(),
-  ]);
-  const authTag = cipher.getAuthTag();
-  return {
-    encrypted: encrypted.toString('base64'),
-    iv:        iv.toString('base64'),
-    authTag:   authTag.toString('base64'),
-  };
-}
-
-function decryptPayload(encryptedB64, ivB64, authTagB64, keyHex) {
-  const key       = Buffer.from(keyHex, 'hex');
-  const iv        = Buffer.from(ivB64, 'base64');
-  const authTag   = Buffer.from(authTagB64, 'base64');
-  const encrypted = Buffer.from(encryptedB64, 'base64');
-  const decipher  = crypto.createDecipheriv('aes-256-gcm', key, iv);
-  decipher.setAuthTag(authTag);
-  const decrypted = Buffer.concat([decipher.update(encrypted), decipher.final()]);
-  return JSON.parse(decrypted.toString('utf8'));
-}
-
+// AES-256-GCM helpers used to live here, encryptPayload and decryptPayload.
+// Nothing called either of them, on any code path, and no query has ever
+// written the encrypted_payload column. Removed rather than left in place,
+// because unused cipher code in a security-sensitive file reads as a feature
+// that runs - it is what made BYOK encryption look implemented. Recover them
+// from git history if server-side encryption is ever built for real; note
+// that doing it properly means the key does not reach us at all.
 // ── POST /enterprise/register ── register enterprise account
 app.post('/enterprise/register', requireAuth, async (req, res) => {
   try {
@@ -3436,21 +3415,23 @@ app.post('/enterprise/register', requireAuth, async (req, res) => {
     }
 
     const accountId = 'ent_' + Date.now() + '_' + crypto.randomBytes(4).toString('hex');
-    let keyId = null;
 
-    // If BYOK key provided, register it
+    // This used to accept a customer AES-256 key, store its last four
+    // characters as a hint, and answer byokEnabled: true. Nothing ever
+    // encrypted anything with it - encryptPayload and decryptPayload were
+    // defined and never called, and no code path has ever written
+    // encrypted_payload. So the endpoint took a secret it could not use,
+    // carried it through our logs and TLS termination, kept a fragment of it
+    // in a table readable by the service role, and told the customer their
+    // payloads were protected.
+    //
+    // Refusing a key we cannot use is strictly safer than holding one.
     if (byokKey) {
-      if (byokKey.length !== 64) {
-        return res.status(400).json({ error: 'BYOK key must be 64 hex characters (AES-256)' });
-      }
-      keyId = 'key_' + crypto.randomBytes(8).toString('hex');
-      const keyHint = byokKey.slice(-4);
-
-      await supabaseService.from('enterprise_keys').insert({
-        key_id:     keyId,
-        account_id: accountId,
-        key_hint:   keyHint,
-        algorithm:  'aes-256-gcm',
+      return res.status(400).json({
+        error: 'DarkMatter has no server-side payload encryption, so there is no key to register.',
+        detail: 'Encrypt the payload yourself before calling /api/commit. We hash and store '
+              + 'whatever you send, so the chain and signature verification are unaffected and '
+              + 'the plaintext never reaches us.',
       });
     }
 
@@ -3458,7 +3439,7 @@ app.post('/enterprise/register', requireAuth, async (req, res) => {
       id:           accountId,
       user_id:      req.user.id,
       company_name: companyName,
-      byok_key_id:  keyId,
+      byok_key_id:  null,
       // Defence in depth: the column defaults to true, which is what made
       // self-granting possible. Activation is a deliberate step.
       active:       false,
@@ -3469,9 +3450,8 @@ app.post('/enterprise/register', requireAuth, async (req, res) => {
     res.json({
       accountId,
       companyName,
-      byokEnabled: !!keyId,
-      keyId,
-      message: 'Enterprise account created. Store your BYOK key securely — DarkMatter does not store it.',
+      message: 'Enterprise account created. DarkMatter does not encrypt payloads; '
+             + 'encrypt them yourself before committing if you need confidentiality.',
     });
   } catch (err) {
     res.status(500).json({ error: err.message });

@@ -2535,6 +2535,73 @@ test('no test file contains a stray control character', () => {
     'control character in a test file: ' + offenders.join(', '));
 });
 
+// 46. Payload encryption is claimed only if something encrypts a payload
+// Five pages sold BYOK encryption, one of them as an Enterprise feature and
+// another as available on all plans, and the threat model recommended it for
+// highest assurance. encryptPayload and decryptPayload were defined in
+// server.js and never called, on any path, and no query has ever written the
+// encrypted_payload column. The registration endpoint took a customer's
+// AES-256 key, stored its last four characters as a hint, and answered
+// byokEnabled: true.
+//
+// So the claim is tied to the only thing that could make it true: a write to
+// encrypted_payload. While nothing writes it, no page may say we encrypt.
+console.log('\nPayload encryption');
+
+function serverEncryptsPayloads() {
+  // A write, not a read. server.js reads the column to report whether a commit
+  // is encrypted; that is not the same as producing one.
+  return /encrypted_payload:\s*[^n]/.test(server);
+}
+
+test('no page claims payload encryption while nothing writes an encrypted payload', () => {
+  if (serverEncryptsPayloads()) return;   // earned; nothing to check
+  var banned = [
+    /BYOK encryption/i,
+    /we encrypt your payload/i,
+    /payloads? (?:are|is) encrypted at rest/i,
+    /encrypts? (?:the )?payloads? (?:before|at) (?:committing|rest)/i,
+  ];
+  var offenders = [];
+  publicPages().forEach(function (pg) {
+    var text = fs.readFileSync(pg.abs, 'utf8').replace(/<[^>]+>/g, ' ');
+    banned.forEach(function (re) {
+      var m = text.match(re);
+      if (m) offenders.push(pg.slug + ': "' + m[0] + '"');
+    });
+  });
+  var SEP = String.fromCharCode(10) + '       ';
+  assert(offenders.length === 0,
+    'payload encryption claimed, but nothing in server.js encrypts a payload:' +
+    SEP + offenders.join(SEP));
+});
+
+test('the enterprise endpoint does not take a key it cannot use', () => {
+  var i = server.indexOf("app.post('/enterprise/register'");
+  assert(i !== -1, 'enterprise register route missing');
+  // Strip comment lines first: the comment above this route explains what was
+  // removed and names byokEnabled, so matching raw source finds the
+  // explanation rather than the code. That is how two earlier guards passed
+  // while hollow.
+  var block = server.slice(i, i + 3000)
+    .split(String.fromCharCode(10))
+    .filter(function (line) { return line.trim().indexOf('//') !== 0; })
+    .join(String.fromCharCode(10));
+  assert(block.indexOf('byokEnabled') === -1,
+    'byokEnabled tells the caller their payloads are protected; nothing protects them');
+  assert(!/key_hint:\s*keyHint/.test(block),
+    'storing four characters of a customer AES key leaks key material for a ' +
+    'feature that does not exist');
+});
+
+test('no unused cipher helpers remain in server.js', () => {
+  // They are what made the feature look implemented, to me included.
+  ['function encryptPayload(', 'function decryptPayload('].forEach(function (fn) {
+    assert(server.indexOf(fn) === -1,
+      fn + ' is defined but nothing calls it; unused cipher code reads as a feature that runs');
+  });
+});
+
 // Also runnable standalone: node test/security.test.js
 (function() {
   var sec = require('./security.test.js').run();

@@ -207,12 +207,12 @@ footer{border-top:1px solid var(--rule);padding:28px 48px;}
 
   <div class="threat-card" style="border-color:var(--warn-rule);background:var(--warn-bg);">
     <div class="threat-title">DarkMatter infrastructure compromise</div>
-    <div class="threat-ans">If DarkMatter's own infrastructure were compromised, records could theoretically be modified at the storage layer before hashing. Mitigation: export proof bundles regularly and store them independently. The offline verifier uses the hashes in the bundle, if DarkMatter servers were compromised after export, your local bundle still proves what was recorded at export time. For highest assurance, use self-hosting (MIT license) or BYOK encryption.</div>
+    <div class="threat-ans">If DarkMatter's own infrastructure were compromised, records could theoretically be modified at the storage layer before hashing. Mitigation: export proof bundles regularly and store them independently. The offline verifier uses the hashes in the bundle, if DarkMatter servers were compromised after export, your local bundle still proves what was recorded at export time. For highest assurance, encrypt payloads before you commit them, so that a compromise of our storage exposes ciphertext, and keep your own exports.</div>
   </div>
 
   <div class="threat-card" style="border-color:var(--warn-rule);background:var(--warn-bg);">
     <div class="threat-title">Self-hosted deployments</div>
-    <div class="threat-ans">When you self-host DarkMatter, you control the infrastructure. This removes the "independent execution record" guarantee, because you could modify the database directly. Self-hosting is appropriate for privacy and data sovereignty requirements. The cloud product with BYOK is the correct choice when you need third-party independence.</div>
+    <div class="threat-ans">When you self-host DarkMatter, you control the infrastructure. This removes the "independent execution record" guarantee, because you could modify the database directly. Self-hosting is appropriate for privacy and data sovereignty requirements. The cloud product is the correct choice when you need third-party independence, because the record is then held by someone other than the party being asked about.</div>
   </div>
 
   <hr class="rule"/>
