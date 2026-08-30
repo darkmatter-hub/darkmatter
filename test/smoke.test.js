@@ -2992,6 +2992,47 @@ test('the README documents the header the code sends', () => {
     'the README must not teach a header the code no longer sends');
 });
 
+// 53. Sample verifier output must be output the verifier can produce
+// integrations/claude.html showed a terminal transcript of
+// verify_darkmatter_chain.py printing four ticks, two of which it has never
+// printed and cannot: "Agent signature valid" and "Included in checkpoint".
+// The script checks payload hashes and chain links, and says so itself - it
+// even prints a note that it cannot prove records were not withheld. Showing a
+// transcript is a stronger claim than prose, because the reader takes it as a
+// recording of something that happened.
+console.log('\nSample verifier output');
+
+function verifierSource() {
+  return fs.readFileSync(path.join(ROOT, 'examples/verify_darkmatter_chain.py'), 'utf8');
+}
+
+test('the verifier does not check signatures or checkpoints', () => {
+  // If this changes, the transcripts may claim more. Deliberate update.
+  var v = verifierSource();
+  assert(v.indexOf('ed25519') === -1 && v.indexOf('Ed25519') === -1,
+    'the verifier now does signature work; sample output may claim it');
+  assert(v.indexOf('tree_root') === -1,
+    'the verifier now does checkpoint work; sample output may claim it');
+});
+
+test('no page shows the verifier reporting a check it does not make', () => {
+  var banned = ['signature valid', 'Signature valid', 'Included in checkpoint',
+                'included in checkpoint', 'Merkle inclusion verified'];
+  var offenders = [];
+  publicPages().forEach(function (pg) {
+    var raw = fs.readFileSync(pg.abs, 'utf8');
+    // Only where the page is showing the verifier being run.
+    if (raw.indexOf('verify_darkmatter_chain.py') === -1) return;
+    banned.forEach(function (b) {
+      if (raw.indexOf(b) !== -1) offenders.push(pg.slug + ': "' + b + '"');
+    });
+  });
+  var SEP = String.fromCharCode(10) + '       ';
+  assert(offenders.length === 0,
+    'a transcript claims the verifier reports something it never prints:' +
+    SEP + offenders.join(SEP));
+});
+
 // Also runnable standalone: node test/security.test.js
 (function() {
   var sec = require('./security.test.js').run();

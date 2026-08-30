@@ -279,6 +279,7 @@ darkmatter demo</pre>
           <div class="code-block">
             <div class="code-header"><span class="code-lang">python</span><button class="code-copy" onclick="copyCode(this)">Copy</button></div>
             <pre>import darkmatter as dm
+import json
 
 ctx = dm.commit(payload={
     <span class="s">"input"</span>:  <span class="s">"Analyze Q1 earnings"</span>,
@@ -327,9 +328,11 @@ proof = dm.verify(ctx[<span class="s">"id"</span>])
 print(proof[<span class="s">"chain_intact"</span>])  <span class="c"># True</span>
 
 <span class="c"># Export a self-contained proof bundle, verifiable offline</span>
+<span class="c"># bundle() returns the proof as a dict; write it where you want it</span>
 bundle = dm.bundle(ctx[<span class="s">"id"</span>])
-<span class="c"># → darkmatter_proof_bundle.json</span>
-<span class="c"># → python verify_darkmatter_chain.py bundle.json</span>
+json.dump(bundle, open(<span class="s">"bundle.json"</span>, <span class="s">"w"</span>))
+
+<span class="c"># python verify_darkmatter_chain.py bundle.json</span>
 <span class="c"># No DarkMatter dependency. No internet. No account.</span></pre>
           </div>
         </div>
@@ -366,18 +369,20 @@ for step in chain[<span class="s">"replay"</span>]:
     <h3>TypeScript, same pattern</h3>
     <div class="code-block">
       <div class="code-header"><span class="code-lang">typescript</span><button class="code-copy" onclick="copyCode(this)">Copy</button></div>
-      <pre>import { commit, replay, verify, bundle } from <span class="s">'darkmatter-js'</span>;
+      <pre>import * as dm from <span class="s">'darkmatter-js'</span>;
 <span class="c">// DARKMATTER_API_KEY read from process.env automatically</span>
+<span class="c">// Namespace import: the bundle helper is exported as `export`,</span>
+<span class="c">// which cannot be named in an import statement.</span>
 
 let parentId: string | undefined;
 
 for (const { input, output } of pipelineSteps) {
-  const ctx = await commit({ payload: { input, output }, parentId });
+  const ctx = await dm.commit(undefined, { input, output }, { parentId });
   parentId = ctx.id;
 }
 
-const chain = await replay(parentId!);
-const proof = await verify(parentId!);
+const chain = await dm.replay(parentId!);
+const proof = await dm.verify(parentId!);
 console.log(proof.chain_intact); <span class="c">// true</span></pre>
     </div>
 
