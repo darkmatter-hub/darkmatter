@@ -405,6 +405,12 @@ app.get('/INTEGRITY_SPEC_V1.md', (_req, res) => {
 // and several would be a poor first impression from a cold search.
 const SITEMAP_EXCLUDE = new Set([
   'admin', 'admindashboard', 'dashboard', 'login', 'reset-password',
+  // usage.html is an admin analytics view - total commits, L3 adoption,
+  // acquisition signal - that said 'Admin only' on its face and was in the
+  // sitemap anyway, under a title describing an SDK reference page. The
+  // numbers come from an authenticated endpoint so nothing leaked, but there
+  // is no reason to send a crawler to it.
+  'usage',
   'organizations', 'chat', 'join', 'chain',
 ]);
 
@@ -423,6 +429,8 @@ app.get('/robots.txt', (_req, res) => {
     'Disallow: /admindashboard',
     'Disallow: /dashboard',
     'Disallow: /reset-password',
+    'Disallow: /login',
+    'Disallow: /usage',
     'Disallow: /organizations',
     'Disallow: /api/',
     '',

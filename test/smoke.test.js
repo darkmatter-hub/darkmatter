@@ -2081,7 +2081,12 @@ test('surviving a DarkMatter compromise is not claimed without an independent wi
 // Read the sitemap exclusion list out of server.js so the two cannot drift.
 function sitemapExcluded() {
   var m = server.match(/SITEMAP_EXCLUDE = new Set\(\[([\s\S]*?)\]\)/);
-  var out = m ? (m[1].match(/'[^']+'/g) || []).map(function(q) { return q.slice(1, -1); }) : [];
+  // Drop comment lines first. The block carries an explanation that quotes
+  // "Admin only", and without this that phrase was extracted as a slug.
+  var body = m ? m[1].split(String.fromCharCode(10))
+                     .filter(function (l) { return l.trim().indexOf('//') !== 0; })
+                     .join(String.fromCharCode(10)) : '';
+  var out = (body.match(/'[^']+'/g) || []).map(function (q) { return q.slice(1, -1); });
   assert(out.length > 0, 'could not read SITEMAP_EXCLUDE from server.js');
   return out;
 }
@@ -2842,6 +2847,47 @@ test('signup does not sell an assurance level that is unreachable', () => {
   assert(s.indexOf('L2 &#183; L3 verification on every plan') === -1 &&
          !/Full L1[^<]*L2[^<]*on every plan/.test(s),
     'signup lists L2 as included; no commit is ever labelled L2');
+});
+
+// 50. A page that calls itself admin-only must not be advertised to crawlers
+// The existing check matches slugs that look administrative - admin, dashboard,
+// login. usage.html does not look like one by name, so it sat in the sitemap
+// under the title "SDK usage and wrapper reference" while being an internal
+// analytics view: total commits, L3 adoption, acquisition signal, wrapper
+// breakdown. The numbers come from an authenticated endpoint so nothing leaked,
+// but a crawler had no business being sent there.
+//
+// The page said "Admin only" on its own face. That is the signal to use, rather
+// than guessing from the filename.
+console.log('\nAdmin pages are not advertised');
+test('a page that declares itself admin-only is excluded from the sitemap', () => {
+  var excluded = sitemapExcluded();
+  var offenders = [];
+  publicPages().forEach(function (pg) {
+    var text = fs.readFileSync(pg.abs, 'utf8');
+    var declares = /Admin only|admin-only|Superuser only/i.test(text);
+    if (declares && excluded.indexOf(pg.slug) === -1) {
+      offenders.push(pg.slug + ' says it is admin-only and is in the sitemap');
+    }
+  });
+  var SEP = String.fromCharCode(10) + '       ';
+  assert(offenders.length === 0, 'internal pages advertised to crawlers:' + SEP + offenders.join(SEP));
+});
+
+test('robots.txt disallows the same paths the sitemap omits', () => {
+  // Two lists that must agree. The sitemap omission stops us advertising the
+  // page; the Disallow stops a crawler that found it another way.
+  var excluded = sitemapExcluded();
+  var i = server.indexOf("app.get('/robots.txt'");
+  var block = server.slice(i, i + 1500);
+  var missing = excluded.filter(function (slug) {
+    // chain and join are share/invite targets people are given directly, and
+    // carry noindex instead; the rest are app surfaces.
+    if (slug === 'chain' || slug === 'join' || slug === 'chat') return false;
+    return block.indexOf('Disallow: /' + slug) === -1;
+  });
+  assert(missing.length === 0,
+    'excluded from the sitemap but not disallowed in robots.txt: ' + missing.join(', '));
 });
 
 // Also runnable standalone: node test/security.test.js
