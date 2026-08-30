@@ -1,3 +1,9 @@
+-- HISTORICAL SNAPSHOT, May 2026. Not the schema to install.
+--
+-- SETUP.md pointed here until 2026-08-29. It is missing 11 of the tables the
+-- server needs, including log_entries, so the first commit fails. Use
+-- schema_full.sql. This file is kept only to show what the schema looked like.
+--
 -- ═══════════════════════════════════════════════════
 -- DarkMatter — Supabase Schema v2
 -- STEP 1: Drop existing tables (clears old structure)

@@ -2602,6 +2602,75 @@ test('no unused cipher helpers remain in server.js', () => {
   });
 });
 
+// 47. The schema we tell self-hosters to install must run the server
+// Four pages offer self-hosting under the MIT licence, and the threat model
+// offers it as a mitigation. SETUP.md step 2 said to run supabase/schema.sql.
+// That file is a May snapshot: it has commits and agents and is missing
+// log_entries, checkpoints, witnesses, witness_sigs, commit_usage, app_state,
+// signing_keys, agent_pubkeys, workspace_members and subscriptions. Anyone
+// following the documented path got a database the server cannot write a single
+// commit to, because appendToLog inserts into log_entries.
+console.log('\nSelf-hosting schema');
+
+function schemaReferencedBySetup() {
+  var setup = fs.readFileSync(path.join(ROOT, 'SETUP.md'), 'utf8');
+  var m = setup.match(/run the contents of `supabase\/([a-z0-9_]+\.sql)`/i);
+  assert(m, 'SETUP.md must name the schema file to install');
+  return m[1];
+}
+
+test('SETUP.md names a schema file that exists', () => {
+  var name = schemaReferencedBySetup();
+  assert(fs.existsSync(path.join(ROOT, 'supabase', name)),
+    'SETUP.md sends self-hosters to supabase/' + name + ', which is not there');
+});
+
+test('that schema contains every table the server queries', () => {
+  var sql = fs.readFileSync(path.join(ROOT, 'supabase', schemaReferencedBySetup()), 'utf8');
+  // Tables the server actually reads or writes, taken from the source rather
+  // than from a list someone has to remember to update.
+  var tables = {};
+  var re = /\.from\('([a-z0-9_]+)'\)/g;
+  var m;
+  while ((m = re.exec(server)) !== null) tables[m[1]] = true;
+  var names = Object.keys(tables);
+  assert(names.length > 10, 'extracted only ' + names.length + ' tables; the extractor broke');
+
+  var missing = names.filter(function (t) {
+    // Format-tolerant, and built from literal strings so there is no pattern to
+    // lose an escape. pg_dump writes "CREATE TABLE public.x (", older hand-
+    // written files write "create table if not exists x(" and everything
+    // between, so check the forms rather than one of them.
+    var hay = sql.toLowerCase();
+    var prefixes = ['create table ', 'create table if not exists '];
+    var names2 = [t, 'public.' + t, '"' + t + '"', 'public."' + t + '"'];
+    var seps = [' (', '('];
+    for (var a = 0; a < prefixes.length; a++) {
+      for (var b = 0; b < names2.length; b++) {
+        for (var c = 0; c < seps.length; c++) {
+          if (hay.indexOf(prefixes[a] + names2[b] + seps[c]) !== -1) return false;
+        }
+      }
+    }
+    return true;
+  });
+  var SEP = String.fromCharCode(10) + '       ';
+  assert(missing.length === 0,
+    'the schema self-hosters are told to install is missing tables the server ' +
+    'queries, so it cannot run:' + SEP + missing.join(', '));
+});
+
+test('the schema can be applied to a fresh Supabase project', () => {
+  var sql = fs.readFileSync(path.join(ROOT, 'supabase', schemaReferencedBySetup()), 'utf8');
+  assert(sql.indexOf('CREATE SCHEMA public;') === -1,
+    'a fresh Supabase project already has schema public, so this line aborts the ' +
+    'script in the SQL editor before any table is created');
+  ['OWNER TO', 'CREATE ROLE', 'ALTER DEFAULT PRIVILEGES'].forEach(function (stmt) {
+    assert(sql.indexOf(stmt) === -1,
+      stmt + ' will not apply on a managed Postgres, so the install stops there');
+  });
+});
+
 // Also runnable standalone: node test/security.test.js
 (function() {
   var sec = require('./security.test.js').run();

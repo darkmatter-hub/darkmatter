@@ -26,7 +26,10 @@ npm install
 
 1. Go to [supabase.com](https://supabase.com) → New Project
 2. Name it `darkmatter-dev`
-3. Go to **SQL Editor** and run the contents of `supabase/schema.sql`
+3. Go to **SQL Editor** and run the contents of `supabase/schema_full.sql`
+   (this is the whole current schema, 36 tables. `schema.sql` is a May snapshot
+   kept for history and is missing the append-only log, checkpoints, witnesses,
+   subscriptions and workspaces, so the server will not start against it)
 4. Go to **Settings → API** and copy:
    - **Project URL** → `SUPABASE_URL`
    - **anon/public key** → `SUPABASE_KEY`
