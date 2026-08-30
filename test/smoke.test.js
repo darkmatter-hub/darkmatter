@@ -3033,6 +3033,51 @@ test('no page shows the verifier reporting a check it does not make', () => {
     SEP + offenders.join(SEP));
 });
 
+// 54. The reference witness server has to be reachable to be run
+// L2 is a second signature from our own trust domain until somebody outside
+// runs a witness. github-template/darkmatter_witness_server.py is exactly what
+// they would run - it verifies our signature, co-signs the same canonical
+// envelope with its own key, keeps its own log - and it was referenced by no
+// page, linked from no document and served from no route. The one asset that
+// could close the gap was unreachable.
+console.log('\nReference witness server');
+
+test('the witness server is served', () => {
+  assert(server.indexOf("app.get('/darkmatter_witness_server.py'") !== -1,
+    'nobody can run a witness they cannot download');
+  assert(server.indexOf('github-template/darkmatter_witness_server.py') !== -1,
+    'the route must send the file that actually exists');
+  assert(fs.existsSync(path.join(ROOT, 'github-template/darkmatter_witness_server.py')),
+    'the file the route sends must exist');
+});
+
+test('a page tells the reader they can run one', () => {
+  var refs = [];
+  publicPages().forEach(function (pg) {
+    var html = fs.readFileSync(pg.abs, 'utf8');
+    if (html.indexOf('darkmatter_witness_server.py') !== -1) refs.push(pg.slug);
+  });
+  assert(refs.length > 0,
+    'no page mentions the witness server, so the invitation reaches nobody');
+});
+
+test('the reference witness canonicalises keys the way the server does', () => {
+  // It signs the same envelope we sign. If the two order keys differently, its
+  // signature never verifies and the witness looks broken rather than the
+  // canonicaliser. Plain sorted() is code point; RFC 8785 is UTF-16 code unit.
+  var src = fs.readFileSync(path.join(ROOT, 'github-template/darkmatter_witness_server.py'), 'utf8');
+  assert(src.indexOf("sorted(value.keys())") === -1,
+    'the witness sorts by code point; the server sorts by UTF-16 code unit');
+  assert(src.indexOf("utf-16-be") !== -1,
+    'the witness must sort keys by UTF-16 code unit');
+});
+
+test('the witness does not treat log position zero as missing', () => {
+  var src = fs.readFileSync(path.join(ROOT, 'github-template/darkmatter_witness_server.py'), 'utf8');
+  assert(src.indexOf("checkpoint.get('position') or checkpoint.get('log_position')") === -1,
+    'position 0 is falsy, so the first checkpoint of a log would sign the wrong value');
+});
+
 // Also runnable standalone: node test/security.test.js
 (function() {
   var sec = require('./security.test.js').run();

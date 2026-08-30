@@ -88,7 +88,12 @@ def canonicalize(value) -> str:
     if isinstance(value, list): return '[' + ','.join(canonicalize(item) for item in value) + ']'
     if isinstance(value, dict):
         pairs = [json.dumps(k, ensure_ascii=False) + ':' + canonicalize(value[k])
-                 for k in sorted(value.keys())]
+                 # RFC 8785 3.2.3 orders keys by UTF-16 code unit, not code point. They
+                 # agree across the BMP and diverge above it, because an astral character
+                 # is a surrogate pair. Plain sorted() is code point and broke
+                 # cross-implementation verification once already. Envelope keys are
+                 # ASCII so this changes nothing today, but this file is a reference.
+                 for k in sorted(value.keys(), key=lambda s: s.encode('utf-16-be'))]
         return '{' + ','.join(pairs) + '}'
     raise TypeError(type(value).__name__)
 
@@ -146,7 +151,10 @@ def build_checkpoint_envelope(checkpoint: dict) -> dict:
         'tree_root':          checkpoint['tree_root'],
         'tree_size':          checkpoint['tree_size'],
         'log_root':           checkpoint['log_root'],
-        'log_position':       checkpoint.get('position') or checkpoint.get('log_position'),
+        # Not `or`: log position 0 is falsy, so the first checkpoint of a log
+        # would fall through to the other key and could sign None.
+        'log_position':       checkpoint['position'] if checkpoint.get('position') is not None
+                              else checkpoint.get('log_position'),
         'timestamp':          checkpoint['timestamp'],
         'previous_cp_id':     checkpoint.get('previous_cp_id'),
         'previous_tree_root': checkpoint.get('previous_tree_root'),

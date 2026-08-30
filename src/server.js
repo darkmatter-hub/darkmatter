@@ -506,6 +506,18 @@ app.get('/verify_darkmatter_chain.py', (_req, res) => {
   res.sendFile(path.join(__dirname, '../examples/verify_darkmatter_chain.py'));
 });
 
+// The reference witness server. An independent organisation runs this to
+// co-sign our checkpoints: it verifies our signature, signs the same canonical
+// envelope with its own Ed25519 key, and keeps its own log. It is the only
+// thing that turns L2 from a second signature by us into corroboration by
+// somebody else, and it sat in github-template/ referenced by nothing and
+// served from nowhere, so nobody could have run one if they wanted to.
+app.get('/darkmatter_witness_server.py', (_req, res) => {
+  res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+  res.setHeader('Cache-Control', 'public, max-age=3600');
+  res.sendFile(path.join(__dirname, '../github-template/darkmatter_witness_server.py'));
+});
+
 // Registered before express.static on purpose. A public/docs/ directory
 // exists for the quickstart, so express.static sees /docs as a directory and
 // 301s to /docs/ before any route is consulted. That worked, because Express
