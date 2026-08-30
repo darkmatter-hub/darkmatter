@@ -2876,13 +2876,19 @@ app.get('/api/export/:ctxId', flexAuth, async (req, res) => {
 
     // ── 5. Assemble self-sufficient bundle ───────────────────────────────────
     const bundle = {
+      // Every field here is an instruction someone will follow, so it has to
+      // describe the verifier we actually serve. It previously named flags the
+      // verifier does not accept, pointed at two files that are keys inside
+      // this bundle rather than files on disk, and listed four phases when the
+      // script checks two.
       _spec: {
         bundle_version:  '3.0',
         spec_url:        'https://darkmatterhub.ai/docs#integrity-spec',
         verifier_url:    'https://darkmatterhub.ai/verify_darkmatter_chain.py',
-        verify_command:  'python verify_darkmatter_chain.py this_file.json --checkpoint checkpoint.json --pubkey server_pubkey.pem',
-        checkpoint_repo: 'https://github.com/darkmatter-hub/checkpoints',
-        phases:          ['structure', 'agent_signatures', 'merkle_inclusion', 'checkpoint'],
+        verify_command:  'python verify_darkmatter_chain.py this_file.json',
+        phases:          ['payload_hashes', 'chain_links'],
+        not_checked:     ['agent_signatures', 'merkle_inclusion', 'checkpoint_signature'],
+        checkpoint_note: 'The checkpoint and server_pubkey below let you check the signed log root yourself. The bundled verifier does not do it for you, and checkpoints are not yet published outside DarkMatter infrastructure.',
       },
       metadata: {
         ctx_id:         ctxId,

@@ -184,7 +184,7 @@ footer{border-top:1px solid var(--rule);padding:28px 48px;}
 
   <div class="threat-card">
     <div class="threat-title">Retroactive modification of execution records</div>
-    <div class="threat-ans">Commits made through the Python SDK are hashed on your machine before transmission. The <code>integrity_hash</code> is SHA-256 of the canonical commit envelope, which binds agent_id, key_id, timestamp, payload_hash, and parent_integrity_hash. The agent signs this envelope with their Ed25519 key. Any change to any field breaks the chain from that point forward. The next <code>dm.verify()</code> call will flag the break and identify the step. This protects against: developers editing records after the fact, database administrators modifying rows, and accidental data corruption.</div>
+    <div class="threat-ans">Commits made through the Python SDK are hashed on your machine before transmission. The <code>integrity_hash</code> binds each record to the one before it: it is SHA-256 of the record&#8217;s own <code>payload_hash</code> joined to its parent&#8217;s <code>integrity_hash</code>, both carrying the <code>sha256:</code> prefix, with the literal <code>root</code> standing in for the parent of the first record. At L3 the agent also signs a commit envelope with an Ed25519 key only they hold; below L3 there is no signature, only the chain. Any change to any field breaks the chain from that point forward. The next <code>dm.verify()</code> call will flag the break and identify the step. This protects against: developers editing records after the fact, database administrators modifying rows, and accidental data corruption.</div>
   </div>
 
   <div class="threat-card">
@@ -220,10 +220,16 @@ footer{border-top:1px solid var(--rule);padding:28px 48px;}
 
   <p>Your committed records are safe and verifiable regardless of DarkMatter's operational status, provided you have exported a proof bundle. The bundle contains everything needed to verify integrity:</p>
 
-  <div class="code-block">darkmatter_proof_bundle.json
-├── chain_records.json      # all commit records with hashes
-├── integrity_map.json      # SHA-256 chain for each step
-└── verifier.py             # standalone Python verifier, no dependencies</div>
+  <div class="code-block">bundle.json
+├── _spec           # verifier url, the exact command, what it does not check
+├── metadata        # ctx_id, chain length, when and by whom it was exported
+├── integrity       # chain_intact, root and tip hashes, timestamp range
+├── commits[]       # every record with its payload, hashes and inclusion proof
+├── checkpoint      # the signed log root covering this chain, with witness state
+├── server_pubkey   # the Ed25519 key the checkpoint is signed with
+└── export_hash     # hash of the bundle itself</div>
+
+  <p>The <code>checkpoint</code> is DarkMatter&#8217;s signature over the log root at the moment of export, and <code>server_pubkey</code> is the key to check it with. It also carries <code>witness_count</code> and <code>witness_signatures</code>. Every witness registered today is operated by DarkMatter, so a co-signature is not yet corroboration by anyone else; what the checkpoint gives you is a signed statement you hold a copy of, which is what a later change would have to contradict.</p>
 
   <p>Run verification with no internet connection, no DarkMatter account:</p>
   <div class="code-block">python verify_darkmatter_chain.py bundle.json
@@ -248,7 +254,7 @@ footer{border-top:1px solid var(--rule);padding:28px 48px;}
   "id":             "ctx_1775...",
   "payload_hash":   "sha256:3c3654...",  // SHA-256 of canonical(payload), Integrity Spec v1.0
   "parent_hash":    "sha256:dec459...",  // integrity_hash of parent commit (null for root)
-  "integrity_hash": "sha256:a7b2c4...",  // SHA-256 of canonical({schema_version, agent_id, key_id, timestamp, payload_hash, parent_integrity_hash})
+  "integrity_hash": "sha256:a7b2c4...",  // SHA-256 of the two prefixed hashes joined: payload_hash + parent_hash, with the literal "root" in place of parent_hash at the root
   "created_at":     "2026-04-03T...",
   "payload":        {...}
 }</div>

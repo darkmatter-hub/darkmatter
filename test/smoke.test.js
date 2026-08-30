@@ -2393,6 +2393,79 @@ test('the parity test reads the SDK that ships, not a local copy', () => {
     'sdk_parity must not import a copy bundled in this repository');
 });
 
+// 44. The documented chain format has to be the one we actually compute
+// threat-model.html is where someone goes to build their own verifier. It said
+// integrity_hash was SHA-256 of a canonical envelope binding schema_version,
+// agent_id, key_id, timestamp, payload_hash and parent_integrity_hash. It is
+// not: chainIntegrityHash joins the record's own payload_hash to its parent's
+// integrity_hash, both carrying the sha256: prefix, with the literal "root" at
+// the root. Anyone following the page would have computed a different value for
+// every record and concluded the whole chain was invalid.
+//
+// The envelope it described is real but is a different thing: the L3 object the
+// SDK signs. Two hashes, one name, and the page picked the wrong one.
+console.log('\nDocumented chain format');
+
+test('the documented integrity_hash rule is the one integrity.js computes', () => {
+  // Recompute from the rule as written on the page, and compare against the
+  // implementation. If either moves, this fails.
+  var crypto = require('crypto');
+  var integrity = require('../src/integrity.js');
+  var ph = 'c776cff69f71f41f42725e47bcebce986a11cfcf0fea34e12e4a7b6d37e3fa90';
+  var parent = 'bb191f1b8930f03962ffcb4ebfe0159d779660a8799ca84a1c432060ac8880df';
+
+  var atRoot = crypto.createHash('sha256').update('sha256:' + ph + 'root', 'utf8').digest('hex');
+  assert(integrity.chainIntegrityHash(ph, null) === atRoot,
+    'the root rule on threat-model.html no longer matches chainIntegrityHash');
+
+  var linked = crypto.createHash('sha256')
+    .update('sha256:' + ph + 'sha256:' + parent, 'utf8').digest('hex');
+  assert(integrity.chainIntegrityHash(ph, parent) === linked,
+    'the parent-link rule on threat-model.html no longer matches chainIntegrityHash');
+});
+
+test('the page does not describe integrity_hash as a canonical envelope', () => {
+  var tm = fs.readFileSync(path.join(ROOT, 'public/threat-model.html'), 'utf8');
+  assert(tm.indexOf('SHA-256 of canonical({schema_version') === -1,
+    'that is the L3 envelope the SDK signs, not the stored integrity_hash');
+  assert(/prefixed hashes joined|sha256:<\/code> prefix/.test(tm),
+    'the page must state that both operands carry the sha256: prefix, or a ' +
+    'verifier built from it computes the wrong value');
+});
+
+test('the export bundle tells people a command the verifier accepts', () => {
+  // The bundle used to print flags the verifier ignores and name two files that
+  // are keys inside the bundle rather than files on disk.
+  var m = server.match(/verify_command:\s*'([^']+)'/);
+  assert(m, 'the bundle must carry a verify_command');
+  var cmd = m[1];
+  assert(cmd.indexOf('--') === -1,
+    'verify_darkmatter_chain.py takes a bundle path and nothing else, but the ' +
+    'bundle prints: ' + cmd);
+  var verifier = fs.readFileSync(path.join(ROOT, 'examples/verify_darkmatter_chain.py'), 'utf8');
+  assert(verifier.indexOf('argparse') === -1,
+    'the verifier gained argument parsing; re-check what verify_command promises');
+});
+
+test('the bundle does not claim verification phases the verifier skips', () => {
+  // Extract the phases array by slicing rather than with a character class:
+  // the first version used [^\]]* written through a tool that collapses doubled
+  // backslashes, so the class became [^] followed by ]* and matched nothing.
+  var i = server.indexOf('phases:');
+  assert(i !== -1, 'the bundle must declare its phases');
+  var open = server.indexOf('[', i);
+  var close = server.indexOf(']', open);
+  var phases = server.slice(open, close + 1);
+  ['agent_signatures', 'merkle_inclusion', 'checkpoint_signature'].forEach(function (phase) {
+    assert(phases.indexOf(phase) === -1,
+      phase + ' is listed in phases ' + phases + ', but the bundled verifier ' +
+      'checks payload hashes and chain links only');
+  });
+  var block = server.slice(i - 400, i + 900);
+  assert(block.indexOf('not_checked') !== -1,
+    'the bundle must say what it does not verify, not only what it does');
+});
+
 // Also runnable standalone: node test/security.test.js
 (function() {
   var sec = require('./security.test.js').run();
