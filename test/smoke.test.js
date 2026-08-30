@@ -2466,6 +2466,75 @@ test('the bundle does not claim verification phases the verifier skips', () => {
     'the bundle must say what it does not verify, not only what it does');
 });
 
+// 45. A guard built from a string-constructed RegExp is a guard that may match nothing
+// Three times a test in this file shipped green and hollow, always the same
+// way: the pattern was assembled from a JavaScript string, and the doubled
+// backslash a string needs did not survive being written to disk. What ran was
+//
+//   a word-boundary escape that became a literal 0x08 byte,
+//   a whitespace escape that became the bare letter s, and
+//   a character class [^\]] that became [^] followed by ]*.
+//
+// Each matched nothing and reported success over copy that plainly violated it.
+// A regex literal is written once and read once, so it does not have this
+// failure mode. indexOf and slice have it even less.
+console.log('\nGuards cannot be hollow by construction');
+
+test('no test builds a RegExp from a string with a collapsed escape', () => {
+  // Correct is a doubled backslash: 'BSBSb' in the file becomes BSb in the
+  // string and a word boundary in the pattern. A lone backslash means the
+  // escape was eaten before it reached disk, and the pattern silently becomes
+  // something else. Walk backslash runs rather than matching, so this check
+  // cannot itself be a victim of the thing it checks.
+  var BS = String.fromCharCode(92);
+  var DANGEROUS = 'bswdSWDB]}()|.*+?^$';
+  var offenders = [];
+  fs.readdirSync(path.join(ROOT, 'test')).forEach(function (name) {
+    if (!/\.test\.js$/.test(name)) return;
+    var src = fs.readFileSync(path.join(ROOT, 'test', name), 'utf8');
+    src.split(String.fromCharCode(10)).forEach(function (line, i) {
+      if (line.indexOf('new RegExp(') === -1) return;
+      var j = line.indexOf('new RegExp(');
+      while (j < line.length) {
+        if (line.charAt(j) === BS) {
+          var run = 0;
+          while (line.charAt(j + run) === BS) run++;
+          var next = line.charAt(j + run);
+          if (run % 2 === 1 && DANGEROUS.indexOf(next) !== -1) {
+            offenders.push(name + ':' + (i + 1) + '  lone escape before "' + next +
+                           '" in ' + line.trim().slice(0, 70));
+            break;
+          }
+          j += run;
+        } else { j++; }
+      }
+    });
+  });
+  var SEP = String.fromCharCode(10) + '       ';
+  assert(offenders.length === 0,
+    'a pattern built from a string lost its escape, which is how three guards ' +
+    'ended up matching nothing:' + SEP + offenders.join(SEP));
+});
+
+test('no test file contains a stray control character', () => {
+  // The 0x08 case was invisible on screen: the file looked correct and the
+  // regex required a backspace before the word.
+  var offenders = [];
+  fs.readdirSync(path.join(ROOT, 'test')).forEach(function (name) {
+    if (!/\.(test\.js|test\.py)$/.test(name)) return;
+    var src = fs.readFileSync(path.join(ROOT, 'test', name), 'utf8');
+    for (var i = 0; i < src.length; i++) {
+      var c = src.charCodeAt(i);
+      if (c < 32 && c !== 9 && c !== 10 && c !== 13) {
+        offenders.push(name + ' has 0x' + c.toString(16) + ' at offset ' + i);
+        break;
+      }
+    }
+  });
+  assert(offenders.length === 0,
+    'control character in a test file: ' + offenders.join(', '));
+});
+
 // Also runnable standalone: node test/security.test.js
 (function() {
   var sec = require('./security.test.js').run();
