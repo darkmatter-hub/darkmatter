@@ -1758,31 +1758,38 @@ test('the commit route accepts both spellings of the client verification fields'
   });
 });
 
-// Five pages said payloads are hashed client-side, without qualification. That
-// is true through the Python SDK, which computes the hash and posts it, and
-// false through the JavaScript SDK, which posts the payload and lets the server
-// hash it. A reader using the JS SDK was told their hash was computed locally
-// when it was not.
+// Five pages once said payloads are hashed client-side without qualification.
+// That was true through the Python SDK and false through the JavaScript one,
+// which posted the payload and let the server hash it. The qualifier was added
+// for that reason.
 //
-// So the claim has to name which path it applies to. This fails if an
-// unqualified version comes back.
-test('client-side hashing is not claimed without naming the SDK', function() {
-  var unqualified = [];
+// darkmatter-js 1.4.3 hashes, and the MCP server hashes through
+// @contextpassport/core, so all three clients now compute the same value the
+// server does - verified against an astral-key payload, which is where a
+// UTF-16 versus code-point mistake would show. The claim no longer has to name
+// one SDK, and naming only one would now be the misleading version.
+//
+// What still matters is that a direct API call is hashed by the server, not by
+// the caller. So the claim has to be scoped to the SDKs or acknowledge that
+// path, and must not single out one SDK as the only one that hashes.
+test('client-side hashing is scoped, and no longer credits only one SDK', function() {
+  var offenders = [];
   publicPages().forEach(function(pg) {
     var html = fs.readFileSync(pg.abs, 'utf8');
-    var re = /[^.<>]{0,120}(hashed?[^.<>]{0,20}client-side|client-side hash[^.<>]{0,20})[^.<>]{0,120}/gi;
+    var re = /[^.<>]{0,140}(hashed?[^.<>]{0,20}client-side|client-side hash[^.<>]{0,20})[^.<>]{0,140}/gi;
     var m;
     while ((m = re.exec(html)) !== null) {
       var sentence = m[0];
-      // Qualified if it names the SDK the claim holds for, or says the server
-      // does it. Bare "hashed client-side" is the form that misleads.
-      if (!/python sdk|javascript sdk|js sdk|by the server|server hashes/i.test(sentence)) {
-        unqualified.push(pg.slug + ': "' + sentence.trim().slice(0, 70) + '"');
+      if (!/sdk|by the server|server hashes/i.test(sentence)) {
+        offenders.push(pg.slug + ' unscoped: "' + sentence.trim().slice(0, 66) + '"');
+      }
+      if (/only the python sdk|python sdk only|javascript sdk leaves it/i.test(sentence)) {
+        offenders.push(pg.slug + ' stale: "' + sentence.trim().slice(0, 66) + '"');
       }
     }
   });
-  assert(unqualified.length === 0,
-    'unqualified client-side hashing claims: ' + unqualified.join('; '));
+  assert(offenders.length === 0,
+    'client-side hashing claims that mislead: ' + offenders.join('; '));
 });
 
 

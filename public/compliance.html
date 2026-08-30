@@ -226,7 +226,7 @@ footer{border-top:1px solid var(--rule);padding:28px 48px;}
     </div>
     <div style="background:var(--paper);padding:16px 18px;">
       <div class="h3">Cryptographic integrity</div>
-      <p>Payload hashes are computed on your machine before transmission when using the Python SDK, and by the server otherwise. Agents sign commit envelopes with their own Ed25519 keys. Every commit receives a Merkle inclusion proof. Signed checkpoints are produced on a ten-minute cycle and delivered to registered witnesses for co-signature. Every registered witness is currently operated by DarkMatter, so co-signature is not yet independent. Export bundles are self-sufficient for offline verification. Use our verifier or build your own from the published spec. → <a href="/integrity">Full integrity model</a></p>
+      <p>Payload hashes are computed on your machine before transmission by the Python, JavaScript and MCP clients, and by the server when you post to the API directly. Agents sign commit envelopes with their own Ed25519 keys. Every commit receives a Merkle inclusion proof. Signed checkpoints are produced on a ten-minute cycle and delivered to registered witnesses for co-signature. Every registered witness is currently operated by DarkMatter, so co-signature is not yet independent. Export bundles are self-sufficient for offline verification. Use our verifier or build your own from the published spec. → <a href="/integrity">Full integrity model</a></p>
     </div>
     <div style="background:var(--paper);padding:16px 18px;">
       <div class="h3">Subprocessors</div>
