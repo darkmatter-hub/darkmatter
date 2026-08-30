@@ -479,54 +479,57 @@ Downloads a portable JSON proof artifact. Safe to share with auditors.
 `chain_hash` is stable across exports of the same unchanged chain. `export_hash` is unique per export instance (includes timestamp).
 
 
-### POST /dashboard/agents/:id/webhook
+### POST /api/hooks
 
-Register a webhook URL for an agent. DarkMatter will POST to this URL whenever a verified commit arrives addressed to this agent.
+Register a webhook. DarkMatter POSTs to the URL when one of the events you
+subscribe to occurs for your agent.
 
 ```json
-{ "webhookUrl": "https://your-server.com/webhook" }
+{ "url": "https://your-server.com/webhook", "events": ["commit"], "secret": "whsec_..." }
 ```
 
-Webhook payload:
+Delivery body:
 ```json
 {
-  "event":     "commit.received",
-  "id": "ctx_...",
-  "from":      "dm_abc123",
-  "to":        "dm_xyz789",
-  "eventType": "commit",
-  "verified":  true,
-  "timestamp": "2026-03-22T..."
+  "event":    "commit",
+  "agent_id": "dm_abc123",
+  "id":       "ctx_..."
 }
 ```
 
-Each webhook request includes an `X-DarkMatter-Signature` header (HMAC-SHA256) if you set a webhook secret in the dashboard.
+If you set a secret, each delivery carries
+`X-DarkMatter-Signature: sha256=<hex>`, an HMAC-SHA256 of the exact request
+body using your secret. Recompute it and compare; the secret itself is never
+transmitted.
+
+`GET /api/hooks` lists them, `DELETE /api/hooks/:hookId` removes one, and
+`GET /api/hooks/:hookId/deliveries` shows recent attempts.
 
 ---
 
-### POST /dashboard/agents/:id/retention
+### Retention
 
-Set a retention policy for an agent's commits. Commits older than the policy are deleted automatically each day.
+There is no endpoint that sets retention. It follows the plan, and the
+retention job redacts payloads past the window each day, keeping the hashes so
+the chain still verifies:
 
-```json
-{ "retentionDays": 182 }
-```
+| Plan | Payloads kept |
+| --- | --- |
+| Free | 30 days |
+| Pro | 365 days |
+| Teams, Enterprise | indefinitely |
 
-- Minimum: `182` days (6 months, EU AI Act Article 19 minimum)
-- `null` = keep forever (default, recommended)
-
----
-
-### GET /api/stats
-
-Returns live network statistics. No auth required.
-
-```json
-{ "agents": 6, "commits": 12, "verified": 11, "rejected": 1 }
-```
+An agent can carry its own `retention_days` that overrides the plan, but
+nothing exposes a way to set it, so today it is a database-level override.
 
 ---
 
+### GET /api/workspace/stats
+
+Usage for the signed-in workspace. Requires a session cookie, not an API key.
+There is no unauthenticated statistics endpoint.
+
+---
 ## Event Types
 
 Every commit carries an `eventType` that describes what kind of agent action occurred. This enables rich audit trails for both developer debugging and regulatory compliance.

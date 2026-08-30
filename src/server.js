@@ -1786,11 +1786,19 @@ async function fireEventHooks(agentId, eventType, data) {
     if (!hooks || !hooks.length) return;
     for (const hook of hooks) {
       const hookSecret = hook.secret ? decryptValue(hook.secret) : null;
-      fetch(hook.url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...(hookSecret ? { 'X-Hook-Secret': hookSecret } : {}) },
-        body: JSON.stringify({ event: eventType, agent_id: agentId, ...data }),
-      }).catch(() => {});
+      const body = JSON.stringify({ event: eventType, agent_id: agentId, ...data });
+      // The secret signs the body; it is never sent. This used to go out as
+      // X-Hook-Secret containing the secret itself, in plaintext, on every
+      // delivery, so it travelled through the receiver's proxies and logs and
+      // proved nothing about the body it arrived with. The README already
+      // documented an HMAC, which is what a receiver would code against and
+      // the safer thing, so the code now matches it.
+      const headers = { 'Content-Type': 'application/json' };
+      if (hookSecret) {
+        headers['X-DarkMatter-Signature'] =
+          'sha256=' + crypto.createHmac('sha256', hookSecret).update(body, 'utf8').digest('hex');
+      }
+      fetch(hook.url, { method: 'POST', headers, body }).catch(() => {});
     }
   } catch (_) {}
 }

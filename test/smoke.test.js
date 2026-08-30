@@ -2890,6 +2890,108 @@ test('robots.txt disallows the same paths the sitemap omits', () => {
     'excluded from the sitemap but not disallowed in robots.txt: ' + missing.join(', '));
 });
 
+// 51. The README teaches an API too, and three of its endpoints never existed
+// The check above scans the site for darkmatterhub.ai/api/... URLs. The README
+// writes bare paths, so it was never covered, and it documented three routes
+// with request bodies and response shapes:
+//
+//   POST /dashboard/agents/:id/webhook    the real one is POST /api/hooks
+//   POST /dashboard/agents/:id/retention  nothing sets retention; it follows the plan
+//   GET  /api/stats                       there is no unauthenticated stats route
+//
+// It is the first page a developer reads on GitHub.
+console.log('\nREADME API reference');
+test('every endpoint the README documents has a route', () => {
+  var rd = fs.readFileSync(path.join(ROOT, 'README.md'), 'utf8');
+  var METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
+  var refs = [];
+
+  rd.split(String.fromCharCode(10)).forEach(function (line, i) {
+    var t = line.trim();
+    // "### POST /api/commit" headings
+    if (t.indexOf('### ') === 0) {
+      var rest = t.slice(4).trim().split(' ');
+      if (METHODS.indexOf(rest[0]) !== -1 && rest[1] && rest[1].charAt(0) === '/') {
+        refs.push({ method: rest[0], path: rest[1], line: i + 1 });
+      }
+    }
+    // Inline `POST /api/hooks` mentions
+    METHODS.forEach(function (m) {
+      var needle = '`' + m + ' /';
+      var at = t.indexOf(needle);
+      while (at !== -1) {
+        var close = t.indexOf('`', at + 1);
+        if (close !== -1) {
+          var p = t.slice(at + m.length + 2, close).trim();
+          if (p.charAt(0) === '/') refs.push({ method: m, path: p, line: i + 1 });
+        }
+        at = t.indexOf(needle, at + 1);
+      }
+    });
+  });
+
+  assert(refs.length > 5, 'found only ' + refs.length + ' endpoint references; the extractor broke');
+
+  var missing = refs.filter(function (r) {
+    // Normalise a path parameter to the segment count, then look for a route
+    // whose registered path matches segment by segment. Plain string work, so
+    // there is no pattern here to lose an escape.
+    var want = r.path.split('?')[0].split('/').filter(Boolean);
+    var re = /app\.(get|post|put|patch|delete)\(\s*'([^']+)'/g;
+    var m2, ok = false;
+    while ((m2 = re.exec(server)) !== null) {
+      if (m2[1].toUpperCase() !== r.method) continue;
+      var have = m2[2].split('/').filter(Boolean);
+      if (have.length !== want.length) continue;
+      var same = true;
+      for (var k = 0; k < have.length; k++) {
+        if (have[k].charAt(0) === ':' || want[k].charAt(0) === ':') continue;
+        if (have[k] !== want[k]) { same = false; break; }
+      }
+      if (same) { ok = true; break; }
+    }
+    return !ok;
+  });
+
+  var SEP = String.fromCharCode(10) + '       ';
+  assert(missing.length === 0,
+    'the README documents endpoints that do not exist:' + SEP +
+    missing.map(function (r) { return r.method + ' ' + r.path + ' (line ' + r.line + ')'; }).join(SEP));
+});
+
+// 52. A webhook secret signs the body; it is never sent
+// fireEventHooks put the customer's secret in an X-Hook-Secret header on every
+// delivery. That transmits the secret through the receiver's proxies and logs
+// on every request, and proves nothing about the body it arrived with: anyone
+// who ever saw a delivery could forge one. The README already documented an
+// HMAC over the body, which is what a receiver would code against, so the code
+// now matches the documentation rather than the other way round.
+console.log('\nWebhook delivery');
+test('the delivery signs the body and does not send the secret', () => {
+  var i = server.indexOf('async function fireEventHooks');
+  assert(i !== -1, 'fireEventHooks not found');
+  var block = server.slice(i, i + 2000)
+    .split(String.fromCharCode(10))
+    .filter(function (l) { return l.trim().indexOf('//') !== 0; })
+    .join(String.fromCharCode(10));
+  assert(block.indexOf('X-Hook-Secret') === -1,
+    'the secret is being sent as a header again');
+  assert(block.indexOf('X-DarkMatter-Signature') !== -1,
+    'deliveries must carry an HMAC signature header');
+  assert(/createHmac\('sha256',\s*hookSecret\)/.test(block),
+    'the signature must be HMAC-SHA256 keyed with the customer secret');
+  assert(block.indexOf('.update(body') !== -1,
+    'the HMAC must cover the exact body that is sent, or it proves nothing');
+});
+
+test('the README documents the header the code sends', () => {
+  var rd = fs.readFileSync(path.join(ROOT, 'README.md'), 'utf8');
+  assert(rd.indexOf('X-DarkMatter-Signature') !== -1,
+    'the README must name the signature header receivers should check');
+  assert(rd.indexOf('X-Hook-Secret') === -1,
+    'the README must not teach a header the code no longer sends');
+});
+
 // Also runnable standalone: node test/security.test.js
 (function() {
   var sec = require('./security.test.js').run();
