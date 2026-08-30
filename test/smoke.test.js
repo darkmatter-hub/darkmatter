@@ -3078,6 +3078,73 @@ test('the witness does not treat log position zero as missing', () => {
     'position 0 is falsy, so the first checkpoint of a log would sign the wrong value');
 });
 
+// 55. Shipped example bundles must verify with the shipped verifier
+// examples/ carried three proof bundles in a pre-v3 shape - {readme, metadata,
+// verification, chain} - that the verifier next to them rejects as
+// unrecognised. Someone evaluating the product runs the verifier against the
+// samples sitting beside it and concludes the thing does not work. It also
+// carried chain.json, which was not JSON at all: a saved HTML error page,
+// committed as if it were data.
+console.log('\nExample artifacts');
+
+function examplesDir() { return path.join(ROOT, 'examples'); }
+
+test('every JSON file in examples/ is JSON', () => {
+  var bad = [];
+  fs.readdirSync(examplesDir()).forEach(function (f) {
+    if (!/\.json$/.test(f)) return;
+    var raw = fs.readFileSync(path.join(examplesDir(), f), 'utf8');
+    try { JSON.parse(raw); }
+    catch (e) { bad.push(f + ' (' + raw.trim().slice(0, 30) + '...)'); }
+  });
+  assert(bad.length === 0, 'not parseable as JSON: ' + bad.join(', '));
+});
+
+test('every example bundle is in a shape the verifier accepts', () => {
+  // The verifier takes a passports array, a commits array, or a single record.
+  // A bundle we ship that it rejects is worse than shipping none.
+  var bad = [];
+  fs.readdirSync(examplesDir()).forEach(function (f) {
+    if (!/\.json$/.test(f)) return;
+    var j;
+    try { j = JSON.parse(fs.readFileSync(path.join(examplesDir(), f), 'utf8')); }
+    catch (e) { return; }   // covered by the test above
+    var ok = Array.isArray(j.passports) || Array.isArray(j.commits) ||
+             (j.payload && j.integrity);
+    if (!ok) bad.push(f + ' has keys: ' + Object.keys(j).join(', '));
+  });
+  var SEP = String.fromCharCode(10) + '       ';
+  assert(bad.length === 0,
+    'the shipped verifier rejects a bundle we ship beside it:' + SEP + bad.join(SEP));
+});
+
+test('example scripts the README names exist', () => {
+  var rd = fs.readFileSync(path.join(ROOT, 'README.md'), 'utf8');
+  var missing = [];
+  rd.split(String.fromCharCode(10)).forEach(function (line) {
+    var t = line.trim();
+    if (t.indexOf('python examples/') !== 0) return;
+    var rel = t.slice('python '.length).split(' ')[0];
+    if (!fs.existsSync(path.join(ROOT, rel))) missing.push(rel);
+  });
+  assert(missing.length === 0,
+    'the README tells the reader to run files that are not there: ' + missing.join(', '));
+});
+
+test('the handoff example reads the fields the API returns', () => {
+  // /api/pull answers {agentId, agentName, contexts, count} and each entry is a
+  // Context Passport with created_by, event, payload, integrity. agent_yy.py
+  // read data["commits"] and latest["context"], so it found nothing and would
+  // have raised KeyError if it had.
+  var yy = fs.readFileSync(path.join(examplesDir(), 'agent_yy.py'), 'utf8');
+  assert(yy.indexOf('data.get("commits"') === -1,
+    'the pull response has no commits key; this example finds nothing');
+  assert(yy.indexOf('data.get("contexts"') !== -1,
+    'the example must read contexts from the pull response');
+  assert(yy.indexOf("latest['context']") === -1 && yy.indexOf('latest["context"]') === -1,
+    'a pulled record has payload, not context');
+});
+
 // Also runnable standalone: node test/security.test.js
 (function() {
   var sec = require('./security.test.js').run();

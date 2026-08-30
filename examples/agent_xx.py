@@ -66,7 +66,10 @@ def commit_to_darkmatter(task: str, output: str) -> dict:
         },
         json={
             "toAgentId": AGENT_YY_ID,
-            "context": {
+            # "context" is the legacy field: the server stores it as
+            # {"output": <what you sent>}, so payload.task ends up nested one
+            # level deeper than a reader expects. "payload" is stored as given.
+            "payload": {
                 "task":       task,
                 "output":     output,
                 "next_task":  "Write a concise 3-paragraph executive summary based on this analysis. Start directly with the summary.",

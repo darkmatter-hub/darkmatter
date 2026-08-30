@@ -35,7 +35,9 @@ def pull_from_darkmatter() -> dict | None:
         raise Exception(f"DarkMatter pull error {res.status_code}: {res.text}")
 
     data    = res.json()
-    commits = data.get("commits", [])
+    # /api/pull answers {agentId, agentName, contexts, count}. Reading
+    # "commits" always found nothing, so this script silently did nothing.
+    commits = data.get("contexts", [])
 
     if not commits:
         print("   No context waiting in DarkMatter.")
@@ -44,10 +46,12 @@ def pull_from_darkmatter() -> dict | None:
 
     latest = commits[0]
     print(f"✅ Pulled {len(commits)} commit(s) from DarkMatter")
-    print(f"   From:     {latest['context'].get('from_agent', latest['from'])}")
-    print(f"   Verified: {latest['verified']}")
-    print(f"   Task:     {latest['context'].get('task', 'N/A')[:60]}...")
-    return latest["context"]
+    # A pulled record is a Context Passport: created_by, event, payload,
+    # integrity. There is no "context" key, and reading one raised KeyError.
+    print(f"   From:     {latest['created_by']['agent_name']}")
+    print(f"   Verified: {latest['integrity']['verification_status']}")
+    print(f"   Task:     {latest['payload'].get('task', 'N/A')[:60]}...")
+    return latest["payload"]
 
 
 def run_gpt(context: dict) -> str:

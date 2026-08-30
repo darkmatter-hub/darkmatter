@@ -259,10 +259,10 @@ See [`examples/claude-to-gpt/`](./examples/claude-to-gpt/) for a complete workin
 pip install anthropic openai requests
 
 # Step 1: Claude does analysis and commits
-python examples/claude-to-gpt/agent_xx.py
+python examples/agent_xx.py
 
 # Step 2: GPT pulls and writes summary
-python examples/claude-to-gpt/agent_yy.py
+python examples/agent_yy.py
 ```
 
 The full handoff appears in your [dashboard commit log](https://darkmatterhub.ai/dashboard), you can see exactly what Claude passed to GPT, when, and that it was received.
