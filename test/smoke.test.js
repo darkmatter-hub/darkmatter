@@ -2775,6 +2775,75 @@ test('the variables that change security behaviour say what unset means', () => 
   });
 });
 
+// 49. A sample record cannot show an assurance level no record ever gets
+// The demo receipt read assurance_level: "L2", annotated "hash-chain verified",
+// which is L1's definition. No real commit is ever L2: the commit path assigns
+// L1, or L3 when a client attestation verifies, and nothing revisits a record
+// after a checkpoint covers it. So the only L2 anyone could see was on
+// fabricated demo data, and signup sold "Full L1 - L2 - L3 verification on
+// every plan".
+console.log('\nAssurance levels shown to visitors');
+
+function levelsTheServerAssigns() {
+  // Only assignments to the variable that reaches the stored column.
+  var out = {};
+  var re = /assuranceLevel\s*=\s*'(L[0-9])'/g;
+  var m;
+  while ((m = re.exec(server)) !== null) out[m[1]] = true;
+  return Object.keys(out).sort();
+}
+
+test('the server still assigns only the levels we think it does', () => {
+  var levels = levelsTheServerAssigns();
+  assert(levels.join(',') === 'L1,L3',
+    'the commit path now assigns ' + levels.join(',') + '. If L2 was wired up, ' +
+    'the pages can say so; update this test deliberately.');
+});
+
+test('no page shows a sample record at a level the server never assigns', () => {
+  var assigned = levelsTheServerAssigns();
+  var offenders = [];
+  publicPages().forEach(function (pg) {
+    // Scan the raw file. Stripping tags with <[^>]+> destroys inline script,
+    // because a JavaScript comparison opens a false tag that runs to the next
+    // ">" and swallows everything between - which is exactly where demo.html
+    // keeps its sample receipt, so the first version of this guard read a file
+    // with the L2 removed and passed.
+    var raw = fs.readFileSync(pg.abs, 'utf8');
+    var key = 'assurance_level';
+    var at = raw.indexOf(key);
+    while (at !== -1) {
+      var window_ = raw.slice(at, at + 200);
+      // "c.assurance_level || 'L1'" is code reading the field with a default,
+      // and the levels near it are branches in a colour map. A sample record
+      // assigns a value. Skipping windows with || separates the two; the first
+      // version flagged four of these on the admin dashboard.
+      if (window_.indexOf('||') === -1) {
+        ['L0', 'L1', 'L2', 'L3', 'L4'].forEach(function (lvl) {
+          var shown = window_.indexOf('"' + lvl + '"') !== -1 ||
+                      window_.indexOf("'" + lvl + "'") !== -1 ||
+                      window_.indexOf('>' + lvl + '<') !== -1;
+          if (shown && assigned.indexOf(lvl) === -1) {
+            offenders.push(pg.slug + ' shows assurance_level ' + lvl);
+          }
+        });
+      }
+      at = raw.indexOf(key, at + 1);
+    }
+  });
+  var SEP = String.fromCharCode(10) + '       ';
+  assert(offenders.length === 0,
+    'a sample record advertises an assurance level no commit reaches:' +
+    SEP + offenders.join(SEP));
+});
+
+test('signup does not sell an assurance level that is unreachable', () => {
+  var s = fs.readFileSync(path.join(ROOT, 'public/signup.html'), 'utf8');
+  assert(s.indexOf('L2 &#183; L3 verification on every plan') === -1 &&
+         !/Full L1[^<]*L2[^<]*on every plan/.test(s),
+    'signup lists L2 as included; no commit is ever labelled L2');
+});
+
 // Also runnable standalone: node test/security.test.js
 (function() {
   var sec = require('./security.test.js').run();
