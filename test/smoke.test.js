@@ -2376,6 +2376,9 @@ test('no tracked file names the owner or their personal account', () => {
 console.log('\nNo bundled SDK copies');
 test('the repository contains no SDK source', () => {
   var banned = ['sdk/python', 'sdk/typescript', 'sdk/js', 'sdk/javascript'];
+  // Path checking alone missed src/index.js, a third copy of the JS SDK at
+  // v1.4.0 that the server never required. Look for the thing itself, not for
+  // the places it has happened to live.
   var found = banned.filter(function (rel) {
     return fs.existsSync(path.join(ROOT, rel));
   });
@@ -2383,6 +2386,36 @@ test('the repository contains no SDK source', () => {
     'bundled SDK copy is back: ' + found.join(', ') +
     '. The SDKs live in their own repositories; a copy here drifts and the ' +
     'tests follow the copy instead of what ships.');
+});
+
+test('no file in this repository declares itself the SDK', () => {
+  // The banner an SDK file carries, with a version on it. An example that
+  // merely tells the reader to pip install something is not a copy of the SDK,
+  // and the first version of this flagged examples/complex_pipeline.py for that.
+  var marks = ['DarkMatter JavaScript SDK v', 'DarkMatter Python SDK v', 'DarkMatter TypeScript SDK v'];
+  var SKIP = ['node_modules', '.git', 'private', 'public', 'test', 'examples', 'github-template'];
+  var offenders = [];
+  (function walk(dir) {
+    var entries;
+    try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch (e) { return; }
+    entries.forEach(function (e) {
+      if (SKIP.indexOf(e.name) !== -1) return;
+      var abs = path.join(dir, e.name);
+      if (e.isDirectory()) return walk(abs);
+      if (!/\.(js|py|ts)$/.test(e.name)) return;
+      var text;
+      try { text = fs.readFileSync(abs, 'utf8'); } catch (err) { return; }
+      marks.forEach(function (m) {
+        if (text.indexOf(m) !== -1) {
+          offenders.push(path.relative(ROOT, abs).split(path.sep).join('/'));
+        }
+      });
+    });
+  })(ROOT);
+  var SEP = String.fromCharCode(10) + '       ';
+  assert(offenders.length === 0,
+    'an SDK copy lives in this repository and will drift from the published ' +
+    'one:' + SEP + offenders.join(SEP));
 });
 
 test('the parity test reads the SDK that ships, not a local copy', () => {
@@ -2668,6 +2701,77 @@ test('the schema can be applied to a fresh Supabase project', () => {
   ['OWNER TO', 'CREATE ROLE', 'ALTER DEFAULT PRIVILEGES'].forEach(function (stmt) {
     assert(sql.indexOf(stmt) === -1,
       stmt + ' will not apply on a managed Postgres, so the install stops there');
+  });
+});
+
+// 48. Every environment variable the server reads is documented
+// .env.example listed five variables. src/ reads twenty-six. Four of the
+// missing ones change security behaviour when unset, and nothing anywhere said
+// so:
+//
+//   DM_ENCRYPTION_KEY       webhook secrets and provider keys are written as
+//                           "plain:<secret>" instead of AES-256-GCM, which the
+//                           enterprise page states we do
+//   DM_LOG_SIGNING_KEY_PEM  checkpoints are signed with a key that dies on the
+//                           next restart, so the scheduler refuses to publish
+//   SUPABASE_JWT_SECRET     session tokens
+//   SUPERUSER_EMAIL/_AGENT_ID  who is an admin
+//
+// PRODUCTION.md listed the same five. Anyone self-hosting from our own
+// instructions ran without all four.
+console.log('\nEnvironment documentation');
+
+function envVarsUsed() {
+  var used = {};
+  fs.readdirSync(path.join(ROOT, 'src')).forEach(function (f) {
+    if (!/\.js$/.test(f)) return;
+    var src = fs.readFileSync(path.join(ROOT, 'src', f), 'utf8');
+    var re = /process\.env\.([A-Z_0-9]+)/g;
+    var m;
+    while ((m = re.exec(src)) !== null) used[m[1]] = true;
+  });
+  return Object.keys(used);
+}
+
+function envVarsDocumented() {
+  var doc = fs.readFileSync(path.join(ROOT, '.env.example'), 'utf8');
+  var out = {};
+  doc.split(String.fromCharCode(10)).forEach(function (line) {
+    var t = line.trim();
+    if (!t || t.charAt(0) === '#') return;
+    var eq = t.indexOf('=');
+    if (eq > 0) out[t.slice(0, eq)] = true;
+  });
+  return Object.keys(out);
+}
+
+test('.env.example documents every variable src/ reads', () => {
+  var used = envVarsUsed(), doc = envVarsDocumented();
+  assert(used.length > 20, 'extracted only ' + used.length + ' variables; the extractor broke');
+  var missing = used.filter(function (v) { return doc.indexOf(v) === -1; });
+  var SEP = String.fromCharCode(10) + '       ';
+  assert(missing.length === 0,
+    'the server reads these and nothing documents them, so a self-hosted ' +
+    'deployment silently runs without them:' + SEP + missing.join(SEP));
+});
+
+test('.env.example documents nothing the server stopped reading', () => {
+  var used = envVarsUsed(), doc = envVarsDocumented();
+  var stale = doc.filter(function (v) { return used.indexOf(v) === -1; });
+  assert(stale.length === 0,
+    'documented but read nowhere in src/, so it misleads an operator: ' + stale.join(', '));
+});
+
+test('the variables that change security behaviour say what unset means', () => {
+  var doc = fs.readFileSync(path.join(ROOT, '.env.example'), 'utf8');
+  ['DM_ENCRYPTION_KEY', 'DM_LOG_SIGNING_KEY_PEM'].forEach(function (v) {
+    var at = doc.indexOf(v + '=');
+    assert(at !== -1, v + ' must be documented');
+    // The explanation sits above the assignment.
+    var above = doc.slice(Math.max(0, at - 900), at);
+    assert(/UNSET:/.test(above),
+      v + ' fails open or degrades silently; the file must say what happens ' +
+      'when it is not set');
   });
 });
 

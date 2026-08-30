@@ -58,13 +58,20 @@ pm2 save
 
 ## Environment variables
 
-```bash
-SUPABASE_URL=https://yourproject.supabase.co
-SUPABASE_KEY=your-anon-key
-SUPABASE_SERVICE_KEY=your-service-role-key
-APP_URL=https://your-domain.com
-PORT=3000
-```
+See [.env.example](.env.example). It lists all twenty-six variables `src/`
+reads, and a test fails if the two drift apart. This section used to carry its
+own list of five, which is how a production deployment could run without
+`DM_ENCRYPTION_KEY` and store webhook secrets in plaintext while the
+enterprise page said they were encrypted.
+
+The four that change behaviour by being absent rather than by being wrong:
+
+| Variable | Unset means |
+| --- | --- |
+| `DM_ENCRYPTION_KEY` | webhook secrets and provider keys stored as `plain:<secret>` |
+| `DM_LOG_SIGNING_KEY_PEM` | checkpoints signed with a key that dies on restart, so none are published |
+| `SUPABASE_JWT_SECRET` | session tokens cannot be verified |
+| `SUPERUSER_EMAIL` / `SUPERUSER_AGENT_ID` | nobody can reach the admin views or `/api/admin/*` |
 
 ---
 
