@@ -1346,34 +1346,59 @@ test('every indexable page has a usable title and description', function() {
   assert(problems.length === 0, problems.join('; '));
 });
 
-// /blog/:slug used to fall back to the blog index when the post file was
-// missing, so three links advertised on /blog answered 200 with the wrong page
-// for months. A reader who clicked "Introducing DarkMatter" landed back on the
-// listing with no error. This asserts every /blog/ link on the site resolves to
-// a file that exists, which is the check that would have caught it.
+// /blogs/:slug used to be /blog/:slug and fall back to the blog index when the
+// post file was missing, so three links advertised on /blog answered 200 with
+// the wrong page for months. A reader who clicked "Introducing DarkMatter"
+// landed back on the listing with no error. This asserts every /blogs/ link on
+// the site resolves to a file that exists, which is the check that would have
+// caught it.
 test('no page links to a blog post that does not exist', function() {
   var dead = [];
-  fs.readdirSync(path.join(ROOT, 'public')).forEach(function(f) {
-    if (!/\.html$/.test(f)) return;
-    var html = fs.readFileSync(path.join(ROOT, 'public', f), 'utf8');
-    var re = /href="\/blog\/([a-z0-9-]+)"/g, m;
-    while ((m = re.exec(html)) !== null) {
-      var post = path.join(ROOT, 'public', 'blog-' + m[1] + '.html');
-      if (!fs.existsSync(post)) dead.push(f + ' -> /blog/' + m[1]);
-    }
-  });
+  (function walk(dir) {
+    fs.readdirSync(dir, { withFileTypes: true }).forEach(function(e) {
+      var abs = path.join(dir, e.name);
+      if (e.isDirectory()) return walk(abs);
+      if (!/\.html$/.test(e.name)) return;
+      var html = fs.readFileSync(abs, 'utf8');
+      var re = /href="\/blogs\/([a-z0-9-]+)"/g, m;
+      while ((m = re.exec(html)) !== null) {
+        var post = path.join(ROOT, 'public', 'blogs', m[1] + '.html');
+        if (!fs.existsSync(post)) {
+          dead.push(path.relative(ROOT, abs).split(path.sep).join('/') + ' -> /blogs/' + m[1]);
+        }
+      }
+    });
+  })(path.join(ROOT, 'public'));
   assert(dead.length === 0, 'links to nonexistent posts: ' + dead.join(', '));
 });
 
 test('missing blog posts return 404 rather than the index', function() {
-  var m = server.match(/app\.get\('\/blog\/:slug'[\s\S]*?\n\}\);/);
-  assert(m, '/blog/:slug route not found');
+  var m = server.match(/app\.get\('\/blogs\/:slug'[\s\S]*?\n\}\);/);
+  assert(m, '/blogs/:slug route not found');
   // The fallback specifically, not any 404 in the route. The slug validation
   // above also returns 404, so searching the whole block passed even with the
   // fallback reverted to a bare sendFile: the guard matched a different line
   // than the one it protects.
   assert(/res\.status\(404\)\.sendFile\([^)]*blog\.html/.test(m[0]),
-    '/blog/:slug still answers 200 for posts that do not exist');
+    '/blogs/:slug still answers 200 for posts that do not exist');
+});
+
+test('the old post URLs still redirect', function() {
+  // Both /blog-<slug> and /blog/<slug> were live and indexed before the move to
+  // /blogs/. Dropping either would break inbound links and search results.
+  assert(server.indexOf('blog-([a-z0-9]') !== -1,
+    'no redirect from the old /blog-<slug> URLs');
+  var legacy = server.match(/app\.get\('\/blog\/:slug'[\s\S]*?\n\}\);/);
+  assert(legacy, '/blog/:slug route missing');
+  assert(/redirect\(301/.test(legacy[0]),
+    '/blog/:slug must 301 to /blogs/, not serve or 404');
+});
+
+test('every post file lives under public/blogs', function() {
+  var stray = fs.readdirSync(path.join(ROOT, 'public'))
+    .filter(function(f) { return /^blog-.*\.html$/.test(f); });
+  assert(stray.length === 0,
+    'posts must live in public/blogs/, not at the top level: ' + stray.join(', '));
 });
 
 test('the offline verifier is actually served', function() {
@@ -3150,6 +3175,70 @@ test('the handoff example reads the fields the API returns', () => {
     'the example must read contexts from the pull response');
   assert(yy.indexOf("latest['context']") === -1 && yy.indexOf('latest["context"]') === -1,
     'a pulled record has payload, not context');
+});
+
+// 56. Every page wears the same header and footer
+// The three blog posts each had their own. One used <nav> with ul.nav-links and
+// a circle-and-triangle logo and no footer at all; another used .dm-nav and
+// .dm-footer with a gradient logo. Three different marks for the same company,
+// and two pages with no footer, on the part of the site meant to be read by
+// people deciding whether to trust it.
+console.log('\nShared page shell');
+
+function shellPages() {
+  // Posts and the main marketing pages. App and auth surfaces are excluded:
+  // they are deliberately chromeless.
+  var out = [];
+  var skip = ['admin', 'admindashboard', 'dashboard', 'login', 'signup', 'chat',
+              'chain', 'join', 'reset-password', 'organizations', 'usage', 'verify'];
+  publicPages().forEach(function (pg) {
+    var base = pg.slug.split('/').pop();
+    if (skip.indexOf(base) !== -1) return;
+    out.push(pg);
+  });
+  return out;
+}
+
+test('every blog post uses the site header and footer', () => {
+  var missing = [];
+  publicPages().forEach(function (pg) {
+    if (pg.slug.indexOf('blogs/') !== 0) return;
+    var html = fs.readFileSync(pg.abs, 'utf8');
+    if (html.indexOf('<header class="nav">') === -1) missing.push(pg.slug + ': no site header');
+    if (html.indexOf('<footer') === -1) missing.push(pg.slug + ': no footer');
+    if (html.indexOf('class="wordmark"') === -1) missing.push(pg.slug + ': no wordmark');
+  });
+  var SEP = String.fromCharCode(10) + '       ';
+  assert(missing.length === 0, 'posts not wearing the site shell:' + SEP + missing.join(SEP));
+});
+
+test('no page carries a competing header or logo', () => {
+  // The old markup, by the class names only those variants used.
+  var offenders = [];
+  shellPages().forEach(function (pg) {
+    var html = fs.readFileSync(pg.abs, 'utf8');
+    ['dm-nav', 'dm-footer', 'dm-nav-logo', 'logo-wm'].forEach(function (cls) {
+      if (html.indexOf('class="' + cls) !== -1) offenders.push(pg.slug + ' uses .' + cls);
+    });
+  });
+  var SEP = String.fromCharCode(10) + '       ';
+  assert(offenders.length === 0,
+    'a second header or logo design is back:' + SEP + offenders.join(SEP));
+});
+
+test('the shared shell brings its own link reset', () => {
+  // The main pages reset link decoration globally and the posts do not, so the
+  // wordmark rendered underlined until the shared block carried its own reset.
+  var missing = [];
+  publicPages().forEach(function (pg) {
+    if (pg.slug.indexOf('blogs/') !== 0) return;
+    var html = fs.readFileSync(pg.abs, 'utf8');
+    if (!/\.wordmark[^{]*\{[^}]*text-decoration:\s*none/.test(html)) {
+      missing.push(pg.slug);
+    }
+  });
+  assert(missing.length === 0,
+    'these would render the wordmark underlined: ' + missing.join(', '));
 });
 
 // Also runnable standalone: node test/security.test.js

@@ -1009,30 +1009,38 @@ app.get('/blog', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/blog.html'));
 });
 
-// ── GET /blog/:slug ── individual blog posts
-app.get('/blog/:slug', (req, res) => {
-  const slug     = req.params.slug;
+// ── GET /blogs/:slug ── individual blog posts
+// Posts live under public/blogs/ and are served at /blogs/<slug>. They used to
+// be public/blog-<slug>.html at /blog-<slug>, a flat naming scheme that put
+// posts in the same namespace as every other top-level page.
+app.get('/blogs/:slug', (req, res) => {
+  const slug = req.params.slug;
   // A slug is a filename component. Reject anything that could climb out of
-  // public/ before it reaches the filesystem.
+  // public/blogs/ before it reaches the filesystem.
   if (!/^[a-z0-9][a-z0-9-]*$/.test(slug)) return res.status(404).send('Not found');
 
-  const postFile = path.join(__dirname, '../public', `blog-${slug}.html`);
+  const postFile = path.join(__dirname, '../public/blogs', `${slug}.html`);
   const fs       = require('fs');
   if (fs.existsSync(postFile)) return res.sendFile(postFile);
 
-  // Previously this fell back to the blog index, which meant a URL for a post
-  // that does not exist answered 200 with the wrong page. Three such links were
-  // live on /blog for months: a reader who clicked "Introducing DarkMatter"
-  // silently landed back on the listing, and search engines index that as a
-  // soft 404. Saying "not found" is both truthful and better for the site.
+  // Never fall back to the index. A URL for a post that does not exist used to
+  // answer 200 with the listing, which search engines index as a soft 404 and
+  // which silently swallowed three dead links for months.
   res.status(404).sendFile(path.join(__dirname, '../public/blog.html'));
 });
 
-// ── Direct named blog post routes ────────────────────────────────────────────
-app.get('/blog-what-problems-darkmatter-solves', (req, res) => {
-  res.sendFile(path.join(__dirname, '../public/blog-what-problems-darkmatter-solves.html'));
+// ── Old post URLs ──────────────────────────────────────────────
+// Both shapes were live and indexed: /blog-<slug> and /blog/<slug>. They 301
+// to the new location so nothing that was linked or indexed breaks.
+app.get('/blog/:slug', (req, res) => {
+  const slug = req.params.slug;
+  if (!/^[a-z0-9][a-z0-9-]*$/.test(slug)) return res.status(404).send('Not found');
+  res.redirect(301, `/blogs/${slug}`);
 });
 
+app.get(/^\/blog-([a-z0-9][a-z0-9-]*)$/, (req, res) => {
+  res.redirect(301, `/blogs/${req.params[0]}`);
+});
 // ═══════════════════════════════════════════════════
 // AUTH ROUTES
 // ═══════════════════════════════════════════════════

@@ -15,59 +15,10 @@
 <meta name="twitter:site" content="@darkmatterhub"/>
 <meta name="twitter:title" content="AI compliance posture and independent records | DarkMatter"/>
 <meta name="twitter:description" content="DarkMatter's current compliance posture. Honest about what we have, what's in progress, and what we don't yet have."/>
-<style>/* ── NAV + FOOTER (canonical) ── */
-.dm-nav{
-  position:sticky;top:0;z-index:300;
-  height:60px;background:#fff;border-bottom:1px solid #e5e7eb;
-  display:flex;align-items:center;padding:0 40px;
-}
-.dm-nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none;flex-shrink:0;z-index:1;}
-.dm-nav-name{
-  font-family:'IBM Plex Mono','Courier New',monospace;
-  font-size:17px;font-weight:700;color:#111827;letter-spacing:-0.03em;
-}
-.dm-nav-links{
-  position:absolute;left:50%;transform:translateX(-50%);
-  display:flex;align-items:center;gap:4px;list-style:none;
-}
-.dm-nav-links a{
-  font-size:13.5px;color:#6b7280;padding:5px 10px;border-radius:6px;
-  text-decoration:none;transition:color .12s,background .12s;white-space:nowrap;
-}
-.dm-nav-links a:hover{color:#111827;background:#f3f4f6;}
-.dm-nav-links a.active{color:#111827;font-weight:500;}
-.dm-nav-right{margin-left:auto;display:flex;align-items:center;gap:10px;z-index:1;}
-.dm-nav-icon{
-  display:flex;align-items:center;justify-content:center;
-  width:34px;height:34px;border-radius:7px;color:#6b7280;
-  text-decoration:none;transition:color .12s,background .12s;
-}
-.dm-nav-icon:hover{color:#111827;background:#f3f4f6;}
-.dm-nav-icon svg{width:18px;height:18px;stroke-width:1.6;}
-.dm-nav-cta{
-  font-family:'IBM Plex Mono','Courier New',monospace;
-  font-size:12.5px;font-weight:700;background:#111827;color:#fff;
-  padding:8px 18px;border-radius:7px;text-decoration:none;transition:opacity .15s;
-}
-.dm-nav-cta:hover{opacity:.85;}
+<style>
 @media(max-width:768px){
-  .dm-nav{padding:0 16px;}
-  .dm-nav-links{display:none;}
 }
-.dm-footer{
-  border-top:1px solid #e5e7eb;padding:28px 40px;
-  display:flex;align-items:center;flex-wrap:wrap;gap:16px;
-}
-.dm-footer-brand{display:flex;align-items:center;gap:8px;text-decoration:none;flex-shrink:0;}
-.dm-footer-name{
-  font-family:'IBM Plex Mono','Courier New',monospace;
-  font-size:14px;font-weight:700;color:#111827;letter-spacing:-0.02em;
-}
-.dm-footer-links{display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin-left:auto;}
-.dm-footer-links a{font-size:12.5px;color:#9ca3af;text-decoration:none;padding:3px 8px;transition:color .12s;}
-.dm-footer-links a:hover{color:#374151;}
-.dm-footer-copy{font-size:12px;color:#d1d5db;padding:3px 8px;}
-@media(max-width:768px){.dm-footer{padding:20px 16px;}.dm-footer-links{margin-left:0;}}
+@media(max-width:768px){}
 
 
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap');
@@ -84,18 +35,13 @@
 html{scroll-behavior:smooth;}
 body{font-family:var(--sans);background:var(--paper);color:var(--ink);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased;}
 a{color:inherit;text-decoration:none;}
-nav{position:sticky;top:0;z-index:200;background:rgba(250,250,248,0.96);backdrop-filter:blur(12px);border-bottom:1px solid var(--rule);display:flex;align-items:center;padding:0 48px;height:58px;gap:24px;}
 .dm-logo-svg{width:26px;height:26px;flex-shrink:0;}
 .nav-brand{display:flex;align-items:center;gap:9px;}
 .nav-wordmark{font-family:var(--mono);font-size:17px;font-weight:600;color:var(--ink);letter-spacing:-.02em;}
-.nav-links{display:flex;align-items:center;gap:22px;list-style:none;}
-.nav-links a{font-size:13px;font-weight:500;color:var(--ink-3);}
-.nav-links a:hover{color:var(--ink);}
-.nav-right{margin-left:auto;display:flex;align-items:center;gap:12px;}
 .nav-cta{font-family:var(--mono);font-size:12px;font-weight:600;background:var(--ink);color:var(--paper);padding:6px 14px;border-radius:4px;}
 .nav-cta:hover{opacity:.82;}
 .page{max-width:920px;margin:0 auto;padding:72px 48px 96px;}
-@media(max-width:640px){nav{padding:0 20px;}.page{padding:48px 20px 72px;}}
+@media(max-width:640px){.page{padding:48px 20px 72px;}}
 .eye{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-4);margin-bottom:12px;}
 .h1{font-family:var(--mono);font-size:clamp(24px,3.4vw,40px);font-weight:600;letter-spacing:-.04em;color:var(--ink);line-height:1.1;margin-bottom:14px;}
 .h2{font-family:var(--mono);font-size:20px;font-weight:600;letter-spacing:-.03em;color:var(--ink);margin-bottom:12px;margin-top:52px;}
@@ -131,51 +77,69 @@ footer{border-top:1px solid var(--rule);padding:28px 48px;}
 
 @media(max-width:768px){}
 @media(max-width:768px){}
+  @media(max-width:768px){}
 
-
-  /* ── Footer ────────────────────────────────── */
-  .dm-footer{border-top:1px solid #e5e7eb;padding:40px;display:grid;grid-template-columns:auto 1fr;gap:48px;align-items:start;}
-  .dm-footer-brand{display:flex;align-items:center;gap:8px;text-decoration:none;}
-  .dm-footer-name{font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:700;color:#111827;letter-spacing:-.02em;}
-  .dm-footer-groups{display:flex;gap:48px;flex-wrap:wrap;}
-  .dm-footer-group{display:flex;flex-direction:column;gap:8px;min-width:100px;}
-  .dm-footer-group-label{font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#9ca3af;margin-bottom:4px;}
-  .dm-footer-group a{font-size:13px;color:#6b7280;text-decoration:none;transition:color .12s;}
-  .dm-footer-group a:hover{color:#111827;}
-  .dm-footer-bottom{grid-column:1/-1;display:flex;align-items:center;gap:12px;padding-top:20px;border-top:1px solid #f3f4f6;font-size:12px;color:#9ca3af;}
-  .dm-footer-bottom a{color:#9ca3af;text-decoration:none;}
-  .dm-footer-bottom a:hover{color:#374151;}
-  @media(max-width:768px){.dm-footer{grid-template-columns:1fr;gap:32px;}.dm-footer-groups{gap:32px;}}
+/* Site header and footer, shared with the rest of darkmatterhub.ai.
+   Appended last so these win over any same-named rule above. */
+:root {
+  --foreground: var(--ink);
+  --ink: 220 20% 10%;
+  --signal: 152 64% 34%;
+  --trace-dim: 220 8% 55%;
+  --trace: 220 10% 38%;
+  --void-line: 38 14% 84%;
+  --void: 38 30% 97%;
+}
+/* Nav */
+.nav {position:sticky;top:0;z-index:40;border-bottom:1px solid hsl(var(--void-line));background:hsl(var(--void)/.8);backdrop-filter:blur(8px) }
+.nav-inner {display:flex;height:3.5rem;align-items:center;justify-content:space-between;max-width:80rem;margin:0 auto;padding:0 1.5rem }
+.wordmark {display:flex;align-items:center;gap:.75rem;font-family:'JetBrains Mono',monospace }
+.wordmark .sigil {position:relative;display:inline-flex;height:2rem;width:2rem;align-items:center;justify-content:center }
+.wordmark .name {display:flex;align-items:baseline;gap:1px;line-height:1 }
+.wordmark .name .d {font-size:16px;font-weight:600;letter-spacing:.02em;color:hsl(var(--foreground)) }
+.wordmark .name .m {font-size:16px;font-weight:300;letter-spacing:.02em;color:hsl(var(--trace)) }
+.nav-links {display:none;gap:2rem;align-items:center }
+.nav-links {display:flex }
+.nav-links a {font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:hsl(var(--trace));transition:color .15s }
+.nav-links a:hover {color:hsl(var(--foreground)) }
+.nav-links a.active {color:hsl(var(--foreground)) }
+.nav-cta {display:flex;align-items:center;gap:.5rem }
+.nav-cta .signin {display:none;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:hsl(var(--trace));padding:.5rem .75rem }
+.nav-cta .signin {display:inline-flex }
+.nav-cta .signin:hover {color:hsl(var(--foreground)) }
+.nav-cta .commit {display:inline-flex;align-items:center;gap:.5rem;border:1px solid hsl(var(--signal)/.4);background:hsl(var(--signal)/.1);padding:.5rem .75rem;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:hsl(var(--signal));transition:background .15s }
+.nav-cta .commit:hover {background:hsl(var(--signal)/.2) }
+/* Footer */
+footer {background:hsl(var(--void)) }
+footer .top {max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;grid-template-columns:1fr;gap:2.5rem }
+footer .top {grid-template-columns:repeat(12,1fr) }
+.footer-brand {grid-column:span 5 }
+.footer-brand p {margin-top:1.25rem;max-width:24rem;font-size:13px;color:hsl(var(--trace));line-height:1.6 }
+.footer-col {grid-column:span 2 }
+.footer-col .h {font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:hsl(var(--trace-dim));margin-bottom:1rem }
+.footer-col ul {list-style:none;display:flex;flex-direction:column;gap:.625rem }
+.footer-col a {font-size:13px;color:hsl(var(--trace)) }
+.footer-col a:hover {color:hsl(var(--foreground)) }
+.footer-bottom {border-top:1px solid hsl(var(--void-line)) }
+.footer-bottom .inner {max-width:80rem;margin:0 auto;padding:1.25rem 1.5rem;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:hsl(var(--trace-dim)) }
+.hamburger {display:flex;flex-direction:column;justify-content:center;gap:5px;width:36px;height:36px;cursor:pointer;padding:6px;border:none;background:none;flex-shrink:0 }
+.hamburger {display:none }
+.hamburger span {display:block;height:1.5px;background:hsl(var(--foreground));transition:all .25s }
+.hamburger.open span:nth-child(1) {transform:translateY(6.5px) rotate(45deg) }
+.hamburger.open span:nth-child(2) {opacity:0 }
+.hamburger.open span:nth-child(3) {transform:translateY(-6.5px) rotate(-45deg) }
+/* The main pages reset link decoration globally; this page does not, so the
+   shared header and footer carry their own reset. */
+header.nav a, header.nav a:hover,
+footer a, footer a:hover,
+.wordmark, .wordmark:hover { text-decoration: none; }
 </style>
 </head>
 <body>
-<nav class="dm-nav">
-  <a class="dm-nav-logo" href="/">
-    <svg style="width:28px;height:28px;flex-shrink:0;" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <defs><linearGradient id="dlg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#7C3AED"/><stop offset="55%" stop-color="#2563EB"/><stop offset="100%" stop-color="#0891b2"/></linearGradient></defs>
-      <circle cx="20" cy="20" r="17" stroke="#e5e7eb" stroke-width="0.8" stroke-dasharray="2 3"/>
-      <circle cx="20" cy="20" r="12" stroke="#d1d5db" stroke-width="0.5" opacity="0.6"/>
-      <circle cx="20" cy="5"  r="3.2" fill="#7C3AED" opacity="0.95"/>
-      <circle cx="33" cy="28" r="2.6" fill="#2563EB" opacity="0.95"/>
-      <circle cx="7"  cy="28" r="2.2" fill="#22D3EE" opacity="0.9"/>
-      <line x1="20" y1="8"  x2="31" y2="26" stroke="url(#dlg)" stroke-width="0.6" opacity="0.5"/>
-      <line x1="20" y1="8"  x2="9"  y2="26" stroke="#7C3AED" stroke-width="0.6" opacity="0.4"/>
-      <line x1="30" y1="27" x2="10" y2="27" stroke="#22D3EE" stroke-width="0.6" opacity="0.4"/>
-      <circle cx="20" cy="20" r="2.5" fill="url(#dlg)" opacity="0.6"/>
-    </svg>
-    <span class="dm-nav-name">Dark<span style="background:linear-gradient(90deg,#7C3AED,#2563EB,#0891b2);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Matter</span></span>
-  </a>
-  <ul class="dm-nav-links">
-    <li><a href="/demo">Demo</a></li>
-    <li><a href="/docs">Docs</a></li>
-    <li><a href="/pricing">Pricing</a></li>
-    <li><a href="/integrity">Integrity</a></li>
-  </ul>
-  <div class="dm-nav-right">
-    <a href="/login" class="dm-nav-icon" title="Sign in"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:18px;height:18px;stroke-width:1.6;"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/></svg></a>
-    <a href="/signup" class="dm-nav-cta">Start free</a>
-  </div>
-</nav>
+
+<header class="nav"><div class="nav-inner"><a href="/" class="wordmark" aria-label="DarkMatter"><span class="sigil" aria-hidden="true"><svg viewBox="0 0 32 32" width="32" height="32" fill="none"><circle cx="16" cy="16" r="10" stroke="hsl(var(--foreground))" stroke-opacity="0.45" stroke-width="0.8"/><path d="M 16 6 L 24.66 21 L 7.34 21 Z" stroke="hsl(var(--foreground))" stroke-opacity="0.18" stroke-width="0.5" stroke-dasharray="1 1.5"/><circle cx="16" cy="16" r="0.8" fill="hsl(var(--foreground))" fill-opacity="0.55"/><circle cx="16" cy="6" r="2.1" fill="hsl(var(--signal))"/><circle cx="16" cy="6" r="3.4" stroke="hsl(var(--signal))" stroke-opacity="0.3" stroke-width="0.45"/><circle cx="24.66" cy="21" r="1.5" fill="hsl(var(--foreground))"/><circle cx="7.34" cy="21" r="1.5" fill="hsl(var(--foreground))" fill-opacity="0.85"/></svg></span><span class="name"><span class="d">DARK</span><span class="m">MATTER</span></span></a><nav class="nav-links"><a href="/demo">Demo</a><a href="/docs">Docs</a><a href="/pricing">Pricing</a><a href="/integrity">Integrity</a></nav><div class="nav-cta"><a href="/login" class="signin">Sign in</a><button class="hamburger" id="dm-ham" onclick="dmHam()" aria-label="Menu"><span></span><span></span><span></span></button></div></div></header>
+
+
 
 
 <div class="page">
@@ -253,18 +217,8 @@ footer{border-top:1px solid var(--rule);padding:28px 48px;}
   <p>For security reviews, vendor questionnaires, compliance documentation, or DPA requests: <a href="/cdn-cgi/l/email-protection#017264627473687578416560736a6c60757564736974632f6068" style="color:var(--trust);"><span class="__cf_email__" data-cfemail="c9baacaabcbba0bdb089ada8bba2a4a8bdbdacbba1bcabe7a8a0">[email&#160;protected]</span></a></p>
   <p>For Enterprise procurement discussions: <a href="/enterprise" style="color:var(--trust);">Enterprise page →</a></p>
 </div>
-<footer>
-  <div class="foot">
-    <div class="foot-links">
-      <a href="/demo">Demo</a><a href="/docs">Docs</a><a href="/pricing">Pricing</a>
-      <a href="/security">Security</a><a href="/enterprise">Enterprise</a>
-      <a href="/compliance">Compliance</a><a href="/threat-model">Threat model</a>
-      <a href="/blog">Blog</a>
-      <a href="https://contextpassport.com" target="_blank">Context Passport</a>
-      <a href="https://github.com/darkmatter-hub/darkmatter" target="_blank">GitHub</a>
-    </div>
-    <div class="foot-copy">&copy; 2026 DarkMatter</div>
-  </div>
-</footer>
+
+<footer><div class="top"><div class="footer-brand"><div class="wordmark"><span class="sigil" aria-hidden="true"><svg viewBox="0 0 32 32" width="32" height="32" fill="none"><circle cx="16" cy="16" r="10" stroke="hsl(var(--foreground))" stroke-opacity="0.45" stroke-width="0.8"/><path d="M 16 6 L 24.66 21 L 7.34 21 Z" stroke="hsl(var(--foreground))" stroke-opacity="0.18" stroke-width="0.5" stroke-dasharray="1 1.5"/><circle cx="16" cy="16" r="0.8" fill="hsl(var(--foreground))" fill-opacity="0.55"/><circle cx="16" cy="6" r="2.1" fill="hsl(var(--signal))"/><circle cx="16" cy="6" r="3.4" stroke="hsl(var(--signal))" stroke-opacity="0.3" stroke-width="0.45"/><circle cx="24.66" cy="21" r="1.5" fill="hsl(var(--foreground))"/><circle cx="7.34" cy="21" r="1.5" fill="hsl(var(--foreground))" fill-opacity="0.85"/></svg></span><span class="name"><span class="d">DARK</span><span class="m">MATTER</span></span></div><p>The independent record for AI systems. Sealed at the moment of action. Verifiable by anyone, anywhere.</p></div><div class="footer-col"><div class="h">Product</div><ul><li><a href="/demo">Demo</a></li><li><a href="/docs">Docs</a></li><li><a href="/pricing">Pricing</a></li><li><a href="/integrity">Integrity</a></li></ul></div><div class="footer-col"><div class="h">SDK</div><ul><li><a href="/docs#quickstart">Python</a></li><li><a href="/docs#typescript-sdk">TypeScript</a></li><li><a href="/docs#integrations">Anthropic wrapper</a></li><li><a href="/docs#integrations">OpenAI wrapper</a></li><li><a href="/docs#l3-setup">L3 signing</a></li></ul></div><div class="footer-col"><div class="h">Company</div><ul><li><a href="/">About</a></li><li><a href="/integrity">Security</a></li><li><a href="mailto:hello@darkmatterhub.ai?subject=DarkMatter inquiry">Contact</a></li></ul></div></div><div class="footer-bottom"><div class="inner">&#169; 2026 DarkMatter &nbsp;&#183;&nbsp; <a href="/tos" style="color:inherit;text-decoration:none;opacity:.7;">Terms</a> &nbsp;&#183;&nbsp; <a href="/privacy" style="color:inherit;text-decoration:none;opacity:.7;">Privacy</a></div></div></footer>
+
 </body>
 </html>

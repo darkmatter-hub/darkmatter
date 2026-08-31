@@ -30,16 +30,6 @@
 html { scroll-behavior: smooth; }
 body { font-family: var(--sans); background: var(--bg); color: var(--t0); font-size: 15px; line-height: 1.6; overflow-x: hidden; }
 
-/* NAV */
-nav { position: sticky; top: 0; z-index: 100; background: rgba(255,255,255,0.96); backdrop-filter: blur(12px); border-bottom: 1px solid var(--brd); display: flex; align-items: center; justify-content: space-between; padding: 0 40px; height: 56px; }
-.logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
-.logo-wm { font-family: var(--sans); font-size: 17px; font-weight: 700; letter-spacing: -0.01em; }
-.logo-dark { color: var(--t0); }
-.logo-grad { background: linear-gradient(90deg, var(--purple) 0%, var(--teal) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-.nav-links { display: flex; align-items: center; gap: 28px; list-style: none; }
-.nav-links a { font-size: 13.5px; font-weight: 500; color: var(--t2); text-decoration: none; transition: color .15s; }
-.nav-links a:hover { color: var(--t0); }
-
 /* PAGE HEADER */
 .page-header { max-width: 700px; margin: 0 auto; padding: 56px 40px 40px; }
 .page-eyebrow { font-family: var(--mono); font-size: 10.5px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--t3); margin-bottom: 14px; }
@@ -169,38 +159,73 @@ nav { position: sticky; top: 0; z-index: 100; background: rgba(255,255,255,0.96)
 
 /* RESPONSIVE */
 @media (max-width: 680px) {
-  nav { padding: 0 20px; }
   .page-header { padding: 40px 24px 28px; }
   .verify-main { padding: 0 24px; }
   .upload-zone { padding: 28px 20px; }
 }
+
+/* Site header and footer, shared with the rest of darkmatterhub.ai.
+   Appended last so these win over any same-named rule above. */
+:root {
+  --foreground: var(--ink);
+  --ink: 220 20% 10%;
+  --signal: 152 64% 34%;
+  --trace-dim: 220 8% 55%;
+  --trace: 220 10% 38%;
+  --void-line: 38 14% 84%;
+  --void: 38 30% 97%;
+}
+/* Nav */
+.nav {position:sticky;top:0;z-index:40;border-bottom:1px solid hsl(var(--void-line));background:hsl(var(--void)/.8);backdrop-filter:blur(8px) }
+.nav-inner {display:flex;height:3.5rem;align-items:center;justify-content:space-between;max-width:80rem;margin:0 auto;padding:0 1.5rem }
+.wordmark {display:flex;align-items:center;gap:.75rem;font-family:'JetBrains Mono',monospace }
+.wordmark .sigil {position:relative;display:inline-flex;height:2rem;width:2rem;align-items:center;justify-content:center }
+.wordmark .name {display:flex;align-items:baseline;gap:1px;line-height:1 }
+.wordmark .name .d {font-size:16px;font-weight:600;letter-spacing:.02em;color:hsl(var(--foreground)) }
+.wordmark .name .m {font-size:16px;font-weight:300;letter-spacing:.02em;color:hsl(var(--trace)) }
+.nav-links {display:none;gap:2rem;align-items:center }
+.nav-links {display:flex }
+.nav-links a {font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:hsl(var(--trace));transition:color .15s }
+.nav-links a:hover {color:hsl(var(--foreground)) }
+.nav-links a.active {color:hsl(var(--foreground)) }
+.nav-cta {display:flex;align-items:center;gap:.5rem }
+.nav-cta .signin {display:none;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:hsl(var(--trace));padding:.5rem .75rem }
+.nav-cta .signin {display:inline-flex }
+.nav-cta .signin:hover {color:hsl(var(--foreground)) }
+.nav-cta .commit {display:inline-flex;align-items:center;gap:.5rem;border:1px solid hsl(var(--signal)/.4);background:hsl(var(--signal)/.1);padding:.5rem .75rem;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:hsl(var(--signal));transition:background .15s }
+.nav-cta .commit:hover {background:hsl(var(--signal)/.2) }
+/* Footer */
+footer {background:hsl(var(--void)) }
+footer .top {max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;grid-template-columns:1fr;gap:2.5rem }
+footer .top {grid-template-columns:repeat(12,1fr) }
+.footer-brand {grid-column:span 5 }
+.footer-brand p {margin-top:1.25rem;max-width:24rem;font-size:13px;color:hsl(var(--trace));line-height:1.6 }
+.footer-col {grid-column:span 2 }
+.footer-col .h {font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:hsl(var(--trace-dim));margin-bottom:1rem }
+.footer-col ul {list-style:none;display:flex;flex-direction:column;gap:.625rem }
+.footer-col a {font-size:13px;color:hsl(var(--trace)) }
+.footer-col a:hover {color:hsl(var(--foreground)) }
+.footer-bottom {border-top:1px solid hsl(var(--void-line)) }
+.footer-bottom .inner {max-width:80rem;margin:0 auto;padding:1.25rem 1.5rem;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:hsl(var(--trace-dim)) }
+.hamburger {display:flex;flex-direction:column;justify-content:center;gap:5px;width:36px;height:36px;cursor:pointer;padding:6px;border:none;background:none;flex-shrink:0 }
+.hamburger {display:none }
+.hamburger span {display:block;height:1.5px;background:hsl(var(--foreground));transition:all .25s }
+.hamburger.open span:nth-child(1) {transform:translateY(6.5px) rotate(45deg) }
+.hamburger.open span:nth-child(2) {opacity:0 }
+.hamburger.open span:nth-child(3) {transform:translateY(-6.5px) rotate(-45deg) }
+/* The main pages reset link decoration globally; this page does not, so the
+   shared header and footer carry their own reset. */
+header.nav a, header.nav a:hover,
+footer a, footer a:hover,
+.wordmark, .wordmark:hover { text-decoration: none; }
 </style>
 </head>
 <body>
 
-<nav>
-  <a href="/" class="logo">
-    <svg width="28" height="28" viewBox="0 0 80 80" fill="none">
-      <circle cx="40" cy="40" r="34" stroke="#c4bce8" stroke-width="1.4" stroke-dasharray="4 3"/>
-      <line x1="40" y1="13" x2="16" y2="55" stroke="#b0c8e8" stroke-width="1.8"/>
-      <line x1="40" y1="13" x2="64" y2="55" stroke="#b0c8e8" stroke-width="1.8"/>
-      <line x1="16" y1="55" x2="64" y2="55" stroke="#7edce8" stroke-width="1.8"/>
-      <circle cx="40" cy="13" r="6" fill="#6b4fbb"/>
-      <circle cx="16" cy="55" r="5" fill="#4ab8c8"/>
-      <circle cx="64" cy="55" r="5" fill="#3d6fd4"/>
-    </svg>
-    <span class="logo-wm"><span class="logo-dark">Dark</span><span class="logo-grad">Matter</span></span>
-  </a>
-  <ul class="nav-links">
-    <li><a href="/demo">Demo</a></li>
-    <li><a href="/docs">Docs</a></li>
-    <li><a href="/pricing">Pricing</a></li>
-    <li><a href="/integrity">Integrity</a></li>
-  </ul>
-  <a href="/login" aria-label="Account" style="display:flex;align-items:center;color:var(--t2);transition:color .15s;" onmouseover="this.style.color='var(--t0)'" onmouseout="this.style.color='var(--t2)'">
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
-  </a>
-</nav>
+<header class="nav"><div class="nav-inner"><a href="/" class="wordmark" aria-label="DarkMatter"><span class="sigil" aria-hidden="true"><svg viewBox="0 0 32 32" width="32" height="32" fill="none"><circle cx="16" cy="16" r="10" stroke="hsl(var(--foreground))" stroke-opacity="0.45" stroke-width="0.8"/><path d="M 16 6 L 24.66 21 L 7.34 21 Z" stroke="hsl(var(--foreground))" stroke-opacity="0.18" stroke-width="0.5" stroke-dasharray="1 1.5"/><circle cx="16" cy="16" r="0.8" fill="hsl(var(--foreground))" fill-opacity="0.55"/><circle cx="16" cy="6" r="2.1" fill="hsl(var(--signal))"/><circle cx="16" cy="6" r="3.4" stroke="hsl(var(--signal))" stroke-opacity="0.3" stroke-width="0.45"/><circle cx="24.66" cy="21" r="1.5" fill="hsl(var(--foreground))"/><circle cx="7.34" cy="21" r="1.5" fill="hsl(var(--foreground))" fill-opacity="0.85"/></svg></span><span class="name"><span class="d">DARK</span><span class="m">MATTER</span></span></a><nav class="nav-links"><a href="/demo">Demo</a><a href="/docs">Docs</a><a href="/pricing">Pricing</a><a href="/integrity">Integrity</a></nav><div class="nav-cta"><a href="/login" class="signin">Sign in</a><button class="hamburger" id="dm-ham" onclick="dmHam()" aria-label="Menu"><span></span><span></span><span></span></button></div></div></header>
+
+
+
 
 <div class="page-header">
   <div class="page-eyebrow">Independent verification</div>
@@ -936,6 +961,8 @@ function renderMultiResults(results) {
   }, 100 + results.length * 120);
 }
 </script>
+
+<footer><div class="top"><div class="footer-brand"><div class="wordmark"><span class="sigil" aria-hidden="true"><svg viewBox="0 0 32 32" width="32" height="32" fill="none"><circle cx="16" cy="16" r="10" stroke="hsl(var(--foreground))" stroke-opacity="0.45" stroke-width="0.8"/><path d="M 16 6 L 24.66 21 L 7.34 21 Z" stroke="hsl(var(--foreground))" stroke-opacity="0.18" stroke-width="0.5" stroke-dasharray="1 1.5"/><circle cx="16" cy="16" r="0.8" fill="hsl(var(--foreground))" fill-opacity="0.55"/><circle cx="16" cy="6" r="2.1" fill="hsl(var(--signal))"/><circle cx="16" cy="6" r="3.4" stroke="hsl(var(--signal))" stroke-opacity="0.3" stroke-width="0.45"/><circle cx="24.66" cy="21" r="1.5" fill="hsl(var(--foreground))"/><circle cx="7.34" cy="21" r="1.5" fill="hsl(var(--foreground))" fill-opacity="0.85"/></svg></span><span class="name"><span class="d">DARK</span><span class="m">MATTER</span></span></div><p>The independent record for AI systems. Sealed at the moment of action. Verifiable by anyone, anywhere.</p></div><div class="footer-col"><div class="h">Product</div><ul><li><a href="/demo">Demo</a></li><li><a href="/docs">Docs</a></li><li><a href="/pricing">Pricing</a></li><li><a href="/integrity">Integrity</a></li></ul></div><div class="footer-col"><div class="h">SDK</div><ul><li><a href="/docs#quickstart">Python</a></li><li><a href="/docs#typescript-sdk">TypeScript</a></li><li><a href="/docs#integrations">Anthropic wrapper</a></li><li><a href="/docs#integrations">OpenAI wrapper</a></li><li><a href="/docs#l3-setup">L3 signing</a></li></ul></div><div class="footer-col"><div class="h">Company</div><ul><li><a href="/">About</a></li><li><a href="/integrity">Security</a></li><li><a href="mailto:hello@darkmatterhub.ai?subject=DarkMatter inquiry">Contact</a></li></ul></div></div><div class="footer-bottom"><div class="inner">&#169; 2026 DarkMatter &nbsp;&#183;&nbsp; <a href="/tos" style="color:inherit;text-decoration:none;opacity:.7;">Terms</a> &nbsp;&#183;&nbsp; <a href="/privacy" style="color:inherit;text-decoration:none;opacity:.7;">Privacy</a></div></div></footer>
 
 </body>
 </html>
