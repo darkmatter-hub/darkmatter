@@ -257,6 +257,10 @@ body{font-family:var(--sans);background:var(--bg);color:var(--t0);display:flex;f
         <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
         <span>Funnel &amp; retention</span>
       </button>
+      <button class="sb-item" data-pane="p-channels">
+        <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10"/><path d="M10 20V4"/><path d="M16 20v-7"/><path d="M22 20H2"/></svg>
+        <span>Channels &amp; downloads</span>
+      </button>
     </div>
   </div>
 
@@ -563,6 +567,29 @@ body{font-family:var(--sans);background:var(--bg);color:var(--t0);display:flex;f
     </div>
 
     <!-- ── GROWTH ─────────────────────────────────────────────────────── -->
+    <!-- CHANNELS -->
+    <div class="pane" id="p-channels">
+      <div class="pane-header">
+        <div><div class="pane-title">Channels &amp; downloads</div><div class="pane-sub">Where people arrive from, and what they take away</div></div>
+        <div id="ch-updated" style="font-family:var(--mono);font-size:11px;color:var(--t3);"></div>
+      </div>
+
+      <div class="slbl">Referrals, last 30 days</div>
+      <div style="border:1px solid var(--brd);padding:20px;" id="ch-referrals">
+        <div style="font-family:var(--mono);font-size:11px;color:var(--t3);">Loading</div>
+      </div>
+
+      <div class="slbl" style="margin-top:24px;">Downloads, last 30 days</div>
+      <div style="border:1px solid var(--brd);padding:20px;" id="ch-downloads">
+        <div style="font-family:var(--mono);font-size:11px;color:var(--t3);">Loading</div>
+      </div>
+
+      <div class="slbl" style="margin-top:24px;">Package installs</div>
+      <div style="border:1px solid var(--brd);padding:20px;" id="ch-packages">
+        <div style="font-family:var(--mono);font-size:11px;color:var(--t3);">Loading</div>
+      </div>
+    </div>
+
     <div class="pane" id="p-growth">
       <div class="pane-header">
         <div><div class="pane-title">Funnel &amp; retention</div><div class="pane-sub">Activation and usage metrics</div></div>
@@ -690,6 +717,7 @@ document.querySelectorAll('.sb-item[data-pane]').forEach(btn => {
       'p-commits': loadCommits,
       'p-keys':    loadKeys,
       'p-growth':  loadGrowth,
+      'p-channels': loadChannels,
       'p-system':  pingSystem,
       'p-flags':   loadFlags,
       'p-auditlog': loadAuditLog,
@@ -1079,6 +1107,68 @@ async function loadKeys() {
 }
 
 // ── Growth ────────────────────────────────────────────────────────────────────
+// ── Channels & downloads ──────────────────────────────────────────────────────
+// Referrals, file downloads and package installs, which existed in three
+// different places and were never shown together. Package counts come from npm
+// and PyPI, so each says where it came from and when; a failed call reads
+// "unavailable" rather than zero, because zero is a claim.
+async function loadChannels() {
+  const el = id => document.getElementById(id);
+  const d = await fetch('/api/admin/channels', { headers: authH() })
+    .then(r => r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)))
+    .catch(e => ({ _error: e.message }));
+
+  if (d._error) {
+    el('ch-referrals').innerHTML = '<div style="font-family:var(--mono);font-size:11px;color:var(--t3);">Could not load: ' + d._error + '</div>';
+    return;
+  }
+
+  const bars = (obj, sub, empty) => {
+    const rows = Object.entries(obj || {}).sort((a, b) => b[1] - a[1]);
+    if (!rows.length) return '<div style="font-family:var(--mono);font-size:11px;color:var(--t3);">' + empty + '</div>';
+    const max = rows[0][1] || 1;
+    return rows.map(([k, n]) => {
+      const pct = Math.max(2, Math.round((n / max) * 100));
+      const recent = (sub && sub[k]) || 0;
+      return '<div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">'
+        + '<div style="font-family:var(--mono);font-size:11px;width:130px;flex-shrink:0;">' + k + '</div>'
+        + '<div style="flex:1;background:var(--bg-1);height:14px;position:relative;">'
+        + '<div style="width:' + pct + '%;background:var(--t0);height:14px;opacity:.75;"></div></div>'
+        + '<div style="font-family:var(--mono);font-size:11px;width:96px;text-align:right;flex-shrink:0;">'
+        + n + '<span style="color:var(--t3);"> / ' + recent + ' in 7d</span></div>'
+        + '</div>';
+    }).join('');
+  };
+
+  el('ch-referrals').innerHTML =
+    bars(d.referrals && d.referrals.last_30d, d.referrals && d.referrals.last_7d, 'No referral clicks recorded.')
+    + '<div style="font-family:var(--mono);font-size:10px;color:var(--t3);margin-top:12px;">'
+    + (d.referrals && d.referrals.note || '') + '. Signups: '
+    + (d.signups ? d.signups.last_7d + ' in 7d, ' + d.signups.last_30d + ' in 30d, ' + d.signups.total + ' total' : 'unavailable')
+    + '</div>';
+
+  el('ch-downloads').innerHTML =
+    bars(d.downloads && d.downloads.last_30d, d.downloads && d.downloads.last_7d,
+         'Nothing fetched yet. dl-verifier and dl-witness appear here once someone downloads them.')
+    + '<div style="font-family:var(--mono);font-size:10px;color:var(--t3);margin-top:12px;">'
+    + (d.downloads && d.downloads.note || '') + '</div>';
+
+  const pkgs = Object.entries((d.packages) || {});
+  el('ch-packages').innerHTML = (pkgs.length ? pkgs.map(([name, p]) => {
+    const val = p.weekly == null
+      ? '<span style="color:var(--t3);">unavailable (' + (p.unavailable || 'unknown') + ')</span>'
+      : p.weekly + '<span style="color:var(--t3);"> / week</span>';
+    return '<div style="display:flex;justify-content:space-between;gap:12px;margin-bottom:10px;font-family:var(--mono);font-size:11px;">'
+      + '<div>' + name + '<span style="color:var(--t3);"> · ' + p.registry + '</span></div>'
+      + '<div style="text-align:right;">' + val + '</div></div>';
+  }).join('') : '<div style="font-family:var(--mono);font-size:11px;color:var(--t3);">No package data.</div>')
+    + '<div style="font-family:var(--mono);font-size:10px;color:var(--t3);margin-top:12px;">'
+    + 'Fetched from the registries' + (d.fetched_at ? ' at ' + new Date(d.fetched_at).toLocaleString() : '')
+    + ', cached for six hours.</div>';
+
+  el('ch-updated').textContent = 'Updated ' + new Date().toLocaleTimeString();
+}
+
 async function loadGrowth() {
   // Funnel from usage stats
   if (_usage?.total_commits) {

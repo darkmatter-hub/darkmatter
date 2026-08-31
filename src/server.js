@@ -500,7 +500,30 @@ app.get('/sitemap.xml', (_req, res) => {
 // Claude integration page all tell the reader to run this script. It was never
 // served: every one of those instructions ended at a 404, which is a poor way
 // to support a product whose central claim is that you can check it yourself.
-app.get('/verify_darkmatter_chain.py', (_req, res) => {
+
+// ── Download attribution ──────────────────────────────────────────────────────
+// The two files we tell people to run - the offline verifier and the reference
+// witness server - were served with no way to know whether anyone ever fetched
+// them. Recorded in click_events beside the /go/:source clicks so one query
+// answers "which channel is being used", with downloads counted as a channel.
+//
+// Fire and forget, exactly like /go: a logging failure must never reach the
+// visitor or delay the file.
+function recordDownload(source, req) {
+  supabaseService
+    .from('click_events')
+    .insert({
+      source,
+      path:       req.path,
+      user_agent: (req.get('user-agent') || '').slice(0, 300),
+      referer:    (req.get('referer')    || '').slice(0, 300),
+    })
+    .then(({ error }) => { if (error) console.error('[download] insert failed:', error.message); })
+    .catch(e => console.error('[download] insert threw:', e.message));
+}
+
+app.get('/verify_darkmatter_chain.py', (req, res) => {
+  recordDownload('dl-verifier', req);
   res.setHeader('Content-Type', 'text/plain; charset=utf-8');
   res.setHeader('Cache-Control', 'public, max-age=3600');
   res.sendFile(path.join(__dirname, '../examples/verify_darkmatter_chain.py'));
@@ -512,7 +535,8 @@ app.get('/verify_darkmatter_chain.py', (_req, res) => {
 // thing that turns L2 from a second signature by us into corroboration by
 // somebody else, and it sat in github-template/ referenced by nothing and
 // served from nowhere, so nobody could have run one if they wanted to.
-app.get('/darkmatter_witness_server.py', (_req, res) => {
+app.get('/darkmatter_witness_server.py', (req, res) => {
+  recordDownload('dl-witness', req);
   res.setHeader('Content-Type', 'text/plain; charset=utf-8');
   res.setHeader('Cache-Control', 'public, max-age=3600');
   res.sendFile(path.join(__dirname, '../github-template/darkmatter_witness_server.py'));
@@ -7170,7 +7194,11 @@ app.get('/api/user/me', requireAuth, (req, res) => {
   // Return only the fields the client actually needs — never the full Supabase
   // user object (which includes app_metadata, identities, etc.)
   const u = req.user;
-  res.json({ user: { id: u.id, email: u.email, created_at: u.created_at } });
+  // is_admin so the dashboard can offer the admin link without the browser
+  // deciding who is an admin. SUPERUSER_EMAIL is the only authority, and it
+  // stays on the server; this is the answer, not the list.
+  res.json({ user: { id: u.id, email: u.email, created_at: u.created_at,
+                     is_admin: isAdminEmail(u.email) } });
 });
 
 // ── Static file serving ──────────────────────────────────────────────── v2
@@ -7228,13 +7256,124 @@ app.get('/admin/stats', requireAuth, async (req, res) => {
   }
 });
 
-// ── GET /admin — serve admin panel ────────────────────────────────────────
-app.get('/admin', requireAuth, (req, res) => {
-  res.sendFile(require('path').join(__dirname, '../public/admin.html'));
-});
+// ── GET /admin — retired ──────────────────────────────────────────────────
+// The old admin panel is gone; /admindashboard replaced it. Redirected rather
+// than 404'd because the URL was bookmarked.
+app.get('/admin', (req, res) => res.redirect(301, '/admindashboard'));
 
 
 // ── GET /api/workspace/stats/usage — admin KPI endpoint ──────────────────────
+
+// ── GET /api/admin/channels ───────────────────────────────────────────────────
+// One answer to "which channel is being used". Three things that were each
+// recorded or available somewhere and never shown together:
+//
+//   clicks     /go/:source attribution, already in click_events, but only ever
+//              rendered into the emailed growth report
+//   downloads  the verifier and the witness server, which nobody was counting
+//   packages   npm and PyPI, which we had never asked
+//
+// Package counts come from third parties, so each carries where it came from
+// and when it was fetched, and says so plainly when the call failed rather than
+// showing a stale number as if it were current.
+const PKG_CACHE = { at: 0, data: null };
+const PKG_TTL_MS = 6 * 60 * 60 * 1000;
+
+function fetchJson(url, timeoutMs) {
+  return new Promise((resolve) => {
+    const req = require('https').get(url, {
+      headers: { 'User-Agent': 'darkmatter-admin (+https://darkmatterhub.ai)' },
+    }, (r) => {
+      let body = '';
+      r.on('data', d => body += d);
+      r.on('end', () => {
+        if (r.statusCode !== 200) return resolve({ error: `HTTP ${r.statusCode}` });
+        try { resolve({ data: JSON.parse(body) }); }
+        catch (e) { resolve({ error: 'unparseable response' }); }
+      });
+    });
+    req.on('error', e => resolve({ error: e.message }));
+    req.setTimeout(timeoutMs || 4000, () => { req.destroy(); resolve({ error: 'timeout' }); });
+  });
+}
+
+async function packageDownloads() {
+  if (PKG_CACHE.data && Date.now() - PKG_CACHE.at < PKG_TTL_MS) return PKG_CACHE.data;
+
+  const npm = async (name) => {
+    const r = await fetchJson('https://api.npmjs.org/downloads/point/last-week/' + encodeURIComponent(name));
+    return r.error
+      ? { weekly: null, registry: 'npm', unavailable: r.error }
+      : { weekly: r.data.downloads, registry: 'npm', window: `${r.data.start} to ${r.data.end}` };
+  };
+  // pypistats rate limits aggressively and has no key, so this is the one most
+  // likely to come back unavailable. It says so rather than reporting zero.
+  const pypi = async (name) => {
+    const r = await fetchJson('https://pypistats.org/api/packages/' + encodeURIComponent(name) + '/recent');
+    return r.error || !r.data || !r.data.data
+      ? { weekly: null, registry: 'pypi', unavailable: r.error || 'unexpected response' }
+      : { weekly: r.data.data.last_week, registry: 'pypi', window: 'last 7 days' };
+  };
+
+  const [js, mcp, py] = await Promise.all([
+    npm('darkmatter-js'), npm('@darkmatterhub/mcp-server'), pypi('darkmatter-sdk'),
+  ]);
+  const out = { fetched_at: new Date().toISOString(), packages: {
+    'darkmatter-js': js, '@darkmatterhub/mcp-server': mcp, 'darkmatter-sdk': py } };
+  PKG_CACHE.at = Date.now();
+  PKG_CACHE.data = out;
+  return out;
+}
+
+app.get('/api/admin/channels', requireAuth, async (req, res) => {
+  if (!isAdminEmail(req.user.email)) return res.status(403).json({ error: 'Admin only' });
+  try {
+    const since = d => new Date(Date.now() - d * 86400000).toISOString();
+
+    const { data: events } = await supabaseService
+      .from('click_events').select('source, user_agent, created_at').gt('created_at', since(30));
+    const rows = events || [];
+
+    // Bots inflate everything. The same judgement the growth report uses.
+    const human = rows.filter(e => isBrowser(e.user_agent));
+    const tally = (list, pred) => {
+      const out = {};
+      for (const e of list) if (!pred || pred(e)) out[e.source] = (out[e.source] || 0) + 1;
+      return out;
+    };
+    const isDownload = e => String(e.source || '').startsWith('dl-');
+
+    // Downloads are counted from every client, not just browsers: a verifier
+    // fetched by curl or a CI job is the most interesting kind of download.
+    const downloads30 = tally(rows.filter(isDownload));
+    const downloads7  = tally(rows.filter(e => isDownload(e) && e.created_at > since(7)));
+
+    const referrals30 = tally(human.filter(e => !isDownload(e)));
+    const referrals7  = tally(human.filter(e => !isDownload(e) && e.created_at > since(7)));
+
+    let signups = { last_7d: null, last_30d: null, total: null };
+    try {
+      const { data: u } = await supabaseService.auth.admin.listUsers({ page: 1, perPage: 1000 });
+      const real = (u?.users || []).filter(x => !isProbeEmail(x.email));
+      signups = {
+        total:    real.length,
+        last_7d:  real.filter(x => x.created_at > since(7)).length,
+        last_30d: real.filter(x => x.created_at > since(30)).length,
+      };
+    } catch (e) { console.error('[channels] listUsers failed:', e.message); }
+
+    res.json({
+      window_days: 30,
+      referrals: { last_7d: referrals7, last_30d: referrals30, note: 'browser user agents only' },
+      downloads: { last_7d: downloads7, last_30d: downloads30, note: 'all clients, including curl and CI' },
+      signups,
+      ...(await packageDownloads()),
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.get('/api/workspace/stats/usage', requireAuth, async (req, res) => {
   try {
     // Admin only — same check as /admin/stats

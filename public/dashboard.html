@@ -1055,6 +1055,13 @@ window._dmAuthPromise = fetch('/api/user/me')
     return r.json().then(function(d) {
       window._dmUser = d.user;
       document.body.style.visibility = '';
+      // The server decides who is an admin; this only reveals the entry point.
+      if (d.user && d.user.is_admin) {
+        var lk = document.getElementById('admin-menu-link');
+        var dv = document.getElementById('admin-menu-divider');
+        if (lk) lk.style.display = '';
+        if (dv) dv.style.display = '';
+      }
       return d.user;
     });
   })
@@ -1141,6 +1148,13 @@ window._dmAuthPromise = fetch('/api/user/me')
     <a class="user-menu-item" href="https://github.com/darkmatter-hub/darkmatter-feedback" target="_blank">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
       Feedback
+    </a>
+    <!-- Admin only. Hidden by default and revealed from /api/user/me is_admin,
+         so the browser never holds the list of who counts as an admin. -->
+    <div class="user-menu-divider" id="admin-menu-divider" style="display:none;"></div>
+    <a class="user-menu-item" id="admin-menu-link" href="/admindashboard" style="display:none;">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      Admin dashboard
     </a>
     <div class="user-menu-divider"></div>
     <a class="user-menu-item user-menu-danger" onclick="signOut()">
@@ -3708,9 +3722,9 @@ function getYouLabel() {
   return 'YOU';
 }
 
-// ── Admin check ───────────────────────────────────────────────────────────────
-const ADMIN_EMAILS = ['hello@darkmatterhub.ai'];
-function isAdminEmail(email) { return ADMIN_EMAILS.includes((email||'').toLowerCase()); }
+// The admin check lives on the server. /api/user/me answers is_admin, derived
+// from SUPERUSER_EMAIL, so the list never reaches the browser. There used to
+// be a copy of it here, in a function nothing called.
 
 // ── refreshWorkspaceStats — callable stats refresh ───────────────────────────
 async function refreshWorkspaceStats() {

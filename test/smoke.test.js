@@ -1959,17 +1959,21 @@ test('no page claims witness independence while none is registered', () => {
 test('pages that mention witnesses say who operates them', () => {
   if (independentWitnesses) return;
   var offenders = [];
-  fs.readdirSync(path.join(ROOT, 'public'))
-    .filter(function(f) { return f.endsWith('.html'); })
-    .forEach(function(f) {
-      var text = fs.readFileSync(path.join(ROOT, 'public', f), 'utf8');
-      if (!/witness/i.test(text)) return;
-      // Saying "co-signed by witnesses" without saying they are ours invites
-      // exactly the reading the wording above made explicit.
-      if (!/operated by DarkMatter|run by DarkMatter/i.test(text)) {
-        offenders.push(f);
-      }
-    });
+  // Indexable pages only. This is about what a reader is told, and the admin
+  // dashboard is not a reader: it labels a download counter "dl-witness", which
+  // is a column heading rather than a claim about who co-signs anything.
+  var internal = sitemapExcluded();
+  publicPages().forEach(function (pg) {
+    var base = pg.slug.split('/').pop();
+    if (internal.indexOf(base) !== -1) return;
+    var text = fs.readFileSync(pg.abs, 'utf8');
+    if (!/witness/i.test(text)) return;
+    // Saying "co-signed by witnesses" without saying they are ours invites
+    // exactly the reading the wording above made explicit.
+    if (!/operated by DarkMatter|run by DarkMatter/i.test(text)) {
+      offenders.push(pg.slug);
+    }
+  });
   assert(offenders.length === 0,
     'mentions witnesses without disclosing that DarkMatter operates them: ' +
     offenders.join(', '));
@@ -3239,6 +3243,79 @@ test('the shared shell brings its own link reset', () => {
   });
   assert(missing.length === 0,
     'these would render the wordmark underlined: ' + missing.join(', '));
+});
+
+// 57. Admin surfaces: one panel, gated data, and no email list in the browser
+console.log('\nAdmin surfaces');
+
+test('the retired admin panel is gone', () => {
+  assert(!fs.existsSync(path.join(ROOT, 'public/admin.html')),
+    'admin.html is back; /admindashboard replaced it');
+  var i = server.indexOf("app.get('/admin'");
+  assert(i !== -1, '/admin should still answer, as a redirect');
+  var line = server.slice(i, server.indexOf(String.fromCharCode(10), i));
+  assert(line.indexOf('redirect') !== -1,
+    '/admin must redirect to /admindashboard, not serve a page');
+});
+
+test('every admin endpoint checks the caller is an admin', () => {
+  // requireAuth only proves a session. Admin data needs the email check too,
+  // and a new endpoint added without it would hand workspace-wide numbers to
+  // any signed-in user. Scanned with indexOf rather than a pattern: the first
+  // version used a regex whose newline escape did not survive being written,
+  // so it matched no routes at all and passed with a check deleted.
+  var missing = [];
+  var needles = ["app.get('/api/admin/", "app.post('/api/admin/", "app.get('/admin/stats'"];
+  needles.forEach(function (needle) {
+    var at = server.indexOf(needle);
+    while (at !== -1) {
+      var close = server.indexOf("'", at + needle.length);
+      var route = server.slice(at + needle.indexOf("('") + 2, close);
+      var body = server.slice(at, at + 700);
+      if (body.indexOf('isAdminEmail') === -1 && body.indexOf('SUPERUSER_AGENT_ID') === -1) {
+        missing.push(route);
+      }
+      at = server.indexOf(needle, at + 1);
+    }
+  });
+  assert(missing.length === 0,
+    'admin routes with no admin check: ' + missing.join(', '));
+});
+
+test('the browser is told whether it is an admin, not who the admins are', () => {
+  var dash = fs.readFileSync(path.join(ROOT, 'public/dashboard.html'), 'utf8');
+  assert(dash.indexOf('is_admin') !== -1,
+    'the dashboard must gate the admin link on is_admin from /api/user/me');
+  // The list lives in SUPERUSER_EMAIL on the server. Any admin address appearing
+  // in a page anyone can view source on means the browser is deciding, or the
+  // list has leaked. The first version of this checked for the address followed
+  // by a comparison operator, and missed the operator being on the other side.
+
+  // Comment lines are stripped first. The dashboard explains its display-name
+  // derivation with that address as an example, and the first version of this
+  // failed on the explanation rather than on any code.
+  var code = dash.split(String.fromCharCode(10))
+    .filter(function (l) { return l.trim().indexOf('//') !== 0; })
+    .join(String.fromCharCode(10));
+  assert(code.indexOf('SUPERUSER_EMAIL') === -1,
+    'the admin email list must not appear in client code');
+  assert(code.indexOf('hello@darkmatterhub.ai') === -1,
+    'an admin address is hardcoded in dashboard code; gate on is_admin instead');
+  assert(/is_admin[\s\S]{0,200}admin-menu-link/.test(dash),
+    'the admin link must be revealed by is_admin');
+});
+
+test('the two published files record that they were downloaded', () => {
+  // They are the things we tell people to run, and nothing counted whether
+  // anyone ever fetched them, so "which channel is being used" had no answer
+  // for the channel that matters most.
+  ['/verify_darkmatter_chain.py', '/darkmatter_witness_server.py'].forEach(function (route) {
+    var i = server.indexOf("app.get('" + route + "'");
+    assert(i !== -1, route + ' is not served');
+    var block = server.slice(i, i + 400);
+    assert(block.indexOf('recordDownload(') !== -1,
+      route + ' is served without recording the download');
+  });
 });
 
 // Also runnable standalone: node test/security.test.js
