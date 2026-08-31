@@ -3318,6 +3318,52 @@ test('the two published files record that they were downloaded', () => {
   });
 });
 
+// 58. The admin dashboard's growth panes are near the top and addressable
+// Channels, downloads and the funnel were the last group in the sidebar, below
+// System and the audit log, which is the wrong end for the numbers you open the
+// dashboard to read. Panes were also unaddressable: every one of them was the
+// same URL, so none could be bookmarked or linked to.
+console.log('\nAdmin dashboard navigation');
+
+test('growth panes sit above the customer and system groups', () => {
+  var html = fs.readFileSync(path.join(ROOT, 'public/admindashboard.html'), 'utf8');
+  var labels = [];
+  var re = /class="sb-label">([^<]+)</g, m;
+  while ((m = re.exec(html)) !== null) labels.push(m[1].trim());
+  var growth = labels.indexOf('Growth');
+  assert(growth !== -1, 'no Growth group in the sidebar');
+  ['Customers', 'Records', 'System'].forEach(function (after) {
+    var i = labels.indexOf(after);
+    assert(i === -1 || growth < i,
+      'Growth must come before ' + after + '; order is ' + labels.join(' > '));
+  });
+});
+
+test('every pane is addressable by a hash', () => {
+  var html = fs.readFileSync(path.join(ROOT, 'public/admindashboard.html'), 'utf8');
+  assert(html.indexOf('function openPaneFromHash') !== -1,
+    'no hash handler: /admindashboard#channels would not select a pane');
+  assert(html.indexOf("addEventListener('hashchange'") !== -1,
+    'back and forward would not move between panes');
+  assert(/history\.replaceState/.test(html),
+    'selecting a pane must put it in the URL so it can be linked');
+});
+
+test('every sidebar entry points at a pane that exists', () => {
+  var html = fs.readFileSync(path.join(ROOT, 'public/admindashboard.html'), 'utf8');
+  var panes = [];
+  // class="pane active" on the default pane, so match the class list
+  // loosely; the first version missed p-dashboard and reported it dead.
+  var pre = /<div class="pane[^"]*" id="(p-[a-z-]+)"/g, m;
+  while ((m = pre.exec(html)) !== null) panes.push(m[1]);
+  var dead = [];
+  var bre = /class="sb-item[^"]*" data-pane="(p-[a-z-]+)"/g;
+  while ((m = bre.exec(html)) !== null) {
+    if (panes.indexOf(m[1]) === -1) dead.push(m[1]);
+  }
+  assert(dead.length === 0, 'sidebar buttons with no pane: ' + dead.join(', '));
+});
+
 // Also runnable standalone: node test/security.test.js
 (function() {
   var sec = require('./security.test.js').run();
