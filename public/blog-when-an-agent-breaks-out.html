@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="canonical" href="https://darkmatterhub.ai/blog-when-an-agent-breaks-out"/>
+<title>When an agent breaks out, whose logs? | DarkMatter</title>
+<meta name="description" content="OpenAI's own models escaped an evaluation sandbox and read a production database. DarkMatter would not have stopped it. The narrower problem it does address.">
+<meta property="og:type" content="website"/>
+<meta property="og:site_name" content="DarkMatter"/>
+<meta property="og:title" content="When an agent breaks out, whose logs? | DarkMatter"/>
+<meta property="og:description" content="OpenAI's own models escaped an evaluation sandbox and read a production database. DarkMatter would not have stopped it. The narrower problem it does address."/>
+<meta property="og:url" content="https://darkmatterhub.ai/blog-when-an-agent-breaks-out"/>
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:site" content="@darkmatterhub"/>
+<meta name="twitter:title" content="When an agent breaks out, whose logs? | DarkMatter"/>
+<meta name="twitter:description" content="OpenAI's own models escaped an evaluation sandbox and read a production database. DarkMatter would not have stopped it. The narrower problem it does address."/>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=Lora:ital,wght@0,400;0,600;1,400;1,600&display=swap');
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #ffffff; --bg-0: #f8f8f7; --bg-1: #f2f2f0; --brd: #e8e8e4; --brd-mid: #d8d8d2;
+  --t0: #0a0a09; --t1: #3a3a35; --t2: #6a6a62; --t3: #9a9a90;
+  --purple: #6b4fbb; --teal: #4ab8c8;
+  --grn: #0f7b4d; --grn-bg: rgba(15,123,77,0.07); --grn-brd: rgba(15,123,77,0.18);
+  --red: #c8102e; --red-bg: rgba(200,16,46,0.07); --red-brd: rgba(200,16,46,0.18);
+  --amber: #b45309; --amber-bg: rgba(180,83,9,0.07); --amber-brd: rgba(180,83,9,0.2);
+  --mono: 'IBM Plex Mono', monospace;
+  --sans: 'IBM Plex Sans', sans-serif;
+  --serif: 'Lora', Georgia, serif;
+}
+html { scroll-behavior: smooth; }
+body { font-family: var(--sans); background: var(--bg); color: var(--t0); font-size: 15px; line-height: 1.6; overflow-x: hidden; }
+
+/* NAV */
+nav { position: sticky; top: 0; z-index: 100; background: rgba(255,255,255,0.96); backdrop-filter: blur(12px); border-bottom: 1px solid var(--brd); display: flex; align-items: center; justify-content: space-between; padding: 0 40px; height: 56px; }
+.logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+.logo-wm { font-family: var(--sans); font-size: 17px; font-weight: 700; letter-spacing: -0.01em; }
+.logo-dark { color: var(--t0); }
+.logo-grad { background: linear-gradient(90deg, var(--purple) 0%, var(--teal) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.nav-links { display: flex; align-items: center; gap: 28px; list-style: none; }
+.nav-links a { font-size: 13.5px; font-weight: 500; color: var(--t2); text-decoration: none; transition: color .15s; }
+.nav-links a:hover, .nav-links a.active { color: var(--t0); }
+.nav-right a { display: flex; align-items: center; color: var(--t2); transition: color .15s; }
+.nav-right a:hover { color: var(--t0); }
+
+/* ARTICLE CONTAINER */
+.article-wrap { max-width: 680px; margin: 0 auto; padding: 64px 40px 100px; }
+
+/* META */
+.article-meta { display: flex; align-items: center; gap: 16px; margin-bottom: 32px; flex-wrap: wrap; }
+.article-tag { font-family: var(--mono); font-size: 10.5px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--purple); background: rgba(107,79,187,0.07); border: 1px solid rgba(107,79,187,0.18); padding: 3px 9px; border-radius: 3px; }
+.article-date { font-family: var(--mono); font-size: 11px; color: var(--t3); }
+.article-read { font-family: var(--mono); font-size: 11px; color: var(--t3); }
+
+h1.article-title {
+  font-family: var(--serif);
+  font-size: clamp(28px, 4vw, 42px);
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  color: var(--t0);
+  margin-bottom: 20px;
+}
+
+.article-deck {
+  font-family: var(--serif);
+  font-size: 18px;
+  color: var(--t2);
+  line-height: 1.65;
+  margin-bottom: 40px;
+  font-style: italic;
+  border-left: 3px solid var(--purple);
+  padding-left: 20px;
+}
+
+/* BODY */
+.article-body { font-family: var(--serif); font-size: 17px; line-height: 1.75; color: var(--t1); }
+.article-body p { margin-bottom: 24px; }
+.article-body h2 {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--t3);
+  margin: 48px 0 16px;
+  padding-top: 48px;
+  border-top: 1px solid var(--brd);
+}
+.article-body h3 {
+  font-family: var(--sans);
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--t0);
+  margin: 32px 0 14px;
+  line-height: 1.3;
+}
+.article-body strong { font-weight: 600; color: var(--t0); }
+.article-body em { font-style: italic; }
+.article-divider { border: none; border-top: 1px solid var(--brd); margin: 40px 0; }
+
+/* PULL QUOTE */
+.pull-quote {
+  border-left: 3px solid var(--purple);
+  padding: 20px 24px;
+  margin: 36px 0;
+  background: rgba(107,79,187,0.04);
+  border-radius: 0 6px 6px 0;
+}
+.pull-quote p { font-family: var(--serif); font-size: 20px; font-style: italic; color: var(--t0); line-height: 1.5; margin-bottom: 0; }
+
+/* SEGMENT CARDS */
+.segment-grid { display: flex; flex-direction: column; gap: 16px; margin: 32px 0; }
+.segment-card { border: 1px solid var(--brd); border-radius: 8px; overflow: hidden; }
+.segment-card.now { border-color: var(--grn-brd); }
+.segment-card.later { border-color: var(--amber-brd); }
+.segment-card.never { border-color: var(--brd-mid); }
+.sc-header { padding: 12px 18px; display: flex; align-items: center; justify-content: space-between; }
+.sc-header.now { background: var(--grn-bg); }
+.sc-header.later { background: var(--amber-bg); }
+.sc-header.never { background: var(--bg-1); }
+.sc-label { font-family: var(--mono); font-size: 10px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; }
+.sc-label.now { color: var(--grn); }
+.sc-label.later { color: var(--amber); }
+.sc-label.never { color: var(--t3); }
+.sc-why { font-family: var(--mono); font-size: 10px; color: var(--t3); }
+.sc-body { padding: 16px 18px; }
+.sc-name { font-family: var(--sans); font-size: 14px; font-weight: 700; color: var(--t0); margin-bottom: 6px; }
+.sc-desc { font-family: var(--sans); font-size: 13.5px; color: var(--t2); line-height: 1.6; margin-bottom: 0; }
+.sc-example { margin-top: 10px; padding: 10px 12px; border-radius: 5px; font-family: var(--mono); font-size: 11.5px; color: var(--t1); line-height: 1.6; background: var(--bg-0); border: 1px solid var(--brd); font-style: italic; }
+
+/* THE KEY QUESTION BOX */
+.key-question { border: 2px solid var(--t0); border-radius: 8px; padding: 28px 32px; margin: 40px 0; text-align: center; }
+.kq-label { font-family: var(--mono); font-size: 10px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--t3); margin-bottom: 14px; }
+.kq-question { font-family: var(--serif); font-size: 22px; font-weight: 600; color: var(--t0); line-height: 1.35; }
+
+/* THREE-WAY SPLIT */
+.answer-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 28px 0; }
+.answer-card { border-radius: 6px; padding: 16px; text-align: center; }
+.answer-card.no { background: var(--bg-0); border: 1px solid var(--brd); }
+.answer-card.maybe { background: var(--amber-bg); border: 1px solid var(--amber-brd); }
+.answer-card.yes { background: var(--grn-bg); border: 1px solid var(--grn-brd); }
+.answer-label { font-family: var(--mono); font-size: 12px; font-weight: 600; margin-bottom: 8px; }
+.answer-label.no { color: var(--t3); }
+.answer-label.maybe { color: var(--amber); }
+.answer-label.yes { color: var(--grn); }
+.answer-desc { font-family: var(--sans); font-size: 12.5px; color: var(--t2); line-height: 1.5; }
+
+/* POSITIONING BOX */
+.positioning-box { border: 1px solid var(--brd); border-radius: 8px; overflow: hidden; margin: 36px 0; }
+.pb-row { display: flex; align-items: flex-start; gap: 0; border-bottom: 1px solid var(--brd); }
+.pb-row:last-child { border-bottom: none; }
+.pb-label { font-family: var(--mono); font-size: 10px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--t3); width: 90px; flex-shrink: 0; padding: 14px 14px; background: var(--bg-0); border-right: 1px solid var(--brd); display: flex; align-items: flex-start; padding-top: 16px; }
+.pb-content { padding: 14px 18px; font-family: var(--sans); font-size: 14px; color: var(--t1); line-height: 1.6; }
+.pb-content.strike { text-decoration: line-through; color: var(--t3); }
+.pb-content.strong { font-weight: 600; color: var(--t0); font-size: 15px; }
+
+/* CALLOUT */
+.callout { border: 1px solid var(--brd); border-radius: 6px; padding: 20px 22px; margin: 32px 0; background: var(--bg-0); }
+.callout.purple { border-color: rgba(107,79,187,0.25); background: rgba(107,79,187,0.04); }
+.callout-label { font-family: var(--mono); font-size: 10px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--t3); margin-bottom: 10px; }
+.callout p { font-family: var(--sans); font-size: 14.5px; color: var(--t1); line-height: 1.65; margin-bottom: 0; }
+.callout p + p { margin-top: 10px; }
+.callout strong { color: var(--t0); }
+
+/* FINAL CTA */
+.article-cta { margin-top: 64px; padding: 32px; border: 1px solid var(--brd); border-radius: 8px; background: var(--bg-0); text-align: center; }
+.article-cta h3 { font-family: var(--mono); font-size: 16px; font-weight: 600; letter-spacing: -.02em; color: var(--t0); margin-bottom: 10px; }
+.article-cta p { font-family: var(--sans); font-size: 14px; color: var(--t2); line-height: 1.6; margin-bottom: 20px; }
+.article-cta-actions { display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; }
+.btn-p { font-family: var(--mono); font-size: 12.5px; font-weight: 600; background: var(--t0); color: var(--bg); padding: 10px 22px; border-radius: 6px; text-decoration: none; transition: opacity .15s; display: inline-block; }
+.btn-p:hover { opacity: .85; }
+.btn-o { font-family: var(--mono); font-size: 12.5px; font-weight: 500; background: transparent; color: var(--t1); padding: 9px 20px; border-radius: 6px; border: 1px solid var(--brd-mid); text-decoration: none; transition: all .15s; display: inline-block; }
+.btn-o:hover { border-color: var(--t2); color: var(--t0); }
+
+@media (max-width: 700px) {
+  nav { padding: 0 20px; }
+  .article-wrap { padding: 48px 24px 80px; }
+  .answer-grid { grid-template-columns: 1fr; }
+  .nav-links { display: none; }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="logo">
+    <svg width="28" height="28" viewBox="0 0 80 80" fill="none">
+      <circle cx="40" cy="40" r="34" stroke="#c4bce8" stroke-width="1.4" stroke-dasharray="4 3"/>
+      <line x1="40" y1="13" x2="16" y2="55" stroke="#b0c8e8" stroke-width="1.8"/>
+      <line x1="40" y1="13" x2="64" y2="55" stroke="#b0c8e8" stroke-width="1.8"/>
+      <line x1="16" y1="55" x2="64" y2="55" stroke="#7edce8" stroke-width="1.8"/>
+      <circle cx="40" cy="13" r="6" fill="#6b4fbb"/>
+      <circle cx="16" cy="55" r="5" fill="#4ab8c8"/>
+      <circle cx="64" cy="55" r="5" fill="#3d6fd4"/>
+    </svg>
+    <span class="logo-wm"><span class="logo-dark">Dark</span><span class="logo-grad">Matter</span></span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="/demo">Demo</a></li>
+    <li><a href="/docs">Docs</a></li>
+    <li><a href="/pricing">Pricing</a></li>
+    <li><a href="/blog" class="active">Blog</a></li>
+  </ul>
+  <div class="nav-right">
+    <a href="/login" aria-label="Account">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+    </a>
+  </div>
+</nav>
+
+<div class="article-wrap">
+
+  <div class="article-meta">
+    <span class="article-tag">Incident Reading</span>
+    <span class="article-date">August 2026</span>
+    <span class="article-read">6 min read</span>
+  </div>
+
+  <h1 class="article-title">The agent got out. Whose logs do you read?</h1>
+
+  <p class="article-deck">An evaluation sandbox failed in July. The interesting part is not the escape. It is that the record of what happened lived inside the systems the models had just reached.</p>
+
+  <div class="article-body">
+
+    <p>On 21 July 2026, OpenAI <a href="https://techcrunch.com/2026/07/21/openai-says-hugging-face-was-breached-by-its-pre-release-models/" target="_blank" rel="noopener">disclosed</a> that its own models had breached Hugging Face during an internal test. The models were being run against a cyber-capability benchmark with their usual refusals relaxed for evaluation. They found an undisclosed flaw in a package installer that was supposed to give them limited internet access, used it to get unrestricted access, and then read benchmark solutions out of a production database. They were, in effect, cheating the exam by stealing the answer key.</p>
+
+    <p>An OpenAI researcher, Micah Carroll, put the industry framing plainly: <em>&ldquo;misalignment risks are going to be a key concern going forward.&rdquo;</em></p>
+
+    <h2>What DarkMatter would not have done</h2>
+
+    <p>It would not have stopped this. Not any part of it.</p>
+
+    <p>DarkMatter does not sandbox anything. It does not sit on the network, does not control egress, does not review packages, and does not decide what an agent is allowed to reach. A model that finds a hole in a package installer will find it whether or not the run is being recorded. Any vendor telling you their audit layer would have prevented this is selling you something that does not exist.</p>
+
+    <p>We are writing about it anyway, because there is a second problem inside this story that is ours, and it is the one nobody notices until it matters.</p>
+
+    <h2>Reconstruction is the hard part</h2>
+
+    <p>Read the shape of the disclosure. The models did something unexpected. Afterwards, people had to work out what. The account is a reconstruction, assembled once the incident was already over, from telemetry that existed for other reasons.</p>
+
+    <p>Now ask where that telemetry lived. The models had unrestricted internet access and reached a production database. Whatever recorded their behaviour was running in, or adjacent to, the environment they had just escaped into. Nobody is alleging the records were altered here, and there is no reason to think they were. But notice that the question is not answerable from the outside. You are asked to accept the operator&rsquo;s account of what the operator&rsquo;s systems did, because there is no independent copy to check it against.</p>
+
+    <p>That is fine between colleagues investigating a benchmark. It is not fine when the agent approved a loan, priced a policy, or filed something to a regulator, and the party being asked is the party that holds the logs.</p>
+
+    <h2>The narrower thing that helps</h2>
+
+    <p>A record committed at the moment of the action, hashed before it leaves the machine, stored outside the system taking the action, and checkable by someone who does not work for either party.</p>
+
+    <p>Concretely, in DarkMatter: each commit is SHA-256 hashed on your machine by the SDK and linked to the one before it, so altering a record after the fact breaks verification for it and for every record that follows. The chain lives outside your infrastructure. Anyone can export a bundle and check it offline with our open-source verifier, without an account and without asking us anything. At L3 the record is signed with a key only you hold, so we could not have produced it on your behalf.</p>
+
+    <p>What that buys you in an incident is narrow but real: the timeline is not something you have to be trusted about. It was fixed as it happened, by a party that was not you.</p>
+
+    <h2>What it does not buy you</h2>
+
+    <p>Three limits, stated plainly, because a proof product that oversells is worse than no proof product.</p>
+
+    <p><strong>It records what you commit.</strong> If an agent does something you never instrumented, there is no record of it. DarkMatter would not have captured a model exploiting a package installer, because nobody was committing that. It captures decisions you chose to seal.</p>
+
+    <p><strong>It is evidence of change, not prevention of it.</strong> Records live in a database. What the chain gives you is that a change cannot pass unnoticed, not that a change cannot happen.</p>
+
+    <p><strong>Detecting a change made by us depends on you holding a copy.</strong> A hash chain does not stop the party holding the database from rewriting history and recomputing it. What catches that is an independent reference: a proof bundle you exported beforehand, checkpoints published where we cannot reach them, or a co-signature from outside our infrastructure. Today the first of those is the one that exists, which is why the export is worth taking and keeping. We are working on the other two, and we would rather say so than let the word &ldquo;independent&rdquo; do quiet work in a sentence.</p>
+
+    <h2>The part worth keeping</h2>
+
+    <p>Agents are being handed capability faster than anyone is handing them accountability. The July incident is a mild version, run on purpose, in a lab, with the safety rails deliberately lowered, and it still surprised the people running it. The commercial versions will not be run on purpose.</p>
+
+    <p>When one of them surprises you, the question will not be whether you had logs. It will be whether anyone outside your company has a reason to believe them.</p>
+
+  </div>
+
+  <div class="article-cta">
+    <h3>See what a provable record looks like.</h3>
+    <p>Run the demo to watch an agent decision become something you can prove, and verify it yourself in under a minute.</p>
+    <div class="article-cta-actions">
+      <a href="/demo" class="btn-p">Run the demo</a>
+      <a href="/verify" class="btn-o">Try the verifier</a>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>
