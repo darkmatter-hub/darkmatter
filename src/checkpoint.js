@@ -36,6 +36,11 @@ const { getServerPublicKeyPem }  = require('./append-log');
 
 const INTERVAL_MS = 10 * 60 * 1000; // 10 minutes
 
+// How long an unchanged tree may go without a fresh signature. The scheduler
+// still wakes every INTERVAL_MS; this decides whether waking produces a
+// checkpoint. Overridable so a self-hoster can choose a different cadence.
+const HEARTBEAT_MS = Number(process.env.DM_CHECKPOINT_HEARTBEAT_MS) || 24 * 60 * 60 * 1000;
+
 // ─────────────────────────────────────────────────────────────────────────────
 // PUBLISH
 // ─────────────────────────────────────────────────────────────────────────────
@@ -121,7 +126,7 @@ async function publishCheckpoint(supabaseService) {
     // rows Postgres happens to return.
     const { data: prevCp, error: prevErr } = await supabaseService
       .from('checkpoints')
-      .select('checkpoint_id, tree_root')
+      .select('checkpoint_id, tree_root, timestamp')
       .order('position',  { ascending: false })
       .order('timestamp', { ascending: false })
       .limit(1)
@@ -136,6 +141,29 @@ async function publishCheckpoint(supabaseService) {
     }
 
     const timestamp = new Date().toISOString().replace(/\.\d+Z?$/, 'Z');
+
+    // Sign on change, and otherwise once per heartbeat.
+    //
+    // The scheduler fires on a timer, not on activity, and nothing here asked
+    // whether anything had happened. A log holding thirteen records was
+    // therefore signing and storing a checkpoint every ten minutes — 144 a day,
+    // all at the same position, over the same unchanged tree. That is what made
+    // "the latest checkpoint" ambiguous enough to serve a sixteen-day-old one,
+    // and the moment DM_GITHUB_TOKEN is set it becomes 144 commits a day to a
+    // public repository, burying the checkpoints that mean something under the
+    // ones that do not.
+    //
+    // A periodic signature over an unchanged tree is still worth something —
+    // it is evidence the log was alive and had not been rewritten — so it is
+    // kept, at a cadence where it reads as evidence rather than as noise.
+    if (prevCp && prevCp.tree_root && prevCp.tree_root === latest.tree_root) {
+      const since = Date.parse(timestamp) - Date.parse(prevCp.timestamp);
+      // A negative gap means the clock moved backwards; sign rather than
+      // silently stop, because a stalled chain is the worse failure.
+      if (since >= 0 && since < HEARTBEAT_MS) {
+        return { published: false, reason: 'tree_unchanged_within_heartbeat' };
+      }
+    }
 
     // Build and sign the checkpoint envelope
     const envelope = buildCheckpointEnvelope(

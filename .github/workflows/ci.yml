@@ -60,6 +60,15 @@ jobs:
       - name: Retention redacts without breaking chains
         run: node test/retention.test.js
 
+      # The previous-checkpoint lookup sorted by a column that is not on the
+      # checkpoints table, so it failed every time and the error was discarded.
+      # Every checkpoint was written claiming to be the first, and the link
+      # that stops checkpoint history being forked never existed. The scheduler
+      # also signed on a timer rather than on change, so a log with thirteen
+      # records produced 144 checkpoints a day over an unchanged tree.
+      - name: Checkpoints link to their predecessor and are made on change
+        run: node test/checkpoint.test.js
+
       # A witness co-signature is only worth anything if it verifies against
       # the key registered for that witness. In production it did not: the
       # witness had regenerated its key, so every signature was stored with
