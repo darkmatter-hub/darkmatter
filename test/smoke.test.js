@@ -3673,6 +3673,78 @@ test('every column the server writes or selects exists in the schema', () => {
     'sites treat that as success:' + SEP + bad.join(SEP));
 });
 
+// 60c. Static HTML cannot know what time it is, or what happened today
+// The homepage hero showed a panel captioned "DarkMatter - live" with "3
+// records today" and three records sealed "2 min ago", "1 hr ago" and "3 hr
+// ago". All of it was hand-written into index.html. The ids did not exist, the
+// count was wrong in both directions, and the log has held thirteen records in
+// its entire history. On a product whose whole proposition is evidence nobody
+// fabricated, the one element demonstrating the product was fabricated.
+//
+// A relative timestamp or a "today" count in a file that is served unchanged
+// to everyone is false by construction. Rendered from real data by script,
+// it is fine — so only the markup outside script blocks is checked.
+console.log('\nNo invented activity on public pages');
+
+test('no public page hand-writes a relative time or a live counter', () => {
+  var RELATIVE = ['min ago', 'mins ago', 'minute ago', 'minutes ago',
+                  'hr ago', 'hrs ago', 'hour ago', 'hours ago',
+                  'day ago', 'days ago', 'second ago', 'seconds ago'];
+  var COUNTERS = ['records today', 'record today', 'commits today'];
+  // Words that turn a relative time into a claim about our own log.
+  var ACTIVITY = ['sealed', 'recorded', 'committed', 'logged', 'captured',
+                  'verified', 'anchored', 'checkpointed', 'ctx_'];
+  var offenders = [];
+
+  (function walk(dir) {
+    var entries;
+    try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch (e) { return; }
+    entries.forEach(function (e) {
+      var abs = path.join(dir, e.name);
+      if (e.isDirectory()) return walk(abs);
+      if (e.name.slice(-5) !== '.html') return;
+      var html = readSource(abs);
+      // Strip script blocks: those render from data at load time.
+      var text = '', i = 0;
+      while (i < html.length) {
+        var open = html.indexOf('<script', i);
+        if (open === -1) { text += html.slice(i); break; }
+        text += html.slice(i, open);
+        var close = html.indexOf('</script>', open);
+        if (close === -1) break;
+        i = close + 9;
+      }
+      var low = text.toLowerCase();
+      var rel = path.relative(ROOT, abs).split(path.sep).join('/');
+
+      COUNTERS.forEach(function (phrase) {
+        if (low.indexOf(phrase) !== -1) offenders.push(rel + ' hard-codes "' + phrase + '"');
+      });
+
+      // A relative time is only a lie when it is attached to something this
+      // product claims to have done. demo.html narrates a refund for an order
+      // "purchased 18 days ago", which is the scenario, not our activity.
+      RELATIVE.forEach(function (phrase) {
+        var at = 0;
+        while ((at = low.indexOf(phrase, at)) !== -1) {
+          var around = low.slice(Math.max(0, at - 90), at + phrase.length + 60);
+          var claimed = ACTIVITY.some(function (verb) { return around.indexOf(verb) !== -1; });
+          if (claimed) {
+            offenders.push(rel + ' claims a record was ' + phrase.replace(' ago', '') +
+                           ' ago, in markup that is identical for every visitor');
+          }
+          at += phrase.length;
+        }
+      });
+    });
+  })(path.join(ROOT, 'public'));
+
+  var SEP = String.fromCharCode(10) + '       ';
+  assert(offenders.length === 0,
+    'a page served unchanged to everyone cannot know when something happened, ' +
+    'so this is invented activity:' + SEP + offenders.join(SEP));
+});
+
 // 61. "The latest checkpoint" must not be whichever row Postgres feels like
 // The scheduler signs every ten minutes whether or not the tree grew, so a
 // quiet log accumulates hundreds of checkpoints at one position. Ordering by
