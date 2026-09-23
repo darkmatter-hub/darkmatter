@@ -192,17 +192,32 @@ function priceIdToPlan(priceId, metadataPlan) {
   return 'free';
 }
 
+// email is accepted for the caller's logging and deliberately not stored: the
+// subscriptions table has no such column, and the row is keyed to user_id.
 async function upsertSubscription(userId, email, sub, customerId) {
   const priceId  = sub.items?.data[0]?.price?.id;
   const plan     = priceIdToPlan(priceId, sub.metadata?.plan);
   const meta     = PLAN_META[plan] || PLAN_META.free;
+  // Every field here has to be a column on subscriptions, and this wrote three
+  // that were not: `email` and `stripe_subscription_id` do not exist on the
+  // table, and `id` — text, NOT NULL, no default, the primary key — was left
+  // out. Postgres rejected the row on all three counts, the caller logged the
+  // message and returned the record anyway, and the webhook still answered
+  // Stripe with 200. So no completed payment has ever been recorded: the
+  // dashboard showed a paid plan only because a separate code path asks Stripe
+  // directly on page load, while the commit path kept enforcing free limits
+  // from the row that was never written.
+  //
+  // The Stripe subscription id is the primary key. It is the natural one, it
+  // is unique, and it puts the id back within reach of the cancellation path
+  // without needing a column the installed schema does not have.
   const record   = {
+    id:                     sub.id,
     user_id:                userId,
-    email,
     plan,
     status:                 sub.status,
     stripe_customer_id:     customerId,
-    stripe_subscription_id: sub.id,
+    stripe_price_id:        priceId || null,
     current_period_end:     stripePeriodEnd(sub),
     cancel_at_period_end:   sub.cancel_at_period_end || false,
     commit_limit:           meta.commitLimit,
@@ -212,7 +227,12 @@ async function upsertSubscription(userId, email, sub, customerId) {
   const { error } = await supabaseService
     .from('subscriptions')
     .upsert(record, { onConflict: 'user_id' });
-  if (error) console.error('[upsertSubscription]', error.message);
+  if (error) {
+    // Returning the record regardless is what made this invisible: the caller
+    // saw an object and assumed a row.
+    console.error('[upsertSubscription] NOT PERSISTED:', error.message, '| user', userId);
+    return null;
+  }
   return record;
 }
 
@@ -1303,14 +1323,18 @@ app.post('/api/account/delete', deleteLimiter, requireAuth, async (req, res) => 
   try {
     const { data: sub } = await supabaseService
       .from('subscriptions')
-      .select('stripe_subscription_id')
+      // This selected stripe_subscription_id, which is not a column on this
+      // table. PostgREST rejects the whole request, the error was discarded,
+      // and the cancellation below never ran — so deleting your account left
+      // the card being charged. The Stripe subscription id is the primary key.
+      .select('id')
       .eq('user_id', userId)
       .eq('status', 'active')
       .maybeSingle();
-    if (sub?.stripe_subscription_id && process.env.STRIPE_SECRET_KEY) {
+    if (sub?.id && process.env.STRIPE_SECRET_KEY) {
       const stripe = getStripe();
-      await stripe.subscriptions.cancel(sub.stripe_subscription_id);
-      console.log(`[account/delete] Cancelled Stripe subscription ${sub.stripe_subscription_id}`);
+      await stripe.subscriptions.cancel(sub.id);
+      console.log(`[account/delete] Cancelled Stripe subscription ${sub.id}`);
     }
   } catch (err) {
     console.error('[account/delete] Stripe cancel error (continuing):', err.message);
@@ -1662,7 +1686,11 @@ app.post('/dashboard/agents/:agentId/rotate', requireAuth, async (req, res) => {
 
     const { data, error } = await supabaseService
       .from('agents')
-      .update({ api_key: newKey, api_key_hash: hashApiKey(newKey) })
+      // This also set api_key, which is not a column on agents — the table
+      // holds api_key_hash and key_hint, by design, so the raw key is never
+      // stored. Postgres rejected the whole statement, so rotation threw a 500
+      // every time and the key the user was trying to retire kept working.
+      .update({ api_key_hash: hashApiKey(newKey), key_hint: maskApiKey(newKey) })
       .eq('agent_id', agentId)
       .eq('user_id', req.user.id)
       .select()
@@ -2292,7 +2320,11 @@ app.post('/api/commit', apiLimiter, requireApiKey, async (req, res) => {
           payload_hash:        payloadHash,
           parent_hash:         parentHash,
           agent_signature:     agentSignature,
-          agent_public_key:    agentPublicKey,
+          // agent_public_key is not a column on commits; client_public_key is,
+          // and this value is the client's key. The row was rejected outright,
+          // so committing to an agent that does not exist returned a database
+          // error instead of the recorded-but-unverified commit intended here.
+          client_public_key:   agentPublicKey,
           hash_mismatch:       hashMismatch || false,
           client_timestamp:    clientTimestamp,
           accepted_at:         acceptedAt,
@@ -2778,7 +2810,7 @@ app.post('/api/fork/:ctxId', apiLimiter, requireApiKey, async (req, res) => {
         payload_hash:        'sha256:' + payloadHash,
         integrity_hash:      'sha256:' + integrityHash,
         parent_hash:         'sha256:' + (forkCommit.integrity_hash || ''),
-        verification_status: 'valid',
+        verified:       true,
       },
       created_at: timestamp,
       message: `Forked from ${forkPoint}. Continue by committing with parentId: "${forkId}"`,
@@ -4052,13 +4084,15 @@ app.post('/api/billing/checkout', wsAuth, async (req, res) => {
       customerId = customer.id;
     }
 
-    // Cancel any existing active subscriptions before creating a new one
-    // to prevent duplicate subscription accumulation during upgrades/downgrades.
-    const activeSubs = await stripe.subscriptions.list({ customer: customerId, status: 'active', limit: 10 });
-    for (const sub of activeSubs.data) {
-      await stripe.subscriptions.cancel(sub.id);
-      console.log('[billing/checkout] cancelled existing subscription', sub.id, 'for customer', customerId);
-    }
+    // This used to cancel every active subscription here, immediately, before
+    // the checkout session was even created. A customer on Pro who clicked
+    // "upgrade to Teams" and then closed the tab, or whose card was declined,
+    // had already lost the plan they were paying for — mid-period, with no
+    // refund — and the page they landed on said their plan was not changed.
+    // The one click in the product that makes money destroyed revenue.
+    //
+    // Deduplication belongs after a new subscription actually exists, which is
+    // what the webhook now does. Nothing is cancelled on the way in.
 
     const session = await stripe.checkout.sessions.create({
       customer:   customerId,
@@ -5136,13 +5170,18 @@ app.post('/api/commit/rich', apiLimiter, requireApiKey, async (req, res) => {
         parent_id:      parentId || null,
         parent_hash:    parentHash,
         integrity_hash: integrityHash,
-        verification_status: 'valid',
+        // verification_status, tags and to_agent_id are not columns on commits.
+        // Postgres rejected the row, the error was rethrown, and so every call
+        // to this endpoint has returned a 500. The columns that exist and carry
+        // the same meaning are verified/verification_reason, metadata, and
+        // to_agent.
+        verified:       true,
         trace_id:       traceId || null,
         branch_key:     branchKey || 'main',
         event_type:     eventType || 'commit',
         agent_info:     agent || null,
-        tags:           tags || null,
-        to_agent_id:    toAgentId,
+        metadata:       tags ? { tags: tags } : null,
+        to_agent:       toAgentId || null,
       }).select().single();
 
     if (commitError) throw commitError;
@@ -7269,7 +7308,9 @@ app.get('/admin/stats', requireAuth, async (req, res) => {
     }
 
     const [agentsRes, commitsRes, usersRes] = await Promise.all([
-      supabaseService.from('agents').select('id', { count: 'exact', head: true }),
+      // agents is keyed by agent_id; there is no id column, so this count has
+      // always come back null and the admin dashboard showed no agents.
+      supabaseService.from('agents').select('agent_id', { count: 'exact', head: true }),
       supabaseService.from('commits').select('id', { count: 'exact', head: true }),
       supabaseService.auth.admin.listUsers({ page: 1, perPage: 1 }),
     ]);
@@ -7278,10 +7319,27 @@ app.get('/admin/stats', requireAuth, async (req, res) => {
     const PLAN_PRICE = { pro: 29, teams: 99, enterprise: 499 };
     const { data: activeSubs } = await supabaseService
       .from('subscriptions')
-      .select('plan, user_id, email')
+      // This selected email, which is not a column on subscriptions. PostgREST
+      // rejected the request, activeSubs came back null, and MRR and the paying
+      // user count have therefore read zero whatever the truth was — on the one
+      // panel whose job is to say whether anybody is paying.
+      .select('plan, user_id')
       .eq('status', 'active')
       .not('plan', 'eq', 'free');
-    const realSubs   = (activeSubs || []).filter(s => !isAdminEmail(s.email));
+
+    // Admin and internal accounts are identified by email, which now has to be
+    // resolved per subscription. There are few enough paid subscriptions that
+    // one lookup each is cheaper than listing every user, and a lookup that
+    // fails counts the subscription rather than silently dropping it.
+    const subsWithEmail = await Promise.all((activeSubs || []).map(async (s) => {
+      try {
+        const { data } = await supabaseService.auth.admin.getUserById(s.user_id);
+        return { ...s, email: data?.user?.email || '' };
+      } catch (e) {
+        return { ...s, email: '' };
+      }
+    }));
+    const realSubs   = subsWithEmail.filter(s => !isAdminEmail(s.email));
     const payingUsers = realSubs.length;
     const mrr = realSubs.reduce((sum, s) => sum + (PLAN_PRICE[s.plan] || 0), 0);
     const totalUsers = usersRes.data?.total || 0;
@@ -7823,6 +7881,24 @@ app.post('/api/billing/webhook', express.raw({ type: 'application/json' }), asyn
           if (resolvedUserId) {
             await upsertSubscription(resolvedUserId, email, fullSub, customerId);
             console.log('[webhook]', event.type, '→ subscriptions updated for', email, 'plan:', priceIdToPlan(fullSub.items?.data[0]?.price?.id));
+            // Retire any older subscription for this customer now that a new
+            // one is really active. The checkout route used to do this before
+            // the customer had bought anything, which cancelled people who
+            // simply changed their mind. Here there is a live replacement, and
+            // it ends at the period boundary the customer already paid for
+            // rather than the moment this fires.
+            if (event.type === 'customer.subscription.created' && fullSub.status === 'active') {
+              try {
+                const others = await stripe.subscriptions.list({ customer: customerId, status: 'active', limit: 10 });
+                for (const other of others.data) {
+                  if (other.id === fullSub.id || other.cancel_at_period_end) continue;
+                  await stripe.subscriptions.update(other.id, { cancel_at_period_end: true });
+                  console.log('[webhook] superseded subscription', other.id, 'ends at period end');
+                }
+              } catch (dedupeErr) {
+                console.error('[webhook] could not retire the previous subscription:', dedupeErr.message);
+              }
+            }
           }
         }
       } catch(e) {

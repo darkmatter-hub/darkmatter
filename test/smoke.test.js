@@ -3494,7 +3494,7 @@ test('every column the server filters or sorts on exists in the schema', () => {
           if (!col || col.indexOf(',') !== -1 || col.indexOf('(') !== -1 ||
               col.indexOf('.') !== -1 || col.indexOf(' ') !== -1) continue;
           if (!cols[table][col]) {
-            bad.push('src/' + f + ': ' + table + '.' + col + ' in ' + fn + ')');
+            bad.push('src/' + f + ':' + lineOf(text, e0 + j) + ' ' + table + '.' + col + ' in ' + fn + ')');
           }
         }
       });
@@ -3505,6 +3505,172 @@ test('every column the server filters or sorts on exists in the schema', () => {
   assert(bad.length === 0,
     'PostgREST rejects the entire request when a filter names a column the table ' +
     'does not have, and these call sites discard the error:' + SEP + bad.join(SEP));
+});
+
+// 60b. A written or selected column that does not exist fails just as hard
+// The filter guard above would not have caught the worst instance of this.
+// upsertSubscription built a row with `email` and `stripe_subscription_id`,
+// neither of which is a column on subscriptions, and omitted `id`, which is
+// text NOT NULL with no default. Postgres rejected every completed payment,
+// the error was logged and the record returned anyway, and the webhook still
+// answered Stripe 200. Account deletion selected the same nonexistent column,
+// so cancelling a deleted user's card never ran.
+//
+// Object keys are read at depth one only, so nested payloads and spreads are
+// left alone; a key this cannot judge is skipped rather than guessed at.
+// Comments are not keys. Without this, a comment containing a comma splits
+// into a segment and the word before the next comma is read as a shorthand
+// property — "the raw key is returned to the caller once, here, and never
+// persisted" reported a column called `here`.
+function stripComments(text) {
+  var out = '', inStr = null, i = 0;
+  var BACKSLASH = String.fromCharCode(92), NL = String.fromCharCode(10);
+  while (i < text.length) {
+    var ch = text.charAt(i), nx = text.charAt(i + 1);
+    if (inStr) {
+      out += ch;
+      if (ch === BACKSLASH) { out += nx; i += 2; continue; }
+      if (ch === inStr) inStr = null;
+      i++; continue;
+    }
+    if (ch === "'" || ch === '"' || ch === '`') { inStr = ch; out += ch; i++; continue; }
+    if (ch === '/' && nx === '/') {
+      while (i < text.length && text.charAt(i) !== NL) i++;
+      continue;
+    }
+    if (ch === '/' && nx === '*') {
+      i += 2;
+      while (i < text.length && !(text.charAt(i) === '*' && text.charAt(i + 1) === '/')) i++;
+      i += 2; continue;
+    }
+    out += ch; i++;
+  }
+  return out;
+}
+
+function topLevelKeys(body) {
+  var BACKSLASH = String.fromCharCode(92);
+  var segments = [], seg = '', depth = 0, inStr = null;
+  for (var i = 0; i < body.length; i++) {
+    var ch = body.charAt(i);
+    if (inStr) {
+      if (ch === inStr && body.charAt(i - 1) !== BACKSLASH) inStr = null;
+      seg += ch; continue;
+    }
+    if (ch === "'" || ch === '"' || ch === '`') { inStr = ch; seg += ch; continue; }
+    if (ch === '{' || ch === '[' || ch === '(') depth++;
+    else if (ch === '}' || ch === ']' || ch === ')') depth--;
+    if (ch === ',' && depth === 0) { segments.push(seg); seg = ''; continue; }
+    seg += ch;
+  }
+  segments.push(seg);
+
+  var keys = [];
+  segments.forEach(function (raw) {
+    var t = raw.trim();
+    if (!t || t.indexOf('...') === 0) return;   // spread: not judgeable here
+    var colon = -1, d = 0, st = null;
+    for (var j = 0; j < t.length; j++) {
+      var c = t.charAt(j);
+      if (st) { if (c === st) st = null; continue; }
+      if (c === "'" || c === '"' || c === '`') { st = c; continue; }
+      else if (c === '{' || c === '[' || c === '(') d++;
+      else if (c === '}' || c === ']' || c === ')') d--;
+      else if (c === ':' && d === 0) { colon = j; break; }
+    }
+    var name = (colon === -1 ? t : t.slice(0, colon)).trim();
+    name = name.split("'").join('').split('"').join('');
+    if (/^[a-z_][a-z0-9_]*$/i.test(name)) keys.push(name.toLowerCase());
+  });
+  return keys;
+}
+
+function lineOf(text, index) {
+  return text.slice(0, index).split(String.fromCharCode(10)).length;
+}
+
+function braceBody(text, from) {
+  var open = text.indexOf('{', from);
+  if (open === -1) return null;
+  var depth = 0, inStr = null, BACKSLASH = String.fromCharCode(92);
+  for (var i = open; i < text.length; i++) {
+    var ch = text.charAt(i);
+    if (inStr) { if (ch === inStr && text.charAt(i - 1) !== BACKSLASH) inStr = null; continue; }
+    if (ch === "'" || ch === '"' || ch === '`') { inStr = ch; continue; }
+    if (ch === '{') depth++;
+    else if (ch === '}') { depth--; if (depth === 0) return text.slice(open + 1, i); }
+  }
+  return null;
+}
+
+test('every column the server writes or selects exists in the schema', () => {
+  var cols = schemaColumns();
+  assert(cols.subscriptions && cols.subscriptions.id,
+    'the schema parser did not find subscriptions.id, so it is broken');
+
+  var FROM = ".from('";
+  var WRITES = ['.insert(', '.upsert(', '.update('];
+  var bad = [];
+
+  fs.readdirSync(path.join(ROOT, 'src')).forEach(function (f) {
+    if (f.slice(-3) !== '.js') return;
+    var text = readSource(path.join(ROOT, 'src', f));
+    var i = 0;
+    while ((i = text.indexOf(FROM, i)) !== -1) {
+      var s0 = i + FROM.length;
+      var e0 = text.indexOf("'", s0);
+      if (e0 === -1) break;
+      var table = text.slice(s0, e0).toLowerCase();
+      i = e0 + 1;
+      if (!cols[table]) continue;
+
+      var stopSemi = text.indexOf(';', e0);
+      var stopFrom = text.indexOf(FROM, e0 + 1);
+      var stop = stopSemi;
+      if (stopFrom !== -1 && (stop === -1 || stopFrom < stop)) stop = stopFrom;
+      var stmt = text.slice(e0, stop === -1 ? text.length : stop);
+
+      WRITES.forEach(function (fn) {
+        var w = stmt.indexOf(fn);
+        if (w === -1) return;
+        // Only a literal object can be read here. A variable is resolved at
+        // run time and this guard says nothing about it.
+        var after = stmt.slice(w + fn.length).trim();
+        if (after.charAt(0) !== '{') return;
+        var body = braceBody(stmt, w + fn.length);
+        if (body === null) return;
+        topLevelKeys(stripComments(body)).forEach(function (k) {
+          if (!cols[table][k]) {
+            bad.push('src/' + f + ':' + lineOf(text, e0 + w) + ' writes ' + table + '.' + k);
+          }
+        });
+      });
+
+      var sel = stmt.indexOf(".select('");
+      if (sel !== -1) {
+        var cs = sel + ".select('".length;
+        var ce = stmt.indexOf("'", cs);
+        if (ce !== -1) {
+          var list = stmt.slice(cs, ce);
+          // '*' and embedded resources (foo(bar), alias:col) are not plain columns.
+          if (list.indexOf('*') === -1 && list.indexOf('(') === -1 && list.indexOf(':') === -1) {
+            list.split(',').forEach(function (raw) {
+              var col = raw.trim().toLowerCase();
+              if (!col) return;
+              if (!cols[table][col]) {
+                bad.push('src/' + f + ':' + lineOf(text, e0 + sel) + ' selects ' + table + '.' + col);
+              }
+            });
+          }
+        }
+      }
+    }
+  });
+
+  var SEP = String.fromCharCode(10) + '       ';
+  assert(bad.length === 0,
+    'Postgres rejects the row and PostgREST rejects the read, and these call ' +
+    'sites treat that as success:' + SEP + bad.join(SEP));
 });
 
 // 61. "The latest checkpoint" must not be whichever row Postgres feels like
