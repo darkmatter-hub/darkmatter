@@ -21,8 +21,24 @@ function test(label, fn) {
 }
 function assert(cond, msg) { if (!cond) throw new Error(msg || 'assertion failed'); }
 
-const server = fs.readFileSync(SERVER, 'utf8');
-const dash   = fs.readFileSync(DASH,   'utf8');
+// Read source with line endings normalised to LF.
+//
+// Nearly every guard in this file is a string search over source text, and
+// several look for a newline explicitly — 'function x' up to the next line
+// that is just a closing brace, for instance. Git checks these files out with
+// CRLF on Windows, so those searches found nothing and the guards either threw
+// or, worse, quietly passed by matching an empty slice. It surfaced as
+// "stripePeriodEnd is not defined" after a rebase rewrote the file, on a test
+// that had been green for weeks, with no change to the code under test.
+//
+// A guard that depends on how the checkout was configured is not a guard.
+function readSource(file) {
+  return fs.readFileSync(file, 'utf8').split(String.fromCharCode(13, 10))
+           .join(String.fromCharCode(10));
+}
+
+const server = readSource(SERVER);
+const dash   = readSource(DASH);
 // Extract ALL script blocks from dashboard (not just the last one)
 const dashJS = (() => {
   let js = '';
@@ -237,7 +253,7 @@ test('tpanel scroll CSS',     function() { assert(style.includes('.tpanel{displa
 // 8. Commit limit enforcement
 console.log('\nCommit limit enforcement');
 test('commit route enforces plan limit with 429', () => {
-  const srv = fs.readFileSync(path.join(__dirname, '../src/server.js'), 'utf8');
+  const srv = readSource(path.join(__dirname, '../src/server.js'), 'utf8');
   assert(srv.includes('Monthly commit limit reached'), 'commit limit 429 enforcement missing');
 });
 
@@ -851,7 +867,7 @@ if (!SDK_EXISTS) {
   });
 
   test('Python SDK commit() defaults to_agent_id to None', function() {
-    var clientPy = fs.readFileSync(path.join(SDK_PY, 'client.py'), 'utf8');
+    var clientPy = readSource(path.join(SDK_PY, 'client.py'), 'utf8');
     var fnIdx    = clientPy.indexOf('def commit(');
     assert(fnIdx > 0, 'commit() function not found in client.py');
     var fnSlice  = clientPy.slice(fnIdx, fnIdx + 400);
@@ -890,7 +906,7 @@ var PUBLIC_12 = ['index','pricing','integrity','security','docs',
 
 test('No em-dash or HTML entity dash in <title> tags of key public pages', function() {
   ['index','pricing','integrity','security','docs'].forEach(function(name) {
-    var html  = fs.readFileSync(path.join(ROOT, 'public/' + name + '.html'), 'utf8');
+    var html  = readSource(path.join(ROOT, 'public/' + name + '.html'), 'utf8');
     var match = html.match(/<title>([\s\S]*?)<\/title>/);
     if (!match) return;
     var title = match[1];
@@ -902,19 +918,19 @@ test('No em-dash or HTML entity dash in <title> tags of key public pages', funct
 
 test('No Bitcoin reference in any of the 12 public pages', function() {
   PUBLIC_12.forEach(function(name) {
-    var html = fs.readFileSync(path.join(ROOT, 'public/' + name + '.html'), 'utf8');
+    var html = readSource(path.join(ROOT, 'public/' + name + '.html'), 'utf8');
     assert(!html.toLowerCase().includes('bitcoin'), name + '.html contains Bitcoin reference');
   });
 });
 
 test('organizations.html references JetBrains Mono', function() {
-  var orgs = fs.readFileSync(path.join(ROOT, 'public/organizations.html'), 'utf8');
+  var orgs = readSource(path.join(ROOT, 'public/organizations.html'), 'utf8');
   assert(orgs.includes('JetBrains'), 'organizations.html must load JetBrains Mono font');
 });
 
 test('All 12 public pages have dm-ham hamburger nav', function() {
   PUBLIC_12.forEach(function(name) {
-    var html = fs.readFileSync(path.join(ROOT, 'public/' + name + '.html'), 'utf8');
+    var html = readSource(path.join(ROOT, 'public/' + name + '.html'), 'utf8');
     assert(html.includes('dm-ham'), name + '.html is missing dm-ham hamburger nav element');
   });
 });
@@ -1058,7 +1074,7 @@ test('maybeAlertUsage sends to hello@darkmatterhub.ai', function() {
 });
 
 test('pricing.html lists data caps for all four plans', function() {
-  var pricing = fs.readFileSync(path.join(ROOT, 'public/pricing.html'), 'utf8');
+  var pricing = readSource(path.join(ROOT, 'public/pricing.html'), 'utf8');
   assert(pricing.includes('500 MB data per month'), 'free plan missing 500 MB data cap');
   assert(pricing.includes('5 GB data per month'),   'pro plan missing 5 GB data cap');
   assert(pricing.includes('25 GB data per month'),  'teams plan missing 25 GB data cap');
@@ -1069,7 +1085,7 @@ console.log('\nAuth pages (signup / login)');
 
 (function checkAuthPageJS(name) {
   var filePath = path.join(ROOT, 'public/' + name + '.html');
-  var html     = fs.readFileSync(filePath, 'utf8');
+  var html     = readSource(filePath, 'utf8');
 
   // Extract inline script blocks (no src=)
   var js = '';
@@ -1103,7 +1119,7 @@ console.log('\nAuth pages (signup / login)');
 
 (function checkAuthPageJS(name) {
   var filePath = path.join(ROOT, 'public/' + name + '.html');
-  var html     = fs.readFileSync(filePath, 'utf8');
+  var html     = readSource(filePath, 'utf8');
   var js = '';
   var re = /<script[^>]*>([\s\S]*?)<\/script>/gi;
   var m;
@@ -1122,12 +1138,12 @@ console.log('\nAuth pages (signup / login)');
 })('login');
 
 test('signup.html does not claim full access without qualification', function() {
-  var html = fs.readFileSync(path.join(ROOT, 'public/signup.html'), 'utf8');
+  var html = readSource(path.join(ROOT, 'public/signup.html'), 'utf8');
   assert(!html.includes('Full access from day one'), 'signup.html must not claim unqualified full access');
 });
 
 test('signup.html does not expose raw /r/:id URL to users without explanation', function() {
-  var html = fs.readFileSync(path.join(ROOT, 'public/signup.html'), 'utf8');
+  var html = readSource(path.join(ROOT, 'public/signup.html'), 'utf8');
   assert(!html.includes('/r/:id'), 'signup.html must not show raw /r/:id route to users — use plain language instead');
 });
 
@@ -1277,7 +1293,7 @@ test('every sitemap-excluded page carries a noindex meta', function() {
   var missing = excluded.filter(function(slug) {
     var f = path.join(ROOT, 'public', slug + '.html');
     if (!fs.existsSync(f)) return false;   // excluded but no such page is fine
-    return !/name="robots"[^>]*noindex/i.test(fs.readFileSync(f, 'utf8'));
+    return !/name="robots"[^>]*noindex/i.test(readSource(f, 'utf8'));
   });
   assert(missing.length === 0,
     'excluded from the sitemap but still indexable: ' + missing.join(', '));
@@ -1299,7 +1315,7 @@ test('every indexable page declares a canonical matching its sitemap URL', funct
   publicPages().forEach(function(pg) {
     var slug = pg.slug;
     if (excluded.indexOf(slug) !== -1) return;
-    var html = fs.readFileSync(pg.abs, 'utf8');
+    var html = readSource(pg.abs, 'utf8');
     var c = html.match(/<link rel="canonical" href="([^"]+)"/);
     if (!c) { problems.push(slug + ' (none)'); return; }
     var want = slug === 'index'
@@ -1327,7 +1343,7 @@ test('every indexable page has a usable title and description', function() {
   publicPages().forEach(function(pg) {
     var slug = pg.slug;
     if (excluded.indexOf(slug) !== -1) return;
-    var html = fs.readFileSync(pg.abs, 'utf8');
+    var html = readSource(pg.abs, 'utf8');
 
     var t = html.match(/<title>([\s\S]*?)<\/title>/);
     if (!t) { problems.push(slug + ': no title'); }
@@ -1359,7 +1375,7 @@ test('no page links to a blog post that does not exist', function() {
       var abs = path.join(dir, e.name);
       if (e.isDirectory()) return walk(abs);
       if (!/\.html$/.test(e.name)) return;
-      var html = fs.readFileSync(abs, 'utf8');
+      var html = readSource(abs, 'utf8');
       var re = /href="\/blogs\/([a-z0-9-]+)"/g, m;
       while ((m = re.exec(html)) !== null) {
         var post = path.join(ROOT, 'public', 'blogs', m[1] + '.html');
@@ -1414,7 +1430,7 @@ test('the offline verifier is actually served', function() {
 test('pages referencing the verifier match a real route', function() {
   var refs = [];
   publicPages().forEach(function(pg) {
-    if (/verify_darkmatter_chain\.py/.test(fs.readFileSync(pg.abs, 'utf8'))) {
+    if (/verify_darkmatter_chain\.py/.test(readSource(pg.abs, 'utf8'))) {
       refs.push(pg.slug);
     }
   });
@@ -1431,7 +1447,7 @@ test('pages referencing the verifier match a real route', function() {
 test('every API endpoint the docs teach actually has a route', function() {
   var documented = {};
   publicPages().forEach(function(pg) {
-    var html = fs.readFileSync(pg.abs, 'utf8');
+    var html = readSource(pg.abs, 'utf8');
     var re = /darkmatterhub\.ai(\/api\/[a-z0-9/_-]+)/gi, m;
     while ((m = re.exec(html)) !== null) {
       // Trim a trailing path parameter placeholder such as /api/fork/ctx_...
@@ -1470,7 +1486,7 @@ test('every API endpoint the docs teach actually has a route', function() {
 test('every page is structurally complete', function() {
   var broken = [];
   publicPages().forEach(function(pg) {
-    var html = fs.readFileSync(pg.abs, 'utf8');
+    var html = readSource(pg.abs, 'utf8');
     var closeHtml = (html.match(/<\/html>/gi) || []).length;
     var closeBody = (html.match(/<\/body>/gi) || []).length;
     if (!/^\s*<!doctype/i.test(html)) broken.push(pg.slug + ': no doctype');
@@ -1499,7 +1515,7 @@ test('the pricing page matches the plan table the server enforces', function() {
   });
   assert(Object.keys(meta).length >= 3, 'could not parse PLAN_META');
 
-  var pricing = fs.readFileSync(path.join(ROOT, 'public/pricing.html'), 'utf8');
+  var pricing = readSource(path.join(ROOT, 'public/pricing.html'), 'utf8');
   var problems = [];
 
   Object.keys(meta).forEach(function(plan) {
@@ -1535,7 +1551,7 @@ test('the site does not claim a technology the code does not implement', functio
   ];
   var srcAll = '';
   fs.readdirSync(path.join(ROOT, 'src')).forEach(function(f) {
-    if (/\.js$/.test(f)) srcAll += fs.readFileSync(path.join(ROOT, 'src', f), 'utf8');
+    if (/\.js$/.test(f)) srcAll += readSource(path.join(ROOT, 'src', f), 'utf8');
   });
   srcAll = srcAll.toLowerCase();
 
@@ -1544,7 +1560,7 @@ test('the site does not claim a technology the code does not implement', functio
     var implemented = c.evidence.some(function(e) { return srcAll.indexOf(e) !== -1; });
     if (implemented) return;
     publicPages().forEach(function(pg) {
-      var html = fs.readFileSync(pg.abs, 'utf8');
+      var html = readSource(pg.abs, 'utf8');
       if (html.toLowerCase().indexOf(c.term.toLowerCase()) !== -1) {
         problems.push(pg.slug + ' claims ' + c.term + ', which src/ does not implement');
       }
@@ -1560,7 +1576,7 @@ test('the site does not claim a technology the code does not implement', functio
 // default, so the claim was not true in the sense that matters.
 test('an open-source claim is backed by an actual licence', function() {
   var claims = publicPages().some(function(pg) {
-    return /open[- ]source/i.test(fs.readFileSync(pg.abs, 'utf8'));
+    return /open[- ]source/i.test(readSource(pg.abs, 'utf8'));
   });
   if (!claims) return;   // nothing to back
 
@@ -1568,15 +1584,15 @@ test('an open-source claim is backed by an actual licence', function() {
   assert(fs.existsSync(licensePath),
     'the site claims open source but the repository has no LICENSE file');
 
-  var declared = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8')).license;
-  var text = fs.readFileSync(licensePath, 'utf8');
+  var declared = JSON.parse(readSource(path.join(ROOT, 'package.json'), 'utf8')).license;
+  var text = readSource(licensePath, 'utf8');
   assert(declared, 'package.json declares no license');
   assert(text.toLowerCase().indexOf(String(declared).toLowerCase()) !== -1,
     'LICENSE does not match the ' + declared + ' declared in package.json');
 
   // The verifier is served standalone over HTTP, so a reader who downloads
   // only that file needs the terms in the file itself.
-  var verifier = fs.readFileSync(path.join(ROOT, 'examples/verify_darkmatter_chain.py'), 'utf8');
+  var verifier = readSource(path.join(ROOT, 'examples/verify_darkmatter_chain.py'), 'utf8');
   assert(/SPDX-License-Identifier/.test(verifier),
     'the standalone verifier carries no SPDX licence header');
 });
@@ -1598,7 +1614,7 @@ test('no page credits RLS with isolation that application code enforces', functi
 
   var problems = [];
   publicPages().forEach(function(pg) {
-    var text = fs.readFileSync(pg.abs, 'utf8');
+    var text = readSource(pg.abs, 'utf8');
     if (/(row-level security|RLS)[^.<]{0,60}(enforc|isolat)/i.test(text) ||
         /(isolat)[^.<]{0,40}via RLS/i.test(text)) {
       problems.push(pg.slug);
@@ -1625,7 +1641,7 @@ test('chain integrity is checked in exactly one place', function() {
   assert(server.indexOf('verifyCommitChain') !== -1,
     'server.js does not use verifyCommitChain at all');
 
-  var integrity = fs.readFileSync(path.join(ROOT, 'src/integrity.js'), 'utf8');
+  var integrity = readSource(path.join(ROOT, 'src/integrity.js'), 'utf8');
   assert(/function verifyCommitChain\s*\(/.test(integrity),
     'verifyCommitChain is gone from integrity.js');
   // It is only worth anything if it rehashes. A version that just compares
@@ -1648,7 +1664,7 @@ test('chain integrity is checked in exactly one place', function() {
 test('records are not described as immutable', function() {
   var offenders = [];
   publicPages().forEach(function(pg) {
-    var text = fs.readFileSync(pg.abs, 'utf8');
+    var text = readSource(pg.abs, 'utf8');
     if (/immutab|tamper.?proof|unalterable|unchangeable/i.test(text)) offenders.push(pg.slug);
   });
   assert(offenders.length === 0,
@@ -1667,7 +1683,7 @@ test('a record is never said to be unchangeable without a qualifier', function()
   var QUALIFIED = /without (?:breaking|detection|being detected)|undetect|breaks? verification|without invalidat/i;
   var offenders = [];
   publicPages().forEach(function(pg) {
-    var text = fs.readFileSync(pg.abs, 'utf8').replace(/<[^>]+>/g, ' ');
+    var text = readSource(pg.abs, 'utf8').replace(/<[^>]+>/g, ' ');
     text.split(/(?<=[.!?])\s+/).forEach(function(sentence) {
       if (VERB.test(sentence) && !QUALIFIED.test(sentence)) {
         offenders.push(pg.slug + ': "' + sentence.trim().slice(0, 90) + '"');
@@ -1800,7 +1816,7 @@ test('the commit route accepts both spellings of the client verification fields'
 test('client-side hashing is scoped, and no longer credits only one SDK', function() {
   var offenders = [];
   publicPages().forEach(function(pg) {
-    var html = fs.readFileSync(pg.abs, 'utf8');
+    var html = readSource(pg.abs, 'utf8');
     var re = /[^.<>]{0,140}(hashed?[^.<>]{0,20}client-side|client-side hash[^.<>]{0,20})[^.<>]{0,140}/gi;
     var m;
     while ((m = re.exec(html)) !== null) {
@@ -1919,7 +1935,7 @@ test('log verification routes never return a payload', () => {
 // re-sign the witness line. The claim was the whole value of L2 and it was not
 // true. These tests tie that wording to a declared fact instead of a memory.
 console.log('\nWitness independence');
-var witnessSrc = fs.readFileSync(path.join(ROOT, 'src/witness.js'), 'utf8');
+var witnessSrc = readSource(path.join(ROOT, 'src/witness.js'), 'utf8');
 var independentWitnesses = require('../src/witness.js').INDEPENDENT_WITNESSES_REGISTERED;
 
 test('witness.js declares whether an independent witness exists', () => {
@@ -1945,7 +1961,7 @@ test('no page claims witness independence while none is registered', () => {
   fs.readdirSync(path.join(ROOT, 'public'))
     .filter(function(f) { return f.endsWith('.html'); })
     .forEach(function(f) {
-      var text = fs.readFileSync(path.join(ROOT, 'public', f), 'utf8');
+      var text = readSource(path.join(ROOT, 'public', f), 'utf8');
       banned.forEach(function(re) {
         var m = text.match(re);
         if (m) offenders.push(f + ': "' + m[0].slice(0, 60) + '"');
@@ -1966,7 +1982,7 @@ test('pages that mention witnesses say who operates them', () => {
   publicPages().forEach(function (pg) {
     var base = pg.slug.split('/').pop();
     if (internal.indexOf(base) !== -1) return;
-    var text = fs.readFileSync(pg.abs, 'utf8');
+    var text = readSource(pg.abs, 'utf8');
     if (!/witness/i.test(text)) return;
     // Saying "co-signed by witnesses" without saying they are ours invites
     // exactly the reading the wording above made explicit.
@@ -2012,7 +2028,7 @@ test('every page canonicalises to a URL that serves that same page', () => {
   var routes = routeTable();
   var offenders = [];
   publicPages().forEach(function(pg) {
-    var html = fs.readFileSync(pg.abs, 'utf8');
+    var html = readSource(pg.abs, 'utf8');
     var m = html.match(/rel=["']canonical["'][^>]*href=["']([^"']+)["']/i) ||
             html.match(/href=["']([^"']+)["'][^>]*rel=["']canonical["']/i);
     if (!m) return;                       // no canonical declared: nothing to check
@@ -2070,7 +2086,7 @@ test('a claim that records outlive DarkMatter mentions the export', () => {
   var PORTABLE   = /export|bundle|download|offline|on your machine|in your hands/i;
   var offenders = [];
   publicPages().forEach(function(pg) {
-    var text = fs.readFileSync(pg.abs, 'utf8')
+    var text = readSource(pg.abs, 'utf8')
       .replace(/<meta[^>]*content="([^"]*)"[^>]*>/gi, ' $1 ')
       .replace(/<[^>]+>/g, ' ');
     text.split(/(?<=[.!?])\s+/).forEach(function(sentence) {
@@ -2099,7 +2115,7 @@ test('surviving a DarkMatter compromise is not claimed without an independent wi
   var PORTABLE   = /export|bundle|download|offline|already hold|in your hands|on your machine/i;
   var offenders = [];
   publicPages().forEach(function(pg) {
-    var text = fs.readFileSync(pg.abs, 'utf8')
+    var text = readSource(pg.abs, 'utf8')
       .replace(/<meta[^>]*content="([^"]*)"[^>]*>/gi, ' $1 ')
       .replace(/<[^>]+>/g, ' ');
     text.split(/(?<=[.!?])\s+/).forEach(function(sentence) {
@@ -2164,7 +2180,7 @@ test('every indexable page carries og and twitter metadata', () => {
   var missing = [];
   publicPages().forEach(function(pg) {
     if (sitemapExcluded().indexOf(pg.slug) !== -1) return;
-    var html = fs.readFileSync(pg.abs, 'utf8');
+    var html = readSource(pg.abs, 'utf8');
     ['og:title', 'og:description', 'og:url', 'twitter:card', 'twitter:title']
       .forEach(function(prop) {
         if (!ogTag(html, prop)) missing.push(pg.slug + ' has no ' + prop);
@@ -2180,7 +2196,7 @@ test('og metadata matches the page it describes', () => {
   // saying different things on the same page.
   var wrong = [];
   publicPages().forEach(function(pg) {
-    var html = fs.readFileSync(pg.abs, 'utf8');
+    var html = readSource(pg.abs, 'utf8');
     if (!ogTag(html, 'og:title')) return;
     var t = (html.match(/<title>([\s\S]*?)<\/title>/) || [])[1];
     var d = ogTag(html, 'description');
@@ -2202,7 +2218,7 @@ test('og metadata matches the page it describes', () => {
 test('no card image is missing or in a format no scraper renders', () => {
   var bad = [];
   publicPages().forEach(function(pg) {
-    var html = fs.readFileSync(pg.abs, 'utf8');
+    var html = readSource(pg.abs, 'utf8');
     ['og:image', 'twitter:image'].forEach(function(prop) {
       var src = ogTag(html, prop);
       if (!src) return;
@@ -2258,7 +2274,7 @@ test('no public page names a competitor product', () => {
                'Honeycomb', 'New Relic', 'Traceloop', 'Humanloop', 'Logfire'];
   var offenders = [];
   publicPages().forEach(function(pg) {
-    var text = fs.readFileSync(pg.abs, 'utf8');
+    var text = readSource(pg.abs, 'utf8');
     named.forEach(function(n) {
       if (text.indexOf(n) !== -1) offenders.push(pg.slug + ' names ' + n);
     });
@@ -2293,7 +2309,7 @@ test('a claim that our tampering is detectable names the reference', () => {
   publicPages().forEach(function(pg) {
     // Titles are not claims, and og/twitter tags repeat the title three more
     // times. Strip the title and do not expand meta content for this check.
-    var text = fs.readFileSync(pg.abs, 'utf8')
+    var text = readSource(pg.abs, 'utf8')
       .replace(/<title>[\s\S]*?<\/title>/gi, ' ')
       .replace(/<[^>]+>/g, ' ');
     text.split(/(?<=[.!?])\s+/).forEach(function(sentence) {
@@ -2312,7 +2328,7 @@ test('a claim that our tampering is detectable names the reference', () => {
 });
 
 test('the terms disclose that detection depends on a customer-held export', () => {
-  var tos = fs.readFileSync(path.join(ROOT, 'public/tos.html'), 'utf8');
+  var tos = readSource(path.join(ROOT, 'public/tos.html'), 'utf8');
   assert(/Detection of a modification made by DarkMatter depends on you retaining/.test(tos),
     'tos.html must state that detecting our own modification depends on a proof ' +
     'bundle the customer exported, because we publish no independent reference');
@@ -2332,10 +2348,10 @@ test('the terms disclose that detection depends on a customer-held export', () =
 console.log('\nSigned checkpoint is verifiable as served');
 
 test('one function rebuilds the signed envelope, and everything uses it', () => {
-  var log = fs.readFileSync(path.join(ROOT, 'src/append-log.js'), 'utf8');
+  var log = readSource(path.join(ROOT, 'src/append-log.js'), 'utf8');
   assert(log.indexOf('function envelopeFromCheckpointRow') !== -1,
     'envelopeFromCheckpointRow is the single reconstruction; it must exist');
-  var wit = fs.readFileSync(path.join(ROOT, 'src/witness.js'), 'utf8');
+  var wit = readSource(path.join(ROOT, 'src/witness.js'), 'utf8');
   assert(wit.indexOf('envelopeFromCheckpointRow(') !== -1,
     'witness.js must not rebuild the envelope inline: it has to match byte for byte');
   assert(server.indexOf('envelopeFromCheckpointRow(') !== -1,
@@ -2389,7 +2405,7 @@ test('no tracked file names the owner or their personal account', () => {
       if (e.isDirectory()) return walk(abs);
       if (!/\.(js|json|md|py|html|toml|cfg|yml|yaml|txt|sh)$/.test(e.name)) return;
       var text;
-      try { text = fs.readFileSync(abs, 'utf8'); } catch (err) { return; }
+      try { text = readSource(abs, 'utf8'); } catch (err) { return; }
       banned.forEach(function(b) {
         if (text.indexOf(b) !== -1) {
           var rel = path.relative(ROOT, abs).split(path.sep).join('/');
@@ -2445,7 +2461,7 @@ test('no file in this repository declares itself the SDK', () => {
       if (e.isDirectory()) return walk(abs);
       if (!/\.(js|py|ts)$/.test(e.name)) return;
       var text;
-      try { text = fs.readFileSync(abs, 'utf8'); } catch (err) { return; }
+      try { text = readSource(abs, 'utf8'); } catch (err) { return; }
       marks.forEach(function (m) {
         if (text.indexOf(m) !== -1) {
           offenders.push(path.relative(ROOT, abs).split(path.sep).join('/'));
@@ -2460,7 +2476,7 @@ test('no file in this repository declares itself the SDK', () => {
 });
 
 test('the parity test reads the SDK that ships, not a local copy', () => {
-  var parity = fs.readFileSync(path.join(ROOT, 'test/sdk_parity.test.py'), 'utf8');
+  var parity = readSource(path.join(ROOT, 'test/sdk_parity.test.py'), 'utf8');
   assert(parity.indexOf('darkmatter-sdk-python') !== -1,
     'sdk_parity must resolve the published SDK repository');
   assert(!/ROOT,\s*["']sdk["']/.test(parity),
@@ -2499,7 +2515,7 @@ test('the documented integrity_hash rule is the one integrity.js computes', () =
 });
 
 test('the page does not describe integrity_hash as a canonical envelope', () => {
-  var tm = fs.readFileSync(path.join(ROOT, 'public/threat-model.html'), 'utf8');
+  var tm = readSource(path.join(ROOT, 'public/threat-model.html'), 'utf8');
   assert(tm.indexOf('SHA-256 of canonical({schema_version') === -1,
     'that is the L3 envelope the SDK signs, not the stored integrity_hash');
   assert(/prefixed hashes joined|sha256:<\/code> prefix/.test(tm),
@@ -2516,7 +2532,7 @@ test('the export bundle tells people a command the verifier accepts', () => {
   assert(cmd.indexOf('--') === -1,
     'verify_darkmatter_chain.py takes a bundle path and nothing else, but the ' +
     'bundle prints: ' + cmd);
-  var verifier = fs.readFileSync(path.join(ROOT, 'examples/verify_darkmatter_chain.py'), 'utf8');
+  var verifier = readSource(path.join(ROOT, 'examples/verify_darkmatter_chain.py'), 'utf8');
   assert(verifier.indexOf('argparse') === -1,
     'the verifier gained argument parsing; re-check what verify_command promises');
 });
@@ -2565,7 +2581,7 @@ test('no test builds a RegExp from a string with a collapsed escape', () => {
   var offenders = [];
   fs.readdirSync(path.join(ROOT, 'test')).forEach(function (name) {
     if (!/\.test\.js$/.test(name)) return;
-    var src = fs.readFileSync(path.join(ROOT, 'test', name), 'utf8');
+    var src = readSource(path.join(ROOT, 'test', name), 'utf8');
     src.split(String.fromCharCode(10)).forEach(function (line, i) {
       if (line.indexOf('new RegExp(') === -1) return;
       var j = line.indexOf('new RegExp(');
@@ -2596,7 +2612,7 @@ test('no test file contains a stray control character', () => {
   var offenders = [];
   fs.readdirSync(path.join(ROOT, 'test')).forEach(function (name) {
     if (!/\.(test\.js|test\.py)$/.test(name)) return;
-    var src = fs.readFileSync(path.join(ROOT, 'test', name), 'utf8');
+    var src = readSource(path.join(ROOT, 'test', name), 'utf8');
     for (var i = 0; i < src.length; i++) {
       var c = src.charCodeAt(i);
       if (c < 32 && c !== 9 && c !== 10 && c !== 13) {
@@ -2638,7 +2654,7 @@ test('no page claims payload encryption while nothing writes an encrypted payloa
   ];
   var offenders = [];
   publicPages().forEach(function (pg) {
-    var text = fs.readFileSync(pg.abs, 'utf8').replace(/<[^>]+>/g, ' ');
+    var text = readSource(pg.abs, 'utf8').replace(/<[^>]+>/g, ' ');
     banned.forEach(function (re) {
       var m = text.match(re);
       if (m) offenders.push(pg.slug + ': "' + m[0] + '"');
@@ -2687,7 +2703,7 @@ test('no unused cipher helpers remain in server.js', () => {
 console.log('\nSelf-hosting schema');
 
 function schemaReferencedBySetup() {
-  var setup = fs.readFileSync(path.join(ROOT, 'SETUP.md'), 'utf8');
+  var setup = readSource(path.join(ROOT, 'SETUP.md'), 'utf8');
   var m = setup.match(/run the contents of `supabase\/([a-z0-9_]+\.sql)`/i);
   assert(m, 'SETUP.md must name the schema file to install');
   return m[1];
@@ -2700,7 +2716,7 @@ test('SETUP.md names a schema file that exists', () => {
 });
 
 test('that schema contains every table the server queries', () => {
-  var sql = fs.readFileSync(path.join(ROOT, 'supabase', schemaReferencedBySetup()), 'utf8');
+  var sql = readSource(path.join(ROOT, 'supabase', schemaReferencedBySetup()), 'utf8');
   // Tables the server actually reads or writes, taken from the source rather
   // than from a list someone has to remember to update.
   var tables = {};
@@ -2735,7 +2751,7 @@ test('that schema contains every table the server queries', () => {
 });
 
 test('the schema can be applied to a fresh Supabase project', () => {
-  var sql = fs.readFileSync(path.join(ROOT, 'supabase', schemaReferencedBySetup()), 'utf8');
+  var sql = readSource(path.join(ROOT, 'supabase', schemaReferencedBySetup()), 'utf8');
   assert(sql.indexOf('CREATE SCHEMA public;') === -1,
     'a fresh Supabase project already has schema public, so this line aborts the ' +
     'script in the SQL editor before any table is created');
@@ -2766,7 +2782,7 @@ function envVarsUsed() {
   var used = {};
   fs.readdirSync(path.join(ROOT, 'src')).forEach(function (f) {
     if (!/\.js$/.test(f)) return;
-    var src = fs.readFileSync(path.join(ROOT, 'src', f), 'utf8');
+    var src = readSource(path.join(ROOT, 'src', f), 'utf8');
     var re = /process\.env\.([A-Z_0-9]+)/g;
     var m;
     while ((m = re.exec(src)) !== null) used[m[1]] = true;
@@ -2775,7 +2791,7 @@ function envVarsUsed() {
 }
 
 function envVarsDocumented() {
-  var doc = fs.readFileSync(path.join(ROOT, '.env.example'), 'utf8');
+  var doc = readSource(path.join(ROOT, '.env.example'), 'utf8');
   var out = {};
   doc.split(String.fromCharCode(10)).forEach(function (line) {
     var t = line.trim();
@@ -2804,7 +2820,7 @@ test('.env.example documents nothing the server stopped reading', () => {
 });
 
 test('the variables that change security behaviour say what unset means', () => {
-  var doc = fs.readFileSync(path.join(ROOT, '.env.example'), 'utf8');
+  var doc = readSource(path.join(ROOT, '.env.example'), 'utf8');
   ['DM_ENCRYPTION_KEY', 'DM_LOG_SIGNING_KEY_PEM'].forEach(function (v) {
     var at = doc.indexOf(v + '=');
     assert(at !== -1, v + ' must be documented');
@@ -2850,7 +2866,7 @@ test('no page shows a sample record at a level the server never assigns', () => 
     // ">" and swallows everything between - which is exactly where demo.html
     // keeps its sample receipt, so the first version of this guard read a file
     // with the L2 removed and passed.
-    var raw = fs.readFileSync(pg.abs, 'utf8');
+    var raw = readSource(pg.abs, 'utf8');
     var key = 'assurance_level';
     var at = raw.indexOf(key);
     while (at !== -1) {
@@ -2879,7 +2895,7 @@ test('no page shows a sample record at a level the server never assigns', () => 
 });
 
 test('signup does not sell an assurance level that is unreachable', () => {
-  var s = fs.readFileSync(path.join(ROOT, 'public/signup.html'), 'utf8');
+  var s = readSource(path.join(ROOT, 'public/signup.html'), 'utf8');
   assert(s.indexOf('L2 &#183; L3 verification on every plan') === -1 &&
          !/Full L1[^<]*L2[^<]*on every plan/.test(s),
     'signup lists L2 as included; no commit is ever labelled L2');
@@ -2900,7 +2916,7 @@ test('a page that declares itself admin-only is excluded from the sitemap', () =
   var excluded = sitemapExcluded();
   var offenders = [];
   publicPages().forEach(function (pg) {
-    var text = fs.readFileSync(pg.abs, 'utf8');
+    var text = readSource(pg.abs, 'utf8');
     var declares = /Admin only|admin-only|Superuser only/i.test(text);
     if (declares && excluded.indexOf(pg.slug) === -1) {
       offenders.push(pg.slug + ' says it is admin-only and is in the sitemap');
@@ -2938,7 +2954,7 @@ test('robots.txt disallows the same paths the sitemap omits', () => {
 // It is the first page a developer reads on GitHub.
 console.log('\nREADME API reference');
 test('every endpoint the README documents has a route', () => {
-  var rd = fs.readFileSync(path.join(ROOT, 'README.md'), 'utf8');
+  var rd = readSource(path.join(ROOT, 'README.md'), 'utf8');
   var METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
   var refs = [];
 
@@ -3021,7 +3037,7 @@ test('the delivery signs the body and does not send the secret', () => {
 });
 
 test('the README documents the header the code sends', () => {
-  var rd = fs.readFileSync(path.join(ROOT, 'README.md'), 'utf8');
+  var rd = readSource(path.join(ROOT, 'README.md'), 'utf8');
   assert(rd.indexOf('X-DarkMatter-Signature') !== -1,
     'the README must name the signature header receivers should check');
   assert(rd.indexOf('X-Hook-Secret') === -1,
@@ -3039,7 +3055,7 @@ test('the README documents the header the code sends', () => {
 console.log('\nSample verifier output');
 
 function verifierSource() {
-  return fs.readFileSync(path.join(ROOT, 'examples/verify_darkmatter_chain.py'), 'utf8');
+  return readSource(path.join(ROOT, 'examples/verify_darkmatter_chain.py'), 'utf8');
 }
 
 test('the verifier does not check signatures or checkpoints', () => {
@@ -3056,7 +3072,7 @@ test('no page shows the verifier reporting a check it does not make', () => {
                 'included in checkpoint', 'Merkle inclusion verified'];
   var offenders = [];
   publicPages().forEach(function (pg) {
-    var raw = fs.readFileSync(pg.abs, 'utf8');
+    var raw = readSource(pg.abs, 'utf8');
     // Only where the page is showing the verifier being run.
     if (raw.indexOf('verify_darkmatter_chain.py') === -1) return;
     banned.forEach(function (b) {
@@ -3090,7 +3106,7 @@ test('the witness server is served', () => {
 test('a page tells the reader they can run one', () => {
   var refs = [];
   publicPages().forEach(function (pg) {
-    var html = fs.readFileSync(pg.abs, 'utf8');
+    var html = readSource(pg.abs, 'utf8');
     if (html.indexOf('darkmatter_witness_server.py') !== -1) refs.push(pg.slug);
   });
   assert(refs.length > 0,
@@ -3101,7 +3117,7 @@ test('the reference witness canonicalises keys the way the server does', () => {
   // It signs the same envelope we sign. If the two order keys differently, its
   // signature never verifies and the witness looks broken rather than the
   // canonicaliser. Plain sorted() is code point; RFC 8785 is UTF-16 code unit.
-  var src = fs.readFileSync(path.join(ROOT, 'github-template/darkmatter_witness_server.py'), 'utf8');
+  var src = readSource(path.join(ROOT, 'github-template/darkmatter_witness_server.py'), 'utf8');
   assert(src.indexOf("sorted(value.keys())") === -1,
     'the witness sorts by code point; the server sorts by UTF-16 code unit');
   assert(src.indexOf("utf-16-be") !== -1,
@@ -3109,7 +3125,7 @@ test('the reference witness canonicalises keys the way the server does', () => {
 });
 
 test('the witness does not treat log position zero as missing', () => {
-  var src = fs.readFileSync(path.join(ROOT, 'github-template/darkmatter_witness_server.py'), 'utf8');
+  var src = readSource(path.join(ROOT, 'github-template/darkmatter_witness_server.py'), 'utf8');
   assert(src.indexOf("checkpoint.get('position') or checkpoint.get('log_position')") === -1,
     'position 0 is falsy, so the first checkpoint of a log would sign the wrong value');
 });
@@ -3129,7 +3145,7 @@ test('every JSON file in examples/ is JSON', () => {
   var bad = [];
   fs.readdirSync(examplesDir()).forEach(function (f) {
     if (!/\.json$/.test(f)) return;
-    var raw = fs.readFileSync(path.join(examplesDir(), f), 'utf8');
+    var raw = readSource(path.join(examplesDir(), f), 'utf8');
     try { JSON.parse(raw); }
     catch (e) { bad.push(f + ' (' + raw.trim().slice(0, 30) + '...)'); }
   });
@@ -3143,7 +3159,7 @@ test('every example bundle is in a shape the verifier accepts', () => {
   fs.readdirSync(examplesDir()).forEach(function (f) {
     if (!/\.json$/.test(f)) return;
     var j;
-    try { j = JSON.parse(fs.readFileSync(path.join(examplesDir(), f), 'utf8')); }
+    try { j = JSON.parse(readSource(path.join(examplesDir(), f), 'utf8')); }
     catch (e) { return; }   // covered by the test above
     var ok = Array.isArray(j.passports) || Array.isArray(j.commits) ||
              (j.payload && j.integrity);
@@ -3155,7 +3171,7 @@ test('every example bundle is in a shape the verifier accepts', () => {
 });
 
 test('example scripts the README names exist', () => {
-  var rd = fs.readFileSync(path.join(ROOT, 'README.md'), 'utf8');
+  var rd = readSource(path.join(ROOT, 'README.md'), 'utf8');
   var missing = [];
   rd.split(String.fromCharCode(10)).forEach(function (line) {
     var t = line.trim();
@@ -3172,7 +3188,7 @@ test('the handoff example reads the fields the API returns', () => {
   // Context Passport with created_by, event, payload, integrity. agent_yy.py
   // read data["commits"] and latest["context"], so it found nothing and would
   // have raised KeyError if it had.
-  var yy = fs.readFileSync(path.join(examplesDir(), 'agent_yy.py'), 'utf8');
+  var yy = readSource(path.join(examplesDir(), 'agent_yy.py'), 'utf8');
   assert(yy.indexOf('data.get("commits"') === -1,
     'the pull response has no commits key; this example finds nothing');
   assert(yy.indexOf('data.get("contexts"') !== -1,
@@ -3207,7 +3223,7 @@ test('every blog post uses the site header and footer', () => {
   var missing = [];
   publicPages().forEach(function (pg) {
     if (pg.slug.indexOf('blogs/') !== 0) return;
-    var html = fs.readFileSync(pg.abs, 'utf8');
+    var html = readSource(pg.abs, 'utf8');
     if (html.indexOf('<header class="nav">') === -1) missing.push(pg.slug + ': no site header');
     if (html.indexOf('<footer') === -1) missing.push(pg.slug + ': no footer');
     if (html.indexOf('class="wordmark"') === -1) missing.push(pg.slug + ': no wordmark');
@@ -3220,7 +3236,7 @@ test('no page carries a competing header or logo', () => {
   // The old markup, by the class names only those variants used.
   var offenders = [];
   shellPages().forEach(function (pg) {
-    var html = fs.readFileSync(pg.abs, 'utf8');
+    var html = readSource(pg.abs, 'utf8');
     ['dm-nav', 'dm-footer', 'dm-nav-logo', 'logo-wm'].forEach(function (cls) {
       if (html.indexOf('class="' + cls) !== -1) offenders.push(pg.slug + ' uses .' + cls);
     });
@@ -3236,7 +3252,7 @@ test('the shared shell brings its own link reset', () => {
   var missing = [];
   publicPages().forEach(function (pg) {
     if (pg.slug.indexOf('blogs/') !== 0) return;
-    var html = fs.readFileSync(pg.abs, 'utf8');
+    var html = readSource(pg.abs, 'utf8');
     if (!/\.wordmark[^{]*\{[^}]*text-decoration:\s*none/.test(html)) {
       missing.push(pg.slug);
     }
@@ -3283,7 +3299,7 @@ test('every admin endpoint checks the caller is an admin', () => {
 });
 
 test('the browser is told whether it is an admin, not who the admins are', () => {
-  var dash = fs.readFileSync(path.join(ROOT, 'public/dashboard.html'), 'utf8');
+  var dash = readSource(path.join(ROOT, 'public/dashboard.html'), 'utf8');
   assert(dash.indexOf('is_admin') !== -1,
     'the dashboard must gate the admin link on is_admin from /api/user/me');
   // The list lives in SUPERUSER_EMAIL on the server. Any admin address appearing
@@ -3326,7 +3342,7 @@ test('the two published files record that they were downloaded', () => {
 console.log('\nAdmin dashboard navigation');
 
 test('growth panes sit above the customer and system groups', () => {
-  var html = fs.readFileSync(path.join(ROOT, 'public/admindashboard.html'), 'utf8');
+  var html = readSource(path.join(ROOT, 'public/admindashboard.html'), 'utf8');
   var labels = [];
   var re = /class="sb-label">([^<]+)</g, m;
   while ((m = re.exec(html)) !== null) labels.push(m[1].trim());
@@ -3340,7 +3356,7 @@ test('growth panes sit above the customer and system groups', () => {
 });
 
 test('every pane is addressable by a hash', () => {
-  var html = fs.readFileSync(path.join(ROOT, 'public/admindashboard.html'), 'utf8');
+  var html = readSource(path.join(ROOT, 'public/admindashboard.html'), 'utf8');
   assert(html.indexOf('function openPaneFromHash') !== -1,
     'no hash handler: /admindashboard#channels would not select a pane');
   assert(html.indexOf("addEventListener('hashchange'") !== -1,
@@ -3350,7 +3366,7 @@ test('every pane is addressable by a hash', () => {
 });
 
 test('every sidebar entry points at a pane that exists', () => {
-  var html = fs.readFileSync(path.join(ROOT, 'public/admindashboard.html'), 'utf8');
+  var html = readSource(path.join(ROOT, 'public/admindashboard.html'), 'utf8');
   var panes = [];
   // class="pane active" on the default pane, so match the class list
   // loosely; the first version missed p-dashboard and reported it dead.
@@ -3375,7 +3391,7 @@ test('every sidebar entry points at a pane that exists', () => {
 console.log('\nDatabase filters name real columns');
 
 function schemaColumns() {
-  var sql = fs.readFileSync(path.join(ROOT, 'supabase', schemaReferencedBySetup()), 'utf8');
+  var sql = readSource(path.join(ROOT, 'supabase', schemaReferencedBySetup()), 'utf8');
   var NL = String.fromCharCode(10);
   var out = {};
   var marker = 'CREATE TABLE ';
@@ -3446,7 +3462,7 @@ test('every column the server filters or sorts on exists in the schema', () => {
 
   fs.readdirSync(path.join(ROOT, 'src')).forEach(function (f) {
     if (f.slice(-3) !== '.js') return;
-    var text = fs.readFileSync(path.join(ROOT, 'src', f), 'utf8');
+    var text = readSource(path.join(ROOT, 'src', f), 'utf8');
     var i = 0;
     while ((i = text.indexOf(FROM, i)) !== -1) {
       var s0 = i + FROM.length;
@@ -3502,7 +3518,7 @@ test('checkpoint ordering breaks ties on timestamp', () => {
   var FROM_CP = ".from('checkpoints')";
   var missing = [];
   files.forEach(function (f) {
-    var text = fs.readFileSync(path.join(ROOT, 'src', f), 'utf8');
+    var text = readSource(path.join(ROOT, 'src', f), 'utf8');
     // Only checkpoints repeat a position. log_entries positions are unique, so
     // ordering those by position alone is already deterministic and this guard
     // has nothing to say about them.
