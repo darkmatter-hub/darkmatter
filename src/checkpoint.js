@@ -104,13 +104,36 @@ async function publishCheckpoint(supabaseService) {
       return { published: false, reason: 'no_entries' };
     }
 
-    // Get previous checkpoint for chain linkage
-    const { data: prevCp } = await supabaseService
+    // Get previous checkpoint for chain linkage.
+    //
+    // This ordered by log_position, which is a column on `commits` and has
+    // never been a column on `checkpoints`. PostgREST rejected every one of
+    // these requests, the error was destructured away, and prevCp came back
+    // undefined each time — so every checkpoint ever published carried
+    // previous_cp_id: null and previous_tree_root: null, each one claiming to
+    // be the first. The link that stops checkpoint history being forked or
+    // rewritten has never existed, and /api/log/checkpoint has been serving
+    // the proof of it in public the whole time.
+    //
+    // timestamp breaks the tie because the tree can sit at one position for
+    // weeks while the scheduler keeps signing every ten minutes. Ordering by
+    // position alone leaves "the previous checkpoint" as whichever of those
+    // rows Postgres happens to return.
+    const { data: prevCp, error: prevErr } = await supabaseService
       .from('checkpoints')
       .select('checkpoint_id, tree_root')
-      .order('log_position', { ascending: false })
+      .order('position',  { ascending: false })
+      .order('timestamp', { ascending: false })
       .limit(1)
-      .single();
+      .maybeSingle();
+
+    if (prevErr) {
+      // Writing an unlinked checkpoint while a predecessor exists is exactly
+      // the fault above. Publish nothing rather than another orphan.
+      console.error('[checkpoint] Previous checkpoint unreadable, refusing to ' +
+                    'publish an unlinked one:', prevErr.message);
+      return { published: false, error: 'previous_checkpoint_unreadable' };
+    }
 
     const timestamp = new Date().toISOString().replace(/\.\d+Z?$/, 'Z');
 

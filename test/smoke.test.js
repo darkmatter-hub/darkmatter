@@ -3364,6 +3364,168 @@ test('every sidebar entry points at a pane that exists', () => {
   assert(dead.length === 0, 'sidebar buttons with no pane: ' + dead.join(', '));
 });
 
+// 60. A filter naming a column that does not exist fails the whole request
+// src/checkpoint.js ordered the previous-checkpoint lookup by log_position,
+// which is a column on commits and never was one on checkpoints. PostgREST
+// answers that with a 400 and no rows. The call site destructured { data }
+// only, so the error vanished and prevCp was undefined on every run since the
+// scheduler shipped: every checkpoint was written with previous_cp_id null and
+// claimed to be the first one. Nothing failed, nothing logged, and the public
+// endpoint served the evidence for weeks.
+console.log('\nDatabase filters name real columns');
+
+function schemaColumns() {
+  var sql = fs.readFileSync(path.join(ROOT, 'supabase', schemaReferencedBySetup()), 'utf8');
+  var NL = String.fromCharCode(10);
+  var out = {};
+  var marker = 'CREATE TABLE ';
+  var i = 0;
+  while ((i = sql.indexOf(marker, i)) !== -1) {
+    var open = sql.indexOf('(', i);
+    if (open === -1) break;
+    var head = sql.slice(i + marker.length, open).trim();
+    head = head.split('IF NOT EXISTS ').join('').trim();
+    if (head.indexOf('.') !== -1) head = head.slice(head.indexOf('.') + 1);
+    head = head.split('"').join('').trim().toLowerCase();
+    var close = sql.indexOf(NL + ');', open);
+    if (close === -1) { i = open + 1; continue; }
+    var set = out[head] || (out[head] = {});
+    sql.slice(open + 1, close).split(NL).forEach(function (line) {
+      var t = line.trim();
+      if (!t) return;
+      var up = t.toUpperCase();
+      // Table constraints are not columns. Match the keyword plus its
+      // separator: a bare 'CHECK' prefix also swallows checkpoint_id, which
+      // is the exact column this guard exists to protect.
+      var CONSTRAINTS = ['CONSTRAINT ', 'PRIMARY KEY', 'FOREIGN KEY',
+                         'UNIQUE ', 'UNIQUE(', 'CHECK ', 'CHECK('];
+      for (var c = 0; c < CONSTRAINTS.length; c++) {
+        if (up.indexOf(CONSTRAINTS[c]) === 0) return;
+      }
+      var name = t.split(' ')[0].split(',')[0].split('"').join('');
+      if (name) set[name.toLowerCase()] = true;
+    });
+    i = close + 1;
+  }
+
+  // Hand-written migrations add columns after the fact; a pg_dump does not.
+  // Reading both means the guard works whichever file SETUP.md points at.
+  var ADD = 'ADD COLUMN IF NOT EXISTS ';
+  var alters = sql.split('ALTER TABLE ');
+  for (var a = 1; a < alters.length; a++) {
+    var seg = alters[a];
+    var tbl = seg.split('(')[0].split(String.fromCharCode(10))[0]
+                 .split('ONLY ').join('').trim().split(' ')[0]
+                 .split('"').join('').toLowerCase();
+    if (tbl.indexOf('.') !== -1) tbl = tbl.slice(tbl.indexOf('.') + 1);
+    if (!out[tbl]) continue;
+    var k = 0;
+    while ((k = seg.indexOf(ADD, k)) !== -1) {
+      k += ADD.length;
+      var col = seg.slice(k).trim().split(' ')[0].split(';')[0]
+                   .split(',')[0].split('"').join('').toLowerCase();
+      if (col) out[tbl][col] = true;
+    }
+  }
+  return out;
+}
+
+test('every column the server filters or sorts on exists in the schema', () => {
+  var cols = schemaColumns();
+  // If the parser breaks it must say so rather than pass by finding nothing.
+  assert(Object.keys(cols).length > 20,
+    'the schema parser found only ' + Object.keys(cols).length + ' tables, so it is broken');
+  assert(cols.checkpoints && cols.checkpoints.position,
+    'the schema parser did not find checkpoints.position, so it is broken');
+  assert(!(cols.checkpoints && cols.checkpoints.log_position),
+    'checkpoints.log_position exists now, so this guard is testing the wrong thing');
+
+  var FILTERS = ['.order(', '.eq(', '.neq(', '.gt(', '.gte(', '.lt(', '.lte(', '.in('];
+  var FROM = ".from('";
+  var bad = [];
+
+  fs.readdirSync(path.join(ROOT, 'src')).forEach(function (f) {
+    if (f.slice(-3) !== '.js') return;
+    var text = fs.readFileSync(path.join(ROOT, 'src', f), 'utf8');
+    var i = 0;
+    while ((i = text.indexOf(FROM, i)) !== -1) {
+      var s0 = i + FROM.length;
+      var e0 = text.indexOf("'", s0);
+      if (e0 === -1) break;
+      var table = text.slice(s0, e0).toLowerCase();
+      i = e0 + 1;
+      // Unknown tables are the other guard's job, not this one's.
+      if (!cols[table]) continue;
+      // Stop at the next .from( as well as the next semicolon: a single
+      // statement can hold two builders (Promise.all([...])), and without this
+      // the second one's columns get checked against the first one's table.
+      var stopSemi = text.indexOf(';', e0);
+      var stopFrom = text.indexOf(FROM, e0 + 1);
+      var stop = stopSemi;
+      if (stopFrom !== -1 && (stop === -1 || stopFrom < stop)) stop = stopFrom;
+      var stmt = text.slice(e0, stop === -1 ? text.length : stop);
+      FILTERS.forEach(function (fn) {
+        var j = 0;
+        while ((j = stmt.indexOf(fn, j)) !== -1) {
+          var cs = j + fn.length;
+          j = cs;
+          if (stmt.charAt(cs) !== "'") continue;
+          var ce = stmt.indexOf("'", cs + 1);
+          if (ce === -1) continue;
+          var col = stmt.slice(cs + 1, ce).toLowerCase();
+          // Embedded resources, expressions and multi-column forms are not
+          // plain column names and this guard cannot judge them.
+          if (!col || col.indexOf(',') !== -1 || col.indexOf('(') !== -1 ||
+              col.indexOf('.') !== -1 || col.indexOf(' ') !== -1) continue;
+          if (!cols[table][col]) {
+            bad.push('src/' + f + ': ' + table + '.' + col + ' in ' + fn + ')');
+          }
+        }
+      });
+    }
+  });
+
+  var SEP = String.fromCharCode(10) + '       ';
+  assert(bad.length === 0,
+    'PostgREST rejects the entire request when a filter names a column the table ' +
+    'does not have, and these call sites discard the error:' + SEP + bad.join(SEP));
+});
+
+// 61. "The latest checkpoint" must not be whichever row Postgres feels like
+// The scheduler signs every ten minutes whether or not the tree grew, so a
+// quiet log accumulates hundreds of checkpoints at one position. Ordering by
+// position alone made /api/log/checkpoint return an arbitrary member of that
+// run — in production, the oldest, so the endpoint advertised a checkpoint
+// from sixteen days earlier as current. Freshness is the whole claim.
+test('checkpoint ordering breaks ties on timestamp', () => {
+  var files = ['server.js', 'checkpoint.js', 'append-log.js'];
+  var FROM_CP = ".from('checkpoints')";
+  var missing = [];
+  files.forEach(function (f) {
+    var text = fs.readFileSync(path.join(ROOT, 'src', f), 'utf8');
+    // Only checkpoints repeat a position. log_entries positions are unique, so
+    // ordering those by position alone is already deterministic and this guard
+    // has nothing to say about them.
+    var c = 0;
+    while ((c = text.indexOf(FROM_CP, c)) !== -1) {
+      var stop = text.indexOf(';', c);
+      var stmt = text.slice(c, stop === -1 ? c + 600 : stop);
+      c += FROM_CP.length;
+      ['position', 'tree_size'].forEach(function (key) {
+        if (stmt.indexOf(".order('" + key + "'") === -1) return;
+        if (stmt.indexOf(".order('timestamp'") !== -1) return;
+        var upto = text.slice(0, c).split(String.fromCharCode(10)).length;
+        missing.push('src/' + f + ':' + upto + ' orders checkpoints by ' + key +
+                     ' with no timestamp tie-break');
+      });
+    }
+  });
+  var SEP = String.fromCharCode(10) + '       ';
+  assert(missing.length === 0,
+    'checkpoints share a position whenever the log is quiet, so these pick one ' +
+    'at random:' + SEP + missing.join(SEP));
+});
+
 // Also runnable standalone: node test/security.test.js
 (function() {
   var sec = require('./security.test.js').run();

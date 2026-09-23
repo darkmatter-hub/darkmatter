@@ -1821,12 +1821,24 @@ async function resolveLineageRoot(ctxId) {
 async function fireEventHooks(agentId, eventType, data) {
   // Fire and forget — no-op if no hooks configured
   try {
-    const { data: hooks } = await supabaseService
+    // This filtered on event_type and is_active. Neither is a column on
+    // event_hooks: POST /api/hooks writes `events`, which is a text[], and
+    // `enabled`. PostgREST rejects the whole request when a filter names a
+    // column that does not exist, so `hooks` came back null on every call and
+    // the length check below returned one line later. Webhooks have never
+    // fired, for anyone, since the feature shipped — and the outer catch, the
+    // discarded error and the null check hid it perfectly.
+    const { data: hooks, error } = await supabaseService
       .from('event_hooks')
       .select('*')
       .eq('agent_id', agentId)
-      .eq('event_type', eventType)
-      .eq('is_active', true);
+      .contains('events', [eventType])
+      .eq('enabled', true);
+    if (error) {
+      // Loud, because silence is what made this last.
+      console.error('[hooks] Lookup failed, no hooks delivered:', error.message);
+      return;
+    }
     if (!hooks || !hooks.length) return;
     for (const hook of hooks) {
       const hookSecret = hook.secret ? decryptValue(hook.secret) : null;
@@ -1842,9 +1854,32 @@ async function fireEventHooks(agentId, eventType, data) {
         headers['X-DarkMatter-Signature'] =
           'sha256=' + crypto.createHmac('sha256', hookSecret).update(body, 'utf8').digest('hex');
       }
-      fetch(hook.url, { method: 'POST', headers, body }).catch(() => {});
+      recordHookDelivery(hook, eventType, data, headers, body);
     }
   } catch (_) {}
+}
+
+// GET /api/hooks/:hookId/deliveries reads hook_deliveries, and nothing in the
+// codebase had ever written a row to it, so that endpoint returned an empty
+// list no matter what happened. A delivery log that cannot record a delivery
+// is worse than no delivery log: it answers "did my webhook arrive?" with a
+// confident no. Still fire-and-forget — the caller is not waiting on this.
+function recordHookDelivery(hook, eventType, data, headers, body) {
+  const started = Date.now();
+  fetch(hook.url, { method: 'POST', headers, body })
+    .then(r => ({ status: r.ok ? 'delivered' : 'failed', http: r.status, note: null }))
+    .catch(e => ({ status: 'error', http: null, note: e.message }))
+    .then(out => supabaseService.from('hook_deliveries').insert({
+      id:          'del_' + crypto.randomBytes(8).toString('hex'),
+      hook_id:     hook.id,
+      event:       eventType,
+      ctx_id:      (data && (data.ctxId || data.ctx_id)) || null,
+      status:      out.status,
+      http_status: out.http,
+      response:    out.note ? String(out.note).slice(0, 500) : null,
+      duration_ms: Date.now() - started,
+    }))
+    .then(() => {}, () => {});
 }
 
 // ── commit_usage helpers ──────────────────────────────────────────────────────
@@ -2895,7 +2930,10 @@ app.get('/api/export/:ctxId', flexAuth, async (req, res) => {
         .from('checkpoints')
         .select('checkpoint_id, position, tree_root, tree_size, log_root, server_sig, timestamp, previous_cp_id, previous_tree_root, published, published_url')
         .gte('position', tipLogEntry.position)
-        .order('position', { ascending: true })
+        // Earliest, not any: this timestamp is the claim "the record already
+        // existed by then", so the tie breaks toward the tightest bound.
+        .order('position',  { ascending: true })
+        .order('timestamp', { ascending: true })
         .limit(1)
         .single();
       checkpoint = cp || null;
@@ -2905,7 +2943,8 @@ app.get('/api/export/:ctxId', flexAuth, async (req, res) => {
       const { data: latestCp } = await supabaseService
         .from('checkpoints')
         .select('checkpoint_id, position, tree_root, tree_size, log_root, server_sig, timestamp, previous_cp_id, previous_tree_root, published, published_url')
-        .order('position', { ascending: false })
+        .order('position',  { ascending: false })
+        .order('timestamp', { ascending: false })
         .limit(1)
         .single();
       checkpoint = latestCp || null;
@@ -3122,7 +3161,15 @@ app.get('/api/log/checkpoint', apiLimiter, async (req, res) => {
     const { data: cp, error } = await supabaseService
       .from('checkpoints')
       .select('checkpoint_id, position, tree_root, tree_size, log_root, server_sig, timestamp, previous_cp_id, previous_tree_root, witness_count, witness_status')
-      .order('position', { ascending: false })
+      // The scheduler signs every ten minutes whether or not the tree grew, so
+      // a quiet log leaves hundreds of checkpoints sharing one position.
+      // Ordering by position alone returned an arbitrary one of them — in
+      // production, consistently the oldest, which is how this endpoint came to
+      // advertise a checkpoint from sixteen days earlier as the current one.
+      // Freshness is the entire value of a checkpoint: it is the timestamp by
+      // which a record demonstrably already existed.
+      .order('position',  { ascending: false })
+      .order('timestamp', { ascending: false })
       .limit(1)
       .maybeSingle();
     if (error) throw error;
@@ -3162,6 +3209,7 @@ app.get('/api/log/proof/:commitId', apiLimiter, async (req, res) => {
       .select('checkpoint_id, position, log_root, tree_root, tree_size, server_sig, timestamp, previous_cp_id, previous_tree_root, witness_count, witness_status')
       .gte('tree_size', proof.tree_size)
       .order('tree_size', { ascending: true })
+      .order('timestamp', { ascending: true })
       .limit(1)
       .maybeSingle();
 
