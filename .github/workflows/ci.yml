@@ -69,6 +69,14 @@ jobs:
       - name: Checkpoints link to their predecessor and are made on change
         run: node test/checkpoint.test.js
 
+      # A dated X campaign has two ways to go wrong. The cadence: catching up
+      # after a missed run by posting on consecutive days. And the content: the
+      # accord campaign is about an agreement DarkMatter did not sign, so a post
+      # implying endorsement, certification or prevention would be false in
+      # public. Both are pinned here, the second by name.
+      - name: Campaign posts keep their cadence and never claim what is not true
+        run: node test/campaign.test.js
+
       # A witness co-signature is only worth anything if it verifies against
       # the key registered for that witness. In production it did not: the
       # witness had regenerated its key, so every signature was stored with

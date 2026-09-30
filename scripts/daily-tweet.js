@@ -18,6 +18,7 @@ const https  = require('https');
 const crypto = require('crypto');
 const fs     = require('fs');
 const path   = require('path');
+const campaigns = require('./x-campaigns.js');
 
 // ── Content bank ──────────────────────────────────────────────────────────────
 // 60 posts, 2-month rotation. Covers: positioning, technical facts,
@@ -402,6 +403,12 @@ function withHashtags(text, dayIndex) {
   return tags.length ? text + '\n\n' + tags.join(' ') : text;
 }
 
+function withCampaignTags(text, campaign, i) {
+  const tags = campaigns.campaignTags(campaign, i, MAX_TAGS);
+  while (tags.length && tweetLength(text + '\n\n' + tags.join(' ')) > 280) tags.pop();
+  return tags.length ? text + '\n\n' + tags.join(' ') : text;
+}
+
 // -- Posted-tweet ledger ------------------------------------------------------
 // The schedule decides WHETHER to post. This decides WHAT, and its only rule
 // is that nothing goes out twice.
@@ -469,6 +476,26 @@ function validateBank() {
     else byHash.set(h, i);
   });
 
+  // Campaign posts go through the same ledger, so they get the same checks,
+  // plus the one that matters most for a dated run: a campaign post that is
+  // also in the bank would be marked posted by whichever went first and the
+  // other would silently never appear.
+  campaigns.CAMPAIGNS.forEach((c) => {
+    if (Number.isNaN(campaigns.dayNumber(c.start))) problems.push(`campaign ${c.name}: start "${c.start}" is not a date.`);
+    if (!(Number.isInteger(c.everyDays) && c.everyDays >= 1)) problems.push(`campaign ${c.name}: everyDays must be a positive integer.`);
+    c.tweets.forEach((t, i) => {
+      const where = `campaign ${c.name} post ${i + 1}`;
+      if (typeof t !== 'string' || t.trim() === '') {
+        problems.push(`${where}: not a non-empty string (${JSON.stringify(t)}).`);
+        return;
+      }
+      if (tweetLength(t) > 280) problems.push(`${where}: ${tweetLength(t)} characters before hashtags, over the 280 limit.`);
+      const h = tweetHash(t);
+      if (byHash.has(h)) problems.push(`${where} is identical to ${byHash.get(h)}.`);
+      else byHash.set(h, where);
+    });
+  });
+
   if (problems.length) {
     console.error(`\nThe tweet bank is not usable (${problems.length} problem(s)):\n`);
     problems.forEach((m) => console.error('  ' + m));
@@ -501,6 +528,32 @@ function recordPost(index) {
   ledger.bank_size_when_written = TWEETS.length;
   fs.writeFileSync(LEDGER_PATH, JSON.stringify(ledger, null, 2) + '\n');
   console.log(`Recorded in posted-tweets.json (${ledger.posted.length}/${TWEETS.length} of the bank used).`);
+}
+
+function recordCampaignPost(due) {
+  const ledger = loadLedger();
+  const h = tweetHash(due.text);
+  const today = new Date().toISOString().slice(0, 10);
+  let entry = ledger.posted.find((e) => e.hash === h);
+  if (!entry) {
+    // campaign and campaign_index rather than index_when_recorded: a campaign
+    // post has no position in the bank, and lastPostedDay() in x-campaigns.js
+    // finds a campaign's own posts by this field to keep its cadence.
+    entry = { hash: h, campaign: due.campaign.name, campaign_index: due.i, dates: [], sources: [] };
+    ledger.posted.push(entry);
+  }
+  if (!entry.dates.includes(today)) entry.dates.push(today);
+  if (!entry.sources.includes('live')) entry.sources.push('live');
+  fs.writeFileSync(LEDGER_PATH, JSON.stringify(ledger, null, 2) + '\n');
+  console.log(`Recorded in posted-tweets.json (campaign ${due.campaign.name}, post ${due.i + 1} of ${due.campaign.tweets.length}).`);
+}
+
+// Bank tweets nobody has seen yet. Counted by hash, not by subtracting the
+// ledger's length from the bank's: the ledger also holds campaign posts, so
+// the subtraction goes negative the day a campaign starts.
+function bankRemaining() {
+  const seen = postedHashes();
+  return TWEETS.filter((t) => !seen.has(tweetHash(t))).length;
 }
 
 // ── Irregular posting schedule ────────────────────────────────────────────────
@@ -620,8 +673,23 @@ function postsBefore(day) {
 //
 // Returns { skip: true } to stay quiet, { exhausted: true } when every tweet
 // has been used, or { index } to post.
+// The slot a campaign post takes on a given day. Varies by day, like the bank,
+// so a fixed cadence in days does not also mean a fixed minute.
+const campaignSlot = (day, name) => Math.floor(rand(day, 'campaign:' + name) * SLOTS_UTC.length);
+
 function planThisRun() {
   const day = utcDay();
+
+  // A dated campaign outranks the evergreen bank. Its slot is a floor, not an
+  // appointment: if the chosen run failed or GitHub dropped it, any later run
+  // that day still posts, because a campaign that silently skips a day is
+  // worse than one that posts at the wrong hour.
+  const due = campaigns.dueCampaignPost(loadLedger(), day, tweetHash);
+  if (due) {
+    const forced = process.env.FORCE_POST === 'true';
+    if (forced || currentSlot() >= campaignSlot(day, due.campaign.name)) return { campaign: due };
+    console.log(`Campaign ${due.campaign.name} post ${due.i + 1} is due today at slot ${campaignSlot(day, due.campaign.name)}; this is slot ${currentSlot()}.`);
+  }
 
   if (process.env.FORCE_POST !== 'true') {
     const todays = slotsForDay(day);
@@ -668,7 +736,7 @@ function printSchedule(days = 45) {
   console.log(`\n  ${total} posts over ${days} days (${(total / days).toFixed(2)}/day, ~${Math.round((total / days) * 30)}/month)`);
   console.log(`  longest silent stretch: ${longestGap} day(s)`);
 
-  const remaining = TWEETS.length - loadLedger().posted.length;
+  const remaining = bankRemaining();
   console.log(`  unposted tweets left:   ${remaining} of ${TWEETS.length}`);
   if (remaining === 0) {
     console.log('  the bank is used up; nothing will post until new tweets are added');
@@ -751,14 +819,63 @@ async function postTweet(text, secrets) {
   //   node scripts/daily-tweet.js --check
   if (process.argv.includes('--check')) {
     validateBank();
-    const remaining = TWEETS.length - loadLedger().posted.length;
-    console.log(`Bank OK: ${TWEETS.length} tweets, no holes, no duplicates. ${remaining} unposted.`);
+    const campaignLeft = campaigns.campaignPostsRemaining(loadLedger(), tweetHash);
+    console.log(`Bank OK: ${TWEETS.length} tweets, no holes, no duplicates. ${bankRemaining()} unposted.`);
+    console.log(`Campaigns OK: ${campaigns.CAMPAIGNS.map((c) => `${c.name} (${c.tweets.length} posts)`).join(', ') || 'none'}. ${campaignLeft} unposted.`);
+    process.exit(0);
+  }
+
+  // Print every campaign post with the day it is scheduled for and its length,
+  // so a dated run can be read end to end before any of it is public:
+  //   node scripts/daily-tweet.js --campaign
+  if (process.argv.includes('--campaign')) {
+    validateBank();
+    const seen = postedHashes();
+    campaigns.CAMPAIGNS.forEach((c) => {
+      console.log(`\n  ${c.name}: ${c.tweets.length} posts, every ${c.everyDays} day(s) from ${c.start}\n`);
+      c.tweets.forEach((t, i) => {
+        const day = campaigns.scheduledDay(c, i);
+        const slot = SLOTS_UTC[campaignSlot(day, c.name)];
+        const at = `${String(slot.h).padStart(2, '0')}:${String(slot.m).padStart(2, '0')}`;
+        const full = withCampaignTags(t, c, i);
+        console.log(`  ${String(i + 1).padStart(2)}. ${campaigns.isoDate(day)} ${at} UTC  ${tweetLength(full)}/280  ${seen.has(tweetHash(t)) ? 'POSTED' : ''}`);
+        console.log(full.split('\n').map((l) => '        ' + l).join('\n') + '\n');
+      });
+    });
     process.exit(0);
   }
 
   const scheduleArg = process.argv.indexOf('--schedule');
   if (scheduleArg !== -1) {
     printSchedule(Number(process.argv[scheduleArg + 1]) || 45);
+    process.exit(0);
+  }
+
+  // Say what this run would do, right now, and do none of it. No credentials
+  // needed and nothing is recorded:
+  //   node scripts/daily-tweet.js --dry-run
+  //   FORCE_POST=true node scripts/daily-tweet.js --dry-run     (as a manual run)
+  // Until this existed the only way to find out what the next run would post
+  // was to let it post.
+  if (process.argv.includes('--dry-run')) {
+    validateBank();
+    const plan = planThisRun();
+    if (plan.skip) { console.log('Would post nothing on this run.'); process.exit(0); }
+    if (plan.campaign) {
+      const due = plan.campaign;
+      const text = withCampaignTags(due.text, due.campaign, due.i);
+      console.log(`Would post campaign ${due.campaign.name} post ${due.i + 1} of ${due.campaign.tweets.length} (${tweetLength(text)}/280 chars):\n`);
+      console.log(text);
+    } else if (plan.exhausted) {
+      const left = campaigns.campaignPostsRemaining(loadLedger(), tweetHash);
+      console.log(left > 0
+        ? 'Would post nothing: the bank is used up and no campaign post is due on this run.'
+        : 'Would FAIL: the bank is used up and no campaign has posts left.');
+    } else {
+      const text = withHashtags(TWEETS[plan.index], plan.index);
+      console.log(`Would post bank tweet #${plan.index + 1} of ${TWEETS.length} (${tweetLength(text)}/280 chars):\n`);
+      console.log(text);
+    }
     process.exit(0);
   }
 
@@ -793,6 +910,32 @@ async function postTweet(text, secrets) {
     // The schedule decides whether this run posts at all. Most runs do not.
     const plan = planThisRun();
     if (plan.skip) process.exit(0);
+
+    if (plan.campaign) {
+      const due = plan.campaign;
+      const text = withCampaignTags(due.text, due.campaign, due.i);
+      console.log(`Posting campaign ${due.campaign.name} post ${due.i + 1} of ${due.campaign.tweets.length} (${tweetLength(text)}/280 chars):`);
+      console.log(text);
+      console.log('---');
+      try {
+        const result = await postTweet(text, secrets);
+        console.log('Posted successfully. Tweet ID:', result?.data?.id);
+        recordCampaignPost(due);
+      } catch (err) {
+        console.error('Failed to post:', err.message);
+        process.exit(1);
+      }
+      return;
+    }
+
+    if (plan.exhausted && campaigns.campaignPostsRemaining(loadLedger(), tweetHash) > 0) {
+      // The non-zero exit below exists to tell a person the account has run
+      // out of things to say. While a campaign still has posts to send it has
+      // not, and failing three runs a day for a month would bury the one
+      // failure that matters under ninety that do not.
+      console.log('The evergreen bank is used up; a campaign is still running, so this is a quiet run rather than a failure.');
+      process.exit(0);
+    }
     if (plan.exhausted) {
       console.error('');
       console.error(`Every one of the ${TWEETS.length} tweets in the bank has already been posted.`);
