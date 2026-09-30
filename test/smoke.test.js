@@ -3780,6 +3780,108 @@ test('checkpoint ordering breaks ties on timestamp', () => {
     'at random:' + SEP + missing.join(SEP));
 });
 
+// 62. The accord section, and the claims it leans on
+// On 29 September 2026 six frontier companies signed a voluntary accord asking
+// each of them for four layers of controls and audits. DarkMatter did not sign
+// it and performs none of the four layers. The homepage now has a section
+// saying what it does beside each one, and the way that section goes wrong is
+// obvious in advance: someone edits it to sound more helpful. These hold the
+// sentences that stop it doing so, and three things found while checking it.
+console.log('\nAccord section and the claims around it');
+
+function accordSection() {
+  var home = readSource(path.join(ROOT, 'public', 'index.html'));
+  var i = home.indexOf('<section class="section" id="accord">');
+  assert(i !== -1, 'the homepage has no section with id="accord"');
+  return home.slice(i, home.indexOf('</section>', i));
+}
+
+test('the accord section says what DarkMatter is not', () => {
+  var sec = accordSection();
+  ['is not a signatory', 'not endorsed by or affiliated with', 'performs none of the four',
+   'does not monitor, evaluate, block or stop', 'DarkMatter is not that auditor',
+   'not that every action was recorded', 'operated by DarkMatter',
+   'proof bundle exported beforehand', 'holds no third-party certification'].forEach(function (must) {
+    assert(sec.indexOf(must) !== -1,
+      'the accord section no longer says "' + must + '", which is one of the limits that makes the rest of it true');
+  });
+});
+
+test('the accord section claims no status and names no signatory', () => {
+  var sec = accordSection();
+  var low = sec.toLowerCase();
+  ['accord-ready', 'accord ready', 'accord-compliant', 'accord compliant', 'compliant with the accord',
+   'meets the accord', 'satisfies the accord', 'required by the accord', 'aligned with the accord',
+   'supports the accord', 'certified for'].forEach(function (never) {
+    assert(low.indexOf(never) === -1, 'the accord section says "' + never + '"; the accord names no tool and grants no status');
+  });
+  ['Google', 'Anthropic', 'Meta', 'OpenAI', 'xAI', 'Nvidia', 'Trump', 'President'].forEach(function (name) {
+    var at = sec.indexOf(name);
+    while (at !== -1) {
+      var before = at === 0 ? ' ' : sec.charAt(at - 1), after = sec.charAt(at + name.length);
+      var letter = /[A-Za-z]/;
+      assert(letter.test(before) || letter.test(after),
+        'the accord section names ' + name + '; it refers to the signatories only as six frontier companies');
+      at = sec.indexOf(name, at + 1);
+    }
+  });
+});
+
+test('the campaign link lands on a section that exists', () => {
+  assert(server.indexOf("accord: '/?src=accord#accord'") !== -1,
+    '/go/accord no longer redirects to the #accord anchor');
+  var i = server.indexOf('const CLICK_SOURCES = new Set([');
+  assert(server.slice(i, i + 160).indexOf("'accord'") !== -1,
+    "'accord' is not a known click source, so /go/accord redirects to the bare homepage and counts nothing");
+  accordSection();
+});
+
+// The banner counted from 2 August 2026 and, once that passed, told every
+// visitor Article 12 had been "enforceable since Aug 2, 2026" with a running
+// count of "days of evidence required". The Digital Omnibus had deferred it to
+// 2 December 2027; /eu-ai-act was corrected and the banner linking to it was
+// not, so the homepage contradicted the page it sent people to.
+test('the EU AI Act banner uses the date the EU AI Act page uses', () => {
+  var home = readSource(path.join(ROOT, 'public', 'index.html'));
+  var act  = readSource(path.join(ROOT, 'public', 'eu-ai-act.html'));
+  var marker = "var deadline = new Date('";
+  var pick = function (html) {
+    var i = html.indexOf(marker);
+    return i === -1 ? null : html.slice(i + marker.length, i + marker.length + 10);
+  };
+  assert(pick(home) && pick(act), 'could not find the deadline on one of the two pages');
+  assert(pick(home) === pick(act),
+    'the homepage banner counts to ' + pick(home) + ' and /eu-ai-act counts to ' + pick(act));
+  assert(home.toLowerCase().indexOf('enforceable since') === -1, 'the homepage says Article 12 is already enforceable');
+  assert(home.indexOf('of evidence required') === -1, 'the homepage counts days of evidence required');
+});
+
+// The proof file a stranger downloads carries its own instructions, and they
+// opened 'bundle.json' while the browser saved 'darkmatter-proof-<id>.json'.
+// Pasted as written, the first command failed with file-not-found.
+test('the proof file is named the way its own instructions name it', () => {
+  var i = server.indexOf("const proofFile = 'darkmatter-proof-' + traceId + '.json';");
+  assert(i !== -1, 'the /r/ JSON branch no longer derives one file name for the download and the recipe');
+  var end = server.indexOf('trace_id: traceId, chain_intact', i);
+  assert(end !== -1, 'could not find the end of the how_to_verify block');
+  var block = server.slice(i, end);
+  assert(block.indexOf('bundle.json') === -1, 'how_to_verify tells the reader to open bundle.json, which is not what the file is called');
+  assert(block.split('proofFile').length - 1 >= 4, 'the download header and both recipes should all use proofFile');
+});
+
+// A hash chain shows the records present still match their hashes. It cannot
+// show nothing was left out. The page an assessor lands on said it could.
+test('the proof page does not claim that nothing was left out', () => {
+  var NL = String.fromCharCode(10);
+  var claimed = server.split(NL).filter(function (line) {
+    var t = line.trim();
+    return t.indexOf('//') !== 0 && t.indexOf('Nothing has been added, removed') !== -1;
+  });
+  assert(claimed.length === 0, 'the /r/ page claims completeness: ' + claimed.join(' | ').slice(0, 160));
+  assert(server.indexOf('It does not show that every action was recorded.') !== -1,
+    'the /r/ page no longer states the limit of what its check shows');
+});
+
 // Also runnable standalone: node test/security.test.js
 (function() {
   var sec = require('./security.test.js').run();

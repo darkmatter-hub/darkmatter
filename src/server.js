@@ -374,12 +374,23 @@ app.get('/healthz', (_req, res) => res.status(200).json({ ok: true }));
 //
 // Registered before express.static and before auth middleware so it always
 // resolves and never blocks the redirect on a database round trip.
-const CLICK_SOURCES = new Set(['x', 'hn', 'reddit', 'li', 'gh', 'blog']);
+const CLICK_SOURCES = new Set(['x', 'hn', 'reddit', 'li', 'gh', 'blog', 'accord']);
+
+// Sources that land somewhere other than the top of the homepage. A campaign
+// about one section should arrive at that section: sending a reader who
+// clicked a post about the four layers to the hero and leaving them to scroll
+// for it is how a click becomes a bounce. Counted separately from 'x' so the
+// campaign can be told apart from the evergreen posts it runs alongside.
+const CLICK_DEST = {
+  accord: '/?src=accord#accord',
+};
 
 app.get('/go/:source', (req, res) => {
   const source = String(req.params.source || '').toLowerCase().slice(0, 20);
   // Redirect first; attribution must never delay or break the visitor's click.
-  const dest = CLICK_SOURCES.has(source) ? `/?src=${encodeURIComponent(source)}` : '/';
+  const dest = CLICK_SOURCES.has(source)
+    ? (CLICK_DEST[source] || `/?src=${encodeURIComponent(source)}`)
+    : '/';
   res.redirect(302, dest);
 
   if (!CLICK_SOURCES.has(source)) return;
@@ -5537,7 +5548,13 @@ app.get('/r/:traceId', apiLimiter, async (req, res) => {
     const verifyDetail = _pageCheck.steps;
 
     if (req.query.format === 'json') {
-      res.setHeader('Content-Disposition', 'attachment; filename="darkmatter-proof-' + traceId + '.json"');
+      // One name, used for the download and inside the instructions the file
+      // carries. The instructions used to open 'bundle.json' while the browser
+      // saved 'darkmatter-proof-<id>.json', so the recipe a stranger was told
+      // to paste failed with file-not-found on its first line. traceId is
+      // restricted to [a-zA-Z0-9_-] above, so it is safe inside a shell string.
+      const proofFile = 'darkmatter-proof-' + traceId + '.json';
+      res.setHeader('Content-Disposition', 'attachment; filename="' + proofFile + '"');
       // A downloaded proof goes to an auditor, a regulator or a counterparty
       // who has never heard of this format, and the whole claim is that they
       // can check it without trusting us. Two things were missing.
@@ -5608,13 +5625,13 @@ app.get('/r/:traceId', apiLimiter, async (req, res) => {
           summary: 'Each record commits to the hash of the one before it. Editing any record changes its hash and breaks verification of every record after it. You can confirm that offline, with the open-source reference implementation, without trusting DarkMatter.',
           python: [
             'pip install context-passport',
-            'python -c "import json; from context_passport import verify_chain; print(verify_chain(json.load(open(\'bundle.json\'))[\'passports\']))"',
+            'python -c "import json; from context_passport import verify_chain; print(verify_chain(json.load(open(\'' + proofFile + '\'))[\'passports\']))"',
           ],
           typescript: [
             'npm install @contextpassport/core',
-            'node -e "const {verifyChain}=require(\'@contextpassport/core\');console.log(verifyChain(require(\'./bundle.json\').passports))"',
+            'node -e "const {verifyChain}=require(\'@contextpassport/core\');console.log(verifyChain(require(\'./' + proofFile + '\').passports))"',
           ],
-          expect: 'true if the chain is intact. Change one character in any payload and run it again: it returns false.',
+          expect: 'true if the chain is intact. Change one character in a payload under "passports" and run it again: it returns false. The same payload also appears under "commits" for display; the check reads "passports", so an edit made only under "commits" is not what it tests.',
         },
         trace_id: traceId, chain_intact: chainIntact, step_count: commits.length,
         verification: verifyDetail,
@@ -5906,7 +5923,12 @@ app.get('/r/:traceId', apiLimiter, async (req, res) => {
       + (dateStr ? '    <span class="fs-sep">\u00b7</span>\n    <span class="fs-chip">' + escH(dateStr) + '</span>\n' : '')
       + '  </div>\n'
       + '  <div class="fs-integrity">'
-      + (chainIntact ? 'This record has been cryptographically verified. Nothing has been added, removed, or altered since it was captured.' : 'This record could not be fully verified. Download the proof file for independent investigation.')
+      // This said "Nothing has been added, removed, or altered since it was
+      // captured." A hash chain can show the records present still match their
+      // hashes and their links. It cannot show that nothing was left out, and
+      // the compliance report already says so in its own scope_and_limits; the
+      // page a board member or an assessor actually lands on said the opposite.
+      + (chainIntact ? 'Every record shown here matches its hash and links to the one before it, so none of them has been edited since it was captured. That is what this check shows. It does not show that every action was recorded.' : 'This record could not be fully verified. Download the proof file for independent investigation.')
       + (highestAssurance === 'L3' ? ' Signed with a customer-controlled Ed25519 key before reaching DarkMatter \u2014 DarkMatter cannot forge this record.' : '')
       + (hasCompleteness && highestAssurance === 'L3' ? '<br><span style=\"font-size:12px;color:#0f7b4d;\">\u2714 Agent asserted this record is complete (nothing omitted).</span>' : '')
       + '</div>\n'

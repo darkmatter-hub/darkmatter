@@ -281,6 +281,22 @@ footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;gri
 .tp-num{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.2em;color:hsl(var(--trace-dim));margin-bottom:1rem}
 .trust-pt h3{font-size:1.25rem;letter-spacing:-.01em;margin-bottom:.875rem;font-weight:500;line-height:1.3}
 .trust-pt p{font-size:14px;line-height:1.65;color:hsl(var(--trace))}
+#accord{scroll-margin-top:5rem}
+.accord-lead{max-width:46rem;font-size:16px;line-height:1.65;color:hsl(var(--trace));margin-bottom:3rem}
+.accord-rows{display:grid;gap:1px;background:hsl(var(--void-line));border:1px solid hsl(var(--void-line))}
+.accord-head,.accord-row{display:grid;grid-template-columns:1fr;gap:1rem;background:hsl(var(--void));padding:1.75rem 1.5rem}
+.accord-head{display:none;padding-top:1rem;padding-bottom:1rem;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:hsl(var(--trace-dim))}
+.ar-num{display:block;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.2em;color:hsl(var(--trace-dim));margin-bottom:.6rem}
+.ar-label h3{font-size:1.1rem;letter-spacing:-.01em;font-weight:500;line-height:1.3}
+.ar-k{display:block;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:hsl(var(--trace-dim));margin-bottom:.4rem}
+.ar-asks{font-size:14px;line-height:1.65;color:hsl(var(--trace))}
+.ar-gives{font-size:14px;line-height:1.65;color:hsl(var(--foreground))}
+.accord-head>div{font-size:10px;line-height:1.6;color:hsl(var(--trace-dim))}
+.accord-limits{margin-top:3rem;border-left:2px solid hsl(var(--signal));padding-left:1.25rem}
+.accord-limits h3{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:hsl(var(--trace-dim));font-weight:400;margin-bottom:1rem}
+.accord-limits p{font-size:14px;line-height:1.7;color:hsl(var(--trace));margin-bottom:.9rem;break-inside:avoid;max-width:46rem}
+.accord-links{display:flex;flex-wrap:wrap;gap:.75rem 2rem;margin-top:2.5rem}
+@media(min-width:900px){.accord-head{display:grid}.accord-head,.accord-row{grid-template-columns:repeat(12,1fr);gap:2.5rem;padding-left:2rem;padding-right:2rem}.ar-label{grid-column:span 3}.ar-asks{grid-column:span 4}.ar-gives{grid-column:span 5}.ar-k{display:none}.accord-limits-body{column-count:2;column-gap:3rem}}
 </style>
 </head>
 <body>
@@ -322,11 +338,16 @@ footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;gri
 <div id="euai-bar" style="display:none;background:hsl(var(--signal)/.08);border-bottom:1px solid hsl(var(--signal)/.25);padding:.6rem 1.5rem;text-align:center;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:hsl(var(--signal));">
   <span id="euai-bar-text"></span>
   &nbsp;·&nbsp;
-  <a href="/eu-ai-act" style="color:hsl(var(--foreground));text-decoration:underline;text-underline-offset:3px;">How DarkMatter helps</a>
+  <a href="/eu-ai-act" style="color:hsl(var(--foreground));text-decoration:underline;text-underline-offset:3px;">What a record does and does not cover</a>
 </div>
 <script>
 (function(){
-  var deadline = new Date('2026-08-02T00:00:00Z');
+  // The high-risk obligations, Article 12 among them, were deferred from
+  // 2 August 2026 to 2 December 2027 by the Digital Omnibus (in force 27 July
+  // 2026). This banner kept counting from the old date after /eu-ai-act, the
+  // page it links to, had been corrected. Same date and wording as that page
+  // now; test/smoke.test.js holds the two together.
+  var deadline = new Date('2027-12-02T00:00:00Z');
   var now = new Date();
   var bar = document.getElementById('euai-bar');
   var txt = document.getElementById('euai-bar-text');
@@ -334,12 +355,11 @@ footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;gri
   var msPerDay = 86400000;
   var diffDays = Math.ceil((deadline - now) / msPerDay);
   if (diffDays > 0) {
-    txt.textContent = 'EU AI Act Article 12 enforceable in ' + diffDays + ' day' + (diffDays === 1 ? '' : 's');
+    txt.textContent = 'EU AI Act Article 12 applies from 2 December 2027, ' + diffDays + ' day' + (diffDays === 1 ? '' : 's') + ' away';
   } else if (diffDays === 0) {
-    txt.textContent = 'EU AI Act Article 12, enforcement today';
+    txt.textContent = 'EU AI Act Article 12 applies from today';
   } else {
-    var since = Math.abs(diffDays);
-    txt.textContent = 'EU AI Act Article 12, enforceable since Aug 2, 2026 · ' + since + ' day' + (since === 1 ? '' : 's') + ' of evidence required';
+    txt.textContent = 'EU AI Act Article 12, applicable since 2 December 2027';
   }
   bar.style.display = 'block';
 })();
@@ -528,6 +548,68 @@ footer .top{max-width:80rem;margin:0 auto;padding:3.5rem 1.5rem;display:grid;gri
         <h3>No vendor dependency to verify</h3>
         <p>Export a record and anyone can check it without a DarkMatter account, without internet access, and without trusting us. The verifier is open source and runs locally against the bundle you hold.</p>
       </div>
+    </div>
+  </div>
+</section>
+
+<!-- ACCORD -->
+<!--
+  Every sentence in this section was checked against the code and against the
+  accord's text before it was published, and the wording of the limits is
+  load-bearing: several guards in test/smoke.test.js read this page sentence by
+  sentence. DarkMatter did not sign the accord and performs none of its four
+  layers. If a future edit makes this section sound more helpful than that, the
+  edit is wrong.
+-->
+<section class="section" id="accord">
+  <div class="wrap section-pad">
+    <div class="eyebrow" style="margin-bottom:2rem"><span class="rule"></span><span>Records for controls and audits</span></div>
+    <h2 class="balance" style="max-width:44rem;font-size:34px;line-height:1.08;letter-spacing:-.02em;font-weight:500;margin-bottom:1.5rem">Not a control. Not an auditor. A record an assessor can re-check.</h2>
+    <p class="accord-lead">Six frontier companies signed the voluntary White House Accord on Super Intelligence on 29 September 2026. It asks each of them for four layers of controls and audits on their own models. DarkMatter is not a signatory and performs none of the four; this is what it does beside each one.</p>
+
+    <div class="accord-rows">
+      <div class="accord-head">
+        <div class="ar-label">Layer</div>
+        <div class="ar-asks">What the accord asks of a signatory</div>
+        <div class="ar-gives">What DarkMatter does beside it</div>
+      </div>
+      <div class="accord-row">
+        <div class="ar-label"><span class="ar-num">01</span><h3>Internal controls</h3></div>
+        <div class="ar-asks"><span class="ar-k">The accord asks</span>Each company monitors the capabilities and alignment of its own models in training and deployment, in areas like cyber, biological and chemical threats, and ensures they do not hack or access technical systems in unintended ways.</div>
+        <div class="ar-gives"><span class="ar-k">DarkMatter</span>Not this layer. DarkMatter does not monitor, evaluate, block or stop a model or an agent; it is where a control or an agent runtime writes what happened, and it holds only what is sent to it.</div>
+      </div>
+      <div class="accord-row">
+        <div class="ar-label"><span class="ar-num">02</span><h3>Internal team</h3></div>
+        <div class="ar-asks"><span class="ar-k">The accord asks</span>An internal team confirms that the controls, monitoring and detection operate as intended and that issues are remediated.</div>
+        <div class="ar-gives"><span class="ar-k">DarkMatter</span>There is no API route to edit a committed record, and a request to delete one returns 405; deleting the whole account removes its records. A remediation record can name the issue record as its parent, with the parent's hash folded into its own; that shows the link was recorded, not that the fix worked.</div>
+      </div>
+      <div class="accord-row">
+        <div class="ar-label"><span class="ar-num">03</span><h3>External auditor or evaluator</h3></div>
+        <div class="ar-asks"><span class="ar-k">The accord asks</span>An independent outside auditor or evaluator assesses whether the controls, monitoring and detection operate as intended.</div>
+        <div class="ar-gives"><span class="ar-k">DarkMatter</span>DarkMatter is not that auditor. A record the owner shares downloads as a file in an open format with a CC0 specification, which an assessor can keep and check offline with an open-source verifier; it checks payload hashes and chain links, not signatures or checkpoints.</div>
+      </div>
+      <div class="accord-row">
+        <div class="ar-label"><span class="ar-num">04</span><h3>Board committee</h3></div>
+        <div class="ar-asks"><span class="ar-k">The accord asks</span>An independent committee of the board oversees and receives reports from the control teams and from the internal and external auditors and evaluators, and sees that issues are remediated.</div>
+        <div class="ar-gives"><span class="ar-k">DarkMatter</span>DarkMatter writes no board report. A shared record opens in a browser with no account and offers its proof file, so a link in a report someone else wrote can be opened and checked by a committee member or their adviser.</div>
+      </div>
+    </div>
+
+    <div class="accord-limits">
+      <h3>What this is not</h3>
+      <div class="accord-limits-body">
+      <p>DarkMatter is not a signatory to the accord, is not endorsed by or affiliated with any party to it, and is not a model developer or an auditor. The accord is voluntary and names no tool or evidence format, so nothing here is required by it.</p>
+      <p>DarkMatter records and does not stop anything, and a hash chain shows the records you were given still match their hashes, not that every action was recorded.</p>
+      <p>Record contents are kept for 30 days on the Free plan and one year on Pro; after that they may be removed while the hashes remain, so download the proof file while the contents are still in it.</p>
+      <p>No independent witness co-signs checkpoints today and the one registered witness is operated by DarkMatter, so detecting a change made by DarkMatter depends on you or your assessor holding a proof bundle exported beforehand.</p>
+      <p>The same kind of record is what our EU AI Act page discusses: Article 12 logging applies to stand-alone high-risk systems from 2 December 2027, and whether a system meets it is for you, your counsel and, where one is involved, a notified body to determine, not DarkMatter. DarkMatter holds no third-party certification today.</p>
+      </div>
+    </div>
+
+    <div class="accord-links">
+      <a href="/r/ctx_1787940693606_7c3e49a4a734" class="more-link">Open a real shared record →</a>
+      <a href="/verify_darkmatter_chain.py" class="more-link">The offline verifier, one Python file →</a>
+      <a href="/eu-ai-act" class="more-link">EU AI Act Article 12 →</a>
     </div>
   </div>
 </section>
