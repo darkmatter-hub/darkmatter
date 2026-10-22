@@ -990,6 +990,17 @@
       "sources": [
         "live"
       ]
+    },
+    {
+      "hash": "e3ce05b3458e9fe4083516c10d7227f715ad6278c1d41448a77031e2158e4b12",
+      "campaign": "accord",
+      "campaign_index": 11,
+      "dates": [
+        "2026-10-22"
+      ],
+      "sources": [
+        "live"
+      ]
     }
   ]
 }
